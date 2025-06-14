@@ -2,7 +2,7 @@ require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-edi
 
 require(['vs/editor/editor.main'], function () {
   const editor = monaco.editor.create(document.getElementById('editor'), {
-    value: "\\documentclass{article}\n\\begin{document}\n",
+    value: "Début du document.\n",
     language: 'latex',
     theme: 'vs-dark',
     fontSize: 14,
