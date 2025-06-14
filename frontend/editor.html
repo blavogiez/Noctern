@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>AutomaTeX Monaco</title>
+  <style>
+    html, body { height: 100%; margin: 0; }
+    #editor { height: 100%; width: 100%; }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
+</head>
+<body>
+  <div id="editor"></div>
+  <script>
+    require.config({ paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' }});
+    require(['vs/editor/editor.main'], function () {
+      window.editor = monaco.editor.create(document.getElementById('editor'), {
+        value: "Début du document...\n",
+        language: "latex",
+        theme: "vs-dark",
+        fontSize: 14
+      });
+
+      window.getEditorContent = () => editor.getValue();
+      window.insertCompletion = (text) => {
+        const pos = editor.getPosition();
+        editor.executeEdits("completion", [{
+          range: new monaco.Range(pos.lineNumber, pos.column, pos.lineNumber, pos.column),
+          text: text,
+          forceMoveMarkers: true
+        }]);
+      };
+
+      window.addEventListener("keydown", function (e) {
+        if (e.ctrlKey && e.shiftKey && e.code === "KeyC") {
+          parent.postMessage({ type: "trigger-completion" }, "*");
+        }
+      });
+    });
+  </script>
+</body>
+</html>

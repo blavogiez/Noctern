@@ -4,36 +4,45 @@ require(['vs/editor/editor.main'], function () {
   const editor = monaco.editor.create(document.getElementById('editor'), {
     value: "Début du document.\n",
     language: 'latex',
-    theme: 'vs-dark',
-    fontSize: 14,
+    theme: 'vs-white',
+    fontSize: 18,
   });
 
-  let timeout = null;
+  // Supprime la complétion automatique à la frappe (enlève l'écouteur onDidChangeModelContent)
+  // Et ne complète que sur Ctrl+Shift+C
 
-  editor.onDidChangeModelContent(() => {
-    clearTimeout(timeout);
-
-    timeout = setTimeout(() => {
+  editor.addCommand(
+    monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyC,
+    () => {
       const code = editor.getValue();
 
-      fetch('http://localhost:8000/complete', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      fetch("http://localhost:8000/complete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code }),
       })
-      .then(res => res.json())
-      .then(data => {
-        if (data.completion && !data.completion.startsWith("❌")) {
-          const position = editor.getPosition();
-          const range = new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column);
+        .then((res) => res.json())
+        .then((data) => {
+          const completion = data.completion;
 
-          editor.executeEdits("suggestion", [{
-            range,
-            text: data.completion,
-            forceMoveMarkers: true,
-          }]);
-        }
-      });
-    }, 1000);  // délai après arrêt de frappe
-  });
+          if (completion && !completion.startsWith("❌")) {
+            const position = editor.getPosition();
+
+            editor.executeEdits("completion", [
+              {
+                range: new monaco.Range(
+                  position.lineNumber,
+                  position.column,
+                  position.lineNumber,
+                  position.column
+                ),
+                text: completion,
+                forceMoveMarkers: true,
+              },
+            ]);
+          }
+        })
+        .catch((err) => console.error("Erreur complétion :", err));
+    }
+  );
 });

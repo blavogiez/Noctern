@@ -1,104 +1,33 @@
 import gradio as gr
-import subprocess
-import tempfile
-import os
 import requests
 
-# ----------- FONCTIONS PRINCIPALES -----------
+# Charger le contenu HTML de Monaco Editor depuis le fichier
+with open("../frontend/editor.html", encoding="utf-8") as f:
+    monaco_html = f.read()
 
-def compiler_latex(code):
-    with tempfile.TemporaryDirectory() as tmpdir:
-        tex_path = os.path.join(tmpdir, "main.tex")
-        with open(tex_path, "w", encoding="utf-8") as f:
-            f.write(code)
-
-        try:
-            subprocess.run(
-                ["pdflatex", "-interaction=nonstopmode", tex_path],
-                cwd=tmpdir, check=True, timeout=10, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-            )
-            return "✅ Compilation réussie"
-        except subprocess.CalledProcessError:
-            log_path = os.path.join(tmpdir, "main.log")
-            if os.path.exists(log_path):
-                with open(log_path, "r", encoding="utf-8", errors="ignore") as log_file:
-                    last_lines = log_file.readlines()[-20:]
-                    return "❌ Erreurs de compilation :\n\n" + "".join(last_lines)
-            return "❌ Erreur de compilation inconnue."
-
-def corriger_par_llm(code):
-    prompt = f"Corrige ce code LaTeX s'il y a une erreur :\n\n{code}\n\nRetourne uniquement le code corrigé."
-
+# Appelle l’API FastAPI en local
+def completer_phrase(_):
     try:
-        response = requests.post("http://localhost:11434/api/generate", json={
-            "model": "mistral",
-            "prompt": prompt,
-            "stream": False
-        })
-
+        # JS : récupérer le contenu avec window.getEditorContent()
+        editor_content = gr.get_js("getEditorContent")()
+        editor_iframe = gr.HTML('<iframe src="http://localhost:8888/editor.html" width="100%" height="600px" frameborder="0"></iframe>')
+        response = requests.post("http://localhost:8000/complete", json={"code": editor_content})
         if response.status_code == 200:
-            result = response.json()
-            return result.get("response", "").strip()
+            completion = response.json().get("completion", "").strip()
+            gr.eval_js(f"insertCompletion({repr(completion)})")
+            return "✅ Complétion insérée"
         else:
             return f"❌ Erreur LLM : statut {response.status_code}"
     except Exception as e:
-        return f"❌ Erreur lors de la requête à Ollama : {e}"
+        return f"❌ Erreur : {e}"
 
-# ----------- INTERFACE GRADIO -----------
+with gr.Blocks(title="AutomaTeX - Gradio + Monaco") as demo:
+    gr.Markdown("## ✍️ AutomaTeX (Ctrl+Shift+C pour compléter une phrase)")
+    gr.HTML(monaco_html)
+    complete_btn = gr.Button("🔮 Compléter", elem_id="btn-complete", visible=False)
+    output = gr.Textbox(label="État", lines=1)
 
-with gr.Blocks(title="AutomaTeX - Editeur IA") as demo:
-    gr.Markdown("## 🧠 AutomaTeX : Éditeur LaTeX avec IA locale")
-
-    code_input = gr.Textbox(
-        lines=20,
-        label="Code LaTeX",
-        value="\\documentclass{article}\n\\begin{document}\nBonjour\n\\end{document}"
-    )
-
-    output = gr.Textbox(label="Résultat ou Correction IA", lines=15)
-
-    with gr.Row():
-        btn_compile = gr.Button("📄 Compiler")
-        btn_corriger = gr.Button("💡 Corriger avec IA")
-
-    btn_compile.click(fn=compiler_latex, inputs=code_input, outputs=output)
-    btn_corriger.click(fn=corriger_par_llm, inputs=code_input, outputs=output)
-
-
-def autocomplete_latex(code):
-    prompt = f"Complète intelligemment ce code LaTeX :\n\n{code}\n\nSuite probable :"
-    try:
-        response = requests.post("http://localhost:11434/api/generate", json={
-            "model": "mistral",
-            "prompt": prompt,
-            "stream": False
-        })
-        if response.status_code == 200:
-            return response.json().get("response", "").strip()
-        else:
-            return f"❌ Erreur LLM : statut {response.status_code}"
-    except Exception as e:
-        return f"❌ Erreur lors de l'autocomplétion : {e}"
-
-with gr.Blocks(title="AutomaTeX - Editeur IA") as demo:
-    gr.Markdown("## 🧠 AutomaTeX : Éditeur LaTeX avec IA locale")
-
-    code_input = gr.Textbox(
-        lines=20,
-        label="Code LaTeX",
-        value="\\documentclass{article}\n\\begin{document}\nBonjour\n\\end{document}"
-    )
-
-    output = gr.Textbox(label="Résultat ou Correction IA", lines=15)
-
-    with gr.Row():
-        btn_compile = gr.Button("📄 Compiler")
-        btn_corriger = gr.Button("💡 Corriger avec IA")
-        btn_autocomplete = gr.Button("🔮 Autocomplétion IA")
-
-    btn_compile.click(fn=compiler_latex, inputs=code_input, outputs=output)
-    btn_corriger.click(fn=corriger_par_llm, inputs=code_input, outputs=output)
-    btn_autocomplete.click(fn=autocomplete_latex, inputs=code_input, outputs=output)
+    complete_btn.click(fn=completer_phrase, inputs=[], outputs=output)
 
 if __name__ == "__main__":
-    demo.launch(inbrowser=True, server_name="127.0.0.1", server_port=7860)
+    demo.launch(inbrowser=True)
