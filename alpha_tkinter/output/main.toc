@@ -1,0 +1,41 @@
+\babel@toc {french}{}\relax 
+\contentsline {section}{\numberline {1}Introduction}{3}{section.1}%
+\contentsline {subsection}{\numberline {1.1}Contexte}{3}{subsection.1.1}%
+\contentsline {subsection}{\numberline {1.2}Le déroulement de ce portfolio}{3}{subsection.1.2}%
+\contentsline {section}{\numberline {2}SAÉ 1.02 - Réalisation d'un jeu en iJava}{4}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Présentation}{4}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}Quelle était l'application ?}{4}{subsection.2.2}%
+\contentsline {subsection}{\numberline {2.3}En images}{4}{subsection.2.3}%
+\contentsline {subsection}{\numberline {2.4}Qu'ai-je appris ?}{5}{subsection.2.4}%
+\contentsline {section}{\numberline {3}SAÉ 1.03 - Installation de machines virtuelles}{7}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Présentation}{7}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}Quelle était l'application ?}{7}{subsection.3.2}%
+\contentsline {subsection}{\numberline {3.3}Qu'ai-je appris ?}{7}{subsection.3.3}%
+\contentsline {section}{\numberline {4}SAÉ 1.04 - Base de données Access}{8}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Présentation}{8}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}Quelle était l'application ?}{8}{subsection.4.2}%
+\contentsline {subsection}{\numberline {4.3}En images}{8}{subsection.4.3}%
+\contentsline {subsection}{\numberline {4.4}Qu'ai-je appris ?}{10}{subsection.4.4}%
+\contentsline {section}{\numberline {5}SAÉ 1.05-06 - Réalisation d'un site Web}{11}{section.5}%
+\contentsline {subsection}{\numberline {5.1}Présentation}{11}{subsection.5.1}%
+\contentsline {subsection}{\numberline {5.2}Quelle était l'application ?}{11}{subsection.5.2}%
+\contentsline {subsection}{\numberline {5.3}En images}{11}{subsection.5.3}%
+\contentsline {subsection}{\numberline {5.4}Qu'ai-je appris ?}{11}{subsection.5.4}%
+\contentsline {section}{\numberline {6}SAÉ 2.01-02 - Logiciel de gestion d'échanges en Java}{13}{section.6}%
+\contentsline {subsection}{\numberline {6.1}Présentation}{13}{subsection.6.1}%
+\contentsline {subsection}{\numberline {6.2}Quelle était l'application ?}{13}{subsection.6.2}%
+\contentsline {subsection}{\numberline {6.3}En images}{14}{subsection.6.3}%
+\contentsline {subsection}{\numberline {6.4}Qu'ai-je appris ?}{15}{subsection.6.4}%
+\contentsline {section}{\numberline {7}SAÉ 2.03 - Installation de services réseaux}{16}{section.7}%
+\contentsline {subsection}{\numberline {7.1}Présentation}{16}{subsection.7.1}%
+\contentsline {subsection}{\numberline {7.2}Quelle était l'application ?}{16}{subsection.7.2}%
+\contentsline {subsection}{\numberline {7.3}Qu'ai-je appris ?}{16}{subsection.7.3}%
+\contentsline {section}{\numberline {8}SAÉ 2.05 - Gestion d'un projet}{17}{section.8}%
+\contentsline {subsection}{\numberline {8.1}Présentation}{17}{subsection.8.1}%
+\contentsline {subsection}{\numberline {8.2}Quelle était l'application ?}{17}{subsection.8.2}%
+\contentsline {subsection}{\numberline {8.3}En images}{17}{subsection.8.3}%
+\contentsline {subsection}{\numberline {8.4}Qu'ai-je appris ?}{19}{subsection.8.4}%
+\contentsline {section}{\numberline {9}SAÉ 2.06 - Réalisation d'une vidéo sur un point de science informatique}{20}{section.9}%
+\contentsline {subsection}{\numberline {9.1}Présentation}{20}{subsection.9.1}%
+\contentsline {subsection}{\numberline {9.2}Quelle était l'application ?}{20}{subsection.9.2}%
+\contentsline {subsection}{\numberline {9.3}Qu'ai-je appris ?}{20}{subsection.9.3}%
