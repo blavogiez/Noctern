@@ -3,369 +3,590 @@
 \usepackage{fontawesome5}
 \usepackage{babel}
 \usepackage{tcolorbox}
-\usepackage{uml} % Ce package permet des diagrammes UML simples
-\tcbuselibrary{skins, listings}
-\newtcblisting{codebox}{
-	enhanced, 
-	colback=black!3!white, 
-	toprule=1pt, 
-	bottomrule=1pt,
-	leftrule=0pt, 
-	rightrule=0pt, 
-	arc=0mm, 
-	attach boxed title to top left={yshift=-9pt, xshift=4pt},
-	title = Java,
-	coltitle= black, 
-	boxed title style={colback=white},
-	listing only,
-	listing options={
-		language=java,
-		breaklines,
-		keywordstyle = \color{green!60!black},
-		keywordstyle = {[2]\color{orange}},
-		commentstyle = \color{gray}\itshape,
-		stringstyle  = \color{blue},
-		showstringspaces=false,
-		numbers = left,
-		numberstyle = \tiny,
-		stepnumber=1,
-		numbersep = 20pt
-	},
-}
-% pour les accents
-\lstset{
-	literate=
-	{é}{{\'e}}1
-	{è}{{\`{e}}}1
-	{ê}{{\^{e}}}1
-	{ë}{{\¨{e}}}1
-	{É}{{\'{E}}}1
-	{Ê}{{\^{E}}}1
-	{û}{{\^{u}}}1
-	{ù}{{\`{u}}}1
-	{â}{{\^{a}}}1
-	{à}{{\`{a}}}1
-	{Â}{{\^{A}}}1
-	{ç}{{\c{c}}}1
-	{Ç}{{\c{C}}}1
-	{ô}{{\^{o}}}1
-	{Ô}{{\^{O}}}1
-	{î}{{\^{i}}}1
-	{Î}{{\^{I}}}1,
-}
+\usepackage{tikz}
+\usetikzlibrary{positioning, arrows.meta}
+\usepackage{pgf-umlcd}
+\usepackage{array}
+\usepackage{booktabs}
+\usepackage{amsmath} % Pour les flèches
+\usepackage{setspace}
+\usepackage{hyperref}
 
 \title{Rapport ECL - Template} %Titre du fichier
 
 \begin{document}
-	
-	
-	
+
 %----------- Informations du rapport ---------
 
-\titre{Portfolio} %Titre du fichier .pdf
-\UE{Communication} %Nom de la UE
-\sujet{Portfolio} %Nom du sujet
-
-\enseignant{Cécile \textsc{De Coninck}}
+\titre{Analyse de données} %Titre du fichier .pdf
+\UE{SAÉ S2.04} %Nom de la UE
+\sujet{Statistiques} %Nom du sujet
 
 \eleves{Baptiste \textsc{Lavogiez}}
 
-%----------- Initialisation -------------------
+\enseignant{Marie \textsc{Deletombe}}
 
+%----------- Initialisation -------------------
+        
 \fairemarges %Afficher les marges
 \fairepagedegarde %Créer la page de garde
 \tabledematieres %Créer la table de matières
 
 %------------ Corps du rapport ----------------
 
-\section{Introduction}
+\section{Contexte} 
 
-\subsection{Contexte}
+Cette partie décrit le modèle de bases de données utilisé. Elle ne constitue pas une réponse au sujet statistique mais un rappel du contexte choisi.
+AAA
 
-\tsec{Les SAé : c'est quoi ?}
+\subsection {Introduction}
+Ce \textbf{rapport} présentera la mise en forme d'une base de données en nous appuyant sur les Jeux Olympiques (environ 270 000 lignes, 15 colonnes) au format \emph{CSV}. Nous allons d'abord importer les données, pour ensuite les \emph{ventiler}, soit les ranger dans des tables plus adaptées afin de décompoeser les données au mieux. Lors de la partie \emph{SQL}, nous travaillerons sur un serveur \emph{PostgreSQL}.
 
-Dans le monde du BUT, les SAé sont des \textit{Situation d'apprentissage et d'évaluation}.
-En quelque sorte, ce sont des projets, énoncés avec un cahier des charges, que nous devons réaliser afin de développer des compétences pratiques.
-Ce mode d'apprentissage permet de développer tôt dans les études une capacité d'adaptation aux situations courantes du monde du travail et de l'informatique, tout en travaillant dans une équipe.
-Il faut y voir une émulation d'un projet d'entreprise.
+\subsection{Données brutes}
 
-Personnellement, j'y applique une rigueur professionnelle, autant pour m'habituer à ce mode de fonctionnement que pour présenter les projets les plus beaux possibles.
-La conception et réalisation de projet sont des aspects de l'informatique que j'aime vraiment, et j'aime à faire des rendus impeccables et clairement expliqués.
+Nous obtenons le fichier suivant, pesant près de 40 Mo.
 
-\subsection{Le déroulement de ce portfolio}
+\insererfigure{img/fichier_explorateur.png}{0.65cm}{Aperçu dans l'explorateur}{Label de la figure}
 
-Ce document, ou ce \textbf{Portfolio}, vise à présenter tous nos projets sous 3 dogmes :
+\insererfigure{img/fichier_apercu.png}{4cm}{Aperçu du fichier}{Label de la figure}
 
-\begin{itemize}
-\item{La présentation}
-\item{L'application}
-\item{Ce que nous avons appris}
-\end{itemize}
+\subsection{Observations}
+Nous constatons alors que bon nombre de données sont répétées et c'est normal, car nous nous situons dans un fichier brut.
 
-\tsec{Présentation}
-Cette partie présente en quelques lignes les grandes lignes du projet ; l'énoncé, le développement et le rendu.
-
-\tsec{Quelle était l'application ?}
-Cette partie présente l'utilité claire du projet et sa réapplicabilité dans d'autres domaines.
-
-\tsec{Qu'ai-je appris ?}
-Cette partie présente les compétences acquises après la réalisation du projet.
-
-\section{SAÉ 1.02 - Réalisation d'un jeu en iJava}
-
-\subsection{Présentation}
-
-Ce projet consiste en la réalisation d'un jeu en iJava, servant ainsi à démontrer nos capacités premières de conception et de réalisation d'un projet simple avec cahier des charges et rendu progressif.
-
-Ce projet était initialement prévu pour être réalisé en binôme, mais il a été développé seul en raison de la réorientation de l'autre membre.
-
-\subsection{Quelle était l'application ?}
-
-\textit{Le jeu réalisé est donc Javazonia !}
-
-Javazonia est un jeu qui allie culture et géographie. Le joueur doit répondre à des questions sur un pays aléatoire et le placer correctement sur une carte interactive. En cas de succès, il peut créer un nouveau pays en remplaçant l'ancien, mettant ainsi sa créativité au premier plan !
+Nous pouvons distinguer plusieurs tables possibles : 
 
 \begin{itemize}
-	\item Plus qu'un simple quiz, le joueur doit placer le pays sur une carte.
-	\item Les résultats sont enregistrés et un classement permet de voir les statistiques de tous les joueurs.
-	\item Conçue pour être simple d'utilisation, quel que soit l'âge.
+	\item Des athlètes,
+	\item Des jeux,
+	\item Des sports,
+	\item Des délégations...
 \end{itemize}
 
-\subsection{En images}
+Passons maintenant à la conception de ce modèle !
 
-\insererfigure{img/102/1.png}{4cm}{}{fig::}
+\subsection{Le Modèle Logique de Données (MLD)}
 
-\insererfigure{img/102/2.png}{10cm}{}{fig::}
+\textbf{\emph{Un Modèle Logique de Données}} est une façon de représenter un schéma de tables sous une forme à la fois graphique et textuelle.
 
-\insererfigure{img/102/3.png}{7cm}{}{fig::}
+\tsec{Tables}
 
-\subsection{Qu'ai-je appris ?}
+Nous en déduisons, après réflexion, près de 7 tables différentes : 
 
-La rigueur et la capacité à faire comprendre notre code à d'autres personnes étaient les principaux points abordés : j'ai fait attention à commenter et documenter le fonctionnement de l'application au maximum
-
-\tsecnonum{Compétences techniques}
-\begin{itemize}
-	\item Développement d'un jeu en Java
-	\item Utilisation de cartes interactives
-	\item Gestion des entrées utilisateur
-\end{itemize}
-
-\tsecnonum{Savoir-être}
-\begin{itemize}
-	\item Rigueur dans le commentaire et la documentation du code
-	\item Capacité à travailler en autonomie
-	\item Créativité dans la conception de fonctionnalités de jeu
-\end{itemize}
-
-\section{SAÉ 1.03 - Installation de machines virtuelles}
-
-\subsection{Présentation}
-
-Ce projet fait partie de la ressource Systèmes. Il a pour objectif de nous introduire à l'installation et à la configuration de machines virtuelles basées sur Linux (Debian 12). 
-
-Cette SAé se faisait seul. 
-
-Il n'y avait pas de rendu informatique, car l'évaluation était un contrôle TP. Néanmoins, un court manuel d'anglais a du être rédigé. Cette SAé est sûrement la plus mineure de toutes les SAé réalisées.
-
-\subsection{Quelle était l'application ?}
-
-L'utilité claire est de nous former à l'environnement Unix et aux machines virtuelles. Cela m'a permis par la suite d'utiliser couramment des machines virtuelles en allant plus loin que ce que j'ai pu faire avant la formation.
-
-\subsection{Qu'ai-je appris ?}
-
-J'ai donc appris à installer et configurer des machines virtuelles !
-
-\tsecnonum{Compétences techniques}
-\begin{itemize}
-	\item Installation et configuration de machines virtuelles
-	\item Utilisation de l'environnement Unix
-\end{itemize}
-
-\tsecnonum{Savoir-être}
-\begin{itemize}
-	\item Autonomie dans l'apprentissage de nouveaux outils
-	\item Adaptabilité à de nouveaux environnements de travail
-\end{itemize}
-
-\section{SAÉ 1.04 - Base de données Access}
-
-\subsection{Présentation}
-
-L’objectif de ce projet est de concevoir et mettre en place un système fictif de base de données pour une entreprise tirée au sort (ici, une agence de voyage). Les logiciels utilisés sont PowerAMC et Microsoft Access.
-
-Ce projet insistera plus sur le côté conceptuel de la base de données que sur de la demande de requêtes pure. Un aspect bien plus profond du SQL sera donné dans le projet du Semestre 2.
-
-La base de données Access est entièrement accessible dans le dossier sous-jacent.
-
-\subsection{Quelle était l'application ?}
-
-L'utilité du projet est de concevoir nous-mêmes une base de données en nous mettant dans la peau d'un dirigeant d'entreprise. Réfléchir à un modèle, puis revenir sur un autre en se rendant compte d'une incohérence passée, était l'essence de ce projet et il nous a appris à réfléchir de façon beaucoup plus mature et efficace lorsque l'on conçoit un modèle. Après ce projet, il y a vraiment eu une différence entre ce qu'il était important de modéliser ou non.
-
-\subsection{En images}
-
-\insererfigure{img/104/1.png}{10cm}{}{fig::}
-
-\insererfigure{img/104/2.png}{10cm}{}{fig::}
-
-\insererfigure{img/104/3.png}{10cm}{}{fig::}
-
-\subsection{Qu'ai-je appris ?}
-
-J'ai appris à me mettre dans la peau de plusieurs personnes afin de réaliser ce projet :
+\insererfigure{img/version1/uml.png}{13cm}{Diagramme UML}{fig::v1::uml}
+La logique utilisée est :
 
 \begin{itemize}
-	\item Un dirigeant de start-up
-	\item Un développeur de base de données
-	\item Un utilisateur de cette base (un employé, typiquement)
+	\item Une clé primaire est nommée par la première lettre du nom de la table, suivi de \emph{"no"},
+	\item Une clé primaire est soulignée,
+	\item Une clé étrangère est précédée d'un dièse \emph{"\#"}.
 \end{itemize}
 
-En somme, j'ai vu l'importance de se mettre à la place de chaque acteur du logiciel que l'on conçoit afin qu'il soit développé d'une façon la plus orientée possible à chacun.
+\tsec{Raccourcis}
+On peut penser à Participation(\#ano, \#noc), ce qui serait possible, mais en réalité cette table est inutile car un athlète qui fait partie d’une nation revient au même qu’un athlète qui participe pour une nation (dans Participation).
+De plus, un athlète peut concourir pour une nation une fois, puis pour une autre une autre fois.
 
-\tsecnonum{Compétences techniques}
-\begin{itemize}
-	\item Conception de bases de données avec PowerAMC
-	\item Utilisation de Microsoft Access pour la gestion de bases de données
-	\item Réflexion sur la modélisation des données
-\end{itemize}
-
-\tsecnonum{Savoir-être}
-\begin{itemize}
-	\item Capacité à se mettre dans la peau de différents acteurs d'un projet
-	\item Réflexion mature et efficace sur la conception de modèles
-\end{itemize}
-
-\section{SAÉ 1.05-06 - Réalisation d'un site Web}
-
-\subsection{Présentation}
-
-Cette SAé est celle avec l'objectif le plus simple, et pourtant elle n'est pas la plus simple ; il s'agit ici de développer un site Web. 
-
-En effet, tous les informaticiens sont passés par là. Cette fois-ci, en groupe de 3, nous devions nous conformer à un cahier des charges afin de réaliser un site comprenant un menu navigable, un formulaire d'inscription et un style dense.Nous avons donc élaboré des concepTS de menu navigable, formulaire d'inscription et style dense, chacun adapté aux besoins spécifiques du site.Nous avons élaboré des concepTS de menu navigable, formulaire d'inscription et style dense, chacun adapté aux besoins spécifiques du site.
-
-Nous avons donc travaillé ensemble pour définir les compétences techniques et le savoir-être nécessaires à la ré realisation du site Web, en prenant en compte les spécifications du cahier des charges.
-
-\subsection{Quelle était l'application ?}
-
-L'utilité claire est de convertir une idée, un concept en un site Web. La réalisation d'un site est sûrement une des tâches mettant le plus à l'épreuve un groupe ; il faut clairement des rôles définis pour éviter de se marcher les uns sur les autres. Au sein du groupe, cela s'est bien déroulé avec un attelage clair ; personnellement, je me suis occupé de la page d'accueil et du style global des pages, en finissant par faire la "fusion" entre toutes les pages (les relier). 
-
-\subsection{En images}
-
-\subsection{Qu'ai-je appris ?}
-
-Le développement Web, surtout en front-end, est une de mes plus grandes faiblesses en terme d'informatique. Néanmoins, j'ai essayé au mieux de surpasser cela en m'y investissant beaucoup, car cette note comptait pour deux SAé. Le groupe a travaillé bien ensemble pour développer le site Web, malgré les défis posés par la concurrence et la nécessité de clairement définir les rôles. Personnellement, j'ai appris à gérer mes faiblesses en front-end et à surmonter les obstacles pour acheter le développement du site.
-
-Ainsi j'ai pu travailler sur l'implémentation d'une solution en équipe en apprenant à bien répartir les tâches afin de tirer le maximum des qualités et capacités de développement de chacun.
-
-\tsecnonum{Compétences techniques}
-\begin{itemize}
-	\item Développement web en équipe
-	\item Création de formulaires d'inscription
-	\item Gestion du style global d'un site web
-\end{itemize}
-
-\tsecnonum{Savoir-être}
-\begin{itemize}
-	\item Travail en équipe et répartition des tâches
-	\item Capacité à tirer parti des qualités de chacun
-\end{itemize}
-
-\section{SAÉ 2.01-02 - Logiciel de gestion d'échanges en Java}
-
-\subsection{Présentation}
-
-Cette SAé est la plus lourde de toute l'année, mais elle aussi la plus professionnelle.
-Il est attendu de nous des rendus réguliers, sous forme de commits taggés.
-
-Cette SAé intervient dans trois matières :
+\tsec{Précisions}
+Quelques explications sur des nommages qui peuvent ne pas être explicites :
 
 \begin{itemize}
-	\item Graphes
-	\item Programmation Orientée Objet (POO)
-	\item Interaction Humain Machine (IHM)
+	\item Un \textbf{\emph{NOC}} veut dire \textbf{National Olympic Committee}. Exemple : États-Unis --> USA. Il est unique pour le cas des Jeux Olympiques.
+	\item Une discipline est un sous-genre d'un sport. Exemple : Natation --> 4x100m relais. Ce sera utile pour les épreuves.
+	\item Pour le reste, les raisons seront comprises lors de l'éxécution des requêtes.
 \end{itemize}
 
-Ces trois parties se déroulent dans leur ordre respectif, afin de converger à la fin vers un logiciel rassemblant toutes les fonctionnalités.
+\section{Présentation du sujet}
 
-Ce logiciel consiste à organiser des échanges culturels entre pays et à déterminer les meilleurs échanges selon un algorithme de recherche d'appariement. Cet algorithme affecte un score à un échange en fonction de l'affinité des deux personnes (déterminée par leurs points communs et critères satisfaits). Le meilleur appariement est la combinaison d'échanges uniques pour laquelle la somme des affinités est minimale.
+\subsection{Énoncé}
 
-\subsection{Quelle était l'application ?}
+Ce sujet traitera des Jeux Olympiques, avec pour objectif d'analyser leurs données avec une démarche statistique.
 
-L'utilité claire est de s'organiser autour d'un lourd projet en organisant plusieurs parties. L'application consiste à délivrer un logiciel fonctionnel répondant à des demandes utilisateur, en nous mettant alors dans la peau d'une vraie équipe de développeurs ayant des critères à satisfaire. Ce logiciel devait, par exemple, calculer les meilleurs échanges, permettre de bannir un échange, ou encore en rendre un obligatoire (demandes du cahier des charges). Ce logiciel a été développé dans le langage Java pour la partie backend, puis en JavaFX pour la partie frontend.
+\subsection{Traitement des questions}
 
-\subsection{En images}
+Nous aurons donc à répondre à différentes questions statistiques, autant à l'aide de requêtes sur la base de données que d'outils statistiques (formules, graphiques...).
 
-\insererfigure{img/201/1.png}{10cm}{Page d'accueil}{fig::201::1}
+Enfin, afin d'aller plus loin, nous imaginerons d'autres études statistiques en \textbf{allant plus loin que le sujet initial}.
 
-\insererfigure{img/201/2.png}{8cm}{Liste des échanges}{fig::201::2}
+Toutes les réponses \textbf{seront illustrées par des graphiques appropriés}.
 
-\insererfigure{img/201/3.png}{5cm}{Clic sur un échange}{fig::201::3}
+\subsection{Forme des requêtes}
 
-\subsection{Qu'ai-je appris ?}
+Par convention, les requêtes et les tables sont écrites en anglais.
+La commande \\copy, ou \\o en SQL nous permettra de générer des fichiers CSV à partir de la sortie des requêtes.
+Malheureusement, PostgreSQL oblige à tout écrire sur une seule ligne sans pouvoir indenter, alors qu'il serait plus lisible d'aérer les requêts, surtout les plus denses.
 
-\section{SAÉ 2.03 - Installation de services réseaux}
+\begin{codeboxlang}{SQL}
+\copy (SELECT AVG(Participations.age) AS age_moyen_global FROM Participations;) TO 'average_global_age.csv' CSV HEADER
+\end{codeboxlang}
 
-\subsection{Présentation}
 
-\subsection{Quelle était l'application ?}
+\emph{Ici, on requête l'âge global et on le copie dans un fichier.}
 
-\subsection{Qu'ai-je appris ?}
+De cette façon, dans le rapport, les requêtes seront aérées, sans la commande, et les fichiers, eux, auront la forme ci-dessus.
 
-\section{SAÉ 2.05 - Gestion d'un projet}
+Ces fichiers seront utiles pour mieux analyser les données, en utilisant notamment l'outil https://www.rawgraphs.io/ qui, prenant en entrée un jeu de données, permet sa visualisation sous une multitude de formats.
+Tous ces fichiers sont disponibles dans la racine de ce document.
 
-\subsection{Présentation}
+\section{Questions du sujet}
 
-Nous allons maintenant dans la ressource "Gestion" ! Cette matière nous donne à voir la gestion des entreprises en relation avec l'informatique. Dans ce projet, se déroulant en équipe de 5 pour notre part, nous avons créé une application mobile fictive en présentant son environnement économique, sa cible type, ses concurrents... Il s'agit globalement d'une étude sur la viabilité de notre application et notre stratégie.
+Cette partie traitera des questions relatives au sujet.
 
-\subsection{Quelle était l'application ?}
+\subsection{Partie 1}
 
-Nous avons choisi de créer Fridgerator, une application mobile de gestion de cuisine proposant la nouveauté hors pair de pouvoir d'une simple photo de son frigo générer des recettes viables grâce à l'IA. Ces applications sont typiques en 2025 et c'est pour quoi nous avons eu à coeur de nous renseigner sur cela.
+\tsec{Déterminer les 20 athlètes affichant le plus de participations aux J.O. (tout sexe confondu)}
 
-\subsection{En images}
+\begin{codeboxlang}[title=20 athlètes affichant le plus de participations]{SQL}
+	SELECT Athletes.name, COUNT(Participations.ano) AS nombre_participations
+	FROM Athletes JOIN Participations USING(ano)
+	GROUP BY Athletes.name
+	ORDER BY nombre_participations DESC
+	LIMIT 20;
+\end{codeboxlang}
 
-\insererfigure{img/205/1.png}{10cm}{}{fig::}
+\res{\insererfigure{img/version1/20ath.png}{12cm}{20 athlètes les plus actifs}{fig::v1::20ath}}
 
-\insererfigure{img/205/2.png}{10cm}{}{fig::}
+\subsection{Partie 2}
 
-\insererfigure{img/205/3.png}{10cm}{}{fig::}
+Cette partie \textbf{statistique} traitera d'une édition précise, et unique vis-à-vis de la promotion, des Jeux Olympiques.
 
-\subsection{Qu'ai-je appris ?}
+Notre édition sera les Jeux d'Été de 1984, à Los Angeles, aux États-Unis.
+Les JO d'été étant plus suivis et avec plus d'épreuves, il y aura donc plus de données à visualiser qu'en hiver, et ce afin d'avoir une étude statistique plus précise et plus permissive en terme d'options !
 
-Ce projet m’a permis de comprendre que créer une application ne commence pas par le code, mais par une idée forte, un besoin bien identifié, et une organisation structurée. J’ai pu découvrir plusieurs facettes du rôle d’un entrepreneur numérique, en sortant du cadre strictement technique. Qu'est-ce que j'ai appris ? J'ai appris que créer une application mobile n'est pas simplement un défi technique, mais également un processus de conception et de développement qui nécessite une compréhension profonde des besoins du marché et des utilisateurs. J'ai pu mettre en évidence les étapes clés d'un projet numérique, y compris la définition de l'idée, la recherche de données, le développement, le testing et la mise en production. En outre, j'ai appris à travailler en équipe avec des collègues passionnés et compétents, ce qui a permis une meilleure coordination et une amélioration de la qualité finale de l'application.
+\tsecnonum{Précision}
 
-\tsecnonum{Compétences techniques}
+Afin de sélectionner les jeux de 1984 dans la table, chaque requête utilisera la vue suivante (cette partie ne s'appuie que sur la table \emph{Participations})
 
+\begin{codeboxlang}[title=Vue exclusive à 1984]{SQL}
+	CREATE VIEW Participations1984 AS (
+		SELECT Participations.* 
+		FROM Participations
+		JOIN Events USING(eno)
+		JOIN Games USING(gno)
+		WHERE Games.games = '1984 Summer'
+	);
+\end{codeboxlang}
+
+\tsec{Remplir le tableau statistique}
+
+\begin{codeboxlang}[title=Tableau statistique complet]{SQL}
+	SELECT Delegations.region, AVG(Participations.age) AS average_age, COUNT(DISTINCT Participations.ano) AS number_of_athletes, MIN(Participations.age) AS min_age, MAX(Participations.age) AS max_age
+	FROM Delegations JOIN Participations USING(noc)
+	WHERE Delegations.region IS NOT NULL
+	GROUP BY Delegations.region
+	ORDER BY average_age DESC;
+\end{codeboxlang}
+
+\res{\insererfigure{img/version2/tableau_statistique.png}{11cm}{Tableau statistique généré}{v2::tab_stat_gen}}
+
+Pour l'anecdote, les Émirats Arabes Unis apparaissent en haut car l'âge de leurs participants (au nombre de 7) n'est pas renseigné.
+C'était leur première participation aux JO, et ils n'ont pas eu de médaillés.
+
+\href{https://en.wikipedia.org/wiki/United\_Arab\_Emirates\_at\_the\_1984\_Summer\_Olympics}{UAE en 1984}
+
+Note : Les âges non renseignés sont exclus lors du calcul de la moyenne, mais pas du nombre d'athlètes.
+La moyenne d'âge n'est donc pas entièrement représentative, mais elle est plus juste que si on avait pris en compte les âges non renseignés.
+
+\tsec{Comparer l’âge moyen des médaillés et l’âge moyen des participants (tout sexe confondu)}
+
+On cherche d'abord l'âge des médaillés, puis celui des participants.
+\emph{Les participants incluent donc tout le monde, y compris les médaillés.}
+
+\begin{codeboxlang}[title=Âge moyen des médaillés]{SQL}
+	SELECT AVG(Participations.age) AS age_moyen_medailles
+	FROM Participations1984
+	WHERE medal IS NOT NULL ;
+\end{codeboxlang}
+
+\res{24.24}
+
+\begin{codeboxlang}[title=Âge moyen des participants]{SQL}
+	SELECT AVG(Participations.age) AS age_moyen_participants
+	FROM Participations1984 ;
+\end{codeboxlang}
+
+\res{24.00}
+
+\comp{Les médaillés sont en moyenne 6 mois plus jeunes que les participants.}
+\comp{Les participants sont 2\% plus âgés que les médaillés.}
+
+\tsec{Comparer le poids moyen des médaillés et le poids moyen des participants (distinguer les
+hommes et les femmes)}
+
+\tsecnonum{Hommes}
+
+\begin{codeboxlang}[title=Poids moyen des médaillés hommes]{SQL}
+	SELECT AVG(Participations.weight)
+	FROM Participations1984
+	JOIN Athletes USING (ano)
+	WHERE medal IS NOT NULL
+	AND sex='M'
+\end{codeboxlang}
+
+\res{78.89}
+
+\begin{codeboxlang}[title=Poids moyen des hommes]{SQL}
+	SELECT AVG(Participations.weight)
+	FROM Participations1984
+	JOIN Athletes USING (ano)
+	AND sex='M'
+\end{codeboxlang}
+
+\res{74.41}
+
+\comp{On observe que les hommes médaillés sont plus lourds que les hommes participants, de 4480 grammes en moyenne.}
+\comp{Soit une différence de 6\%.}
+
+\tsecnonum{Femmes}
+
+\begin{codeboxlang}[title=Poids moyen des médaillées femmes]{SQL}
+	SELECT AVG(Participations.weight)
+	FROM Participations1984
+	JOIN Athletes USING (ano)
+	WHERE medal IS NOT NULL
+	AND sex='F'
+\end{codeboxlang}
+
+\res{62.16}
+
+\begin{codeboxlang}[title=Poids moyen des femmes]{SQL}
+	SELECT AVG(Participations.weight)
+	FROM Participations1984
+	JOIN Athletes USING (ano)
+	AND sex='F'
+\end{codeboxlang}
+
+\res{58.02}
+
+\comp{On observe que les femmes médaillées sont plus lourdes que les femmes participantes, de 4140 grammes en moyenne.}
+\comp{Soit une différence de 7,13\%.}
+
+\obs{On observe plus ou moins la même tendance chez les deux genres, avec une différence étant sensiblement la même ; les médaillés sont plus lourds que les participants.}
+
+
+\subsection{Partie 3}
+
+\tsecnonum{Sur la période 1992 à 2016, faire la liste des 15 pays qui ont gagné le plus de médailles
+cumulées sur cette période (jeux d’été et hiver confondus)}
+
+\begin{codeboxlang}[title=Top 15 régions par médailles]{sql}
+	SELECT region, COUNT(medal) AS medals_number
+	FROM Participations
+	JOIN Delegations USING(noc)
+	JOIN Events USING(eno)
+	JOIN Games USING(gno)
+	WHERE Games.year BETWEEN 1992 AND 2016
+	GROUP BY region
+	ORDER BY medals_number DESC
+	LIMIT 15;
+\end{codeboxlang}
+
+\res{\insererfigure{img/version3/top15.png}{7cm}{Classement}{fig::v3::top15}}
+
+\tsecnonum{Choisir 5 pays parmi ces 15 et, pour chacun d’eux, représenter l’évolution}
+
+Nous choisirons : 
 \begin{itemize}
-	\item Réalisation d’une \textbf{étude de marché} à partir de sources fiables pour identifier les opportunités et les menaces du secteur.
-	\item Élaboration d’un \textbf{business model} clair et structuré (cible, valeur, canaux, revenus).
-	\item Utilisation d’outils collaboratifs pour \textbf{planifier un projet en équipe} (tableaux Trello, Google Docs, etc.).
-	\item Construction d’un \textbf{argumentaire marketing} basé sur les besoins utilisateurs.
-	\item Notions de \textbf{positionnement stratégique} et différenciation concurrentielle.
+\item Australie
+\item Chine (RPC)
+\item Italie
+\item Espagne
+\item Royaume-Uni
 \end{itemize}
 
-\tsecnonum{Savoir-être}
+En s'appuyant sur la vue suivante, les requêtes seront raccourcies.
 
+On ne va pas inclure le résultat à chaque fois pour ne pas surcharger, car l'étude statistique sera présente et incluera ces résultats.
+
+
+\begin{codeboxlang}[title=Vue exclusive à 1992-2016 et aux 5 pays]{sql}
+	CREATE VIEW ParticipationsPart3 AS (
+	SELECT Participations.*, year, region
+	FROM Participations
+	JOIN Delegations USING(noc)
+	JOIN Events USING(eno)
+	JOIN Games USING(gno)
+	WHERE Games.year BETWEEN 1992 AND 2016
+	AND region IN ('Australia', 'China', 'Italy', 'Spain', 'UK')
+	);
+\end{codeboxlang}
+
+\tsecnonum{Représentation des évolutions}
+
+Les résultats des requêtes sont sauvegardées dans des fichiers CSV correspondants.
+Ces fichiers sont utilisés en entrée d'un petit programme Python (matplotlib) dessinant un nuage de points correspondant aux données regroupées par pays et par jeu. Ce programme calcule également une droite de régression afin de représenter l'évolution globale des données selon leur corrélation. Dans certains cas et selon les paramètres, nous aurons une extrapolation ou une interpolation et il en sera jugé en commentaire. Cette droite ne vaut pas pour vérité absolue et parfois elle ne sera pas fiable.
+
+\textbf{Il est à noter que la largeur des cases est différente car entre un Jeu d'Hiver et un Jeu d'Été, il y a 1 an et demi d'écart alors que dans le cas contrainte, il y a 2 ans et demi d'écart.
+}
+\tsec{Du nombre de participants}
+
+\begin{codeboxlang}[title=Nombre de participants]{sql}
+	SELECT region, games, COUNT(DISTINCT ano) AS contestants_number
+	FROM ParticipationsPart3
+	GROUP BY region, games
+	ORDER BY games ASC, contestants_number DESC;
+\end{codeboxlang}
+
+\insererfigure{img/version3/b1.png}{8.8cm}{Graphique d'évolution - B1}{fig::v3::b1}
+
+\obs{Une observation intéressante est de constater que lorsque le pays est hôte, comme l'Australie en 2000 à Sydney ou la Chine en 2008 à Pékin, il concentre beaucoup plus de participants (et c'est assez logique car en marge de ces évènements beaucoup d'investissements sportifs sont lancés). En dehors de ces évènements, on distingue peu d'évolution.}
+
+\obs{La régression est probablement fortement influencée par le fait des pays hôtes concentrant plus de participants à cette occasion. Désigner une évolution globale pour ces pays n'est donc pas totalement vrai à en voir ces écarts.}
+
+\tsec{Du nombre de médaillés}
+
+\begin{codeboxlang}[title=Nombre de médaillés]{sql}
+	SELECT region, games, COALESCE(COUNT(NULLIF(medal IS NULL, true)), 0) AS medals_number
+	FROM ParticipationsPart3
+	GROUP BY region, games
+	ORDER BY games ASC, medals_number DESC;
+\end{codeboxlang}
+
+\insererfigure{img/version3/b2.png}{8.8cm}{Graphique d'évolution - B2}{fig::v3::b2}
+
+\obs{Dire qu'il y a plus de médaillés est une affirmation dépendant en réalité des pays que l'on traite et de l'évolution de leurs niveaux sportifs. L'Italie a relativement stagné alors que la Chine a beaucoup augmenté (en 2008 à Pékin notamment) ainsi que l'Australie (en 2000 à Sydney).}
+
+\tsec{Du nombre de femmes participantes}
+
+\begin{codeboxlang}[title=Nombre de femmes participantes par pays et année]{sql}
+	SELECT region, games, COUNT(DISTINCT ano) AS women_contestants_number
+	FROM ParticipationsPart3
+	JOIN Athletes USING(ano)
+	WHERE sex = 'F'
+	GROUP BY region, games
+	ORDER BY region ASC, games ASC, women_contestants_number DESC;
+\end{codeboxlang}
+
+\res{\insererfigure{img/version3/nbfemmes.png}{10cm}{Nombre de femmes participantes}{fig::v3::nbfemmes}}
+
+\insererfigure{img/version3/b3.png}{8.8cm}{Graphique d'évolution - B3}{fig::v3::b3}
+	
+\obs{Il y a aujourd'hui de plus en plus de femmes participantes ! Cependant, les jeux d'hiver ont moins participants, donc moins de participantes. Il faut veiller à bien analyser les points pour cette affirmation.}
+
+\tsec{De la proportion de femmes participantes (en comparaison de la proportion d'hommes)}
+
+\begin{codeboxlang}[title=Proportion de femmes participantes par rapport aux hommes par pays et année]{sql}
+	SELECT region, games, COUNT(CASE WHEN sex = 'F' THEN 1 END) * 1.0 / NULLIF(COUNT(CASE WHEN sex = 'M' THEN 1 END), 0) AS women_over_men
+	FROM ParticipationsPart3
+	JOIN Athletes USING(ano)
+	GROUP BY region, games
+	ORDER BY region ASC, games ASC, women_over_men DESC;
+\end{codeboxlang}
+
+\insererfigure{img/version3/b4.png}{8.8cm}{Graphique d'évolution - B4}{fig::v3::b4}
+
+\obs{Les points sont assez rapprochés ; nous pouvons ici compter sur une régression de qualité nous informant que le rapport femmes/hommes parmi les médaillés a pu augmenter de 0.71 (35\% de femmes et 65\% d'hommes) à 1.01 en moyenne (50\% des deux côtés). La situation est, en 2016, dans les pays et selon l'évolution, égalitaire.}
+
+\obs{Les prochaines questions traiteront du nombre de personnes médaillés et non de médailles : j'ai cru avoir fait une erreur donc j'ai beaucoup regardé car les comptes ne suivaient pas mais en réalité, il s'agit souvent d'épreuves collectives (rugby, relais, football...). Par conséquent, il y a donc très souvent plus de personnes médaillées que de médailles}
+
+\tsec{De la proportion de médaillées parmi les femmes}
+
+\begin{codeboxlang}[title=Proportion de médaillées parmi les femmes]{sql}
+	WITH WomenParticipation AS (
+	SELECT region, games, COUNT(DISTINCT ano) AS total_women
+	FROM ParticipationsPart3
+	JOIN Athletes USING(ano)
+	WHERE sex = 'F'
+	GROUP BY region, games
+	),
+	
+	MedalsWomen AS (
+	SELECT region, games, COUNT(DISTINCT ano) AS medal_women
+	FROM ParticipationsPart3
+	JOIN Athletes USING(ano)
+	WHERE sex = 'F' AND medal IS NOT NULL
+	GROUP BY region, games
+	)
+	
+	SELECT wp.region, wp.games, COALESCE(mw.medal_women * 100.0 / NULLIF(wp.total_women, 0) / 100.0, 0) AS medal_women_proportion_over_women
+	FROM WomenParticipation wp
+	LEFT JOIN MedalsWomen mw USING(region, games)
+	ORDER BY region ASC, wp.games ASC, medal_women_proportion_over_women DESC;
+\end{codeboxlang}
+
+\insererfigure{img/version3/b5.png}{8.8cm}{Graphique d'évolution - B5}{fig::v3::b5}
+
+\obs{Les résultats sont très dispersés et on ne peut pas vraiment constater une vraie dynamique.
+La régression nous informe néanmoins que la proportion a quand même augmenté de 0.05 sur la période donnée.}
+
+\obs{Cependant, la régression n'est pas vraiment fiable car il y a trop d'écart entre les valeurs. Une bonne régression doit habituellement concentrer beaucoup de points sur sa ligne et les points sont trop éloignés pour le permettre. Dans cette situation, analyser l'évolution a peu de sens.}
+
+\tsec{De la proportion de femmes parmi les médaillés}
+
+\begin{codeboxlang}[title=Proportion de femmes parmi les médaillées]{sql}
+	WITH AllCombinations AS (
+	SELECT DISTINCT region, games
+	FROM ParticipationsPart3
+	),
+	
+	MedalsPeople AS (
+	SELECT region, games, COUNT(DISTINCT ano) AS count_medal
+	FROM ParticipationsPart3
+	WHERE medal IS NOT NULL
+	GROUP BY region, games
+	),
+	
+	MedalsWomen AS (
+	SELECT region, games, COUNT(DISTINCT ano) AS count_medal_women
+	FROM ParticipationsPart3
+	JOIN Athletes USING(ano)
+	WHERE sex = 'F' AND medal IS NOT NULL
+	GROUP BY region, games
+	)
+	
+	SELECT ac.region, ac.games, COALESCE(mw.count_medal_women * 100.0 / NULLIF(mp.count_medal, 0) / 100.0, 0) AS medal_women_proportion_over_global
+	FROM AllCombinations ac
+	LEFT JOIN MedalsPeople mp USING(region, games)
+	LEFT JOIN MedalsWomen mw USING(region, games)
+	ORDER BY ac.region ASC, ac.games ASC, medal_women_proportion_over_global DESC;
+\end{codeboxlang}
+
+\insererfigure{img/version3/b6.png}{8.8cm}{Graphique d'évolution - B6}{fig::v3::b6}
+
+\obs{Le rendu ressemble un peu au précédent, néanmoins on peut distinguer plus clairement les écarts entre les pays, avec moins de droites se coupant. La progression par année tend vers une égalité parfaite (0.50), avec pour ces pays et dans cette période, une fin démontrant que la proportion de femmes parmi les médaillés est égale à celle des hommes.}
+
+\obs{Les jeux d'hiver sont en réalité un peu le cadeau empoisonné de ce jeu de données. En effet, il y a 5 à 10 fois moins de participants, donc les résultats sont très sensibles au hasard (exemple : 8 participants, 0 médailles, donc 0 alors que même une médaille aurait fait 0.125). Ainsi, on se retrouve à compter les proportions d'hiver et d'été au même niveau alors qu'en réalité elles concernent des nombres de participants bien différents. Les proportions à étudier devraient être les jeux d'été car ayant plus de données. Cependant, si l'objet d'études est l'évolution uniquement, combiner les deux saisons n'est pas un problème.}
+
+\obs{Sur ces exemples, on peut globalement constater : 
 \begin{itemize}
-	\item Capacité à \textbf{travailler en équipe}, en répartissant efficacement les rôles selon les compétences de chacun.
-	\item \textbf{Autonomie} dans la recherche d’informations pertinentes et l’organisation du travail.
-	\item \textbf{Esprit critique} dans l’analyse de la faisabilité et la pertinence des idées.
-	\item \textbf{Créativité} pour imaginer une solution innovante répondant à un besoin réel.
-	\item \textbf{Communication claire et synthétique}, essentielle pour défendre une idée et convaincre un public.
-\end{itemize}
+	\item Une hausse du niveau des femmes
+	\item Une proportion devenant égale à celle des hommes
+	\item Une meilleure représentation parmi les participants
+\end{itemize}}
 
-\section{SAÉ 2.06 - Réalisation d'une vidéo sur un point de science informatique}
+\obs{En conclusion, ces évolutions peuvent avoir du sens selon la qualité et la corrélation des données entre elles. Sans ces paramètres, ces évolutions peuvent parfois être utiles, mais en y prêtant une grande attention tout de même. Dans tous les cas, on préfère une régression de qualité. Il faut aussi rappeler que ces évolutions ne valent que pour les pays sélectionnés et pour la période. La Chine a toujours eu plus d'inclusion féminine aux Jeux, donc l'ensemble est un peu tiré vers le haut de ce fait.}
 
-\subsection{Présentation}
+\section{Pour aller plus loin}
 
-\subsection{Quelle était l'application ?}
+\tsecnonum{Ici, nous allons plus loin que le sujet !}
 
-\subsection{Qu'ai-je appris ?}
+Nous nous baserons ici sur tous les pays.
 
-2 pages minimum par section.
+\tsec{L'impact du changement de poids des athlètes}
 
-clarté 
-concision
-compréhension
-conviction
+J'aurais aimé faire une requête concernant les athlètes qui ont changé de poids et l'impact de ce changement sur leur poids, or la base n'admet qu'un seul poids unique pour chaque athlète. Il en va de même pour la taille (qui ne peut logiquement pas changer après 20 ans).
+
+\tsec{L'âge moyen des médaillés d'un sport}
+
+On pense souvent qu'il faut être jeune dans le sport. Ici nous analyserons quelles disciplines et quels sports demandent une préparation dès la jeunesse.
+
+\tsecnonum{Par "discipline"}
+
+\begin{codeboxlang}[title=Age moyen des médaillés par discipline]{sql}
+	SELECT event, coalesce(ROUND(AVG(age),2),0) as average_age
+	FROM Participations
+	JOIN Events USING(eno)
+	JOIN Disciplines USING(dno)
+	WHERE medal IS NOT NULL
+	GROUP BY event
+	ORDER BY average_age desc;
+\end{codeboxlang}
+
+\res{\insererfigure{img/version4/disciplinerange.png}{12cm}{Age moyen des médaillés par discipline}{fig::v4::discrange}}
+
+\tsecnonum{Par "sport"}
+
+\begin{codeboxlang}[title=Age moyen des médaillés par sport]{sql}
+	SELECT sport, coalesce(ROUND(AVG(age),2),0) as average_age
+	FROM Participations
+	JOIN Events USING(eno)
+	JOIN Disciplines USING(dno)
+	WHERE medal IS NOT NULL
+	GROUP BY sport
+	ORDER BY average_age desc;
+\end{codeboxlang}
+
+\res{\insererfigure{img/version4/sportrange.png}{12cm}{Age moyen des médaillés par sport}{fig::v4::sportrange}}
+
+\obs{Les sports avec les médaillés les plus âgés en moyenne sont des sports étant plus relatifs à une longue expérience.}
+
+\tsec{Le physique fait-il la différence ?}
+
+Avons-nous réellement plus de chances d'être médaillé si nous avons le corps parfait pour notre sport ?
+
+\tsecnonum{Le physique des médaillés}
+
+\begin{codeboxlang}[title=Physique des médaillés par sport]{sql}
+	CREATE VIEW BodyMedalStats AS (
+	SELECT sport, COALESCE(AVG(height),0) AS avg_height, COALESCE(AVG(weight),0) AS avg_weight
+	FROM Participations
+	JOIN Events USING(eno)
+	JOIN Disciplines USING(dno)
+	WHERE medal IS NOT NULL
+	GROUP BY sport
+	);
+\end{codeboxlang}
+
+\res{\insererfigure{img/version4/bodymedal.png}{10cm}{Physique des médaillés par sport}{fig::v4::bodymedal}}
+
+\tsecnonum{Le physique des non médaillés}
+
+\begin{codeboxlang}[title=Physique des non-médaillés par sport]{sql}
+	CREATE VIEW BodyNoMedalStats AS (
+	SELECT sport, COALESCE(AVG(height),0) AS avg_height, COALESCE(AVG(weight),0) AS avg_weight
+	FROM Participations
+	JOIN Events USING(eno)
+	JOIN Disciplines USING(dno)
+	WHERE medal IS NULL
+	GROUP BY sport
+	);
+\end{codeboxlang}
+
+\res{\insererfigure{img/version4/bodynomedal.png}{10cm}{Physique des non-médaillés par sport}{fig::v4::bodynomedal}
+}
+
+\tsecnonum{Les plus grands favorisés}
+
+\begin{codeboxlang}[title=]{sql}
+	SELECT sport, b1.avg_height - b2.avg_height AS height_diff
+	FROM BodyMedalStats b1
+	JOIN BodyNoMedalStats b2 USING(sport) 
+	WHERE b1.avg_height - b2.avg_height > 0
+	ORDER BY height_diff DESC;
+\end{codeboxlang}
+
+\res{\insererfigure{img/version4/heightplus.png}{10cm}{}{fig::v4::taller}}
+
+\tsecnonum{Les plus petits favorisés}
+
+\begin{codeboxlang}[title=]{sql}
+	SELECT sport, b1.avg_height - b2.avg_height AS height_diff
+	FROM BodyMedalStats b1
+	JOIN BodyNoMedalStats b2 USING(sport) 
+	WHERE b1.avg_height - b2.avg_height < 0
+	ORDER BY height_diff DESC;
+\end{codeboxlang}
+
+\res{\insererfigure{img/version4/heightneg.png}{10cm}{}{fig::v4::smaller}}
+
+\tsecnonum{Les plus lourds favorisés}
+
+\begin{codeboxlang}[title=]{sql}
+	SELECT sport, b1.avg_weight - b2.avg_weight AS weight_diff
+	FROM BodyMedalStats b1
+	JOIN BodyNoMedalStats b2 USING(sport) 
+	WHERE b1.avg_weight - b2.avg_weight > 0
+	ORDER BY weight_diff DESC;
+\end{codeboxlang}
+
+\res{\insererfigure{img/version4/weightplus.png}{10cm}{}{fig::v4::heavier}}
+
+\tsecnonum{Les plus maigres favorisés}
+\begin{codeboxlang}[title=]{sql}
+	SELECT sport, b1.avg_weight - b2.avg_weight AS weight_diff
+	FROM BodyMedalStats b1
+	JOIN BodyNoMedalStats b2 USING(sport) 
+	WHERE b1.avg_weight - b2.avg_weight < 0
+	ORDER BY weight_diff DESC;
+\end{codeboxlang}
+
+\res{\insererfigure{img/version4/weightneg.png}{10cm}{}{fig::v4::thin}}
+
+\tsecnonum{Les résultats sont-ils cohérents ?}
+
+\obs{On observe sans surprise que le basketball ou la nage ont des médaillés en moyenne plus grands. L'inverse vaut également pour la gymnastique. Les autres différences peuvent également être sociologiques étant dû au mode de vie des médaillés, notamment pour le poids, avec des médaillés de tennis de tables en moyenne 1.73kg moins lourds que les non médaillés. Néanmoins aux Jeux quelqu'un de non médaillé reste tout de même un grand sportif qui a su se hisser aux plus grandes compétitions de son sport, donc il est déjà plus probable qu'il satisfasse les critères physiques de sa discipline que n'importe qui (Basketball : les non-médaillés font 1m90 en moyenne).}
+
+
+\merci
 
 \end{document}
+
 

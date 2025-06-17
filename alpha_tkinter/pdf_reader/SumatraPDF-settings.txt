@@ -86,16 +86,36 @@ CustomScreenDPI = 0
 
 FileStates [
 	[
+		FilePath = C:\Users\lab\Documents\BUT1\Semestre 2\SAé\SAE204\stats\rapport\S2-C_SAE2.04_LAVOGIEZ_Rapport-Stats.pdf
+		Favorites [
+		]
+		IsPinned = false
+		IsMissing = false
+		OpenCount = 1
+		UseDefaultState = false
+		DisplayMode = continuous
+		ScrollPos = -1 -1
+		PageNo = 1
+		Zoom = fit page
+		Rotation = 0
+		WindowState = 1
+		WindowPos = 952 0 976 1038
+		ShowToc = true
+		SidebarDx = 194
+		DisplayR2L = false
+		ReparseIdx = 0
+	]
+	[
 		FilePath = C:\Users\lab\Documents\BUT1\AutomaTeX\alpha_tkinter\output\main.pdf
 		Favorites [
 		]
 		IsPinned = false
 		IsMissing = false
-		OpenCount = 4
+		OpenCount = 6
 		UseDefaultState = false
 		DisplayMode = continuous
-		ScrollPos = -1 8.01027
-		PageNo = 9
+		ScrollPos = -1 382.22
+		PageNo = 1
 		Zoom = fit width
 		Rotation = 0
 		WindowState = 1
@@ -112,14 +132,23 @@ SessionData [
 			[
 				FilePath = C:\Users\lab\Documents\BUT1\AutomaTeX\alpha_tkinter\output\main.pdf
 				DisplayMode = continuous
-				PageNo = 9
+				PageNo = 1
 				Zoom = fit width
 				Rotation = 0
-				ScrollPos = -1 8.01027
+				ScrollPos = -1 382.22
 				ShowToc = false
 			]
+			[
+				FilePath = C:\Users\lab\Documents\BUT1\Semestre 2\SAé\SAE204\stats\rapport\S2-C_SAE2.04_LAVOGIEZ_Rapport-Stats.pdf
+				DisplayMode = continuous
+				PageNo = 1
+				Zoom = fit page
+				Rotation = 0
+				ScrollPos = -1 -1
+				ShowToc = true
+			]
 		]
-		TabIndex = 2
+		TabIndex = 3
 		WindowState = 1
 		WindowPos = 952 0 976 1038
 		SidebarDx = 194

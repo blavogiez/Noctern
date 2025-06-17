@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk, messagebox, filedialog, simpledialog
+from tkinter import ttk, messagebox, filedialog
 from tkinter.font import Font
 from PIL import Image, ImageTk
 from pdf2image import convert_from_path
@@ -9,28 +9,41 @@ import os
 import webbrowser
 import platform
 
+fichier_actuel = None  # ⬅️ Pour suivre le fichier ouvert
+
 ### --- LaTeX COMPILATION LOGIC --- ###
 
 def compiler_latex():
+    global fichier_actuel
     code = editor.get("1.0", tk.END)
-    os.makedirs("output", exist_ok=True)
-    tex_path = os.path.join("output", "main.tex")
-    
-    with open(tex_path, "w", encoding="utf-8") as f:
-        f.write(code)
+
+    if fichier_actuel:
+        dossier_source = os.path.dirname(fichier_actuel)
+        nom_fichier = os.path.basename(fichier_actuel)
+        with open(fichier_actuel, "w", encoding="utf-8") as f:
+            f.write(code)
+    else:
+        dossier_source = "output"
+        os.makedirs(dossier_source, exist_ok=True)
+        fichier_actuel = os.path.join(dossier_source, "main.tex")
+        nom_fichier = "main.tex"
+        with open(fichier_actuel, "w", encoding="utf-8") as f:
+            f.write(code)
 
     try:
         result = subprocess.run(
-            ["pdflatex", "-interaction=nonstopmode", "main.tex"],
-            cwd="output",
+            ["pdflatex", "-interaction=nonstopmode", nom_fichier],
+            cwd=dossier_source,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             timeout=15,
         )
 
+        pdf_path = os.path.join(dossier_source, nom_fichier.replace(".tex", ".pdf"))
+
         if result.returncode == 0:
             messagebox.showinfo("✅ Succès", "Compilation LaTeX réussie.")
-            afficher_pdf("output/main.pdf")
+            afficher_pdf(pdf_path)
         else:
             log = result.stdout.decode("utf-8", errors="ignore")
             messagebox.showerror("❌ Erreur LaTeX", "Erreur de compilation. Voir les logs.")
@@ -56,6 +69,44 @@ def afficher_pdf(pdf_path):
         subprocess.Popen([lecteur_pdf, pdf_path])
     except Exception as e:
         messagebox.showerror("Erreur ouverture PDF", str(e))
+
+
+### --- FONCTIONS FICHIER --- ###
+
+def ouvrir_fichier():
+    global fichier_actuel
+    filepath = filedialog.askopenfilename(
+        title="Ouvrir un fichier",
+        filetypes=[("Fichiers LaTeX", "*.tex"), ("Fichiers texte", "*.txt"), ("Tous les fichiers", "*.*")]
+    )
+    if filepath:
+        try:
+            with open(filepath, "r", encoding="utf-8") as f:
+                contenu = f.read()
+                editor.delete("1.0", tk.END)
+                editor.insert("1.0", contenu)
+            fichier_actuel = filepath
+        except Exception as e:
+            messagebox.showerror("Erreur", f"Impossible d’ouvrir le fichier : {e}")
+
+def enregistrer_fichier():
+    global fichier_actuel
+    if fichier_actuel:
+        try:
+            contenu = editor.get("1.0", tk.END)
+            with open(fichier_actuel, "w", encoding="utf-8") as f:
+                f.write(contenu)
+            messagebox.showinfo("Succès", f"Fichier enregistré :\n{fichier_actuel}")
+        except Exception as e:
+            messagebox.showerror("Erreur", f"Erreur lors de l’enregistrement : {e}")
+    else:
+        fichier_actuel = filedialog.asksaveasfilename(
+            defaultextension=".tex",
+            filetypes=[("Fichiers LaTeX", "*.tex"), ("Fichiers texte", "*.txt"), ("Tous les fichiers", "*.*")],
+            title="Enregistrer le fichier"
+        )
+        if fichier_actuel:
+            enregistrer_fichier()
 
 
 ### --- LLM TEXT LOGIC --- ###
@@ -164,8 +215,8 @@ def generer_texte_depuis_prompt():
 Voici le contexte autour du curseur :
 "{contexte}"
 
-N'inclus absolument pas de texte autre que la réponse. Donne juste la réponse, sans autre message.
-Réponds de manière concise et naturelle, en respectant strictement la langue du prompt et du contexte.
+N'inclus absolument pas de texte autre que la réponse (avant la réponse). Donne juste la réponse, sans autre message. 
+Réponds de manière concise et naturelle en français uniquement.
 """
 
         try:
@@ -188,9 +239,10 @@ Réponds de manière concise et naturelle, en respectant strictement la langue d
     entry_prompt.focus()
 
 
-### --- INTERFACE MODERNE --- ###
+### --- INTERFACE --- ###
 
 def setup_interface():
+    global editor, root
     root = tk.Tk()
     root.title("🧠 AutomaTeX")
     root.geometry("1200x700")
@@ -204,44 +256,29 @@ def setup_interface():
     top_frame = ttk.Frame(root, padding=5)
     top_frame.pack(fill="x")
 
-    btn_compile = ttk.Button(top_frame, text="🛠️ Compiler LaTeX", command=compiler_latex)
-    btn_compile.pack(side="left", padx=5)
-
-    btn_completion = ttk.Button(top_frame, text="✨ Compléter (Ctrl+Shift+C)", command=complete_sentence)
-    btn_completion.pack(side="left", padx=5)
-
-    btn_prompt = ttk.Button(top_frame, text="🎯 Génération IA (Ctrl+Shift+G)", command=generer_texte_depuis_prompt)
-    btn_prompt.pack(side="left", padx=5)
+    ttk.Button(top_frame, text="🛠️ Compiler LaTeX", command=compiler_latex).pack(side="left", padx=5)
+    ttk.Button(top_frame, text="✨ Compléter (Ctrl+Shift+C)", command=complete_sentence).pack(side="left", padx=5)
+    ttk.Button(top_frame, text="🎯 Génération IA (Ctrl+Shift+G)", command=generer_texte_depuis_prompt).pack(side="left", padx=5)
+    ttk.Button(top_frame, text="📂 Ouvrir", command=ouvrir_fichier).pack(side="left", padx=5)
+    ttk.Button(top_frame, text="💾 Enregistrer", command=enregistrer_fichier).pack(side="left", padx=5)
 
     main_frame = tk.PanedWindow(root, orient=tk.HORIZONTAL, sashrelief="raised", bg="#e0e0e0")
     main_frame.pack(fill="both", expand=True)
 
     editor_frame = ttk.Frame(main_frame)
-    global editor
     editor = tk.Text(editor_frame, wrap="word", font=font_editor, undo=True, bg="#ffffff", fg="#333333")
     editor.pack(fill="both", expand=True, padx=2, pady=2)
     main_frame.add(editor_frame, stretch="always")
 
-    pdf_frame = ttk.Frame(main_frame)
-    global pdf_preview
-    pdf_preview = tk.Label(pdf_frame, background="white")
-    pdf_preview.pack(fill="both", expand=True)
-    main_frame.add(pdf_frame, width=450)
-
-    try:
-        with open("res/res.txt", "r", encoding="utf-8") as f:
-            content = f.read()
-            editor.insert("1.0", content)
-    except Exception as e:
-        messagebox.showerror("Erreur", f"Impossible de charger le fichier exemple : {e}")
-
     root.bind_all("<Control-Shift-G>", lambda event: generer_texte_depuis_prompt())
     root.bind_all("<Control-Shift-C>", lambda event: complete_sentence())
+    root.bind_all("<Control-o>", lambda event: ouvrir_fichier())
+    root.bind_all("<Control-s>", lambda event: enregistrer_fichier())
 
     return root
 
+### --- MAIN --- ###
 
-### --- MAIN EXECUTION --- ###
 if __name__ == "__main__":
     root = setup_interface()
     root.mainloop()

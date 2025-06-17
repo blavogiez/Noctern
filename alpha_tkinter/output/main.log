@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.25 (MiKTeX 24.1) (preloaded format=pdflatex 2025.5.18)  16 JUN 2025 16:16
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (MiKTeX 24.1) (preloaded format=pdflatex 2025.5.18)  18 JUN 2025 00:39
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1147,127 +1147,100 @@ tawesome5
 
 (C:\Users\lab\AppData\Local\Programs\MiKTeX\tex/latex/fontawesome5\fontawesome5
 -mapping.def)))
-(C:\Users\lab\AppData\Local\Programs\MiKTeX\tex/latex/uml\uml.sty
-Package: uml 
+(C:\Users\lab\AppData\Local\Programs\MiKTeX\tex/generic/pgf/frontendlayer/tikz/
+libraries\tikzlibrarypositioning.code.tex
+File: tikzlibrarypositioning.code.tex 2023-01-15 v3.1.10 (3.1.10)
+)
+(C:\Users\lab\AppData\Local\Programs\MiKTeX\tex/generic/pgf/libraries\pgflibrar
+yarrows.meta.code.tex
+File: pgflibraryarrows.meta.code.tex 2023-01-15 v3.1.10 (3.1.10)
+\pgfarrowinset=\dimen329
+\pgfarrowlength=\dimen330
+\pgfarrowwidth=\dimen331
+\pgfarrowlinewidth=\dimen332
+)
+(C:\Users\lab\AppData\Local\Programs\MiKTeX\tex/latex/pgf-umlcd\pgf-umlcd.sty
+Package: pgf-umlcd 2022/05/22 v0.3 Some LaTeX macros for UML Class Diagrams.
 
-(C:\Users\lab\AppData\Local\Programs\MiKTeX\tex/latex/pstricks\pstricks.sty
-Package: pstricks 2024/02/02 v0.75 LaTeX wrapper for `PSTricks' (RN,HV)
+(C:\Users\lab\AppData\Local\Programs\MiKTeX\tex/latex/pgf-umlcd\tikzlibraryumlc
+d.code.tex
+(C:\Users\lab\AppData\Local\Programs\MiKTeX\tex/generic/pgf/frontendlayer/tikz/
+libraries\tikzlibraryarrows.code.tex
+File: tikzlibraryarrows.code.tex 2023-01-15 v3.1.10 (3.1.10)
 
-(C:\Users\lab\AppData\Local\Programs\MiKTeX\tex/generic/xkeyval\pst-xkey.tex
-File: pst-xkey.tex 2005/11/25 v1.6 PSTricks specialization of xkeyval (HA)
-)
-(C:\Users\lab\AppData\Local\Programs\MiKTeX\tex/generic/pstricks\pstricks.tex
-(C:\Users\lab\AppData\Local\Programs\MiKTeX\tex/generic/pstricks\pst-fp.tex
-`pst-fp' v0.06, 2020/11/20 (hv)
-\pstFP@xs=\count391
-\pstFP@xia=\count392
-\pstFP@xib=\count393
-\pstFP@xfa=\count394
-\pstFP@xfb=\count395
-\pstFP@rega=\count396
-\pstFP@regb=\count397
-\pstFP@regs=\count398
-\pstFP@times=\count399
-)
-\psLoopIndex=\count400
+(C:\Users\lab\AppData\Local\Programs\MiKTeX\tex/generic/pgf/libraries\pgflibrar
+yarrows.code.tex
+File: pgflibraryarrows.code.tex 2023-01-15 v3.1.10 (3.1.10)
+\arrowsize=\dimen333
+))
+(C:\Users\lab\AppData\Local\Programs\MiKTeX\tex/generic/pgf/frontendlayer/tikz/
+libraries\tikzlibraryshapes.multipart.code.tex
+File: tikzlibraryshapes.multipart.code.tex 2023-01-15 v3.1.10 (3.1.10)
 
-`PSTricks' v3.21  <2024/11/16> (tvz,hv)
-\pst@dima=\dimen329
-\pst@dimb=\dimen330
-\pst@dimc=\dimen331
-\pst@dimd=\dimen332
-\pst@dimg=\dimen333
-\pst@dimh=\dimen334
-\pst@dimm=\dimen335
-\pst@dimn=\dimen336
-\pst@dimo=\dimen337
-\pst@dimp=\dimen338
-\pst@hbox=\box102
-\pst@ibox=\box103
-\pst@boxg=\box104
-\pst@cnta=\count401
-\pst@cntb=\count402
-\pst@cntc=\count403
-\pst@cntd=\count404
-\pst@cntg=\count405
-\pst@cnth=\count406
-\pst@cntm=\count407
-\pst@cntn=\count408
-\pst@cnto=\count409
-\pst@cntp=\count410
-\@zero=\count411
-\pst@toks=\toks53
---- We are running latex or xelatex ---
-(C:\Users\lab\AppData\Local\Programs\MiKTeX\tex/generic/pstricks\pstricks.con)
-(C:\Users\lab\AppData\Local\Programs\MiKTeX\tex/generic/pstricks\pstricks-color
-.tex)
-\psunit=\dimen339
-\psxunit=\dimen340
-\psyunit=\dimen341
-\pst@C@@rType=\count412
-\pslinewidth=\dimen342
-\psk@startLW=\dimen343
-\psk@endLW=\dimen344
-
-(C:\Users\lab\AppData\Local\Programs\MiKTeX\tex/generic/pstricks\pstricks-arrow
-s.tex
-\pshooklength=\dimen345
-\pshookwidth=\dimen346
+(C:\Users\lab\AppData\Local\Programs\MiKTeX\tex/generic/pgf/libraries/shapes\pg
+flibraryshapes.multipart.code.tex
+File: pgflibraryshapes.multipart.code.tex 2023-01-15 v3.1.10 (3.1.10)
+\pgfnodepartlowerbox=\box102
+\pgfnodeparttwobox=\box103
+\pgfnodepartthreebox=\box104
+\pgfnodepartfourbox=\box105
+\pgfnodeparttwentybox=\box106
+\pgfnodepartnineteenbox=\box107
+\pgfnodeparteighteenbox=\box108
+\pgfnodepartseventeenbox=\box109
+\pgfnodepartsixteenbox=\box110
+\pgfnodepartfifteenbox=\box111
+\pgfnodepartfourteenbox=\box112
+\pgfnodepartthirteenbox=\box113
+\pgfnodeparttwelvebox=\box114
+\pgfnodepartelevenbox=\box115
+\pgfnodeparttenbox=\box116
+\pgfnodepartninebox=\box117
+\pgfnodeparteightbox=\box118
+\pgfnodepartsevenbox=\box119
+\pgfnodepartsixbox=\box120
+\pgfnodepartfivebox=\box121
+))
+(C:\Users\lab\AppData\Local\Programs\MiKTeX\tex/generic/pgf/frontendlayer/tikz/
+libraries\tikzlibrarybackgrounds.code.tex
+File: tikzlibrarybackgrounds.code.tex 2023-01-15 v3.1.10 (3.1.10)
+\pgf@layerbox@background=\box122
+\pgf@layerboxsaved@background=\box123
 )
-\pst@customdefs=\toks54
-
-(C:\Users\lab\AppData\Local\Programs\MiKTeX\tex/generic/pstricks\pstricks-dots.
-tex)
-\pslinearc=\dimen347
-\pst@symbolStep=\dimen348
-\pst@symbolWidth=\dimen349
-\pst@symbolLinewidth=\dimen350
-\everypsbox=\toks55
-\psframesep=\dimen351
-\pslabelsep=\dimen352
-\sh@wgridXunit=\dimen353
-\sh@wgridYunit=\dimen354
-\pst@shift=\dimen355
-\ps@imagectr=\count413
-
-(C:\Users\lab\AppData\Local\Programs\MiKTeX\tex/generic/pstricks\pstricks.con))
-File: pstricks.tex 2024/11/16 v3.21 `PSTricks' (tvz,hv)
-(C:\Users\lab\AppData\Local\Programs\MiKTeX\tex/generic/pstricks\pst-fp.tex
-`pst-fp' v0.06, 2020/11/20 (hv))
-File: pst-fp.tex 2020/11/20 v0.06 `PST-fp' (hv)
+(C:\Users\lab\AppData\Local\Programs\MiKTeX\tex/generic/pgf/frontendlayer/tikz/
+libraries\tikzlibraryfit.code.tex
+File: tikzlibraryfit.code.tex 2023-01-15 v3.1.10 (3.1.10)
 )
-(C:\Users\lab\AppData\Local\Programs\MiKTeX\tex/latex/pst-node\pst-node.sty
-Package: pst-node 2012/09/18 v1.01 LaTeX wrapper for `pst-node' (HV)
-Package: pst-node 2010/04/22 package wrapper for pst-node.tex
-
-(C:\Users\lab\AppData\Local\Programs\MiKTeX\tex/generic/pst-node\pst-node.tex
- v1.44, 2024/07/04
-\psrow=\count414
-\pscol=\count415
-\psmatrixcnt=\count416
-\psrowsep=\skip86
-\pscolsep=\skip87
-\pst@args=\count417
-\num@pts=\count418
-\pst@argcnt=\count419
+\pgf@layerbox@connectionlayers=\box124
+\pgf@layerboxsaved@connectionlayers=\box125
+\pgfumlcd@ClassAttributesNum=\count391
+\pgfumlcd@ClassOperationsNum=\count392
+\pgfumlcd@ClassAbstractClassNum=\count393
+\pgfumlcd@ClassInterfaceNum=\count394
+\pgfumlcd@ClassSplitPartNum=\count395
+))
+(C:\Users\lab\AppData\Local\Programs\MiKTeX\tex/latex/booktabs\booktabs.sty
+Package: booktabs 2020/01/12 v1.61803398 Publication quality tables
+\heavyrulewidth=\dimen334
+\lightrulewidth=\dimen335
+\cmidrulewidth=\dimen336
+\belowrulesep=\dimen337
+\belowbottomsep=\dimen338
+\aboverulesep=\dimen339
+\abovetopsep=\dimen340
+\cmidrulesep=\dimen341
+\cmidrulekern=\dimen342
+\defaultaddspace=\dimen343
+\@cmidla=\count396
+\@cmidlb=\count397
+\@aboverulesep=\dimen344
+\@belowrulesep=\dimen345
+\@thisruleclass=\count398
+\@lastruleclass=\count399
+\@thisrulewidth=\dimen346
 )
-File: pst-node.tex 2024/07/04 1.44 `pst-node' (tvz,hv)
-)
-(C:\Users\lab\AppData\Local\Programs\MiKTeX\tex/latex/xkeyval\pst-xkey.sty
-Package: pst-xkey 2005/11/25 v1.6 package wrapper for pst-xkey.tex (HA)
-)
-(C:\Users\lab\AppData\Local\Programs\MiKTeX\tex/latex/relsize\relsize.sty
-Package: relsize 2013/03/29 ver 4.1
-)
-\umlArmA=\skip88
-\umlArmB=\skip89
-\umlSymbolHeightDefault=\skip90
-\umlSymbolWidthDefault=\skip91
-\umlInnerWidthDefault=\skip92
-\umlInnerRadiusDefault=\skip93
-\umlNodeSep=\skip94
-\umlPlaceNodeX=\skip95
-\umlPlaceNodeY=\skip96
+(C:\Users\lab\AppData\Local\Programs\MiKTeX\tex/latex/setspace\setspace.sty
+Package: setspace 2022/12/04 v6.7b set line spacing
 )
 (main.aux
 
@@ -1297,32 +1270,32 @@ LaTeX Warning: Label `fig: fig::' multiply defined.
 )
 \openout1 = `main.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 59.
-LaTeX Font Info:    ... okay on input line 59.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 59.
-LaTeX Font Info:    ... okay on input line 59.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 59.
-LaTeX Font Info:    ... okay on input line 59.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 59.
-LaTeX Font Info:    ... okay on input line 59.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 59.
-LaTeX Font Info:    ... okay on input line 59.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 59.
-LaTeX Font Info:    ... okay on input line 59.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 59.
-LaTeX Font Info:    ... okay on input line 59.
-LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 59.
-LaTeX Font Info:    ... okay on input line 59.
-LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 59.
-LaTeX Font Info:    ... okay on input line 59.
-LaTeX Info: Redefining \degres on input line 59.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 17.
+LaTeX Font Info:    ... okay on input line 17.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 17.
+LaTeX Font Info:    ... okay on input line 17.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 17.
+LaTeX Font Info:    ... okay on input line 17.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 17.
+LaTeX Font Info:    ... okay on input line 17.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 17.
+LaTeX Font Info:    ... okay on input line 17.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 17.
+LaTeX Font Info:    ... okay on input line 17.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 17.
+LaTeX Font Info:    ... okay on input line 17.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 17.
+LaTeX Font Info:    ... okay on input line 17.
+LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 17.
+LaTeX Font Info:    ... okay on input line 17.
+LaTeX Info: Redefining \degres on input line 17.
 Package french.ldf Info: Setting StandardItemizeEnv=true for
 (french.ldf)             compatibility with enumitem package,
-(french.ldf)             reported on input line 59.
+(french.ldf)             reported on input line 17.
 Package french.ldf Info: Setting StandardEnumerateEnv=true for
 (french.ldf)             compatibility with enumitem package,
-(french.ldf)             reported on input line 59.
-LaTeX Info: Redefining \up on input line 59.
+(french.ldf)             reported on input line 17.
+LaTeX Info: Redefining \up on input line 17.
 
 (C:\Users\lab\AppData\Local\Programs\MiKTeX\tex/latex/translations/dicts\transl
 ations-basic-dictionary-french.trsl
@@ -1330,21 +1303,21 @@ File: translations-basic-dictionary-french.trsl (french translation file `trans
 lations-basic-dictionary')
 )
 Package translations Info: loading dictionary `translations-basic-dictionary' f
-or `french'. on input line 59.
+or `french'. on input line 17.
 
 (C:\Users\lab\AppData\Local\Programs\MiKTeX\tex/context/base/mkii\supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
-\scratchcounter=\count420
-\scratchdimen=\dimen356
-\scratchbox=\box105
-\nofMPsegments=\count421
-\nofMParguments=\count422
-\everyMPshowfont=\toks56
-\MPscratchCnt=\count423
-\MPscratchDim=\dimen357
-\MPnumerator=\count424
-\makeMPintoPDFobject=\count425
-\everyMPtoPDFconversion=\toks57
+\scratchcounter=\count400
+\scratchdimen=\dimen347
+\scratchbox=\box126
+\nofMPsegments=\count401
+\nofMParguments=\count402
+\everyMPshowfont=\toks53
+\MPscratchCnt=\count403
+\MPscratchDim=\dimen348
+\MPnumerator=\count404
+\makeMPintoPDFobject=\count405
+\everyMPtoPDFconversion=\toks54
 )
 (C:\Users\lab\AppData\Local\Programs\MiKTeX\tex/latex/epstopdf-pkg\epstopdf-bas
 e.sty
@@ -1359,8 +1332,8 @@ Package caption Info: Begin \AtBeginDocument code.
 Package caption Info: hyperref package is loaded.
 Package caption Info: listings package is loaded.
 Package caption Info: End \AtBeginDocument code.
-\c@lstlisting=\count426
-Package hyperref Info: Link coloring OFF on input line 59.
+\c@lstlisting=\count406
+Package hyperref Info: Link coloring OFF on input line 17.
  (main.out) (main.out)
 \@outlinefile=\write5
 \openout5 = `main.out'.
@@ -1403,37 +1376,19 @@ Package hyperref Info: Link coloring OFF on input line 59.
 \@nomenclaturefile=\write6
 \openout6 = `main.nlo'.
 
-Package nomencl Info: Writing nomenclature file main.nlo on input line 75.
+Package nomencl Info: Writing nomenclature file main.nlo on input line 31.
 <logos/logo.png, id=202, 1204.5pt x 232.87pt>
 File: logos/logo.png Graphic file (type png)
 <use logos/logo.png>
-Package pdftex.def Info: logos/logo.png  used on input line 76.
+Package pdftex.def Info: logos/logo.png  used on input line 32.
 (pdftex.def)             Requested size: 364.19667pt x 70.4123pt.
 <logos/folded.png, id=204, 867.24pt x 601.24625pt>
 File: logos/folded.png Graphic file (type png)
 <use logos/folded.png>
-Package pdftex.def Info: logos/folded.png  used on input line 76.
+Package pdftex.def Info: logos/folded.png  used on input line 32.
 (pdftex.def)             Requested size: 179.25421pt x 124.27461pt.
 [1
-Non-PDF special ignored!
-<special> header=pstricks.pro
-Non-PDF special ignored!
-<special> header=pst-algparser.pro
-Non-PDF special ignored!
-<special> header=pst-tools.pro
-Non-PDF special ignored!
-<special> header=pst-dots.pro
-Non-PDF special ignored!
-<special> header=pst-node.pro
 
-Non-PDF special ignored!
-<special> ps: /pssetRGBcolor /setrgbcolor load def /pssetCMYKcolor /setcmyk...
-Non-PDF special ignored!
-<special> ps:tx@Dict begin  gsave STV CP T /ps@rot 0 def grestore  end
-Non-PDF special ignored!
-<special> ps:tx@Dict begin  gsave STV CP T /ps@refangle 0.  def grestore  e...
-Non-PDF special ignored!
-<special> ps:tx@Dict begin  gsave STV CP T /ps@rot 0 def grestore  end
 {C:/Users/lab/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map} <./logos/folded
 .png (PNG copy)> <./logos/logo.png>] (main.toc)
 \tf@toc=\write7
@@ -1442,198 +1397,863 @@ Non-PDF special ignored!
 <logos/logo_ECL.jpg, id=258, 1204.5pt x 232.87pt>
 File: logos/logo_ECL.jpg Graphic file (type jpg)
 <use logos/logo_ECL.jpg>
-Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 77.
+Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 33.
 (pdftex.def)             Requested size: 120.45705pt x 23.28836pt.
 
 pdfTeX warning (ext4): destination with the same identifier (name{page.1}) has 
 been already used, duplicate ignored
 <to be read again> 
                    \relax 
-l.77 \tabledematieres
+l.33 \tabledematieres
                       %Créer la table de matières [1
 
  <./logos/logo_ECL.jpg>]
 File: logos/logo_ECL.jpg Graphic file (type jpg)
 <use logos/logo_ECL.jpg>
-Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 77.
+Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 33.
 (pdftex.def)             Requested size: 120.45705pt x 23.28836pt.
 
 [2]
+
+LaTeX Warning: File `img/fichier_explorateur.png' not found on input line 49.
+
+
+! Package pdftex.def Error: File `img/fichier_explorateur.png' not found: using
+ draft setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.49 ...�u dans l'explorateur}{Label de la figure}
+                                                  
+Try typing  <return>  to proceed.
+If that doesn't work, type  X <return>  to quit.
+
+LaTeX Font Info:    Trying to load font information for T1+zi4 on input line 49
+.
+(C:\Users\lab\AppData\Local\Programs\MiKTeX\tex/latex/inconsolata\t1zi4.fd
+File: t1zi4.fd 2018/01/14 T1/zi4 (Inconsolata)
+)
+LaTeX Font Info:    Font shape `T1/zi4/m/n' will be
+(Font)              scaled to size 12.0pt on input line 49.
+
+
+LaTeX Warning: File `img/fichier_apercu.png' not found on input line 51.
+
+
+! Package pdftex.def Error: File `img/fichier_apercu.png' not found: using draf
+t setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.51 ...m}{Aperçu du fichier}{Label de la figure}
+                                                  
+Try typing  <return>  to proceed.
+If that doesn't work, type  X <return>  to quit.
+
 File: logos/logo_ECL.jpg Graphic file (type jpg)
 <use logos/logo_ECL.jpg>
-Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 114.
+Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 71.
 (pdftex.def)             Requested size: 120.45705pt x 23.28836pt.
- [3
+[3
+
+{C:/Users/lab/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/inconsolata/i4-t1-0
+.enc}]
+
+LaTeX Warning: File `img/version1/uml.png' not found on input line 75.
+
+
+! Package pdftex.def Error: File `img/version1/uml.png' not found: using draft 
+setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.75 ...ml.png}{13cm}{Diagramme UML}{fig::v1::uml}
+                                                  
+Try typing  <return>  to proceed.
+If that doesn't work, type  X <return>  to quit.
+
+File: logos/logo_ECL.jpg Graphic file (type jpg)
+<use logos/logo_ECL.jpg>
+Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 87.
+(pdftex.def)             Requested size: 120.45705pt x 23.28836pt.
+[4]
+File: logos/logo_ECL.jpg Graphic file (type jpg)
+<use logos/logo_ECL.jpg>
+Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 97.
+(pdftex.def)             Requested size: 120.45705pt x 23.28836pt.
+ [5]
+\g__tcobox_out_iow=\write8
+\openout8 = `main.listing'.
+
+LaTeX Font Info:    Trying to load font information for U+fontawesomefree0 on i
+nput line 119.
+
+(C:\Users\lab\AppData\Local\Programs\MiKTeX\tex/latex/fontawesome5\ufontawesome
+free0.fd)
+(C:\Users\lab\AppData\Local\Programs\MiKTeX\tex/latex/listings\lstlang1.sty
+File: lstlang1.sty 2023/02/27 1.9 listings language file
+)
+LaTeX Font Info:    Font shape `T1/zi4/m/n' will be
+(Font)              scaled to size 10.95pt on input line 119.
+
+! Improper alphabetic constant.
+<to be read again> 
+                   \ifx 
+l.119 \end{codeboxlang}
+                       
+A one-character control sequence belongs after a ` mark.
+So I'm essentially inserting \0 here.
+
+(main.listing
+LaTeX Font Info:    Font shape `T1/zi4/b/n' will be
+(Font)              scaled to size 10.95pt on input line 1.
+LaTeX Font Info:    Trying to load font information for TS1+zi4 on input line 1
+.
+
+(C:\Users\lab\AppData\Local\Programs\MiKTeX\tex/latex/inconsolata\ts1zi4.fd
+File: ts1zi4.fd 2018/01/14 TS1/zi4 (Inconsolata)
+)
+LaTeX Font Info:    Font shape `TS1/zi4/m/n' will be
+(Font)              scaled to size 10.95pt on input line 1.
+)
+File: logos/logo_ECL.jpg Graphic file (type jpg)
+<use logos/logo_ECL.jpg>
+Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 129.
+(pdftex.def)             Requested size: 120.45705pt x 23.28836pt.
+
+[6
+
+{C:/Users/lab/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/fontawesome5/fa5fre
+e0.enc}{C:/Users/lab/AppData/Local/Programs/MiKTeX/fonts/enc/dvips/inconsolata/
+i4-ts1.enc}]
+\openout8 = `main.listing'.
+
+
+! Improper alphabetic constant.
+<to be read again> 
+                   \ifx 
+l.143 \end{codeboxlang}
+                       
+A one-character control sequence belongs after a ` mark.
+So I'm essentially inserting \0 here.
+
+(main.listing)
+
+LaTeX Warning: File `img/version1/20ath.png' not found on input line 145.
+
+
+! Package pdftex.def Error: File `img/version1/20ath.png' not found: using draf
+t setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.145 ...hlètes les plus actifs}{fig::v1::20ath}}
+                                                  
+Try typing  <return>  to proceed.
+If that doesn't work, type  X <return>  to quit.
+
+File: logos/logo_ECL.jpg Graphic file (type jpg)
+<use logos/logo_ECL.jpg>
+Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 146.
+(pdftex.def)             Requested size: 120.45705pt x 23.28836pt.
+[7
 
 ]
-<img/102/1.png, id=283, 806.26219pt x 192.72pt>
-File: img/102/1.png Graphic file (type png)
-<use img/102/1.png>
-Package pdftex.def Info: img/102/1.png  used on input line 136.
-(pdftex.def)             Requested size: 476.13347pt x 113.81102pt.
+\openout8 = `main.listing'.
 
-Overfull \hbox (20.88936pt too wide) in paragraph at lines 136--136
- [][] 
- []
 
-<img/102/2.png, id=284, 500.46976pt x 501.67426pt>
-File: img/102/2.png Graphic file (type png)
-<use img/102/2.png>
-Package pdftex.def Info: img/102/2.png  used on input line 138.
-(pdftex.def)             Requested size: 283.85031pt x 284.52756pt.
-File: logos/logo_ECL.jpg Graphic file (type jpg)
-<use logos/logo_ECL.jpg>
-Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 139.
-(pdftex.def)             Requested size: 120.45705pt x 23.28836pt.
-[4
+! Improper alphabetic constant.
+<to be read again> 
+                   \ifx 
+l.166 \end{codeboxlang}
+                       
+A one-character control sequence belongs after a ` mark.
+So I'm essentially inserting \0 here.
 
- <./img/102/1.png>]
-<img/102/3.png, id=291, 735.49782pt x 328.22626pt>
-File: img/102/3.png Graphic file (type png)
-<use img/102/3.png>
-Package pdftex.def Info: img/102/3.png  used on input line 140.
-(pdftex.def)             Requested size: 446.30746pt x 199.16928pt.
+(main.listing)
 File: logos/logo_ECL.jpg Graphic file (type jpg)
 <use logos/logo_ECL.jpg>
-Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 149.
+Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 167.
 (pdftex.def)             Requested size: 120.45705pt x 23.28836pt.
- [5 <./img/102/2.png> <./img/102/3.png>]
-File: logos/logo_ECL.jpg Graphic file (type jpg)
-<use logos/logo_ECL.jpg>
-Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 160.
-(pdftex.def)             Requested size: 120.45705pt x 23.28836pt.
- [6]
-File: logos/logo_ECL.jpg Graphic file (type jpg)
-<use logos/logo_ECL.jpg>
-Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 190.
-(pdftex.def)             Requested size: 120.45705pt x 23.28836pt.
- [7
+ [8]
+\openout8 = `main.listing'.
 
-]
-<img/104/1.png, id=307, 338.4645pt x 410.13225pt>
-File: img/104/1.png Graphic file (type png)
-<use img/104/1.png>
-Package pdftex.def Info: img/104/1.png  used on input line 206.
-(pdftex.def)             Requested size: 234.81123pt x 284.52756pt.
-<img/104/2.png, id=308, 309.5565pt x 301.125pt>
-File: img/104/2.png Graphic file (type png)
-<use img/104/2.png>
-Package pdftex.def Info: img/104/2.png  used on input line 208.
-(pdftex.def)             Requested size: 292.523pt x 284.52756pt.
-File: logos/logo_ECL.jpg Graphic file (type jpg)
-<use logos/logo_ECL.jpg>
-Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 209.
-(pdftex.def)             Requested size: 120.45705pt x 23.28836pt.
- [8
 
- <./img/104/1.png>]
-<img/104/3.png, id=314, 330.63525pt x 343.2825pt>
-File: img/104/3.png Graphic file (type png)
-<use img/104/3.png>
-Package pdftex.def Info: img/104/3.png  used on input line 210.
-(pdftex.def)             Requested size: 274.04376pt x 284.52756pt.
+! Improper alphabetic constant.
+<to be read again> 
+                   \ifx 
+l.176 \end{codeboxlang}
+                       
+A one-character control sequence belongs after a ` mark.
+So I'm essentially inserting \0 here.
+
+(main.listing)
+
+LaTeX Warning: File `img/version2/tableau_statistique.png' not found on input l
+ine 178.
+
+
+! Package pdftex.def Error: File `img/version2/tableau_statistique.png' not fou
+nd: using draft setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.178 ...statistique généré}{v2::tab_stat_gen}}
+                                                  
+Try typing  <return>  to proceed.
+If that doesn't work, type  X <return>  to quit.
+
 File: logos/logo_ECL.jpg Graphic file (type jpg)
 <use logos/logo_ECL.jpg>
-Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 217.
+Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 179.
 (pdftex.def)             Requested size: 120.45705pt x 23.28836pt.
- [9 <./img/104/2.png> <./img/104/3.png>]
+[9]
+\openout8 = `main.listing'.
+
+
+! Improper alphabetic constant.
+<to be read again> 
+                   \ifx 
+l.197 \end{codeboxlang}
+                       
+A one-character control sequence belongs after a ` mark.
+So I'm essentially inserting \0 here.
+
+(main.listing)
+File: logos/logo_ECL.jpg Graphic file (type jpg)
+<use logos/logo_ECL.jpg>
+Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 200.
+(pdftex.def)             Requested size: 120.45705pt x 23.28836pt.
+ [10]
+\openout8 = `main.listing'.
+
+
+! Improper alphabetic constant.
+<to be read again> 
+                   \ifx 
+l.204 \end{codeboxlang}
+                       
+A one-character control sequence belongs after a ` mark.
+So I'm essentially inserting \0 here.
+
+(main.listing)
+\openout8 = `main.listing'.
+
+
+! Improper alphabetic constant.
+<to be read again> 
+                   \ifx 
+l.222 \end{codeboxlang}
+                       
+A one-character control sequence belongs after a ` mark.
+So I'm essentially inserting \0 here.
+
+(main.listing)
+\openout8 = `main.listing'.
+
+
+! Improper alphabetic constant.
+<to be read again> 
+                   \ifx 
+l.231 \end{codeboxlang}
+                       
+A one-character control sequence belongs after a ` mark.
+So I'm essentially inserting \0 here.
+
+(main.listing)
 File: logos/logo_ECL.jpg Graphic file (type jpg)
 <use logos/logo_ECL.jpg>
 Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 237.
 (pdftex.def)             Requested size: 120.45705pt x 23.28836pt.
- [10]
-File: logos/logo_ECL.jpg Graphic file (type jpg)
-<use logos/logo_ECL.jpg>
-Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 268.
-(pdftex.def)             Requested size: 120.45705pt x 23.28836pt.
- [11
+ [11]
+\openout8 = `main.listing'.
 
-]
+
+! Improper alphabetic constant.
+<to be read again> 
+                   \ifx 
+l.246 \end{codeboxlang}
+                       
+A one-character control sequence belongs after a ` mark.
+So I'm essentially inserting \0 here.
+
+(main.listing)
+\openout8 = `main.listing'.
+
+
+! Improper alphabetic constant.
+<to be read again> 
+                   \ifx 
+l.255 \end{codeboxlang}
+                       
+A one-character control sequence belongs after a ` mark.
+So I'm essentially inserting \0 here.
+
+(main.listing)
+\openout8 = `main.listing'.
+
+
+! Improper alphabetic constant.
+<to be read again> 
+                   \ifx 
+l.280 \end{codeboxlang}
+                       
+A one-character control sequence belongs after a ` mark.
+So I'm essentially inserting \0 here.
+
+(main.listing)
 File: logos/logo_ECL.jpg Graphic file (type jpg)
 <use logos/logo_ECL.jpg>
-Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 272.
+Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 281.
 (pdftex.def)             Requested size: 120.45705pt x 23.28836pt.
  [12]
-<img/201/1.png, id=334, 447.47176pt x 536.0025pt>
-File: img/201/1.png Graphic file (type png)
-<use img/201/1.png>
-Package pdftex.def Info: img/201/1.png  used on input line 297.
-(pdftex.def)             Requested size: 237.5276pt x 284.52756pt.
+
+LaTeX Warning: File `img/version3/top15.png' not found on input line 282.
+
+
+! Package pdftex.def Error: File `img/version3/top15.png' not found: using draf
+t setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.282 ...15.png}{7cm}{Classement}{fig::v3::top15}}
+                                                  
+Try typing  <return>  to proceed.
+If that doesn't work, type  X <return>  to quit.
+
+\openout8 = `main.listing'.
+
+! Improper alphabetic constant.
+<to be read again> 
+                   \ifx 
+l.310 \end{codeboxlang}
+                       
+A one-character control sequence belongs after a ` mark.
+So I'm essentially inserting \0 here.
+
+(main.listing)
 File: logos/logo_ECL.jpg Graphic file (type jpg)
 <use logos/logo_ECL.jpg>
-Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 298.
+Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 311.
 (pdftex.def)             Requested size: 120.45705pt x 23.28836pt.
- [13
+ [13]
+\openout8 = `main.listing'.
+
+
+! Improper alphabetic constant.
+<to be read again> 
+                   \ifx 
+l.326 \end{codeboxlang}
+                       
+A one-character control sequence belongs after a ` mark.
+So I'm essentially inserting \0 here.
+
+(main.listing)
+
+LaTeX Warning: File `img/version3/b1.png' not found on input line 328.
+
+
+! Package pdftex.def Error: File `img/version3/b1.png' not found: using draft s
+etting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.328 ...Graphique d'évolution - B1}{fig::v3::b1}
+                                                  
+Try typing  <return>  to proceed.
+If that doesn't work, type  X <return>  to quit.
+
+File: logos/logo_ECL.jpg Graphic file (type jpg)
+<use logos/logo_ECL.jpg>
+Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 329.
+(pdftex.def)             Requested size: 120.45705pt x 23.28836pt.
+[14]
+\openout8 = `main.listing'.
+
+
+! Improper alphabetic constant.
+<to be read again> 
+                   \ifx 
+l.341 \end{codeboxlang}
+                       
+A one-character control sequence belongs after a ` mark.
+So I'm essentially inserting \0 here.
+
+(main.listing)
+
+LaTeX Warning: File `img/version3/b2.png' not found on input line 343.
+
+
+! Package pdftex.def Error: File `img/version3/b2.png' not found: using draft s
+etting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.343 ...Graphique d'évolution - B2}{fig::v3::b2}
+                                                  
+Try typing  <return>  to proceed.
+If that doesn't work, type  X <return>  to quit.
+
+File: logos/logo_ECL.jpg Graphic file (type jpg)
+<use logos/logo_ECL.jpg>
+Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 344.
+(pdftex.def)             Requested size: 120.45705pt x 23.28836pt.
+[15]
+\openout8 = `main.listing'.
+
+
+! Improper alphabetic constant.
+<to be read again> 
+                   \ifx 
+l.356 \end{codeboxlang}
+                       
+A one-character control sequence belongs after a ` mark.
+So I'm essentially inserting \0 here.
+
+(main.listing)
+
+LaTeX Warning: File `img/version3/nbfemmes.png' not found on input line 358.
+
+
+! Package pdftex.def Error: File `img/version3/nbfemmes.png' not found: using d
+raft setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.358 ...femmes participantes}{fig::v3::nbfemmes}}
+                                                  
+Try typing  <return>  to proceed.
+If that doesn't work, type  X <return>  to quit.
+
+File: logos/logo_ECL.jpg Graphic file (type jpg)
+<use logos/logo_ECL.jpg>
+Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 359.
+(pdftex.def)             Requested size: 120.45705pt x 23.28836pt.
+[16]
+
+LaTeX Warning: File `img/version3/b3.png' not found on input line 360.
+
+
+! Package pdftex.def Error: File `img/version3/b3.png' not found: using draft s
+etting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.360 ...Graphique d'évolution - B3}{fig::v3::b3}
+                                                  
+Try typing  <return>  to proceed.
+If that doesn't work, type  X <return>  to quit.
+
+File: logos/logo_ECL.jpg Graphic file (type jpg)
+<use logos/logo_ECL.jpg>
+Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 363.
+(pdftex.def)             Requested size: 120.45705pt x 23.28836pt.
+[17]
+\openout8 = `main.listing'.
+
+
+! Improper alphabetic constant.
+<to be read again> 
+                   \ifx 
+l.372 \end{codeboxlang}
+                       
+A one-character control sequence belongs after a ` mark.
+So I'm essentially inserting \0 here.
+
+(main.listing)
+
+LaTeX Warning: File `img/version3/b4.png' not found on input line 374.
+
+
+! Package pdftex.def Error: File `img/version3/b4.png' not found: using draft s
+etting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.374 ...Graphique d'évolution - B4}{fig::v3::b4}
+                                                  
+Try typing  <return>  to proceed.
+If that doesn't work, type  X <return>  to quit.
+
+File: logos/logo_ECL.jpg Graphic file (type jpg)
+<use logos/logo_ECL.jpg>
+Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 379.
+(pdftex.def)             Requested size: 120.45705pt x 23.28836pt.
+[18]
+\openout8 = `main.listing'.
+
+
+! Improper alphabetic constant.
+<to be read again> 
+                   \ifx 
+l.403 \end{codeboxlang}
+                       
+A one-character control sequence belongs after a ` mark.
+So I'm essentially inserting \0 here.
+
+(main.listing)
+
+LaTeX Warning: File `img/version3/b5.png' not found on input line 405.
+
+
+! Package pdftex.def Error: File `img/version3/b5.png' not found: using draft s
+etting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.405 ...Graphique d'évolution - B5}{fig::v3::b5}
+                                                  
+Try typing  <return>  to proceed.
+If that doesn't work, type  X <return>  to quit.
+
+File: logos/logo_ECL.jpg Graphic file (type jpg)
+<use logos/logo_ECL.jpg>
+Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 406.
+(pdftex.def)             Requested size: 120.45705pt x 23.28836pt.
+[19]
+\openout8 = `main.listing'.
+
+
+! Improper alphabetic constant.
+<to be read again> 
+                   \ifx 
+l.440 \end{codeboxlang}
+                       
+A one-character control sequence belongs after a ` mark.
+So I'm essentially inserting \0 here.
+
+(main.listing)
+File: logos/logo_ECL.jpg Graphic file (type jpg)
+<use logos/logo_ECL.jpg>
+Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 441.
+(pdftex.def)             Requested size: 120.45705pt x 23.28836pt.
+ [20]
+
+LaTeX Warning: File `img/version3/b6.png' not found on input line 442.
+
+
+! Package pdftex.def Error: File `img/version3/b6.png' not found: using draft s
+etting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.442 ...Graphique d'évolution - B6}{fig::v3::b6}
+                                                  
+Try typing  <return>  to proceed.
+If that doesn't work, type  X <return>  to quit.
+
+File: logos/logo_ECL.jpg Graphic file (type jpg)
+<use logos/logo_ECL.jpg>
+Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 443.
+(pdftex.def)             Requested size: 120.45705pt x 23.28836pt.
+[21]
+File: logos/logo_ECL.jpg Graphic file (type jpg)
+<use logos/logo_ECL.jpg>
+Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 456.
+(pdftex.def)             Requested size: 120.45705pt x 23.28836pt.
+ [22]
+File: logos/logo_ECL.jpg Graphic file (type jpg)
+<use logos/logo_ECL.jpg>
+Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 457.
+(pdftex.def)             Requested size: 120.45705pt x 23.28836pt.
+ [23]
+\openout8 = `main.listing'.
+
+
+! Improper alphabetic constant.
+<to be read again> 
+                   \ifx 
+l.481 \end{codeboxlang}
+                       
+A one-character control sequence belongs after a ` mark.
+So I'm essentially inserting \0 here.
+
+(main.listing)
+
+LaTeX Warning: File `img/version4/disciplinerange.png' not found on input line 
+483.
+
+
+! Package pdftex.def Error: File `img/version4/disciplinerange.png' not found: 
+using draft setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.483 ...lés par discipline}{fig::v4::discrange}}
+                                                  
+Try typing  <return>  to proceed.
+If that doesn't work, type  X <return>  to quit.
+
+File: logos/logo_ECL.jpg Graphic file (type jpg)
+<use logos/logo_ECL.jpg>
+Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 484.
+(pdftex.def)             Requested size: 120.45705pt x 23.28836pt.
+[24
 
 ]
-<img/201/2.png, id=339, 446.26724pt x 513.71925pt>
-File: img/201/2.png Graphic file (type png)
-<use img/201/2.png>
-Package pdftex.def Info: img/201/2.png  used on input line 299.
-(pdftex.def)             Requested size: 197.74051pt x 227.62204pt.
-<img/201/3.png, id=340, 439.04025pt x 298.11375pt>
-File: img/201/3.png Graphic file (type png)
-<use img/201/3.png>
-Package pdftex.def Info: img/201/3.png  used on input line 301.
-(pdftex.def)             Requested size: 209.51767pt x 142.26378pt.
-File: logos/logo_ECL.jpg Graphic file (type jpg)
-<use logos/logo_ECL.jpg>
-Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 302.
-(pdftex.def)             Requested size: 120.45705pt x 23.28836pt.
+\openout8 = `main.listing'.
 
-[14 <./img/201/1.png> <./img/201/2.png>]
-File: logos/logo_ECL.jpg Graphic file (type jpg)
-<use logos/logo_ECL.jpg>
-Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 305.
-(pdftex.def)             Requested size: 120.45705pt x 23.28836pt.
- [15 <./img/201/3.png>]
-File: logos/logo_ECL.jpg Graphic file (type jpg)
-<use logos/logo_ECL.jpg>
-Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 313.
-(pdftex.def)             Requested size: 120.45705pt x 23.28836pt.
- [16
 
-]
-<img/205/1.png, id=356, 446.8695pt x 287.8755pt>
-File: img/205/1.png Graphic file (type png)
-<use img/205/1.png>
-Package pdftex.def Info: img/205/1.png  used on input line 325.
-(pdftex.def)             Requested size: 441.71349pt x 284.52756pt.
-<img/205/2.png, id=357, 410.7345pt x 387.24675pt>
-File: img/205/2.png Graphic file (type png)
-<use img/205/2.png>
-Package pdftex.def Info: img/205/2.png  used on input line 327.
-(pdftex.def)             Requested size: 301.80162pt x 284.52756pt.
-File: logos/logo_ECL.jpg Graphic file (type jpg)
-<use logos/logo_ECL.jpg>
-Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 328.
-(pdftex.def)             Requested size: 120.45705pt x 23.28836pt.
- [17
+! Improper alphabetic constant.
+<to be read again> 
+                   \ifx 
+l.495 \end{codeboxlang}
+                       
+A one-character control sequence belongs after a ` mark.
+So I'm essentially inserting \0 here.
 
- <./img/205/1.png>]
-<img/205/3.png, id=363, 439.6425pt x 401.0985pt>
-File: img/205/3.png Graphic file (type png)
-<use img/205/3.png>
-Package pdftex.def Info: img/205/3.png  used on input line 329.
-(pdftex.def)             Requested size: 311.8666pt x 284.52756pt.
-File: logos/logo_ECL.jpg Graphic file (type jpg)
-<use logos/logo_ECL.jpg>
-Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 334.
-(pdftex.def)             Requested size: 120.45705pt x 23.28836pt.
- [18 <./img/205/2.png> <./img/205/3.png>]
-File: logos/logo_ECL.jpg Graphic file (type jpg)
-<use logos/logo_ECL.jpg>
-Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 355.
-(pdftex.def)             Requested size: 120.45705pt x 23.28836pt.
- [19]
-File: logos/logo_ECL.jpg Graphic file (type jpg)
-<use logos/logo_ECL.jpg>
-Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 370.
-(pdftex.def)             Requested size: 120.45705pt x 23.28836pt.
- [20
+(main.listing)
 
-]
-runsystem(latexminted cleantemp  --timestamp 20250616161632 FAD58DE7366495DB465
+LaTeX Warning: File `img/version4/sportrange.png' not found on input line 497.
+
+
+! Package pdftex.def Error: File `img/version4/sportrange.png' not found: using
+ draft setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.497 ...daillés par sport}{fig::v4::sportrange}}
+                                                  
+Try typing  <return>  to proceed.
+If that doesn't work, type  X <return>  to quit.
+
+File: logos/logo_ECL.jpg Graphic file (type jpg)
+<use logos/logo_ECL.jpg>
+Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 498.
+(pdftex.def)             Requested size: 120.45705pt x 23.28836pt.
+[25]
+\openout8 = `main.listing'.
+
+
+! Improper alphabetic constant.
+<to be read again> 
+                   \ifx 
+l.516 \end{codeboxlang}
+                       
+A one-character control sequence belongs after a ` mark.
+So I'm essentially inserting \0 here.
+
+(main.listing)
+File: logos/logo_ECL.jpg Graphic file (type jpg)
+<use logos/logo_ECL.jpg>
+Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 517.
+(pdftex.def)             Requested size: 120.45705pt x 23.28836pt.
+ [26]
+
+LaTeX Warning: File `img/version4/bodymedal.png' not found on input line 518.
+
+
+! Package pdftex.def Error: File `img/version4/bodymedal.png' not found: using 
+draft setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.518 ...�daillés par sport}{fig::v4::bodymedal}}
+                                                  
+Try typing  <return>  to proceed.
+If that doesn't work, type  X <return>  to quit.
+
+\openout8 = `main.listing'.
+
+! Improper alphabetic constant.
+<to be read again> 
+                   \ifx 
+l.531 \end{codeboxlang}
+                       
+A one-character control sequence belongs after a ` mark.
+So I'm essentially inserting \0 here.
+
+(main.listing)
+File: logos/logo_ECL.jpg Graphic file (type jpg)
+<use logos/logo_ECL.jpg>
+Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 532.
+(pdftex.def)             Requested size: 120.45705pt x 23.28836pt.
+ [27]
+
+LaTeX Warning: File `img/version4/bodynomedal.png' not found on input line 534.
+
+
+
+! Package pdftex.def Error: File `img/version4/bodynomedal.png' not found: usin
+g draft setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.534 }
+       
+Try typing  <return>  to proceed.
+If that doesn't work, type  X <return>  to quit.
+
+\openout8 = `main.listing'.
+
+! Improper alphabetic constant.
+<to be read again> 
+                   \ifx 
+l.544 \end{codeboxlang}
+                       
+A one-character control sequence belongs after a ` mark.
+So I'm essentially inserting \0 here.
+
+(main.listing)
+File: logos/logo_ECL.jpg Graphic file (type jpg)
+<use logos/logo_ECL.jpg>
+Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 545.
+(pdftex.def)             Requested size: 120.45705pt x 23.28836pt.
+ [28]
+
+LaTeX Warning: File `img/version4/heightplus.png' not found on input line 546.
+
+
+! Package pdftex.def Error: File `img/version4/heightplus.png' not found: using
+ draft setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.546 ...heightplus.png}{10cm}{}{fig::v4::taller}}
+                                                  
+Try typing  <return>  to proceed.
+If that doesn't work, type  X <return>  to quit.
+
+\openout8 = `main.listing'.
+
+! Improper alphabetic constant.
+<to be read again> 
+                   \ifx 
+l.556 \end{codeboxlang}
+                       
+A one-character control sequence belongs after a ` mark.
+So I'm essentially inserting \0 here.
+
+(main.listing)
+
+LaTeX Warning: File `img/version4/heightneg.png' not found on input line 558.
+
+
+! Package pdftex.def Error: File `img/version4/heightneg.png' not found: using 
+draft setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.558 ...heightneg.png}{10cm}{}{fig::v4::smaller}}
+                                                  
+Try typing  <return>  to proceed.
+If that doesn't work, type  X <return>  to quit.
+
+File: logos/logo_ECL.jpg Graphic file (type jpg)
+<use logos/logo_ECL.jpg>
+Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 559.
+(pdftex.def)             Requested size: 120.45705pt x 23.28836pt.
+[29]
+\openout8 = `main.listing'.
+
+
+! Improper alphabetic constant.
+<to be read again> 
+                   \ifx 
+l.568 \end{codeboxlang}
+                       
+A one-character control sequence belongs after a ` mark.
+So I'm essentially inserting \0 here.
+
+(main.listing)
+
+LaTeX Warning: File `img/version4/weightplus.png' not found on input line 570.
+
+
+! Package pdftex.def Error: File `img/version4/weightplus.png' not found: using
+ draft setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.570 ...eightplus.png}{10cm}{}{fig::v4::heavier}}
+                                                  
+Try typing  <return>  to proceed.
+If that doesn't work, type  X <return>  to quit.
+
+File: logos/logo_ECL.jpg Graphic file (type jpg)
+<use logos/logo_ECL.jpg>
+Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 571.
+(pdftex.def)             Requested size: 120.45705pt x 23.28836pt.
+[30]
+\openout8 = `main.listing'.
+
+
+! Improper alphabetic constant.
+<to be read again> 
+                   \ifx 
+l.579 \end{codeboxlang}
+                       
+A one-character control sequence belongs after a ` mark.
+So I'm essentially inserting \0 here.
+
+(main.listing)
+
+LaTeX Warning: File `img/version4/weightneg.png' not found on input line 581.
+
+
+! Package pdftex.def Error: File `img/version4/weightneg.png' not found: using 
+draft setting.
+
+See the pdftex.def package documentation for explanation.
+Type  H <return>  for immediate help.
+ ...                                              
+                                                  
+l.581 ...n4/weightneg.png}{10cm}{}{fig::v4::thin}}
+                                                  
+Try typing  <return>  to proceed.
+If that doesn't work, type  X <return>  to quit.
+
+File: logos/logo_ECL.jpg Graphic file (type jpg)
+<use logos/logo_ECL.jpg>
+Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 582.
+(pdftex.def)             Requested size: 120.45705pt x 23.28836pt.
+[31]
+File: logos/logo_ECL.jpg Graphic file (type jpg)
+<use logos/logo_ECL.jpg>
+Package pdftex.def Info: logos/logo_ECL.jpg  used on input line 590.
+(pdftex.def)             Requested size: 120.45705pt x 23.28836pt.
+ [32]
+runsystem(latexminted cleantemp  --timestamp 20250618003903 FAD58DE7366495DB465
 0CFEFAC2FCD61)...disabled (restricted).
 
  (main.aux)
@@ -1645,34 +2265,160 @@ L3 programming layer <2024-01-04>
 
 LaTeX Warning: There were multiply-defined labels.
 
-Package rerunfilecheck Info: File `main.out' has not changed.
-(rerunfilecheck)             Checksum: 23FC5A8D4DE81D779448C4D3038A78DD;7118.
+
+Package rerunfilecheck Warning: File `main.out' has changed.
+(rerunfilecheck)                Rerun to get outlines right
+(rerunfilecheck)                or use package `bookmark'.
+
+Package rerunfilecheck Info: Checksums for `main.out':
+(rerunfilecheck)             Before: 23FC5A8D4DE81D779448C4D3038A78DD;7118
+(rerunfilecheck)             After:  491FA9B2C10ABE761E83020DF0666256;1889.
  ) 
 Here is how much of TeX's memory you used:
- 46785 strings out of 474485
- 1010912 string characters out of 5744678
- 1943542 words of memory out of 5000000
- 68336 multiletter control sequences out of 15000+600000
- 573199 words of font info for 64 fonts, out of 8000000 for 9000
+ 47428 strings out of 474485
+ 1056004 string characters out of 5744678
+ 2063542 words of memory out of 5000000
+ 68673 multiletter control sequences out of 15000+600000
+ 578427 words of font info for 74 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 125i,16n,121p,988b,1218s stack positions out of 10000i,1000n,20000p,200000b,200000s
- <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\eccc12
-00.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\ec
-bx1440.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi60
-0\ecrm1200.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/d
-pi600\ecbx1200.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/
-ec/dpi600\ecbx1728.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknap
-pen/ec/dpi600\ecti1200.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/j
-knappen/ec/dpi600\ecrm2074.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfo
-ur/jknappen/ec/dpi600\eccc1440.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/
-ljfour/jknappen/ec/dpi600\ecrm1440.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts
-/pk/ljfour/jknappen/ec/dpi600\ecbi1440.pk> <C:\Users\lab\AppData\Local\MiKTeX\f
-onts/pk/ljfour/jknappen/ec/dpi600\ecbx2488.pk> <C:\Users\lab\AppData\Local\MiKT
-eX\fonts/pk/ljfour/jknappen/ec/dpi600\eccc1728.pk> <C:\Users\lab\AppData\Local\
-MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\eccc2074.pk>
-Output written on main.pdf (21 pages, 990870 bytes).
+ 125i,17n,121p,747b,2258s stack positions out of 10000i,1000n,20000p,200000b,200000s
+
+pdfTeX warning (dest): name{subsection.9.3} has been referenced but does not ex
+ist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{subsection.9.2} has been referenced but does not ex
+ist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{subsection.9.1} has been referenced but does not ex
+ist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.9} has been referenced but does not exist, 
+replaced by a fixed one
+
+
+pdfTeX warning (dest): name{subsection.8.4} has been referenced but does not ex
+ist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{subsection.8.3} has been referenced but does not ex
+ist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{subsection.8.2} has been referenced but does not ex
+ist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{subsection.8.1} has been referenced but does not ex
+ist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.8} has been referenced but does not exist, 
+replaced by a fixed one
+
+
+pdfTeX warning (dest): name{subsection.7.3} has been referenced but does not ex
+ist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{subsection.7.2} has been referenced but does not ex
+ist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{subsection.7.1} has been referenced but does not ex
+ist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.7} has been referenced but does not exist, 
+replaced by a fixed one
+
+
+pdfTeX warning (dest): name{subsection.6.4} has been referenced but does not ex
+ist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{subsection.6.3} has been referenced but does not ex
+ist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{subsection.6.2} has been referenced but does not ex
+ist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{subsection.6.1} has been referenced but does not ex
+ist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.6} has been referenced but does not exist, 
+replaced by a fixed one
+
+
+pdfTeX warning (dest): name{subsection.5.4} has been referenced but does not ex
+ist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{subsection.5.3} has been referenced but does not ex
+ist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{subsection.5.2} has been referenced but does not ex
+ist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{subsection.5.1} has been referenced but does not ex
+ist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{section.5} has been referenced but does not exist, 
+replaced by a fixed one
+
+
+pdfTeX warning (dest): name{subsection.4.4} has been referenced but does not ex
+ist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{subsection.4.3} has been referenced but does not ex
+ist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{subsection.4.2} has been referenced but does not ex
+ist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{subsection.4.1} has been referenced but does not ex
+ist, replaced by a fixed one
+
+
+pdfTeX warning (dest): name{subsection.2.4} has been referenced but does not ex
+ist, replaced by a fixed one
+
+ <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\ecbx2074
+.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\ecrm
+0600.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\
+ecxc1440.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi
+600\ecbi1200.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec
+/dpi600\eccc1200.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappe
+n/ec/dpi600\ecbx1440.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jkn
+appen/ec/dpi600\ecrm1200.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour
+/jknappen/ec/dpi600\ecbx1200.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/lj
+four/jknappen/ec/dpi600\ecbx1728.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/p
+k/ljfour/jknappen/ec/dpi600\ecti1200.pk> <C:\Users\lab\AppData\Local\MiKTeX\fon
+ts/pk/ljfour/jknappen/ec/dpi600\ecrm2074.pk> <C:\Users\lab\AppData\Local\MiKTeX
+\fonts/pk/ljfour/jknappen/ec/dpi600\eccc1440.pk> <C:\Users\lab\AppData\Local\Mi
+KTeX\fonts/pk/ljfour/jknappen/ec/dpi600\ecrm1440.pk> <C:\Users\lab\AppData\Loca
+l\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\ecbi1440.pk> <C:\Users\lab\AppData\
+Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\ecbx2488.pk> <C:\Users\lab\AppD
+ata\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\eccc1728.pk> <C:\Users\lab\
+AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\eccc2074.pk><C:/Users/l
+ab/AppData/Local/Programs/MiKTeX/fonts/type1/public/fontawesome5/FontAwesome5Fr
+ee-Solid.pfb><C:/Users/lab/AppData/Local/Programs/MiKTeX/fonts/type1/public/inc
+onsolata/Inconsolata-zi4b.pfb><C:/Users/lab/AppData/Local/Programs/MiKTeX/fonts
+/type1/public/inconsolata/Inconsolata-zi4r.pfb>
+Output written on main.pdf (33 pages, 542846 bytes).
 PDF statistics:
- 809 PDF objects out of 1000 (max. 8388607)
- 78 named destinations out of 1000 (max. 500000)
- 558 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 1192 PDF objects out of 1200 (max. 8388607)
+ 312 named destinations out of 1000 (max. 500000)
+ 498 words of extra memory for PDF output out of 10000 (max. 10000000)
 
