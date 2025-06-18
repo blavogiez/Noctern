@@ -1,6 +1,8 @@
 #### AutomaTeX, a LaTeX editor powered by AI Tools
 #### Baptiste Lavogiez, June 2025
 
+#### https://github.com/blavogiez/AutomaTeX
+
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 from tkinter.font import Font
@@ -131,7 +133,8 @@ def afficher_pdf(pdf_path):
     except Exception as e:
         messagebox.showerror("Erreur ouverture PDF", str(e))
 
-
+## -- When opening PDF File, resize the two windows on an equal size -- ##
+        
 ### --- FONCTIONS FICHIER --- ###
 
 def ouvrir_fichier():
@@ -233,7 +236,6 @@ def complete_sentence():
 
     threading.Thread(target=run_completion, daemon=True).start()
 
-
 def remove_redundant_overlap(start: str, completion: str) -> str:
     start_words = start.split()
     completion_words = completion.split()
@@ -324,17 +326,17 @@ def generer_texte_depuis_prompt():
 ### --- INTERFACE --- ###
 
 def setup_interface():
-    global editor, root, tree
+    global editor, root, tree, progress_bar
     root = tk.Tk()
     root.title("🧠 AutomaTeX")
-    root.geometry("1200x700")
+    root.geometry("1920x1080")
     root.configure(bg="#f5f5f5")
     root.iconbitmap("res/automatex.ico")  # ← Assure-toi que automatex.ico est dans le même dossier
 
     style = ttk.Style()
     style.theme_use("clam")
 
-    font_editor = Font(family="Fira Code", size=12)
+    font_editor = Font(family="Consolas", size=12)
 
     # --- Top Buttons ---
     top_frame = ttk.Frame(root, padding=5)
@@ -368,6 +370,32 @@ def setup_interface():
     editor.tag_configure("latex_brace", foreground="#d73a49", font=font_editor)
     editor.tag_configure("latex_comment", foreground="#6a737d", font=font_editor.copy().configure(slant="italic"))
 
+    # --- GPU Usage ---
+    global progress_bar
+    progress_bar = ttk.Progressbar(root, mode="indeterminate", length=200)
+    progress_bar.pack(pady=2)
+    progress_bar.pack_forget()  # On la cache par défaut
+    
+    status_bar = ttk.Label(root, text="⏳ Initialisation GPU...", anchor="w", relief="sunken", padding=4)
+    status_bar.pack(side="bottom", fill="x")
+
+    def update_gpu_status():
+        try:
+            output = subprocess.check_output(
+                ["nvidia-smi", "--query-gpu=name,temperature.gpu,utilization.gpu", "--format=csv,noheader,nounits"],
+                encoding="utf-8"
+            ).strip()
+
+            name, temp, usage = output.split(", ")
+            status_text = f"🎮 GPU: {name}   🌡 {temp}°C   📊 {usage}% utilisé"
+        except Exception as e:
+            status_text = f"⚠️ GPU non détecté ({str(e)})"
+
+        status_bar.config(text=status_text)
+        root.after(333, update_gpu_status)  # met à jour toutes les 1/3 secondes
+
+    update_gpu_status()
+    
     # --- Events ---
     editor.bind("<KeyRelease>", lambda e: (highlight_syntax(), update_outline()))
 
