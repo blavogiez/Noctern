@@ -86,15 +86,35 @@ CustomScreenDPI = 0
 
 FileStates [
 	[
+		FilePath = C:\Users\lab\Documents\BUT1\AutomaTeX\alpha_tkinter\res\auguste_renoir.pdf
+		Favorites [
+		]
+		IsPinned = false
+		IsMissing = false
+		OpenCount = 2
+		UseDefaultState = false
+		DisplayMode = continuous
+		ScrollPos = -1 -1
+		PageNo = 1
+		Zoom = fit page
+		Rotation = 0
+		WindowState = 1
+		WindowPos = 950 0 980 1030
+		ShowToc = false
+		SidebarDx = 194
+		DisplayR2L = false
+		ReparseIdx = 0
+	]
+	[
 		FilePath = C:\Users\lab\Documents\BUT1\Semestre 2\Portfolio\rapportTools\S2-C_Baptiste-Lavogiez_Portfolio.pdf
 		Favorites [
 		]
 		IsPinned = false
 		IsMissing = false
-		OpenCount = 13
+		OpenCount = 15
 		UseDefaultState = false
 		DisplayMode = continuous
-		ScrollPos = -1 612.345
+		ScrollPos = -1 610.845
 		PageNo = 20
 		Zoom = 66.67
 		Rotation = 0
@@ -155,11 +175,20 @@ SessionData [
 				PageNo = 20
 				Zoom = 66.67
 				Rotation = 0
-				ScrollPos = -1 612.345
+				ScrollPos = -1 610.845
+				ShowToc = false
+			]
+			[
+				FilePath = C:\Users\lab\Documents\BUT1\AutomaTeX\alpha_tkinter\res\auguste_renoir.pdf
+				DisplayMode = continuous
+				PageNo = 1
+				Zoom = fit page
+				Rotation = 0
+				ScrollPos = -1 -1
 				ShowToc = false
 			]
 		]
-		TabIndex = 2
+		TabIndex = 3
 		WindowState = 1
 		WindowPos = 950 0 980 1030
 		SidebarDx = 194

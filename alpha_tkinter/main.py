@@ -365,6 +365,8 @@ def setup_interface():
     editor.pack(fill="both", expand=True, padx=2, pady=2)
     main_frame.add(editor_frame, stretch="always")
 
+    # --- Line numbers
+    
     # --- Syntax Highlighting Tags ---
     editor.tag_configure("latex_command", foreground="#005cc5", font=font_editor)
     editor.tag_configure("latex_brace", foreground="#d73a49", font=font_editor)
