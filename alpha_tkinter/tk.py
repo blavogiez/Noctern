@@ -1,3 +1,6 @@
+#### AutomaTeX, a LaTeX editor powered by AI Tools
+#### Baptiste Lavogiez, June 2025
+
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 from tkinter.font import Font
@@ -8,8 +11,35 @@ import subprocess
 import os
 import webbrowser
 import platform
+import threading
+import re
 
 fichier_actuel = None  # ⬅️ Pour suivre le fichier ouvert
+
+### --- Editor logic --- ###
+
+
+def highlight_syntax(event=None):
+    content = editor.get("1.0", tk.END)
+    editor.tag_remove("latex_command", "1.0", tk.END)
+    editor.tag_remove("latex_brace", "1.0", tk.END)
+    editor.tag_remove("latex_comment", "1.0", tk.END)
+
+    for match in re.finditer(r"\\[a-zA-Z@]+", content):
+        start = f"1.0 + {match.start()} chars"
+        end = f"1.0 + {match.end()} chars"
+        editor.tag_add("latex_command", start, end)
+
+    for match in re.finditer(r"[{}]", content):
+        start = f"1.0 + {match.start()} chars"
+        end = f"1.0 + {match.end()} chars"
+        editor.tag_add("latex_brace", start, end)
+
+    for match in re.finditer(r"%[^\n]*", content):
+        start = f"1.0 + {match.start()} chars"
+        end = f"1.0 + {match.end()} chars"
+        editor.tag_add("latex_comment", start, end)
+
 
 ### --- LaTeX COMPILATION LOGIC --- ###
 
@@ -127,41 +157,51 @@ def get_contexte(nb_lines_backwards=5, nb_lines_forwards=5):
     return "\n".join(context_lines)
 
 def complete_sentence():
-    contexte = get_contexte(nb_lines_backwards=30, nb_lines_forwards=0)
+    def run_completion():
+        try:
+            contexte = get_contexte(nb_lines_backwards=30, nb_lines_forwards=0)
 
-    last_dot_index = contexte.rfind(".")
-    if last_dot_index == -1:
-        phrase_en_cours = contexte.strip()
-        contexte_anterieur = ""
-    else:
-        phrase_en_cours = contexte[last_dot_index + 1:].strip()
-        contexte_anterieur = contexte[:last_dot_index + 1].strip()
+            last_dot_index = contexte.rfind(".")
+            if last_dot_index == -1:
+                phrase_en_cours = contexte.strip()
+                contexte_anterieur = ""
+            else:
+                phrase_en_cours = contexte[last_dot_index + 1:].strip()
+                contexte_anterieur = contexte[:last_dot_index + 1].strip()
 
-    prompt = (
-        "Complète uniquement la phrase en cours, sans reformuler le contexte ni inclure de balises ou de code. "
-        "Garde la même langue. Le début doit strictement être identique au début de la phrase actuelle. "
-        "Réponds uniquement avec une phrase naturelle, fluide et cohérente. "
-        "Ne commence pas une nouvelle idée ou paragraphe : reste dans la continuité logique du texte.\n\n"
-        f"Contexte (30 lignes précédentes) :\n\"{contexte_anterieur}\"\n\n"
-        f"Début de la phrase à compléter :\n\"{phrase_en_cours}\"\n\n"
-        "Complétion attendue (courte et naturelle, pas de ponctuation finale si elle est déjà commencée) :"
-    )
+            prompt = (
+                "Complète uniquement la phrase en cours, sans reformuler le contexte ni inclure de balises ou de code. "
+                "Garde la même langue. Le début doit strictement être identique au début de la phrase actuelle. "
+                "Réponds uniquement avec une phrase naturelle, fluide et cohérente. "
+                "Ne commence pas une nouvelle idée ou paragraphe : reste dans la continuité logique du texte.\n\n"
+                f"Contexte (30 lignes précédentes) :\n\"{contexte_anterieur}\"\n\n"
+                f"Début de la phrase à compléter :\n\"{phrase_en_cours}\"\n\n"
+                "Complétion attendue (courte et naturelle, pas de ponctuation finale si elle est déjà commencée) :"
+            )
 
-    try:
-        response = requests.post("http://localhost:11434/api/generate", json={
-            "model": "llama2",
-            "prompt": prompt,
-            "stream": False
-        })
+            response = requests.post("http://localhost:11434/api/generate", json={
+                "model": "mistral",
+                "prompt": prompt,
+                "stream": False
+            })
 
-        if response.status_code == 200:
-            completion_raw = response.json().get("response", "").strip().strip('"')
-            cleaned_completion = remove_redundant_overlap(phrase_en_cours, completion_raw)
-            editor.insert(tk.INSERT, cleaned_completion)
-        else:
-            messagebox.showerror("Erreur LLM", f"Statut : {response.status_code}")
-    except Exception as e:
-        messagebox.showerror("Erreur connexion", str(e))
+            if response.status_code == 200:
+                completion_raw = response.json().get("response", "").strip().strip('"')
+                cleaned_completion = remove_redundant_overlap(phrase_en_cours, completion_raw)
+                editor.after(0, lambda: editor.insert(tk.INSERT, cleaned_completion))
+            else:
+                editor.after(0, lambda: messagebox.showerror("Erreur LLM", f"Statut : {response.status_code}"))
+        except Exception as e:
+            editor.after(0, lambda: messagebox.showerror("Erreur connexion", str(e)))
+        finally:
+            editor.after(0, lambda: progress_bar.pack_forget())
+            editor.after(0, lambda: progress_bar.stop())
+
+    progress_bar.pack(pady=2)
+    progress_bar.start(10)
+
+    threading.Thread(target=run_completion, daemon=True).start()
+
 
 def remove_redundant_overlap(start: str, completion: str) -> str:
     start_words = start.split()
@@ -209,19 +249,31 @@ def generer_texte_depuis_prompt():
 
         contexte = get_contexte(nb_back, nb_forward)
 
-        prompt = f"""Tu es un modèle de génération de texte. Voici un prompt utilisateur :
-"{prompt_user}"
+        prompt = f"""Tu es un assistant d'écriture intelligent. Un utilisateur t’a donné une consigne pour générer du texte à insérer dans un document.
 
-Voici le contexte autour du curseur :
-"{contexte}"
+        Contrainte principale : réponds uniquement avec la génération demandée, sans préambule, signature, explication ou reformulation de la consigne.
 
-N'inclus absolument pas de texte autre que la réponse (avant la réponse). Donne juste la réponse, sans autre message. 
-Réponds de manière concise et naturelle en français uniquement.
-"""
+        Langue : exclusivement en français, registre soutenu mais naturel. Le ton doit rester cohérent avec le contexte fourni.
+
+        Prompt utilisateur :
+        "{prompt_user}"
+
+        Contexte autour du curseur :
+        \"\"\"{contexte}\"\"\"
+
+        Instructions :
+        - Ne modifie pas le contexte.
+        - Génère uniquement le texte correspondant à la consigne.
+        - Respecte la continuité logique et thématique du texte.
+        - Ta réponse doit s’insérer de manière fluide dans le contenu existant.
+
+        Texte à insérer :
+        """
+
 
         try:
             response = requests.post("http://localhost:11434/api/generate", json={
-                "model": "llama2",
+                "model": "mistral",
                 "prompt": prompt,
                 "stream": False
             })
@@ -237,6 +289,9 @@ Réponds de manière concise et naturelle en français uniquement.
 
     tk.Button(fenetre, text="Générer", command=envoyer_prompt).grid(row=3, column=0, columnspan=2, pady=10)
     entry_prompt.focus()
+    
+### --- GPU USAGE --- ###
+    
 
 
 ### --- INTERFACE --- ###
@@ -255,13 +310,40 @@ def setup_interface():
 
     top_frame = ttk.Frame(root, padding=5)
     top_frame.pack(fill="x")
+    
+    global progress_bar
+    progress_bar = ttk.Progressbar(root, mode="indeterminate", length=200)
+    progress_bar.pack(pady=2)
+    progress_bar.pack_forget()  # On la cache par défaut
 
-    ttk.Button(top_frame, text="🛠️ Compiler LaTeX", command=compiler_latex).pack(side="left", padx=5)
-    ttk.Button(top_frame, text="✨ Compléter (Ctrl+Shift+C)", command=complete_sentence).pack(side="left", padx=5)
-    ttk.Button(top_frame, text="🎯 Génération IA (Ctrl+Shift+G)", command=generer_texte_depuis_prompt).pack(side="left", padx=5)
+    # Buttons
+    ttk.Button(top_frame, text="🛠 Compiler (Ctrl+Shift+P)", command=compiler_latex).pack(side="left", padx=5)
+    ttk.Button(top_frame, text="✨ Compléter texte (Ctrl+Shift+C)", command=complete_sentence).pack(side="left", padx=5)
+    ttk.Button(top_frame, text="🎯 Génération texte (Ctrl+Shift+G)", command=generer_texte_depuis_prompt).pack(side="left", padx=5)
     ttk.Button(top_frame, text="📂 Ouvrir", command=ouvrir_fichier).pack(side="left", padx=5)
     ttk.Button(top_frame, text="💾 Enregistrer", command=enregistrer_fichier).pack(side="left", padx=5)
 
+    # GPU Usage
+    status_bar = ttk.Label(root, text="⏳ Initialisation GPU...", anchor="w", relief="sunken", padding=4)
+    status_bar.pack(side="bottom", fill="x")
+
+    def update_gpu_status():
+        try:
+            output = subprocess.check_output(
+                ["nvidia-smi", "--query-gpu=name,temperature.gpu,utilization.gpu", "--format=csv,noheader,nounits"],
+                encoding="utf-8"
+            ).strip()
+
+            name, temp, usage = output.split(", ")
+            status_text = f"🎮 GPU: {name}   🌡️ {temp}°C   📊 {usage}% utilisé"
+        except Exception as e:
+            status_text = f"⚠️ GPU non détecté ({str(e)})"
+
+        status_bar.config(text=status_text)
+        root.after(333, update_gpu_status)  # met à jour toutes les 1/3 secondes
+
+    update_gpu_status()
+    
     main_frame = tk.PanedWindow(root, orient=tk.HORIZONTAL, sashrelief="raised", bg="#e0e0e0")
     main_frame.pack(fill="both", expand=True)
 
@@ -270,12 +352,22 @@ def setup_interface():
     editor.pack(fill="both", expand=True, padx=2, pady=2)
     main_frame.add(editor_frame, stretch="always")
 
+    # Coloration syntaxique LaTeX
+    editor.tag_configure("latex_command", foreground="#005cc5", font=font_editor)
+    editor.tag_configure("latex_brace", foreground="#d73a49", font=font_editor)
+    editor.tag_configure("latex_comment", foreground="#6a737d", font=font_editor.copy().configure(slant="italic"))
+
+    # Auto highlight syntax at each release
+    editor.bind("<KeyRelease>", highlight_syntax)
+
+    # Bindings
     root.bind_all("<Control-Shift-G>", lambda event: generer_texte_depuis_prompt())
     root.bind_all("<Control-Shift-C>", lambda event: complete_sentence())
+    root.bind_all("<Control-Shift-P>", lambda event: compiler_latex())
     root.bind_all("<Control-o>", lambda event: ouvrir_fichier())
     root.bind_all("<Control-s>", lambda event: enregistrer_fichier())
-
     return root
+
 
 ### --- MAIN --- ###
 
