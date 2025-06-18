@@ -4,8 +4,6 @@
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 from tkinter.font import Font
-from PIL import Image, ImageTk
-from pdf2image import convert_from_path
 import requests
 import subprocess
 import os
@@ -18,6 +16,35 @@ fichier_actuel = None  # ⬅️ Pour suivre le fichier ouvert
 
 ### --- Editor logic --- ###
 
+## -- Navigating through TeX sections -- ##
+
+def update_outline():
+    tree.delete(*tree.get_children())
+    lines = editor.get("1.0", tk.END).split("\n")
+    parents = {0: ""}
+    for i, line in enumerate(lines):
+        for level, cmd in enumerate(["section", "subsection", "subsubsection"], 1):
+            match = re.match(rf"\\{cmd}{{(.*?)}}", line.strip())
+            if match:
+                title = match.group(1)
+                node_id = tree.insert(parents[level - 1], "end", text=title, values=(i + 1,))
+                parents[level] = node_id
+                # Supprimer les descendants si on remonte dans la hiérarchie
+                for deeper in range(level + 1, 4):
+                    if deeper in parents:
+                        del parents[deeper]
+                break
+            
+def aller_a_section(event):
+    selected = tree.selection()
+    if selected:
+        ligne = tree.item(selected[0], "values")[0]
+        editor.mark_set("insert", f"{ligne}.0")
+        editor.see(f"{ligne}.0")
+        editor.focus()
+
+
+## -- Syntax highlighting -- ##
 
 def highlight_syntax(event=None):
     content = editor.get("1.0", tk.END)
@@ -43,6 +70,8 @@ def highlight_syntax(event=None):
 
 ### --- LaTeX COMPILATION LOGIC --- ###
 
+## -- Subprocess command -- ##
+        
 def compiler_latex():
     global fichier_actuel
     code = editor.get("1.0", tk.END)
@@ -85,6 +114,8 @@ def compiler_latex():
     except Exception as e:
         messagebox.showerror("Erreur", f"Une erreur est survenue : {e}")
 
+## -- Opening the PDF if generated (likely using SumatraPDF) -- ##
+        
 def afficher_pdf(pdf_path):
     try:
         if not os.path.exists(pdf_path):
@@ -290,80 +321,58 @@ def generer_texte_depuis_prompt():
     tk.Button(fenetre, text="Générer", command=envoyer_prompt).grid(row=3, column=0, columnspan=2, pady=10)
     entry_prompt.focus()
     
-### --- GPU USAGE --- ###
-    
-
-
 ### --- INTERFACE --- ###
 
 def setup_interface():
-    global editor, root
+    global editor, root, tree
     root = tk.Tk()
     root.title("🧠 AutomaTeX")
     root.geometry("1200x700")
     root.configure(bg="#f5f5f5")
+    root.iconbitmap("res/automatex.ico")  # ← Assure-toi que automatex.ico est dans le même dossier
 
     style = ttk.Style()
     style.theme_use("clam")
 
     font_editor = Font(family="Fira Code", size=12)
 
+    # --- Top Buttons ---
     top_frame = ttk.Frame(root, padding=5)
     top_frame.pack(fill="x")
-    
-    global progress_bar
-    progress_bar = ttk.Progressbar(root, mode="indeterminate", length=200)
-    progress_bar.pack(pady=2)
-    progress_bar.pack_forget()  # On la cache par défaut
 
-    # Buttons
-    ttk.Button(top_frame, text="🛠 Compiler (Ctrl+Shift+P)", command=compiler_latex).pack(side="left", padx=5)
-    ttk.Button(top_frame, text="✨ Compléter texte (Ctrl+Shift+C)", command=complete_sentence).pack(side="left", padx=5)
-    ttk.Button(top_frame, text="🎯 Génération texte (Ctrl+Shift+G)", command=generer_texte_depuis_prompt).pack(side="left", padx=5)
+    ttk.Button(top_frame, text="🛠️ Compiler LaTeX", command=compiler_latex).pack(side="left", padx=5)
+    ttk.Button(top_frame, text="✨ Compléter (Ctrl+Shift+C)", command=complete_sentence).pack(side="left", padx=5)
+    ttk.Button(top_frame, text="🎯 Génération IA (Ctrl+Shift+G)", command=generer_texte_depuis_prompt).pack(side="left", padx=5)
     ttk.Button(top_frame, text="📂 Ouvrir", command=ouvrir_fichier).pack(side="left", padx=5)
     ttk.Button(top_frame, text="💾 Enregistrer", command=enregistrer_fichier).pack(side="left", padx=5)
 
-    # GPU Usage
-    status_bar = ttk.Label(root, text="⏳ Initialisation GPU...", anchor="w", relief="sunken", padding=4)
-    status_bar.pack(side="bottom", fill="x")
-
-    def update_gpu_status():
-        try:
-            output = subprocess.check_output(
-                ["nvidia-smi", "--query-gpu=name,temperature.gpu,utilization.gpu", "--format=csv,noheader,nounits"],
-                encoding="utf-8"
-            ).strip()
-
-            name, temp, usage = output.split(", ")
-            status_text = f"🎮 GPU: {name}   🌡️ {temp}°C   📊 {usage}% utilisé"
-        except Exception as e:
-            status_text = f"⚠️ GPU non détecté ({str(e)})"
-
-        status_bar.config(text=status_text)
-        root.after(333, update_gpu_status)  # met à jour toutes les 1/3 secondes
-
-    update_gpu_status()
-    
+    # --- Main Pane ---
     main_frame = tk.PanedWindow(root, orient=tk.HORIZONTAL, sashrelief="raised", bg="#e0e0e0")
     main_frame.pack(fill="both", expand=True)
 
+    # --- Left Tree Navigation ---
+    tree_frame = ttk.Frame(main_frame)
+    tree = ttk.Treeview(tree_frame, show="tree")
+    tree.pack(fill="both", expand=True)
+    tree.bind("<<TreeviewSelect>>", aller_a_section)
+    main_frame.add(tree_frame, width=250)
+
+    # --- Text Editor ---
     editor_frame = ttk.Frame(main_frame)
     editor = tk.Text(editor_frame, wrap="word", font=font_editor, undo=True, bg="#ffffff", fg="#333333")
     editor.pack(fill="both", expand=True, padx=2, pady=2)
     main_frame.add(editor_frame, stretch="always")
 
-    # Coloration syntaxique LaTeX
+    # --- Syntax Highlighting Tags ---
     editor.tag_configure("latex_command", foreground="#005cc5", font=font_editor)
     editor.tag_configure("latex_brace", foreground="#d73a49", font=font_editor)
     editor.tag_configure("latex_comment", foreground="#6a737d", font=font_editor.copy().configure(slant="italic"))
 
-    # Auto highlight syntax at each release
-    editor.bind("<KeyRelease>", highlight_syntax)
+    # --- Events ---
+    editor.bind("<KeyRelease>", lambda e: (highlight_syntax(), update_outline()))
 
-    # Bindings
     root.bind_all("<Control-Shift-G>", lambda event: generer_texte_depuis_prompt())
     root.bind_all("<Control-Shift-C>", lambda event: complete_sentence())
-    root.bind_all("<Control-Shift-P>", lambda event: compiler_latex())
     root.bind_all("<Control-o>", lambda event: ouvrir_fichier())
     root.bind_all("<Control-s>", lambda event: enregistrer_fichier())
     return root

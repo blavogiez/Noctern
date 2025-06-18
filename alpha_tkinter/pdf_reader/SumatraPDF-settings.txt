@@ -78,8 +78,8 @@ TreeFontName = automatic
 SmoothScroll = false
 ShowStartPage = true
 CheckForUpdates = true
-WindowState = 1
-WindowPos = 952 0 976 1038
+WindowState = 2
+WindowPos = 952 0 976 523
 UseTabs = true
 UseSysColors = false
 CustomScreenDPI = 0
@@ -91,15 +91,15 @@ FileStates [
 		]
 		IsPinned = false
 		IsMissing = false
-		OpenCount = 4
+		OpenCount = 10
 		UseDefaultState = false
 		DisplayMode = continuous
-		ScrollPos = -1 396.001
-		PageNo = 19
-		Zoom = fit page
+		ScrollPos = -1 799.501
+		PageNo = 26
+		Zoom = 100
 		Rotation = 0
-		WindowState = 1
-		WindowPos = 952 0 976 1038
+		WindowState = 2
+		WindowPos = 952 0 976 523
 		ShowToc = false
 		SidebarDx = 194
 		DisplayR2L = false
@@ -152,16 +152,16 @@ SessionData [
 			[
 				FilePath = C:\Users\lab\Documents\BUT1\Semestre 2\Portfolio\rapportTools\S2-C_Baptiste-Lavogiez_Portfolio.pdf
 				DisplayMode = continuous
-				PageNo = 19
-				Zoom = fit page
+				PageNo = 26
+				Zoom = 100
 				Rotation = 0
-				ScrollPos = -1 396.001
+				ScrollPos = -1 799.501
 				ShowToc = false
 			]
 		]
 		TabIndex = 2
-		WindowState = 1
-		WindowPos = 952 0 976 1038
+		WindowState = 2
+		WindowPos = 952 0 976 523
 		SidebarDx = 194
 	]
 ]
