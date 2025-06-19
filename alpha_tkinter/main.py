@@ -71,8 +71,49 @@ def highlight_syntax(event=None):
 
 
 ### --- LaTeX COMPILATION LOGIC --- ###
+        
+## -- Subprocess command to check syntax errors (chktex)
+        
+def verifier_chktex():
+    global fichier_actuel
+    code = editor.get("1.0", tk.END)
 
-## -- Subprocess command -- ##
+    # Fichier temporaire si aucun fichier actuel
+    if fichier_actuel:
+        tex_path = fichier_actuel
+        with open(tex_path, "w", encoding="utf-8") as f:
+            f.write(code)
+    else:
+        os.makedirs("output", exist_ok=True)
+        tex_path = os.path.join("output", "temp_chktex.tex")
+        with open(tex_path, "w", encoding="utf-8") as f:
+            f.write(code)
+
+    try:
+        result = subprocess.run(
+            ["chktex", "-q", "-l", "-v0-2", tex_path],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            encoding="utf-8"
+        )
+
+        output = result.stdout.strip()
+        if not output:
+            messagebox.showinfo("✅ chkTeX", "Aucune erreur critique trouvée.")
+        else:
+            fenetre = tk.Toplevel(root)
+            fenetre.title("chkTeX - Erreurs critiques")
+            text_box = tk.Text(fenetre, wrap="word", height=25, width=100)
+            text_box.insert("1.0", output)
+            text_box.config(state="disabled")
+            text_box.pack(padx=10, pady=10)
+    except FileNotFoundError:
+        messagebox.showerror("Erreur", "chktex n’est pas installé ou introuvable dans le PATH.")
+    except Exception as e:
+        messagebox.showerror("Erreur chkTeX", str(e))
+
+
+## -- Subprocess command to compile -- ##
         
 def compiler_latex():
     global fichier_actuel
@@ -149,6 +190,8 @@ def ouvrir_fichier():
                 contenu = f.read()
                 editor.delete("1.0", tk.END)
                 editor.insert("1.0", contenu)
+                highlight_syntax()
+                update_outline()
             fichier_actuel = filepath
         except Exception as e:
             messagebox.showerror("Erreur", f"Impossible d’ouvrir le fichier : {e}")
@@ -328,7 +371,7 @@ def generer_texte_depuis_prompt():
 def setup_interface():
     global editor, root, tree, progress_bar
     root = tk.Tk()
-    root.title("🧠 AutomaTeX")
+    root.title("AutomaTeX v1.0")
     root.geometry("1920x1080")
     root.configure(bg="#f5f5f5")
     root.iconbitmap("res/automatex.ico")  # ← Assure-toi que automatex.ico est dans le même dossier
@@ -342,11 +385,11 @@ def setup_interface():
     top_frame = ttk.Frame(root, padding=5)
     top_frame.pack(fill="x")
 
-    ttk.Button(top_frame, text="🛠️ Compiler LaTeX", command=compiler_latex).pack(side="left", padx=5)
+    ttk.Button(top_frame, text="🛠 Compiler", command=compiler_latex).pack(side="left", padx=5)
     ttk.Button(top_frame, text="✨ Compléter (Ctrl+Shift+C)", command=complete_sentence).pack(side="left", padx=5)
-    ttk.Button(top_frame, text="🎯 Génération IA (Ctrl+Shift+G)", command=generer_texte_depuis_prompt).pack(side="left", padx=5)
-    ttk.Button(top_frame, text="📂 Ouvrir", command=ouvrir_fichier).pack(side="left", padx=5)
-    ttk.Button(top_frame, text="💾 Enregistrer", command=enregistrer_fichier).pack(side="left", padx=5)
+    ttk.Button(top_frame, text="🎯 Génération texte (Ctrl+Shift+G)", command=generer_texte_depuis_prompt).pack(side="left", padx=5)
+    ttk.Button(top_frame, text="📋 Debug syntaxe (Ctrl+Shift+D)", command=verifier_chktex).pack(side="left", padx=5)
+    ttk.Button(top_frame, text="🌓 Thème", command=lambda: appliquer_theme("sombre" if current_theme == "clair" else "clair")).pack(side="right", padx=5)
 
     # --- Main Pane ---
     main_frame = tk.PanedWindow(root, orient=tk.HORIZONTAL, sashrelief="raised", bg="#e0e0e0")
@@ -399,13 +442,96 @@ def setup_interface():
     update_gpu_status()
     
     # --- Events ---
-    editor.bind("<KeyRelease>", lambda e: (highlight_syntax(), update_outline()))
+    #editor.bind("<KeyRelease>", lambda e: (highlight_syntax(), update_outline()))
 
     root.bind_all("<Control-Shift-G>", lambda event: generer_texte_depuis_prompt())
     root.bind_all("<Control-Shift-C>", lambda event: complete_sentence())
+    root.bind_all("<Control-Shift-D>", lambda event: verifier_chktex())
     root.bind_all("<Control-o>", lambda event: ouvrir_fichier())
     root.bind_all("<Control-s>", lambda event: enregistrer_fichier())
+    
+    appliquer_theme("sombre")  # ou "sombre" si tu veux le mode dark par défaut
+    
+    # Update widgets (syntax, treeview)
+        # Timer pour limiter les updates lourds
+    update_timer = {"id": None}
+
+    def delayed_update(_=None):
+        if update_timer["id"] is not None:
+            root.after_cancel(update_timer["id"])
+        update_timer["id"] = root.after(2000, lambda: (highlight_syntax(), update_outline()))
+
+    # Déclenche uniquement sur des touches significatives
+    def on_key_release(event):
+        if event.keysym in ["Return", "space", "Tab", "BackSpace"]:
+            delayed_update()
+        elif event.char in "{}[]();,.":  # ponctuation clé
+            delayed_update()
+    editor.bind("<KeyRelease>", on_key_release)
     return root
+
+current_theme = "clair"
+
+def appliquer_theme(theme):
+    global current_theme
+    current_theme = theme
+
+    style = ttk.Style()
+    style.theme_use("clam")
+
+    if theme == "clair":
+        root.configure(bg="#f5f5f5")
+        bg_color = "#ffffff"
+        fg_color = "#000000"
+        tree_bg = "#ffffff"
+        tree_fg = "#000000"
+        sel_bg = "#cce6ff"
+        sel_fg = "#000000"
+        editor_bg = "#ffffff"
+        editor_fg = "#000000"
+        comment_color = "#6a737d"
+    elif theme == "sombre":
+        root.configure(bg="#1e1e1e")
+        bg_color = "#2e2e2e"
+        fg_color = "#ffffff"
+        tree_bg = "#2e2e2e"
+        tree_fg = "#ffffff"
+        sel_bg = "#44475a"
+        sel_fg = "#ffffff"
+        editor_bg = "#1e1e1e"
+        editor_fg = "#f8f8f2"
+        comment_color = "#6272a4"
+    else:
+        return
+
+    # Appliquer les couleurs au Text (éditeur)
+    editor.configure(bg=editor_bg, fg=editor_fg, insertbackground=fg_color, selectbackground=sel_bg, selectforeground=sel_fg)
+
+    # Mettre à jour les tags de syntaxe
+    font_editor = Font(family="Consolas", size=12)
+    editor.tag_configure("latex_command", foreground="#8be9fd", font=font_editor)
+    editor.tag_configure("latex_brace", foreground="#ff79c6", font=font_editor)
+    editor.tag_configure("latex_comment", foreground=comment_color, font=font_editor.copy().configure(slant="italic"))
+
+    # Appliquer le style Treeview
+    style.configure("Treeview",
+                    background=tree_bg,
+                    foreground=tree_fg,
+                    fieldbackground=tree_bg)
+    style.map("Treeview",
+              background=[('selected', sel_bg)],
+              foreground=[('selected', sel_fg)])
+
+    # Appliquer le style global aux boutons, labels, etc.
+    style.configure("TFrame", background=bg_color)
+    style.configure("TLabel", background=bg_color, foreground=fg_color)
+    style.configure("TButton", background=bg_color, foreground=fg_color)
+    style.configure("Horizontal.TProgressbar", troughcolor=bg_color, background=sel_bg)
+
+    # Rafraîchir la barre d’état si elle existe
+    for widget in root.winfo_children():
+        if isinstance(widget, ttk.Label):
+            widget.configure(background=bg_color, foreground=fg_color)
 
 
 ### --- MAIN --- ###

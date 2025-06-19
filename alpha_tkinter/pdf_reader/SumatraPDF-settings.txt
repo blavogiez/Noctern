@@ -86,17 +86,38 @@ CustomScreenDPI = 0
 
 FileStates [
 	[
+		FilePath = C:\Users\lab\Documents\BUT1\Semestre 2\SAé\SAE201-202\poo\rapportTools\S2-C_ZHENG_ZAVADSKIYI_LAVOGIEZ_POO-v4-rapport.pdf
+		Favorites [
+		]
+		IsPinned = false
+		IsMissing = false
+		OpenCount = 1
+		UseDefaultState = false
+		DisplayMode = continuous
+		ScrollPos = -1 561.111
+		PageNo = 69
+		Zoom = fit page
+		Rotation = 0
+		WindowState = 1
+		WindowPos = 950 0 980 1030
+		ShowToc = true
+		SidebarDx = 194
+		DisplayR2L = false
+		ReparseIdx = 0
+		TocState = 14 26
+	]
+	[
 		FilePath = C:\Users\lab\Documents\BUT1\AutomaTeX\alpha_tkinter\res\auguste_renoir.pdf
 		Favorites [
 		]
 		IsPinned = false
 		IsMissing = false
-		OpenCount = 2
+		OpenCount = 4
 		UseDefaultState = false
 		DisplayMode = continuous
-		ScrollPos = -1 -1
+		ScrollPos = -1 138.771
 		PageNo = 1
-		Zoom = fit page
+		Zoom = fit width
 		Rotation = 0
 		WindowState = 1
 		WindowPos = 950 0 980 1030
@@ -111,10 +132,10 @@ FileStates [
 		]
 		IsPinned = false
 		IsMissing = false
-		OpenCount = 15
+		OpenCount = 17
 		UseDefaultState = false
 		DisplayMode = continuous
-		ScrollPos = -1 610.845
+		ScrollPos = -1 609.72
 		PageNo = 20
 		Zoom = 66.67
 		Rotation = 0
@@ -175,20 +196,30 @@ SessionData [
 				PageNo = 20
 				Zoom = 66.67
 				Rotation = 0
-				ScrollPos = -1 610.845
+				ScrollPos = -1 609.72
 				ShowToc = false
 			]
 			[
 				FilePath = C:\Users\lab\Documents\BUT1\AutomaTeX\alpha_tkinter\res\auguste_renoir.pdf
 				DisplayMode = continuous
 				PageNo = 1
-				Zoom = fit page
+				Zoom = fit width
 				Rotation = 0
-				ScrollPos = -1 -1
+				ScrollPos = -1 138.771
 				ShowToc = false
 			]
+			[
+				FilePath = C:\Users\lab\Documents\BUT1\Semestre 2\SAé\SAE201-202\poo\rapportTools\S2-C_ZHENG_ZAVADSKIYI_LAVOGIEZ_POO-v4-rapport.pdf
+				DisplayMode = continuous
+				PageNo = 69
+				Zoom = fit page
+				Rotation = 0
+				ScrollPos = -1 561.111
+				ShowToc = true
+				TocState = 14 26
+			]
 		]
-		TabIndex = 3
+		TabIndex = 4
 		WindowState = 1
 		WindowPos = 950 0 980 1030
 		SidebarDx = 194
