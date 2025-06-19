@@ -6,6 +6,11 @@
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 from tkinter.font import Font
+
+# Image copy-paste
+from PIL import ImageGrab
+from datetime import datetime
+
 import requests
 import subprocess
 import os
@@ -173,6 +178,88 @@ def afficher_pdf(pdf_path):
         subprocess.Popen([lecteur_pdf, pdf_path])
     except Exception as e:
         messagebox.showerror("Erreur ouverture PDF", str(e))
+        
+## -- Image copy-paste -- ##
+
+# - Getting current section to place the image png file correctly - #
+
+def extraire_structure_section(contenu, position):
+    """Retourne la section actuelle selon la position du curseur dans le contenu"""
+    lignes = contenu[:position].split("\n")
+
+    section = sous_section = sous_sous_section = "default"
+
+    for ligne in lignes:
+        if r"\section{" in ligne:
+            match = re.search(r"\\section\{(.+?)\}", ligne)
+            if match:
+                section = match.group(1).strip().replace(" ", "_")
+                sous_section = "default"
+                sous_sous_section = "default"
+        elif r"\subsection{" in ligne:
+            match = re.search(r"\\subsection\{(.+?)\}", ligne)
+            if match:
+                sous_section = match.group(1).strip().replace(" ", "_")
+                sous_sous_section = "default"
+        elif r"\subsubsection{" in ligne:
+            match = re.search(r"\\subsubsection\{(.+?)\}", ligne)
+            if match:
+                sous_sous_section = match.group(1).strip().replace(" ", "_")
+
+    return section, sous_section, sous_sous_section
+
+def coller_image():
+    global fichier_actuel
+    current_file_path = fichier_actuel
+    try:
+        image = ImageGrab.grabclipboard()
+        if image is None:
+            messagebox.showwarning("Avertissement", "Aucune image dans le presse-papiers.")
+            return
+
+        # 📍 Répertoire du fichier en cours
+        current_file = current_file_path if current_file_path else "document.tex"
+        base_dir = os.path.dirname(current_file) or "."
+
+        # 📐 Récupération des titres de section
+        contenu = editor.get("1.0", tk.END)
+        position = editor.index(tk.INSERT)
+        index_caractere = int(editor.count("1.0", position)[0])
+
+        section, sous_section, sous_sous_section = extraire_structure_section(contenu, index_caractere)
+
+        # 📂 Construction du chemin complet
+        fig_path = os.path.join(base_dir, "figures", section, sous_section, sous_sous_section)
+        os.makedirs(fig_path, exist_ok=True)
+
+        # 🔢 Nom de fichier trié
+        index = 1
+        while True:
+            nom_fichier = f"fig{index}.png"
+            chemin_complet = os.path.join(fig_path, nom_fichier)
+            if not os.path.exists(chemin_complet):
+                break
+            index += 1
+
+        image.save(chemin_complet, "PNG")
+
+        # 📎 Chemin LaTeX relatif
+        chemin_latex = os.path.relpath(chemin_complet, base_dir).replace("\\", "/")
+
+        # 🧩 Insertion dans le code LaTeX
+        code = (
+            "\n\\begin{figure}[h!]\n"
+            "    \\centering\n"
+            f"    \\includegraphics[width=0.8\\textwidth]{{{chemin_latex}}}\n"
+            f"    \\caption{{Légende ici}}\n"
+            f"    \\label{{fig:{section}_{sous_section}_{index}}}\n"
+            "\\end{figure}\n"
+        )
+
+        editor.insert(tk.INSERT, code)
+
+    except Exception as e:
+        messagebox.showerror("Erreur", f"Erreur lors du collage de l’image :\n{str(e)}")
 
 ## -- When opening PDF File, resize the two windows on an equal size -- ##
         
@@ -447,6 +534,7 @@ def setup_interface():
     root.bind_all("<Control-Shift-G>", lambda event: generer_texte_depuis_prompt())
     root.bind_all("<Control-Shift-C>", lambda event: complete_sentence())
     root.bind_all("<Control-Shift-D>", lambda event: verifier_chktex())
+    root.bind_all("<Control-Shift-V>", lambda event: coller_image())
     root.bind_all("<Control-o>", lambda event: ouvrir_fichier())
     root.bind_all("<Control-s>", lambda event: enregistrer_fichier())
     
