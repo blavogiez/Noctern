@@ -1,19 +1,43 @@
-### Requirements for the app to work
+# Application Requirements
 
-## Windows-only
+## Operating System
 
-## Ollama (Local command-line LLMs)
+- Windows only
 
-# After installation, add your "ollama.exe" to PATH environment variables. ()
-# To install the models, just type "ollama pull {model}" in a terminal
-# (Generations are GPU hungry)
-# (Recommended : At least having a graphic card because APU graphics just won't do it.)
+## Required Dependencies
 
-## chktex (LaTeX command-line troubleshooter)
+### 1. Ollama (Local command-line LLMs)
 
-# MiKTeX is recommended (auto-installs the TeX packages missing on your computer)
+To use local language models via Ollama:
 
-## Argostranslate (AI translation )
-# (CPU Hungry)
+- After installing Ollama, add the `ollama.exe` executable to your system's **PATH** environment variable.
+- To download a model, run the following command in your terminal: `ollama pull <model_name>`
 
-(If a requirement isn't fulfilled, it won't cause the program to crash. Just know that when you call the buttons | functions that need them, it won't work.)
+- Notes:
+- Model generation is highly GPU-intensive.
+- A dedicated graphics card is strongly recommended.
+- Integrated graphics (such as APU-based solutions) are unlikely to be sufficient.
+
+---
+
+### 2. chktex (LaTeX command-line troubleshooting)
+
+To analyze and debug LaTeX documents from the command line:
+
+- Installing **MiKTeX** is recommended, as it automatically handles missing TeX packages.
+- Make sure `chktex` is available in your system's **PATH**.
+
+---
+
+### 3. Argos Translate (Offline AI-based translation)
+
+- This tool is CPU-intensive.
+- Install Argos Translate to enable offline translation functionality.
+
+---
+
+## Important Notes
+
+- If a dependency is missing, the application will not crash.
+- However, any function or button that relies on a missing dependency will simply not work.
+
