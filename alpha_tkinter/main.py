@@ -20,6 +20,12 @@ import threading
 import re
 
 fichier_actuel = None  # ⬅️ Pour suivre le fichier ouvert
+editor = None
+root = None
+tree = None
+progress_bar = None
+line_numbers_canvas = None # Pour la numérotation des lignes
+font_editor_global = None # Pour stocker la police de l'éditeur globalement
 
 ### --- Editor logic --- ###
 
@@ -467,8 +473,90 @@ def generer_texte_depuis_prompt():
     
 ### --- INTERFACE --- ###
 
+# Timer pour limiter les updates lourds - déplacé au niveau global
+heavy_update_timer_id = None
+
+def perform_heavy_updates():
+    global heavy_update_timer_id # Assurer l'accès à la variable globale
+    heavy_update_timer_id = None # Réinitialiser avant d'exécuter
+    if editor: # Vérifier si les widgets sont initialisés
+        highlight_syntax()
+    if tree:
+        update_outline()
+    if line_numbers_canvas:
+        line_numbers_canvas.redraw()
+
+def schedule_heavy_updates(_=None):
+    global heavy_update_timer_id # Assurer l'accès à la variable globale
+    if root and heavy_update_timer_id is not None: # Vérifier si root existe
+        root.after_cancel(heavy_update_timer_id)
+    if root: # Vérifier si root existe
+        heavy_update_timer_id = root.after(200, perform_heavy_updates) # Délai réduit à 200ms
+
+## -- Line numbering -- ##
+
+class LineNumbers(tk.Canvas):
+    def __init__(self, master, editor_widget, font, **kwargs):
+        super().__init__(master, **kwargs)
+        self.editor = editor_widget
+        self.font = font
+        # Couleurs par défaut (seront mises à jour par appliquer_theme)
+        self.text_color = "#6a737d" 
+        self.bg_color = "#f0f0f0"   
+        self.config(width=40, bg=self.bg_color, highlightthickness=0, bd=0)
+
+    def update_theme(self, text_color, bg_color):
+        self.text_color = text_color
+        self.bg_color = bg_color
+        self.config(bg=self.bg_color)
+        self.redraw()
+
+    def redraw(self, *args):
+        self.delete("all")
+        if not self.editor or not self.winfo_exists():
+            return
+
+        # Synchroniser la vue y du canevas avec celle de l'éditeur
+        # Ceci est géré par la commande de défilement, mais un appel ici peut être utile
+        # self.yview_moveto(self.editor.yview()[0])
+
+        # Obtenir la première ligne visible dans l'éditeur
+        first_visible_line_str = self.editor.index("@0,0")
+        
+        # Calculer le numéro de la dernière ligne du document
+        last_doc_line_str = self.editor.index("end-1c")
+        last_doc_line_num = int(last_doc_line_str.split('.')[0])
+        if last_doc_line_str == "1.0" and not self.editor.get("1.0", "1.end"): # Éditeur vraiment vide
+            last_doc_line_num = 0
+
+        # Ajuster la largeur du canevas en fonction du nombre de chiffres des lignes
+        max_digits = len(str(last_doc_line_num)) if last_doc_line_num > 0 else 1
+        new_width = self.font.measure("0" * max_digits) + 10  # 5px de padding de chaque côté
+        if self.winfo_width() != new_width:
+            self.config(width=new_width)
+
+        # Itérer sur les lignes visibles ou partiellement visibles
+        current_line_editor_str = first_visible_line_str
+        while True:
+            dline = self.editor.dlineinfo(current_line_editor_str)
+            if dline is None:  # Plus de lignes visibles
+                break
+            
+            x, y, w, h, baseline = dline
+            linenum_str = current_line_editor_str.split(".")[0]
+
+            self.create_text(new_width - 5, y, anchor="ne",
+                             text=linenum_str, font=self.font, fill=self.text_color)
+            
+            next_line_editor_str = self.editor.index(f"{current_line_editor_str}+1line")
+            if next_line_editor_str == current_line_editor_str: # Fin du document ou erreur
+                break
+            current_line_editor_str = next_line_editor_str
+            if int(current_line_editor_str.split('.')[0]) > last_doc_line_num + 5: # Sécurité
+                break
+
 def setup_interface():
-    global editor, root, tree, progress_bar
+    global editor, root, tree, progress_bar, line_numbers_canvas, font_editor_global
     root = tk.Tk()
     root.title("AutomaTeX v1.0")
     root.geometry("1920x1080")
@@ -479,6 +567,7 @@ def setup_interface():
     style.theme_use("clam")
 
     font_editor = Font(family="Consolas", size=12)
+    font_editor_global = font_editor # Stocker pour appliquer_theme si besoin
 
     # --- Top Buttons ---
     top_frame = ttk.Frame(root, padding=5)
@@ -501,11 +590,33 @@ def setup_interface():
     tree.bind("<<TreeviewSelect>>", aller_a_section)
     main_frame.add(tree_frame, width=250)
 
-    # --- Text Editor ---
-    editor_frame = ttk.Frame(main_frame)
-    editor = tk.Text(editor_frame, wrap="word", font=font_editor, undo=True, bg="#ffffff", fg="#333333")
-    editor.pack(fill="both", expand=True, padx=2, pady=2)
-    main_frame.add(editor_frame, stretch="always")
+    # --- Editor Container (Line Numbers + Text Editor + Scrollbar) ---
+    editor_container = ttk.Frame(main_frame) # Utiliser ttk.Frame pour la cohérence
+
+    editor = tk.Text(editor_container, wrap="word", font=font_editor, undo=True, 
+                     bg="#ffffff", fg="#333333", highlightthickness=0, bd=0)
+
+    # Scrollbar pour l'éditeur (doit être créée avant de configurer yscrollcommand)
+    editor_scrollbar = ttk.Scrollbar(editor_container, orient="vertical", command=editor.yview)
+    
+    # Canvas pour les numéros de ligne
+    line_numbers_canvas = LineNumbers(editor_container, editor_widget=editor, font=font_editor)
+    line_numbers_canvas.pack(side="left", fill="y")
+
+    editor_scrollbar.pack(side="right", fill="y")
+    editor.pack(side="left", fill="both", expand=True) # L'éditeur remplit l'espace restant
+
+    # Configurer yscrollcommand de l'éditeur pour mettre à jour la scrollbar ET les numéros de ligne
+    def combined_yscroll_command(*args):
+        editor_scrollbar.set(*args)
+        if line_numbers_canvas:
+            # editor.yview() retourne (top_fraction, bottom_fraction)
+            current_y_view = editor.yview()
+            line_numbers_canvas.yview_moveto(current_y_view[0])
+            line_numbers_canvas.redraw()
+
+    editor.config(yscrollcommand=combined_yscroll_command)
+    main_frame.add(editor_container, stretch="always")
 
     # --- Line numbers
     
@@ -552,28 +663,25 @@ def setup_interface():
     
     appliquer_theme("sombre")  # ou "sombre" si tu veux le mode dark par défaut
     
-    # Update widgets (syntax, treeview)
-        # Timer pour limiter les updates lourds
-    update_timer = {"id": None}
-
-    def delayed_update(_=None):
-        if update_timer["id"] is not None:
-            root.after_cancel(update_timer["id"])
-        update_timer["id"] = root.after(2000, lambda: (highlight_syntax(), update_outline()))
 
     # Déclenche uniquement sur des touches significatives
     def on_key_release(event):
-        if event.keysym in ["Return", "space", "Tab", "BackSpace"]:
-            delayed_update()
+        # Les touches qui modifient la structure des lignes ou le contenu de manière significative
+        if event.keysym in ["Return", "BackSpace", "Delete", "Control_L", "Control_R", "Shift_L", "Shift_R"]:
+            schedule_heavy_updates()
+        # Les touches qui peuvent affecter la syntaxe ou le besoin de rafraîchir
         elif event.char in "{}[]();,.":  # ponctuation clé
-            delayed_update()
+            schedule_heavy_updates()
+        elif event.keysym == "space" or event.keysym == "Tab": # Espace et Tab peuvent aussi affecter l'outline
+            schedule_heavy_updates()
+        # Pour les autres touches (saisie de texte simple), le défilement gère la position des numéros.
+        # Un rafraîchissement complet est moins critique immédiatement.
     editor.bind("<KeyRelease>", on_key_release)
+    editor.bind("<Configure>", schedule_heavy_updates) # Redessiner si la taille de l'éditeur change (ex: wrap)
     return root
 
-current_theme = "clair"
-
 def appliquer_theme(theme):
-    global current_theme
+    global current_theme, line_numbers_canvas, font_editor_global
     current_theme = theme
 
     style = ttk.Style()
@@ -590,6 +698,8 @@ def appliquer_theme(theme):
         editor_bg = "#ffffff"
         editor_fg = "#000000"
         comment_color = "#6a737d"
+        ln_text_color = "#6a737d" # Couleur du texte des numéros de ligne
+        ln_bg_color = "#f0f0f0"   # Couleur de fond des numéros de ligne
     elif theme == "sombre":
         root.configure(bg="#1e1e1e")
         bg_color = "#2e2e2e"
@@ -601,6 +711,8 @@ def appliquer_theme(theme):
         editor_bg = "#1e1e1e"
         editor_fg = "#f8f8f2"
         comment_color = "#6272a4"
+        ln_text_color = "#6272a4" # Similaire aux commentaires
+        ln_bg_color = "#282a36"   # Un peu différent du fond de l'éditeur pour se démarquer
     else:
         return
 
@@ -608,7 +720,7 @@ def appliquer_theme(theme):
     editor.configure(bg=editor_bg, fg=editor_fg, insertbackground=fg_color, selectbackground=sel_bg, selectforeground=sel_fg)
 
     # Mettre à jour les tags de syntaxe
-    font_editor = Font(family="Consolas", size=12)
+    font_editor = font_editor_global # Utiliser la police globale stockée
     editor.tag_configure("latex_command", foreground="#8be9fd", font=font_editor)
     editor.tag_configure("latex_brace", foreground="#ff79c6", font=font_editor)
     editor.tag_configure("latex_comment", foreground=comment_color, font=font_editor.copy().configure(slant="italic"))
@@ -633,9 +745,29 @@ def appliquer_theme(theme):
         if isinstance(widget, ttk.Label):
             widget.configure(background=bg_color, foreground=fg_color)
 
+    # Mettre à jour le thème du canevas des numéros de ligne
+    if line_numbers_canvas:
+        line_numbers_canvas.update_theme(text_color=ln_text_color, bg_color=ln_bg_color)
+
+    # Rafraîchir l'affichage après le changement de thème
+    perform_heavy_updates() # S'assure que tout est redessiné avec le nouveau thème
+
+current_theme = "clair" # Initialiser le thème
 
 ### --- MAIN --- ###
 
 if __name__ == "__main__":
     root = setup_interface()
+    appliquer_theme("sombre")  # Appliquer le thème sombre par défaut ou "clair"
+
+    # Appel initial pour s'assurer que tout est dessiné correctement
+    # perform_heavy_updates() est déjà appelé à la fin de appliquer_theme
+    # Mais un appel direct à redraw peut être utile après que la fenêtre soit visible.
+    def initial_draw():
+        if line_numbers_canvas:
+            line_numbers_canvas.redraw()
+        highlight_syntax() # S'assurer que la coloration est appliquée au contenu initial
+        update_outline()
+
+    root.after(100, initial_draw) # Petit délai pour s'assurer que la GUI est prête
     root.mainloop()
