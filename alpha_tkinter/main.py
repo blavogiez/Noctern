@@ -410,45 +410,57 @@ def generer_texte_depuis_prompt():
             messagebox.showwarning("Attention", "Le prompt est vide.")
             return
 
-        contexte = get_contexte(nb_back, nb_forward)
+        def run_generation():
+            try:
+                contexte = get_contexte(nb_back, nb_forward)
 
-        prompt = f"""Tu es un assistant d'écriture intelligent. Un utilisateur t’a donné une consigne pour générer du texte à insérer dans un document.
+                prompt = f"""Tu es un assistant d'écriture intelligent. Un utilisateur t'a donné une consigne pour générer du texte à insérer dans un document.
 
-        Contrainte principale : réponds uniquement avec la génération demandée, sans préambule, signature, explication ou reformulation de la consigne.
+                Contrainte principale : réponds uniquement avec la génération demandée, sans préambule, signature, explication ou reformulation de la consigne.
 
-        Langue : exclusivement en français, registre soutenu mais naturel. Le ton doit rester cohérent avec le contexte fourni.
+                Langue : exclusivement en français, registre soutenu mais naturel. Le ton doit rester cohérent avec le contexte fourni.
 
-        Prompt utilisateur :
-        "{prompt_user}"
+                Prompt utilisateur :
+                "{prompt_user}"
 
-        Contexte autour du curseur :
-        \"\"\"{contexte}\"\"\"
+                Contexte autour du curseur :
+                \"\"\"{contexte}\"\"\"
 
-        Instructions :
-        - Ne modifie pas le contexte.
-        - Génère uniquement le texte correspondant à la consigne.
-        - Respecte la continuité logique et thématique du texte.
-        - Ta réponse doit s’insérer de manière fluide dans le contenu existant.
+                Instructions :
+                - Ne modifie pas le contexte.
+                - Génère uniquement le texte correspondant à la consigne.
+                - Respecte la continuité logique et thématique du texte.
+                - Ta réponse doit s'insérer de manière fluide dans le contenu existant.
 
-        Texte à insérer :
-        """
+                Texte à insérer :
+                """
 
+                response = requests.post("http://localhost:11434/api/generate", json={
+                    "model": "mistral",
+                    "prompt": prompt,
+                    "stream": False
+                })
 
-        try:
-            response = requests.post("http://localhost:11434/api/generate", json={
-                "model": "mistral",
-                "prompt": prompt,
-                "stream": False
-            })
+                if response.status_code == 200:
+                    result = response.json().get("response").strip()
+                    editor.after(0, lambda: editor.insert(tk.INSERT, result))
+                else:
+                    editor.after(0, lambda: messagebox.showerror("Erreur LLM", f"Statut : {response.status_code}"))
+            except Exception as e:
+                editor.after(0, lambda: messagebox.showerror("Erreur connexion", str(e)))
+            finally:
+                editor.after(0, lambda: progress_bar.pack_forget())
+                editor.after(0, lambda: progress_bar.stop())
 
-            if response.status_code == 200:
-                result = response.json().get("response").strip()
-                editor.insert(tk.INSERT, result)
-                fenetre.destroy()
-            else:
-                messagebox.showerror("Erreur LLM", f"Statut : {response.status_code}")
-        except Exception as e:
-            messagebox.showerror("Erreur connexion", str(e))
+        # Fermer la fenêtre immédiatement
+        fenetre.destroy()
+        
+        # Afficher la barre de progression
+        progress_bar.pack(pady=2)
+        progress_bar.start(10)
+
+        # Lancer la génération dans un thread séparé
+        threading.Thread(target=run_generation, daemon=True).start()
 
     tk.Button(fenetre, text="Générer", command=envoyer_prompt).grid(row=3, column=0, columnspan=2, pady=10)
     entry_prompt.focus()
@@ -461,7 +473,7 @@ def setup_interface():
     root.title("AutomaTeX v1.0")
     root.geometry("1920x1080")
     root.configure(bg="#f5f5f5")
-    root.iconbitmap("res/automatex.ico")  # ← Assure-toi que automatex.ico est dans le même dossier
+    #root.iconbitmap("res/automatex.ico")  # ← Assure-toi que automatex.ico est dans le même dossier
 
     style = ttk.Style()
     style.theme_use("clam")
