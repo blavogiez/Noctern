@@ -12,6 +12,15 @@ get_theme_setting_func = None # To get theme colors for dialogs
 prompt_history = [] # To store user prompt history for generation
 MAX_PROMPT_HISTORY = 20 # Maximum number of prompts to store in history
 
+def update_prompt_history_response(user_prompt_key, new_response_text):
+    """Updates the response for a given user_prompt_key in the global prompt_history."""
+    global prompt_history
+    for i, (p_user, p_resp) in enumerate(prompt_history):
+        # Match the specific prompt that was being processed
+        if p_user == user_prompt_key and p_resp == "⏳ Generating...":
+            prompt_history[i] = (p_user, new_response_text)
+            break
+
 def set_llm_globals(editor_widget, root_widget, progress_bar_widget, get_theme_setting_callback):
     """Sets the global references to the main widgets."""
     global editor, root, llm_progress_bar, get_theme_setting_func
@@ -192,21 +201,26 @@ def generate_text_from_prompt(initial_prompt_text=None):
     history_listbox.config(yscrollcommand=history_scrollbar.set)
 
     for item in prompt_history:
-        history_listbox.insert(tk.END, item)
+        user_p, _ = item # We only display the user prompt in the listbox
+        display_user = user_p[:100] + '...' if len(user_p) > 100 else user_p # Truncate prompt for listbox
+        listbox_item_text = f"Q: {display_user}"
+        history_listbox.insert(tk.END, listbox_item_text)
 
     if not prompt_history:
         history_listbox.insert(tk.END, "No history yet.")
         history_listbox.config(state=tk.DISABLED)
+    else:
+        history_listbox.config(state=tk.NORMAL)
 
     main_pane.add(history_frame, width=250, minsize=150) # Add history frame to pane
-
     # --- Right Pane: Prompt Input and Controls ---
     input_controls_frame = ttk.Frame(main_pane, padding=(5,0,0,0)) # Add some padding to the left of input
 
     # Configure resizing for the input_controls_frame
     input_controls_frame.grid_rowconfigure(1, weight=1) # Row for the text_prompt
-    input_controls_frame.grid_columnconfigure(1, weight=1) # Column for the text_prompt
-
+    input_controls_frame.grid_rowconfigure(6, weight=0) # Row for the response text, initially no weight
+    input_controls_frame.grid_columnconfigure(0, weight=1) # Column for the text widgets
+    
     ttk.Label(input_controls_frame, text="Your Prompt:").grid(row=0, column=0, columnspan=2, sticky="nw", padx=5, pady=(0,5))
     
     text_prompt = tk.Text(input_controls_frame, height=10, width=50, wrap="word") # Initial width
@@ -225,6 +239,24 @@ def generate_text_from_prompt(initial_prompt_text=None):
 
     if initial_prompt_text:
         text_prompt.insert("1.0", initial_prompt_text)
+
+    # --- LLM Response Display Area ---
+    llm_response_label = ttk.Label(input_controls_frame, text="LLM Response:")
+    # llm_response_label.grid(row=5, column=0, columnspan=2, sticky="nw", padx=5, pady=(10,5)) # Gridded on selection
+
+    text_response = tk.Text(input_controls_frame, height=10, width=50, wrap="word", state="disabled") # Read-only
+
+    text_response.configure(
+        relief=tk.FLAT, borderwidth=0, font=("Consolas", 10),
+        bg=dialog_input_bg, fg=dialog_input_fg, # Use input colors
+        insertbackground=get_theme_setting_func("editor_insert_bg", dialog_fg), # Cursor color (though disabled)
+        selectbackground=get_theme_setting_func("sel_bg", "#cce5ff"),
+        selectforeground=get_theme_setting_func("sel_fg", "#000000")
+    )
+    response_scrollbar = ttk.Scrollbar(input_controls_frame, orient="vertical", command=text_response.yview)
+    text_response.config(yscrollcommand=response_scrollbar.set)
+    # text_response and response_scrollbar are gridded on history selection
+
 
     # --- Define run_generation function (moved outside send_prompt) ---
     def run_generation(user_prompt, num_back, num_forward):
@@ -253,7 +285,8 @@ def generate_text_from_prompt(initial_prompt_text=None):
                 - Generate only the text corresponding to the instruction.
                 - Respect the logical and thematic continuity of the text.
                 - Your response should integrate smoothly into the existing content.
-
+                - Write your answer following the keywords mentionned.
+                
                 Text to insert:
                 """
 
@@ -269,15 +302,22 @@ def generate_text_from_prompt(initial_prompt_text=None):
                 result = response.json().get("response", "").strip()
                 # Insert the generated text into the editor on the main thread
                 editor.after(0, lambda: editor.insert(tk.INSERT, result))
+                update_prompt_history_response(user_prompt, result)
             else:
                 # Show error message on the main thread
-                editor.after(0, lambda: messagebox.showerror("LLM Error", f"Status: {response.status_code}\nResponse: {response.text[:200]}..."))
+                error_msg = f"Status: {response.status_code}\nResponse: {response.text[:200]}..."
+                editor.after(0, lambda: messagebox.showerror("LLM Error", error_msg))
+                update_prompt_history_response(user_prompt, f"❌ Error: {response.status_code}")
 
         except requests.exceptions.ConnectionError:
-             editor.after(0, lambda: messagebox.showerror("Connection Error", "Could not connect to LLM API. Is the backend running?"))
+            error_msg = "Could not connect to LLM API. Is the backend running?"
+            editor.after(0, lambda: messagebox.showerror("Connection Error", error_msg))
+            update_prompt_history_response(user_prompt, "❌ Connection Error")
         except Exception as e:
             # Show any other errors on the main thread
-            editor.after(0, lambda: messagebox.showerror("LLM Generation Error", str(e)))
+            error_msg = str(e)
+            editor.after(0, lambda: messagebox.showerror("LLM Generation Error", error_msg))
+            update_prompt_history_response(user_prompt, f"❌ Exception: {error_msg[:50]}...")
         finally:
             # Hide progress bar on the main thread
             editor.after(0, lambda: llm_progress_bar.pack_forget())
@@ -288,12 +328,41 @@ def generate_text_from_prompt(initial_prompt_text=None):
         selection = widget.curselection()
         if selection:
             index = selection[0]
-            selected_prompt_text = widget.get(index)
-            if selected_prompt_text != "No history yet.":
+            # Ensure the selected index is valid for prompt_history
+            if 0 <= index < len(prompt_history):
+                selected_user_prompt, selected_llm_response = prompt_history[index] # Get the original user prompt and response
                 text_prompt.delete("1.0", tk.END)
-                text_prompt.insert("1.0", selected_prompt_text)
-    history_listbox.bind("<<ListboxSelect>>", on_history_select)
+                text_prompt.insert("1.0", selected_user_prompt)
 
+                # Show and populate the response area
+                llm_response_label.grid(row=5, column=0, columnspan=2, sticky="nw", padx=5, pady=(10,5))
+                text_response.grid(row=6, column=0, columnspan=2, padx=5, pady=(0,5), sticky="nsew")
+                response_scrollbar.grid(row=6, column=2, sticky="ns", pady=(0,5))
+                input_controls_frame.grid_rowconfigure(6, weight=1) # Allow response area to expand
+
+                # Display the response in the response text widget
+                text_response.config(state="normal") # Enable temporarily to insert
+                text_response.delete("1.0", tk.END)
+                text_response.insert("1.0", selected_llm_response)
+                text_response.config(state="disabled") # Disable again
+            else: # "No history yet." or invalid selection
+                # Hide the response area
+                llm_response_label.grid_remove()
+                text_response.grid_remove()
+                response_scrollbar.grid_remove()
+                input_controls_frame.grid_rowconfigure(6, weight=0) # Prevent empty row from expanding
+                text_response.config(state="normal")
+                text_response.delete("1.0", tk.END)
+                text_response.config(state="disabled")
+        else: # No selection in listbox
+            llm_response_label.grid_remove()
+            text_response.grid_remove()
+            response_scrollbar.grid_remove()
+            input_controls_frame.grid_rowconfigure(6, weight=0)
+            text_response.config(state="normal")
+            text_response.delete("1.0", tk.END)
+            text_response.config(state="disabled")
+    history_listbox.bind("<<ListboxSelect>>", on_history_select)
     ttk.Label(input_controls_frame, text="Lines before cursor:").grid(row=2, column=0, sticky="w", padx=5, pady=5)
     entry_back = ttk.Entry(input_controls_frame, width=10)
     entry_back.insert(0, "5")
@@ -304,7 +373,7 @@ def generate_text_from_prompt(initial_prompt_text=None):
     entry_forward.insert(0, "0")
     entry_forward.grid(row=3, column=1, sticky="w", padx=5, pady=5)
 
-    button_frame = ttk.Frame(input_controls_frame) # Frame for the generate button
+    button_frame = ttk.Frame(input_controls_frame) # Frame for the generate button - Adjusted row
     button_frame.grid(row=4, column=0, columnspan=3, pady=(10,0), sticky="ew") # Span 3 for scrollbar
     ttk.Button(button_frame, text="Generate", command=lambda: send_prompt()).pack() # send_prompt needs to be defined or passed
 
@@ -333,12 +402,19 @@ def generate_text_from_prompt(initial_prompt_text=None):
         # The global prompt_history list is correctly updated here.
         if user_prompt: # Only add non-empty prompts
             global prompt_history
-            if user_prompt in prompt_history:
-                prompt_history.remove(user_prompt) # Remove to re-add at top
-            prompt_history.insert(0, user_prompt) # Add to the beginning (most recent)
-            if len(prompt_history) > MAX_PROMPT_HISTORY:
-                prompt_history.pop() # Remove the oldest from the end
+            # Remove any existing entry for this user_prompt to move it to the top
+            # or to update its status if it was already there.
+            new_history = []
+            for p_hist_user, p_hist_resp in prompt_history:
+                if p_hist_user != user_prompt:
+                    new_history.append((p_hist_user, p_hist_resp))
+            prompt_history = new_history
 
+            # Add the new/updated prompt at the beginning with "Generating..." status
+            prompt_history.insert(0, (user_prompt, "⏳ Generating..."))
+
+            if len(prompt_history) > MAX_PROMPT_HISTORY:
+                prompt_history = prompt_history[:MAX_PROMPT_HISTORY] # Keep the newest items
         # Close the prompt window immediately AFTER updating history
         prompt_window.destroy()
 
