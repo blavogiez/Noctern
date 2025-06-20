@@ -17,8 +17,15 @@ editor = None
 outline_tree = None
 llm_progress_bar = None
 line_numbers_canvas = None
-editor_font = None # Store the font globally for theme updates
+editor_font = None # Store the editor font globally
 current_file_path = None # To track the currently open file
+_theme_settings = {} # Store current theme colors and properties
+current_theme = "light" # Initial theme state, ensure it matches main.py if it sets it first
+
+# Zoom settings
+zoom_factor = 1.1
+min_font_size = 8
+max_font_size = 36
 
 # Timer for heavy updates (syntax, outline, line numbers)
 heavy_update_timer_id = None
@@ -42,6 +49,48 @@ def schedule_heavy_updates(_=None):
     if root:
         # Schedule the update to happen after 200ms of inactivity
         heavy_update_timer_id = root.after(200, perform_heavy_updates)
+
+def get_theme_setting(key, default=None):
+    """Gets a value from the current theme settings."""
+    return _theme_settings.get(key, default)
+
+## -- Zoom Functionality -- ##
+
+def zoom_in(_=None): # Accept optional event argument
+    """Increases the editor font size."""
+    global editor_font
+    if not editor or not editor_font:
+        return
+
+    current_size = editor_font.cget("size")
+    new_size = int(current_size * zoom_factor)
+    new_size = min(new_size, max_font_size)
+
+    if new_size != current_size:
+        editor_font = Font(family=editor_font.cget("family"), size=new_size, weight=editor_font.cget("weight"), slant=editor_font.cget("slant"))
+        editor.config(font=editor_font)
+        if line_numbers_canvas:
+            line_numbers_canvas.font = editor_font # Update the font reference
+            line_numbers_canvas.redraw()
+        perform_heavy_updates() # Reapply syntax highlighting and outline
+
+def zoom_out(_=None): # Accept optional event argument
+    """Decreases the editor font size."""
+    global editor_font
+    if not editor or not editor_font:
+        return
+
+    current_size = editor_font.cget("size")
+    new_size = int(current_size / zoom_factor)
+    new_size = max(new_size, min_font_size)
+
+    if new_size != current_size:
+        editor_font = Font(family=editor_font.cget("family"), size=new_size, weight=editor_font.cget("weight"), slant=editor_font.cget("slant"))
+        editor.config(font=editor_font)
+        if line_numbers_canvas:
+            line_numbers_canvas.font = editor_font # Update the font reference
+            line_numbers_canvas.redraw()
+        perform_heavy_updates() # Reapply syntax highlighting and outline
 
 ## -- File Operations -- ##
 
@@ -175,13 +224,13 @@ class LineNumbers(tk.Canvas):
                  break
 
 def setup_gui():
-    """Sets up the main application window and widgets."""
-    global root, editor, outline_tree, llm_progress_bar, line_numbers_canvas, editor_font, current_file_path
+    """Sets up the main application window and widgets.""" # Corrected global list
+    global root, editor, outline_tree, llm_progress_bar, line_numbers_canvas, editor_font, current_file_path, _theme_settings, status_bar, main_pane
 
     root = tk.Tk()
     root.title("AutomaTeX v1.0")
     root.geometry("1200x800") # Adjusted default size
-    root.configure(bg="#f5f5f5") # Default light theme background
+    # Initial background will be set by apply_theme
     # root.iconbitmap("res/automatex.ico") # Ensure icon file exists
 
     style = ttk.Style()
@@ -190,48 +239,48 @@ def setup_gui():
     editor_font = Font(family="Consolas", size=12) # Store font globally
 
     # --- Top Buttons Frame ---
-    top_frame = ttk.Frame(root, padding=5)
-    top_frame.pack(fill="x")
+    top_frame = ttk.Frame(root, padding=10) # Increased padding
+    top_frame.pack(fill="x", pady=(0, 5)) # Add some pady below top_frame
 
     # File buttons
-    ttk.Button(top_frame, text="📂 Open", command=open_file).pack(side="left", padx=5)
-    ttk.Button(top_frame, text="💾 Save", command=save_file).pack(side="left", padx=5)
+    ttk.Button(top_frame, text="📂 Open", command=open_file).pack(side="left", padx=3, pady=3)
+    ttk.Button(top_frame, text="💾 Save", command=save_file).pack(side="left", padx=3, pady=3)
 
     # LaTeX buttons
-    ttk.Button(top_frame, text="🛠 Compile (Ctrl+S)", command=latex_compiler.compile_latex).pack(side="left", padx=5)
-    ttk.Button(top_frame, text="🔍 Check Syntax (Ctrl+Shift+D)", command=latex_compiler.run_chktex_check).pack(side="left", padx=5)
+    ttk.Button(top_frame, text="🛠 Compile", command=latex_compiler.compile_latex).pack(side="left", padx=3, pady=3) # Shorter text
+    ttk.Button(top_frame, text="🔍 Check", command=latex_compiler.run_chktex_check).pack(side="left", padx=3, pady=3) # Shorter text
 
     # LLM buttons
-    ttk.Button(top_frame, text="✨ Complete (Ctrl+Shift+C)", command=llm_logic.complete_with_llm).pack(side="left", padx=5)
-    ttk.Button(top_frame, text="🎯 Generate Text (Ctrl+Shift+G)", command=llm_logic.generate_text_from_prompt).pack(side="left", padx=5)
-    ttk.Button(top_frame, text="🔑 Set Keywords", command=llm_logic.set_llm_keywords_dialog).pack(side="left", padx=5)
+    ttk.Button(top_frame, text="✨ Complete", command=llm_logic.complete_with_llm).pack(side="left", padx=3, pady=3) # Shorter text
+    ttk.Button(top_frame, text="🎯 Generate", command=llm_logic.generate_text_from_prompt).pack(side="left", padx=3, pady=3) # Shorter text
+    ttk.Button(top_frame, text="🔑 Keywords", command=llm_logic.set_llm_keywords_dialog).pack(side="left", padx=3, pady=3) # Shorter text
 
     # Theme button
     # Use a lambda to toggle between themes
-    ttk.Button(top_frame, text="🌓 Theme", command=lambda: apply_theme("dark" if current_theme == "light" else "light")).pack(side="right", padx=5)
+    ttk.Button(top_frame, text="🌓 Theme", command=lambda: apply_theme("dark" if current_theme == "light" else "light")).pack(side="right", padx=3, pady=3)
 
     # --- Main Paned Window (Outline Tree + Editor) ---
     # PanedWindow allows resizing the panes by dragging the sash
-    main_pane = tk.PanedWindow(root, orient=tk.HORIZONTAL, sashrelief="raised", bg="#e0e0e0")
+    main_pane = tk.PanedWindow(root, orient=tk.HORIZONTAL, sashrelief=tk.FLAT, sashwidth=6) # Modern sash
     main_pane.pack(fill="both", expand=True)
 
     # --- Left Outline Tree Frame ---
-    outline_frame = ttk.Frame(main_pane)
+    outline_frame = ttk.Frame(main_pane) # No specific padding here, let Treeview fill
     # Treeview to display document outline
     outline_tree = ttk.Treeview(outline_frame, show="tree")
     outline_tree.pack(fill="both", expand=True)
     # Bind selection event to go_to_section function
     outline_tree.bind("<<TreeviewSelect>>", editor_logic.go_to_section)
     # Add the outline frame to the main pane
-    main_pane.add(outline_frame, width=250) # Set initial width
+    main_pane.add(outline_frame, width=250, minsize=150) # Added minsize
 
     # --- Editor Container Frame (Line Numbers + Text Editor + Scrollbar) ---
     # Use a ttk.Frame for consistency and theme support
-    editor_container = ttk.Frame(main_pane)
+    editor_container = ttk.Frame(main_pane) # No specific padding here
 
     # Text Editor widget
     editor = tk.Text(editor_container, wrap="word", font=editor_font, undo=True,
-                     bg="#ffffff", fg="#333333", highlightthickness=0, bd=0)
+                     relief=tk.FLAT, borderwidth=0, highlightthickness=0) # Modern flat look
 
     # Vertical Scrollbar for the editor
     # Must be created before configuring the editor's yscrollcommand
@@ -259,22 +308,23 @@ def setup_gui():
     editor.config(yscrollcommand=sync_scroll_and_redraw_linenums)
 
     # Add the editor container to the main pane
-    main_pane.add(editor_container, stretch="always") # Editor pane stretches to fill space
+    main_pane.add(editor_container, stretch="always", minsize=400) # Added minsize
 
     # --- Configure Syntax Highlighting Tags ---
     # These tags are configured here but applied in editor_logic.apply_syntax_highlighting
     # Default light theme colors
-    editor.tag_configure("latex_command", foreground="#005cc5", font=editor_font)
-    editor.tag_configure("latex_brace", foreground="#d73a49", font=editor_font)
-    editor.tag_configure("latex_comment", foreground="#6a737d", font=editor_font.copy().configure(slant="italic"))
+    editor.tag_configure("latex_command", font=editor_font) # Colors set in apply_theme
+    editor.tag_configure("latex_brace", font=editor_font)   # Colors set in apply_theme
+    comment_font_initial = editor_font.copy()
+    comment_font_initial.configure(slant="italic")
+    editor.tag_configure("latex_comment", font=comment_font_initial) # Colors set in apply_theme
 
     # --- LLM Progress Bar ---
     llm_progress_bar = ttk.Progressbar(root, mode="indeterminate", length=200)
-    llm_progress_bar.pack(pady=2)
-    llm_progress_bar.pack_forget() # Hide by default
+    # Packing is handled by llm_logic functions when it's shown/hidden
 
     # --- Status Bar (for GPU info) ---
-    status_bar = ttk.Label(root, text="⏳ Initializing...", anchor="w", relief="sunken", padding=4)
+    status_bar = ttk.Label(root, text="⏳ Initializing...", anchor="w", relief=tk.FLAT, padding=(5, 3)) # Modern flat look
     status_bar.pack(side="bottom", fill="x")
 
     # Function to update GPU status (runs in a loop)
@@ -297,7 +347,7 @@ def setup_gui():
 
         status_bar.config(text=status_text)
         # Schedule the next update
-        root.after(3000, update_gpu_status) # Update every 3 seconds
+        root.after(300, update_gpu_status) # Update every 0.3 seconds
 
     # Start the GPU status update loop
     update_gpu_status()
@@ -310,6 +360,10 @@ def setup_gui():
     root.bind_all("<Control-Shift-V>", lambda event: editor_logic.paste_image())
     root.bind_all("<Control-Shift-K>", lambda event: llm_logic.set_llm_keywords_dialog()) # Shortcut for keywords
     root.bind_all("<Control-o>", lambda event: open_file())
+
+    # Bind Zoom shortcuts
+    root.bind_all("<Control-equal>", zoom_in) # Ctrl+= is common for zoom in
+    root.bind_all("<Control-minus>", zoom_out)
     root.bind_all("<Control-s>", lambda event: save_file())
 
     # --- Bind Editor Events for Updates ---
@@ -336,97 +390,133 @@ def setup_gui():
     # Pass the created widgets and variables to the other modules
     editor_logic.set_editor_globals(editor, outline_tree, current_file_path)
     latex_compiler.set_compiler_globals(editor, root, current_file_path)
-    llm_logic.set_llm_globals(editor, root, llm_progress_bar)
+    llm_logic.set_llm_globals(editor, root, llm_progress_bar, get_theme_setting)
 
     return root # Return the root window
 
-current_theme = "light" # Global variable to track the current theme
-
-def apply_theme(theme):
+def apply_theme(theme_name):
     """Applies the specified theme (light or dark) to the GUI."""
-    global current_theme, line_numbers_canvas, editor_font
-    current_theme = theme # Update the global theme state
+    global current_theme, line_numbers_canvas, editor_font, _theme_settings, root, editor, outline_tree, status_bar, main_pane
+
+    if not root: # Guard against calling too early
+        return
+
+    current_theme = theme_name
 
     style = ttk.Style()
-    # Use clam theme as a base, then configure specific elements
-    style.theme_use("clam")
+    style.theme_use("clam") # Reset to base theme before applying custom styles
+
+    ui_font_family = "Segoe UI" if platform.system() == "Windows" else "Helvetica"
+    ui_font_normal = Font(family=ui_font_family, size=9)
+    ui_font_button = Font(family=ui_font_family, size=9, weight="normal")
 
     # Define colors based on theme
-    if theme == "light":
-        root_bg = "#f5f5f5"
-        bg_color = "#ffffff" # Background for most widgets
-        fg_color = "#000000" # Foreground for most widgets
-        tree_bg = "#ffffff"
-        tree_fg = "#000000"
-        sel_bg = "#cce6ff" # Selection background
-        sel_fg = "#000000" # Selection foreground
-        editor_bg = "#ffffff"
-        editor_fg = "#000000"
-        comment_color = "#6a737d" # Color for LaTeX comments
-        ln_text_color = "#6a737d" # Line number text color
-        ln_bg_color = "#f0f0f0"   # Line number background color
-    elif theme == "dark":
-        root_bg = "#1e1e1e"
-        bg_color = "#2e2e2e"
-        fg_color = "#ffffff"
-        tree_bg = "#2e2e2e"
-        tree_fg = "#ffffff"
-        sel_bg = "#44475a"
-        sel_fg = "#ffffff"
-        editor_bg = "#1e1e1e"
-        editor_fg = "#f8f8f2"
-        comment_color = "#6272a4"
-        ln_text_color = "#6272a4" # Similar to comments
-        ln_bg_color = "#282a36"   # Slightly different from editor background
+    if theme_name == "light":
+        _theme_settings = {
+            "root_bg": "#f0f0f0", "bg_color": "#ffffff", "fg_color": "#222222",
+            "disabled_fg_color": "#aaaaaa", "tree_bg": "#ffffff", "tree_fg": "#222222",
+            "sel_bg": "#cce5ff", "sel_fg": "#000000",
+            "editor_bg": "#ffffff", "editor_fg": "#1e1e1e", "editor_insert_bg": "#333333",
+            "comment_color": "#008000", "command_color": "#0000ff", "brace_color": "#ff007f",
+            "ln_text_color": "#888888", "ln_bg_color": "#f7f7f7",
+            "button_bg": "#e0e0e0", "button_fg": "#000000", "button_active_bg": "#c0c0c0", "button_relief": tk.FLAT,
+            "input_bg": "#ffffff", "input_fg": "#000000", "input_border": "#cccccc",
+            "scrollbar_trough": "#e0e0e0", "scrollbar_slider": "#b0b0b0",
+            "progressbar_bg": "#0078d4", "panedwindow_sash": "#d0d0d0",
+            "status_bar_bg": "#e0f0e0", "status_bar_fg": "#333333", # Changed status bar background to light green
+        }
+    elif theme_name == "dark":
+        _theme_settings = {
+            "root_bg": "#1e1e1e", "bg_color": "#2b2b2b", "fg_color": "#d0d0d0",
+            "disabled_fg_color": "#666666", "tree_bg": "#2b2b2b", "tree_fg": "#d0d0d0",
+            "sel_bg": "#004a9e", "sel_fg": "#ffffff",
+            "editor_bg": "#1e1e1e", "editor_fg": "#d4d4d4", "editor_insert_bg": "#d4d4d4",
+            "comment_color": "#608b4e", "command_color": "#569cd6", "brace_color": "#c586c0",
+            "ln_text_color": "#6a6a6a", "ln_bg_color": "#252526",
+            "button_bg": "#3c3c3c", "button_fg": "#f0f0f0", "button_active_bg": "#505050", "button_relief": tk.FLAT,
+            "input_bg": "#333333", "input_fg": "#d0d0d0", "input_border": "#555555",
+            "scrollbar_trough": "#333333", "scrollbar_slider": "#505050",
+            "progressbar_bg": "#007acc", "panedwindow_sash": "#3c3c3c",
+            "status_bar_bg": "#3cb371", "status_bar_fg": "#ffffff", # Changed status bar background to dark green
+        }
     else:
-        # If theme is neither 'light' nor 'dark', do nothing
         return
 
     # Apply colors to the root window
-    root.configure(bg=root_bg)
+    root.configure(bg=_theme_settings["root_bg"])
 
-    # Apply colors to the Text editor widget
-    editor.configure(bg=editor_bg, fg=editor_fg, insertbackground=fg_color,
-                     selectbackground=sel_bg, selectforeground=sel_fg)
+    # --- ttk Styles ---
+    style.configure(".", font=ui_font_normal, background=_theme_settings["bg_color"], foreground=_theme_settings["fg_color"])
+    style.configure("TFrame", background=_theme_settings["bg_color"])
+    style.configure("TLabel", background=_theme_settings["bg_color"], foreground=_theme_settings["fg_color"], font=ui_font_normal)
+    if 'status_bar' in globals() and status_bar:
+        status_bar.configure(background=_theme_settings["status_bar_bg"], foreground=_theme_settings["status_bar_fg"], font=ui_font_normal)
 
-    # Update syntax highlighting tag configurations
-    # Use the global editor_font
-    editor.tag_configure("latex_command", foreground="#8be9fd" if theme == "dark" else "#005cc5", font=editor_font)
-    editor.tag_configure("latex_brace", foreground="#ff79c6" if theme == "dark" else "#d73a49", font=editor_font)
-    # Create a new font object for italic comments if needed, or configure the existing one
-    comment_font = editor_font.copy()
-    comment_font.configure(slant="italic")
-    editor.tag_configure("latex_comment", foreground=comment_color, font=comment_font)
+    style.configure("TButton",
+                    background=_theme_settings["button_bg"], foreground=_theme_settings["button_fg"],
+                    relief=_theme_settings["button_relief"], font=ui_font_button,
+                    padding=(8, 4), borderwidth=0, focuscolor=_theme_settings["button_bg"])
+    style.map("TButton",
+              background=[('active', _theme_settings["button_active_bg"]), ('pressed', _theme_settings["button_active_bg"])],
+              foreground=[('disabled', _theme_settings["disabled_fg_color"])])
 
     # Apply style to Treeview
     style.configure("Treeview",
-                    background=tree_bg,
-                    foreground=tree_fg,
-                    fieldbackground=tree_bg,
-                    bordercolor=bg_color) # Use background color for border
+                    background=_theme_settings["tree_bg"], foreground=_theme_settings["tree_fg"],
+                    fieldbackground=_theme_settings["tree_bg"], borderwidth=0, relief=tk.FLAT, font=ui_font_normal)
     style.map("Treeview",
-              background=[('selected', sel_bg)],
-              foreground=[('selected', sel_fg)])
+              background=[('selected', _theme_settings["sel_bg"])],
+              foreground=[('selected', _theme_settings["sel_fg"])])
+    style.configure("Treeview.Heading", font=ui_font_button, relief=tk.FLAT,
+                    background=_theme_settings["button_bg"], foreground=_theme_settings["button_fg"])
 
-    # Apply style to other ttk widgets (Frame, Label, Button, Progressbar)
-    style.configure("TFrame", background=bg_color)
-    style.configure("TLabel", background=bg_color, foreground=fg_color)
-    style.configure("TButton", background=bg_color, foreground=fg_color)
-    style.configure("Horizontal.TProgressbar", troughcolor=bg_color, background=sel_bg)
-    style.configure("TPanedwindow", background=bg_color) # Apply to PanedWindow sash area
+    style.configure("TEntry",
+                    fieldbackground=_theme_settings["input_bg"], foreground=_theme_settings["input_fg"],
+                    insertcolor=_theme_settings["editor_insert_bg"], relief=tk.FLAT,
+                    borderwidth=1, bordercolor=_theme_settings["input_border"],
+                    lightcolor=_theme_settings["input_bg"], darkcolor=_theme_settings["input_bg"])
+    style.map("TEntry",
+              bordercolor=[('focus', _theme_settings["sel_bg"])],
+              foreground=[('disabled', _theme_settings["disabled_fg_color"])],
+              fieldbackground=[('disabled', _theme_settings["root_bg"])])
 
-    # Manually update background/foreground for some widgets if needed
-    # The status bar is a ttk.Label, should be covered by "TLabel" style, but explicit update is safer
-    for widget in root.winfo_children():
-        if isinstance(widget, ttk.Label):
-            # Check if it's the status bar or another label
-            if widget.cget("text").startswith("🎮 GPU:") or widget.cget("text").startswith("⚠️ GPU:"):
-                 widget.configure(background=bg_color, foreground=fg_color)
+    style.configure("Vertical.TScrollbar",
+                    troughcolor=_theme_settings["scrollbar_trough"], background=_theme_settings["scrollbar_slider"],
+                    relief=tk.FLAT, borderwidth=0, arrowsize=12, arrowcolor=_theme_settings["fg_color"])
+    style.map("Vertical.TScrollbar", background=[('active', _theme_settings["sel_bg"])])
+
+    style.configure("Horizontal.TScrollbar",
+                    troughcolor=_theme_settings["scrollbar_trough"], background=_theme_settings["scrollbar_slider"],
+                    relief=tk.FLAT, borderwidth=0, arrowsize=12, arrowcolor=_theme_settings["fg_color"])
+    style.map("Horizontal.TScrollbar", background=[('active', _theme_settings["sel_bg"])])
+
+    style.configure("TPanedwindow", background=_theme_settings["root_bg"])
+    if 'main_pane' in globals() and main_pane:
+         main_pane.configure(sashrelief=tk.FLAT, sashwidth=6, bg=_theme_settings["panedwindow_sash"])
+
+    style.configure("Horizontal.TProgressbar",
+                    troughcolor=_theme_settings["bg_color"], background=_theme_settings["progressbar_bg"],
+                    thickness=10, borderwidth=0, relief=tk.FLAT)
+
+    # --- tk Widget Theming (Manual) ---
+    if editor:
+        editor.configure(
+            background=_theme_settings["editor_bg"], foreground=_theme_settings["editor_fg"],
+            selectbackground=_theme_settings["sel_bg"], selectforeground=_theme_settings["sel_fg"],
+            insertbackground=_theme_settings["editor_insert_bg"],
+            relief=tk.FLAT, borderwidth=0
+        )
+        editor.tag_configure("latex_command", foreground=_theme_settings["command_color"], font=editor_font)
+        editor.tag_configure("latex_brace", foreground=_theme_settings["brace_color"], font=editor_font)
+        comment_font = editor_font.copy()
+        comment_font.configure(slant="italic")
+        editor.tag_configure("latex_comment", foreground=_theme_settings["comment_color"], font=comment_font)
 
     # Update the theme of the line numbers canvas
     if line_numbers_canvas:
-        line_numbers_canvas.update_theme(text_color=ln_text_color, bg_color=ln_bg_color)
+        line_numbers_canvas.update_theme(text_color=_theme_settings["ln_text_color"], bg_color=_theme_settings["ln_bg_color"])
 
     # Trigger a heavy update to redraw syntax highlighting, outline, and line numbers
-    # This ensures everything is displayed with the new theme colors
     perform_heavy_updates()
+    if root:
+        root.update_idletasks()

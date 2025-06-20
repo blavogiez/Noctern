@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import messagebox, simpledialog
+from tkinter import messagebox, simpledialog, ttk # Added ttk
 import requests
 import threading
 
@@ -8,13 +8,15 @@ editor = None
 root = None
 llm_progress_bar = None
 llm_keywords = [] # To store user-defined LLM keywords
+get_theme_setting_func = None # To get theme colors for dialogs
 
-def set_llm_globals(editor_widget, root_widget, progress_bar_widget):
+def set_llm_globals(editor_widget, root_widget, progress_bar_widget, get_theme_setting_callback):
     """Sets the global references to the main widgets."""
-    global editor, root, llm_progress_bar
+    global editor, root, llm_progress_bar, get_theme_setting_func
     editor = editor_widget
     root = root_widget
     llm_progress_bar = progress_bar_widget
+    get_theme_setting_func = get_theme_setting_callback
 
 def get_context(nb_lines_backwards=5, nb_lines_forwards=5):
     """Extracts text context around the cursor."""
@@ -139,23 +141,57 @@ def generate_text_from_prompt():
     prompt_window.title("Custom AI Generation")
     prompt_window.transient(root) # Keep window on top of root
     prompt_window.grab_set() # Modal window
+    if get_theme_setting_func:
+        prompt_window.configure(bg=get_theme_setting_func("root_bg", "#f0f0f0"))
+        dialog_fg = get_theme_setting_func("fg_color", "#000000")
+        dialog_input_bg = get_theme_setting_func("input_bg", "#ffffff")
+        dialog_input_fg = get_theme_setting_func("input_fg", "#000000")
+    else: # Fallback defaults
+        dialog_fg = "#000000"
+        dialog_input_bg = "#ffffff"
+        dialog_input_fg = "#000000"
 
-    tk.Label(prompt_window, text="Prompt:").grid(row=0, column=0, sticky="w", padx=5, pady=5)
-    entry_prompt = tk.Entry(prompt_window, width=60)
-    entry_prompt.grid(row=0, column=1, padx=5, pady=5)
+    # Main frame for content
+    content_frame = ttk.Frame(prompt_window, padding="10 10 10 10")
+    content_frame.pack(fill="both", expand=True)
 
-    tk.Label(prompt_window, text="Lines before cursor:").grid(row=1, column=0, sticky="w", padx=5, pady=5)
-    entry_back = tk.Entry(prompt_window, width=10)
+    # Configure resizing for the Toplevel window and the content_frame
+    prompt_window.grid_rowconfigure(0, weight=1)
+    prompt_window.grid_columnconfigure(0, weight=1)
+    content_frame.grid_rowconfigure(1, weight=1) # Row for the text_prompt
+    content_frame.grid_columnconfigure(1, weight=1) # Column for the text_prompt
+
+    ttk.Label(content_frame, text="Prompt:").grid(row=0, column=0, sticky="nw", padx=5, pady=(0,5)) # Align to top-west
+    
+    # Use a tk.Text widget for multi-line prompt input
+    text_prompt = tk.Text(content_frame, height=10, width=60, wrap="word") # Increased height slightly
+    text_prompt.grid(row=0, column=1, rowspan=2, padx=5, pady=(0,5), sticky="nsew") # Span 2 rows for better alignment with labels
+    
+    # Apply theme settings to the Text widget
+    text_prompt.configure(
+        relief=tk.FLAT, borderwidth=0, font=("Consolas", 10), # Consistent font, slightly smaller than editor
+        bg=dialog_input_bg, fg=dialog_input_fg, insertbackground=get_theme_setting_func("editor_insert_bg", "#000000"),
+        selectbackground=get_theme_setting_func("sel_bg", "#cce5ff"), 
+        selectforeground=get_theme_setting_func("sel_fg", "#000000")
+    )
+    # Add a scrollbar for the text_prompt
+    prompt_scrollbar = ttk.Scrollbar(content_frame, orient="vertical", command=text_prompt.yview)
+    prompt_scrollbar.grid(row=0, column=2, rowspan=2, sticky="ns", pady=(0,5))
+    text_prompt.config(yscrollcommand=prompt_scrollbar.set)
+
+
+    ttk.Label(content_frame, text="Lines before cursor:").grid(row=2, column=0, sticky="w", padx=5, pady=5)
+    entry_back = ttk.Entry(content_frame, width=10)
     entry_back.insert(0, "5") # Default 5 lines before
-    entry_back.grid(row=1, column=1, sticky="w", padx=5, pady=5)
+    entry_back.grid(row=2, column=1, sticky="w", padx=5, pady=5)
 
-    tk.Label(prompt_window, text="Lines after cursor:").grid(row=2, column=0, sticky="w", padx=5, pady=5)
-    entry_forward = tk.Entry(prompt_window, width=10)
+    ttk.Label(content_frame, text="Lines after cursor:").grid(row=3, column=0, sticky="w", padx=5, pady=5)
+    entry_forward = ttk.Entry(content_frame, width=10)
     entry_forward.insert(0, "0") # Default 0 lines after
-    entry_forward.grid(row=2, column=1, sticky="w", padx=5, pady=5)
+    entry_forward.grid(row=3, column=1, sticky="w", padx=5, pady=5)
 
     def send_prompt():
-        user_prompt = entry_prompt.get().strip()
+        user_prompt = text_prompt.get("1.0", tk.END).strip() # Get text from the Text widget
         try:
             num_back = int(entry_back.get())
             num_forward = int(entry_forward.get())
@@ -233,8 +269,12 @@ def generate_text_from_prompt():
         # Run the LLM request in a separate thread
         threading.Thread(target=run_generation, daemon=True).start()
 
-    tk.Button(prompt_window, text="Generate", command=send_prompt).grid(row=3, column=0, columnspan=2, pady=10, padx=5)
-    entry_prompt.focus() # Set focus to the prompt entry field
+    # Button frame for centering
+    button_frame = ttk.Frame(content_frame)
+    button_frame.grid(row=4, column=0, columnspan=3, pady=(10,0)) # Span all 3 columns (label, text, scrollbar)
+    ttk.Button(button_frame, text="Generate", command=send_prompt).pack()
+
+    text_prompt.focus() # Set focus to the prompt text field
     prompt_window.wait_window() # Wait until the prompt window is closed
 
 def set_llm_keywords_dialog():
@@ -249,12 +289,31 @@ def set_llm_keywords_dialog():
     keyword_window.transient(root) # Keep window on top of root
     keyword_window.grab_set()     # Modal window
     keyword_window.geometry("400x300") # Initial size
+    if get_theme_setting_func:
+        keyword_window.configure(bg=get_theme_setting_func("root_bg", "#f0f0f0"))
+        text_bg = get_theme_setting_func("editor_bg", "#ffffff")
+        text_fg = get_theme_setting_func("editor_fg", "#000000")
+        text_insert_bg = get_theme_setting_func("editor_insert_bg", "#000000")
+        text_sel_bg = get_theme_setting_func("sel_bg", "#cce5ff")
+        text_sel_fg = get_theme_setting_func("sel_fg", "#000000")
+    else: # Fallback defaults
+        text_bg = "#ffffff"
+        text_fg = "#000000"
+        text_insert_bg = "#000000"
+        text_sel_bg = "#cce5ff"
+        text_sel_fg = "#000000"
 
-    tk.Label(keyword_window, text="Enter keywords (one per line or comma-separated):").pack(pady=(10,5))
+
+    ttk.Label(keyword_window, text="Enter keywords (one per line or comma-separated):").pack(pady=(10,5))
 
     keyword_text_widget = tk.Text(keyword_window, height=10, width=45)
     keyword_text_widget.pack(pady=5, padx=10, fill="both", expand=True)
-
+    keyword_text_widget.configure(
+        relief=tk.FLAT, borderwidth=0, font=("Consolas", 11), # Consistent font
+        bg=text_bg, fg=text_fg, insertbackground=text_insert_bg,
+        selectbackground=text_sel_bg, selectforeground=text_sel_fg
+    )
+    
     # Pre-fill with existing keywords
     if llm_keywords:
         keyword_text_widget.insert(tk.END, "\n".join(llm_keywords))
@@ -280,6 +339,6 @@ def set_llm_keywords_dialog():
                 messagebox.showinfo("Keywords Cleared", "No valid keywords entered. LLM keywords list is empty.", parent=keyword_window)
         keyword_window.destroy()
 
-    tk.Button(keyword_window, text="Save Keywords", command=save_keywords_action).pack(pady=10)
+    ttk.Button(keyword_window, text="Save Keywords", command=save_keywords_action).pack(pady=10)
     keyword_text_widget.focus()
     keyword_window.wait_window()
