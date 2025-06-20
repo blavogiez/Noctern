@@ -26,7 +26,7 @@ line_numbers_canvas = None
 editor_font = None
 current_file_path = None
 current_theme = "light" # Initial theme state
-heavy_update_timer_id = None # Timer ID for scheduled updates
+heavy_update_timer_id = None # Timer ID for scheduled updates, managed by interface.py
 
 ### --- MAIN APPLICATION ENTRY POINT --- ###
 

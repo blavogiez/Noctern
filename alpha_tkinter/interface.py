@@ -27,7 +27,11 @@ zoom_factor = 1.1
 min_font_size = 8
 max_font_size = 36
 
-# Timer for heavy updates (syntax, outline, line numbers)
+# --- Configuration for Heavy Updates ---
+# Threshold for considering a file "large" (in number of lines)
+LARGE_FILE_LINE_THRESHOLD = 1000
+HEAVY_UPDATE_DELAY_NORMAL = 200  # milliseconds
+HEAVY_UPDATE_DELAY_LARGE_FILE = 1000  # milliseconds for large files
 heavy_update_timer_id = None
 
 # Status bar temporary message state
@@ -50,9 +54,23 @@ def schedule_heavy_updates(_=None):
     global heavy_update_timer_id
     if root and heavy_update_timer_id is not None:
         root.after_cancel(heavy_update_timer_id)
-    if root:
-        # Schedule the update to happen after 200ms of inactivity
-        heavy_update_timer_id = root.after(200, perform_heavy_updates)
+    if root and editor: # Ensure root and editor are available
+        current_delay = HEAVY_UPDATE_DELAY_NORMAL
+        try:
+            # Get total lines to determine if the file is large
+            last_line_index_str = editor.index("end-1c")
+            # Correctly get total_lines, handling empty editor
+            total_lines = 0
+            if last_line_index_str: # Ensure index is not None or empty
+                total_lines = int(last_line_index_str.split(".")[0])
+                if total_lines == 1 and not editor.get("1.0", "1.end").strip(): # Check if line 1 is empty
+                    total_lines = 0
+            
+            if total_lines > LARGE_FILE_LINE_THRESHOLD:
+                current_delay = HEAVY_UPDATE_DELAY_LARGE_FILE
+        except tk.TclError: # Handle cases where editor might not be ready
+            pass # Use normal delay
+        heavy_update_timer_id = root.after(current_delay, perform_heavy_updates)
 
 def get_theme_setting(key, default=None):
     """Gets a value from the current theme settings."""
