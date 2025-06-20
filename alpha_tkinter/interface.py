@@ -8,7 +8,7 @@ import platform
 # Import functions from other modules
 import editor_logic
 import latex_compiler
-import llm_logic
+import llm_service # MODIFIED: Import new llm_service
 
 # Global variables for main widgets and state
 # These are initialized in setup_gui and accessed by other modules
@@ -154,8 +154,8 @@ def open_file():
                 editor_logic.current_file_path = current_file_path
                 latex_compiler.current_file_path = current_file_path
                 
-                # Load prompt history for the newly opened file
-                llm_logic.load_prompt_history(current_file_path)
+                # Load prompt history for the newly opened file via llm_service
+                llm_service.load_prompt_history_for_current_file()
 
                 # Perform initial updates
                 perform_heavy_updates()
@@ -295,10 +295,10 @@ def setup_gui():
     ttk.Button(top_frame, text="🛠 Compile", command=latex_compiler.compile_latex).pack(side="left", padx=3, pady=3) # Shorter text
     ttk.Button(top_frame, text="🔍 Check", command=latex_compiler.run_chktex_check).pack(side="left", padx=3, pady=3) # Shorter text
 
-    # LLM buttons
-    ttk.Button(top_frame, text="✨ Complete", command=llm_logic.complete_with_llm).pack(side="left", padx=3, pady=3) # Shorter text
-    ttk.Button(top_frame, text="🎯 Generate", command=llm_logic.generate_text_from_prompt).pack(side="left", padx=3, pady=3) # Shorter text
-    ttk.Button(top_frame, text="🔑 Keywords", command=llm_logic.set_llm_keywords_dialog).pack(side="left", padx=3, pady=3) # Shorter text
+    # LLM buttons - MODIFIED to call llm_service functions
+    ttk.Button(top_frame, text="✨ Complete", command=llm_service.request_llm_to_complete_text).pack(side="left", padx=3, pady=3)
+    ttk.Button(top_frame, text="🎯 Generate", command=llm_service.open_generate_text_dialog).pack(side="left", padx=3, pady=3)
+    ttk.Button(top_frame, text="🔑 Keywords", command=llm_service.open_set_keywords_dialog).pack(side="left", padx=3, pady=3)
 
     # Theme button
     # Use a lambda to toggle between themes
@@ -408,11 +408,11 @@ def setup_gui():
 
     # --- Bind Keyboard Shortcuts ---
     # Bindings are on the root window to work application-wide
-    root.bind_all("<Control-Shift-G>", lambda event: llm_logic.generate_text_from_prompt())
-    root.bind_all("<Control-Shift-C>", lambda event: llm_logic.complete_with_llm())
+    root.bind_all("<Control-Shift-G>", lambda event: llm_service.open_generate_text_dialog()) # MODIFIED
+    root.bind_all("<Control-Shift-C>", lambda event: llm_service.request_llm_to_complete_text()) # MODIFIED
     root.bind_all("<Control-Shift-D>", lambda event: latex_compiler.run_chktex_check())
     root.bind_all("<Control-Shift-V>", lambda event: editor_logic.paste_image())
-    root.bind_all("<Control-Shift-K>", lambda event: llm_logic.set_llm_keywords_dialog()) # Shortcut for keywords
+    root.bind_all("<Control-Shift-K>", lambda event: llm_service.open_set_keywords_dialog()) # MODIFIED: Shortcut for keywords
     root.bind_all("<Control-o>", lambda event: open_file())
 
     # Bind Zoom shortcuts
@@ -444,11 +444,11 @@ def setup_gui():
     # Pass the created widgets and variables to the other modules
     editor_logic.set_editor_globals(editor, outline_tree, current_file_path)
     latex_compiler.set_compiler_globals(editor, root, current_file_path)
-    llm_logic.set_llm_globals(editor, root, llm_progress_bar, get_theme_setting, get_current_file_path_for_llm)
+    llm_service.initialize_llm_service(editor, root, llm_progress_bar, get_theme_setting, get_current_file_path_for_llm) # MODIFIED
 
     # Load initial prompt history (e.g., for an unsaved file or a global default)
-    # If current_file_path is None, load_prompt_history(None) will result in an empty history.
-    llm_logic.load_prompt_history(current_file_path)
+    # This is now handled inside llm_service.initialize_llm_service
+    # llm_service.load_prompt_history_for_current_file() # Called by initialize_llm_service
     return root # Return the root window
 
 

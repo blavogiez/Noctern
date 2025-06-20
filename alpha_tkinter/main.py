@@ -13,7 +13,7 @@ import tkinter as tk
 import interface
 import editor_logic
 import latex_compiler
-import llm_logic
+import llm_service # MODIFIED: Import new llm_service
 
 # Global variables (defined and managed primarily in interface.py)
 # We declare them here to make it clear they are part of the application state
@@ -50,7 +50,13 @@ if __name__ == "__main__":
     # This allows them to interact with the main GUI elements
     editor_logic.set_editor_globals(editor, outline_tree, current_file_path)
     latex_compiler.set_compiler_globals(editor, root, current_file_path)
-    llm_logic.set_llm_globals(editor, root, llm_progress_bar, interface.get_theme_setting, interface.get_current_file_path_for_llm)
+    # MODIFIED: Call the new initialization function for llm_service
+    llm_service.initialize_llm_service(
+        editor_widget_ref=editor,
+        root_window_ref=root,
+        progress_bar_widget_ref=llm_progress_bar,
+        theme_setting_getter_callback=interface.get_theme_setting,
+        current_file_path_getter_callback=interface.get_current_file_path_for_llm)
 
     # Apply the initial theme (e.g., dark mode by default)
     interface.apply_theme("dark")
