@@ -7,6 +7,7 @@ import threading
 editor = None
 root = None
 llm_progress_bar = None
+llm_keywords = [] # To store user-defined LLM keywords
 
 def set_llm_globals(editor_widget, root_widget, progress_bar_widget):
     """Sets the global references to the main widgets."""
@@ -78,7 +79,7 @@ def complete_with_llm():
                 previous_context = context[:last_dot_index + 1].strip()
 
             # Construct the prompt for the LLM
-            prompt = (
+            prompt = f"""
                 "Complete only the current sentence fragment, without rephrasing the context or including tags/code. "
                 "Maintain the same language. The beginning of the completion must strictly follow the beginning of the current phrase. "
                 "Respond only with natural, fluid, and coherent text. "
@@ -86,7 +87,10 @@ def complete_with_llm():
                 f"Context (up to 30 preceding lines):\n\"{previous_context}\"\n\n"
                 f"Beginning of the phrase to complete:\n\"{current_phrase_start}\"\n\n"
                 "Expected completion (short and natural, no final punctuation if it's already started):"
-            )
+
+                Keywords:
+                "{', '.join(llm_keywords)}"
+            """
 
             # Send request to the LLM API
             response = requests.post("http://localhost:11434/api/generate", json={
@@ -172,7 +176,7 @@ def generate_text_from_prompt():
                 context = get_context(num_back, num_forward)
 
                 # Construct the prompt for the LLM
-                prompt = f"""You are an intelligent writing assistant. A user has given you an instruction to generate text to insert into a document.
+                prompt = f"""You are an intelligent writing assistant. A user has given you an instruction to generate text to insert into a document. The user has also provided keywords to guide the generation.
 
                 Main constraint: Respond only with the requested generation, without preamble, signature, explanation, or rephrasing the instruction.
 
@@ -180,6 +184,9 @@ def generate_text_from_prompt():
 
                 User prompt:
                 "{user_prompt}"
+
+                Keywords:
+                "{', '.join(llm_keywords)}"
 
                 Context around the cursor:
                 \"\"\"{context}\"\"\"
@@ -229,3 +236,50 @@ def generate_text_from_prompt():
     tk.Button(prompt_window, text="Generate", command=send_prompt).grid(row=3, column=0, columnspan=2, pady=10, padx=5)
     entry_prompt.focus() # Set focus to the prompt entry field
     prompt_window.wait_window() # Wait until the prompt window is closed
+
+def set_llm_keywords_dialog():
+    """Opens a dialog for the user to set or update LLM keywords."""
+    global llm_keywords
+    if not root:
+        messagebox.showerror("Error", "Root window not available. Cannot open keywords dialog.")
+        return
+
+    keyword_window = tk.Toplevel(root)
+    keyword_window.title("Set LLM Keywords")
+    keyword_window.transient(root) # Keep window on top of root
+    keyword_window.grab_set()     # Modal window
+    keyword_window.geometry("400x300") # Initial size
+
+    tk.Label(keyword_window, text="Enter keywords (one per line or comma-separated):").pack(pady=(10,5))
+
+    keyword_text_widget = tk.Text(keyword_window, height=10, width=45)
+    keyword_text_widget.pack(pady=5, padx=10, fill="both", expand=True)
+
+    # Pre-fill with existing keywords
+    if llm_keywords:
+        keyword_text_widget.insert(tk.END, "\n".join(llm_keywords))
+
+    def save_keywords_action():
+        global llm_keywords
+        input_text = keyword_text_widget.get("1.0", tk.END).strip()
+        
+        if not input_text:
+            llm_keywords = []
+            messagebox.showinfo("Keywords Cleared", "LLM keywords list has been cleared.", parent=keyword_window)
+        else:
+            # Split by newline, then by comma, and filter out empty strings
+            raw_keywords = []
+            for line in input_text.split('\n'):
+                raw_keywords.extend(kw.strip() for kw in line.split(','))
+            
+            llm_keywords = [kw for kw in raw_keywords if kw] # Filter out empty/whitespace-only strings
+
+            if llm_keywords:
+                messagebox.showinfo("Keywords Saved", f"LLM keywords registered:\n- {', '.join(llm_keywords)}", parent=keyword_window)
+            else:
+                messagebox.showinfo("Keywords Cleared", "No valid keywords entered. LLM keywords list is empty.", parent=keyword_window)
+        keyword_window.destroy()
+
+    tk.Button(keyword_window, text="Save Keywords", command=save_keywords_action).pack(pady=10)
+    keyword_text_widget.focus()
+    keyword_window.wait_window()

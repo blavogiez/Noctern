@@ -91,10 +91,10 @@ FileStates [
 		]
 		IsPinned = false
 		IsMissing = false
-		OpenCount = 10
+		OpenCount = 11
 		UseDefaultState = false
 		DisplayMode = continuous
-		ScrollPos = -1 15.6008
+		ScrollPos = -1 14.8008
 		PageNo = 1
 		Zoom = 75
 		Rotation = 0
@@ -111,7 +111,7 @@ FileStates [
 		]
 		IsPinned = false
 		IsMissing = false
-		OpenCount = 5
+		OpenCount = 6
 		UseDefaultState = false
 		DisplayMode = continuous
 		ScrollPos = -1 754.288
@@ -132,7 +132,7 @@ FileStates [
 		]
 		IsPinned = false
 		IsMissing = false
-		OpenCount = 8
+		OpenCount = 9
 		UseDefaultState = false
 		DisplayMode = continuous
 		ScrollPos = -1 138.771
@@ -152,7 +152,7 @@ FileStates [
 		]
 		IsPinned = false
 		IsMissing = false
-		OpenCount = 21
+		OpenCount = 22
 		UseDefaultState = false
 		DisplayMode = continuous
 		ScrollPos = -1 607.921
@@ -224,7 +224,7 @@ SessionData [
 				PageNo = 1
 				Zoom = 75
 				Rotation = 0
-				ScrollPos = -1 15.6008
+				ScrollPos = -1 14.8008
 				ShowToc = false
 			]
 		]

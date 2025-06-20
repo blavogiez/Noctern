@@ -204,6 +204,7 @@ def setup_gui():
     # LLM buttons
     ttk.Button(top_frame, text="✨ Complete (Ctrl+Shift+C)", command=llm_logic.complete_with_llm).pack(side="left", padx=5)
     ttk.Button(top_frame, text="🎯 Generate Text (Ctrl+Shift+G)", command=llm_logic.generate_text_from_prompt).pack(side="left", padx=5)
+    ttk.Button(top_frame, text="🔑 Set Keywords", command=llm_logic.set_llm_keywords_dialog).pack(side="left", padx=5)
 
     # Theme button
     # Use a lambda to toggle between themes
@@ -307,6 +308,7 @@ def setup_gui():
     root.bind_all("<Control-Shift-C>", lambda event: llm_logic.complete_with_llm())
     root.bind_all("<Control-Shift-D>", lambda event: latex_compiler.run_chktex_check())
     root.bind_all("<Control-Shift-V>", lambda event: editor_logic.paste_image())
+    root.bind_all("<Control-Shift-K>", lambda event: llm_logic.set_llm_keywords_dialog()) # Shortcut for keywords
     root.bind_all("<Control-o>", lambda event: open_file())
     root.bind_all("<Control-s>", lambda event: save_file())
 
