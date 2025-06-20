@@ -9,6 +9,8 @@ root = None
 llm_progress_bar = None
 llm_keywords = [] # To store user-defined LLM keywords
 get_theme_setting_func = None # To get theme colors for dialogs
+prompt_history = [] # To store user prompt history for generation
+MAX_PROMPT_HISTORY = 20 # Maximum number of prompts to store in history
 
 def set_llm_globals(editor_widget, root_widget, progress_bar_widget, get_theme_setting_callback):
     """Sets the global references to the main widgets."""
@@ -129,18 +131,24 @@ def complete_with_llm():
     # Run the LLM request in a separate thread to keep the GUI responsive
     threading.Thread(target=run_completion, daemon=True).start()
 
-def generate_text_from_prompt():
+def generate_text_from_prompt(initial_prompt_text=None):
     """Opens a dialog to get a custom prompt for LLM text generation."""
     if not editor or not root or not llm_progress_bar:
         return
-
     # Use simpledialog or create a custom Toplevel window
-    # A custom Toplevel window is better for multiple inputs (prompt, lines before/after)
+    # A custom Toplevel window is better for multiple inputs and history display
 
     prompt_window = tk.Toplevel(root)
     prompt_window.title("Custom AI Generation")
     prompt_window.transient(root) # Keep window on top of root
     prompt_window.grab_set() # Modal window
+    prompt_window.geometry("800x600") # Increased size for history
+
+    # Theme settings
+    dialog_bg = "#f0f0f0"
+    dialog_fg = "#000000"
+    dialog_input_bg = "#ffffff"
+    dialog_input_fg = "#000000"
     if get_theme_setting_func:
         prompt_window.configure(bg=get_theme_setting_func("root_bg", "#f0f0f0"))
         dialog_fg = get_theme_setting_func("fg_color", "#000000")
@@ -148,71 +156,84 @@ def generate_text_from_prompt():
         dialog_input_fg = get_theme_setting_func("input_fg", "#000000")
     else: # Fallback defaults
         dialog_fg = "#000000"
+        dialog_bg = "#f0f0f0" # Ensure dialog_bg is set in fallback
         dialog_input_bg = "#ffffff"
         dialog_input_fg = "#000000"
 
-    # Main frame for content
-    content_frame = ttk.Frame(prompt_window, padding="10 10 10 10")
-    content_frame.pack(fill="both", expand=True)
+    prompt_window.configure(bg=dialog_bg)
 
-    # Configure resizing for the Toplevel window and the content_frame
-    prompt_window.grid_rowconfigure(0, weight=1)
-    prompt_window.grid_columnconfigure(0, weight=1)
-    content_frame.grid_rowconfigure(1, weight=1) # Row for the text_prompt
-    content_frame.grid_columnconfigure(1, weight=1) # Column for the text_prompt
+    # Main paned window for history and input areas
+    main_pane = tk.PanedWindow(prompt_window, orient=tk.HORIZONTAL, sashrelief=tk.FLAT, sashwidth=6)
+    if get_theme_setting_func:
+        main_pane.configure(bg=get_theme_setting_func("panedwindow_sash", "#d0d0d0"))
+    main_pane.pack(fill="both", expand=True, padx=10, pady=10)
 
-    ttk.Label(content_frame, text="Prompt:").grid(row=0, column=0, sticky="nw", padx=5, pady=(0,5)) # Align to top-west
+    # --- Left Pane: History Listbox ---
+    history_frame = ttk.Frame(main_pane, padding=(0,0,5,0)) # Add some padding to the right of history
+    ttk.Label(history_frame, text="Prompt History:").pack(pady=(0, 5), anchor="w")
+
+    history_listbox_frame = ttk.Frame(history_frame)
+    history_listbox_frame.pack(fill="both", expand=True)
+
+    history_listbox_bg = get_theme_setting_func("editor_bg", dialog_input_bg)
+    history_listbox_fg = get_theme_setting_func("editor_fg", dialog_input_fg)
+    history_listbox_select_bg = get_theme_setting_func("sel_bg", "#cce5ff")
+    history_listbox_select_fg = get_theme_setting_func("sel_fg", "#000000")
+
+    history_listbox = tk.Listbox(history_listbox_frame,
+                                 bg=history_listbox_bg, fg=history_listbox_fg,
+                                 selectbackground=history_listbox_select_bg, selectforeground=history_listbox_select_fg,
+                                 highlightthickness=0, borderwidth=1, relief=tk.SOLID,
+                                 activestyle='dotbox', font=("Consolas", 9), exportselection=False)
+    history_listbox.pack(side="left", fill="both", expand=True)
+
+    history_scrollbar = ttk.Scrollbar(history_listbox_frame, orient="vertical", command=history_listbox.yview)
+    history_scrollbar.pack(side="right", fill="y")
+    history_listbox.config(yscrollcommand=history_scrollbar.set)
+
+    for item in prompt_history:
+        history_listbox.insert(tk.END, item)
+
+    if not prompt_history:
+        history_listbox.insert(tk.END, "No history yet.")
+        history_listbox.config(state=tk.DISABLED)
+
+    main_pane.add(history_frame, width=250, minsize=150) # Add history frame to pane
+
+    # --- Right Pane: Prompt Input and Controls ---
+    input_controls_frame = ttk.Frame(main_pane, padding=(5,0,0,0)) # Add some padding to the left of input
+
+    # Configure resizing for the input_controls_frame
+    input_controls_frame.grid_rowconfigure(1, weight=1) # Row for the text_prompt
+    input_controls_frame.grid_columnconfigure(1, weight=1) # Column for the text_prompt
+
+    ttk.Label(input_controls_frame, text="Your Prompt:").grid(row=0, column=0, columnspan=2, sticky="nw", padx=5, pady=(0,5))
     
-    # Use a tk.Text widget for multi-line prompt input
-    text_prompt = tk.Text(content_frame, height=10, width=60, wrap="word") # Increased height slightly
-    text_prompt.grid(row=0, column=1, rowspan=2, padx=5, pady=(0,5), sticky="nsew") # Span 2 rows for better alignment with labels
+    text_prompt = tk.Text(input_controls_frame, height=10, width=50, wrap="word") # Initial width
+    text_prompt.grid(row=1, column=0, columnspan=2, padx=5, pady=(0,5), sticky="nsew")
     
-    # Apply theme settings to the Text widget
     text_prompt.configure(
-        relief=tk.FLAT, borderwidth=0, font=("Consolas", 10), # Consistent font, slightly smaller than editor
-        bg=dialog_input_bg, fg=dialog_input_fg, insertbackground=get_theme_setting_func("editor_insert_bg", "#000000"),
+        relief=tk.FLAT, borderwidth=0, font=("Consolas", 10),
+        bg=dialog_input_bg, fg=dialog_input_fg,
+        insertbackground=get_theme_setting_func("editor_insert_bg", dialog_fg),
         selectbackground=get_theme_setting_func("sel_bg", "#cce5ff"), 
         selectforeground=get_theme_setting_func("sel_fg", "#000000")
     )
-    # Add a scrollbar for the text_prompt
-    prompt_scrollbar = ttk.Scrollbar(content_frame, orient="vertical", command=text_prompt.yview)
-    prompt_scrollbar.grid(row=0, column=2, rowspan=2, sticky="ns", pady=(0,5))
+    prompt_scrollbar = ttk.Scrollbar(input_controls_frame, orient="vertical", command=text_prompt.yview)
+    prompt_scrollbar.grid(row=1, column=2, sticky="ns", pady=(0,5))
     text_prompt.config(yscrollcommand=prompt_scrollbar.set)
 
+    if initial_prompt_text:
+        text_prompt.insert("1.0", initial_prompt_text)
 
-    ttk.Label(content_frame, text="Lines before cursor:").grid(row=2, column=0, sticky="w", padx=5, pady=5)
-    entry_back = ttk.Entry(content_frame, width=10)
-    entry_back.insert(0, "5") # Default 5 lines before
-    entry_back.grid(row=2, column=1, sticky="w", padx=5, pady=5)
-
-    ttk.Label(content_frame, text="Lines after cursor:").grid(row=3, column=0, sticky="w", padx=5, pady=5)
-    entry_forward = ttk.Entry(content_frame, width=10)
-    entry_forward.insert(0, "0") # Default 0 lines after
-    entry_forward.grid(row=3, column=1, sticky="w", padx=5, pady=5)
-
-    def send_prompt():
-        user_prompt = text_prompt.get("1.0", tk.END).strip() # Get text from the Text widget
+    # --- Define run_generation function (moved outside send_prompt) ---
+    def run_generation(user_prompt, num_back, num_forward):
         try:
-            num_back = int(entry_back.get())
-            num_forward = int(entry_forward.get())
-        except ValueError:
-            messagebox.showerror("Input Error", "Line counts must be integers.", parent=prompt_window)
-            return
+            # Get context based on user input
+            context = get_context(num_back, num_forward)
 
-        if not user_prompt:
-            messagebox.showwarning("Warning", "The prompt is empty.", parent=prompt_window)
-            return
-
-        # Close the prompt window immediately
-        prompt_window.destroy()
-
-        def run_generation():
-            try:
-                # Get context based on user input
-                context = get_context(num_back, num_forward)
-
-                # Construct the prompt for the LLM
-                prompt = f"""You are an intelligent writing assistant. A user has given you an instruction to generate text to insert into a document. The user has also provided keywords to guide the generation.
+            # Construct the prompt for the LLM
+            prompt = f"""You are an intelligent writing assistant. A user has given you an instruction to generate text to insert into a document. The user has also provided keywords to guide the generation.
 
                 Main constraint: Respond only with the requested generation, without preamble, signature, explanation, or rephrasing the instruction.
 
@@ -236,44 +257,97 @@ def generate_text_from_prompt():
                 Text to insert:
                 """
 
-                # Send request to the LLM API
-                response = requests.post("http://localhost:11434/api/generate", json={
-                    "model": "mistral", # Or another configured model
-                    "prompt": prompt,
-                    "stream": False
-                })
+            # Send request to the LLM API
+            response = requests.post("http://localhost:11434/api/generate", json={
+                "model": "mistral", # Or another configured model
+                "prompt": prompt,
+                "stream": False
+            })
 
-                # Process the response
-                if response.status_code == 200:
-                    result = response.json().get("response", "").strip()
-                    # Insert the generated text into the editor on the main thread
-                    editor.after(0, lambda: editor.insert(tk.INSERT, result))
-                else:
-                    # Show error message on the main thread
-                    editor.after(0, lambda: messagebox.showerror("LLM Error", f"Status: {response.status_code}\nResponse: {response.text[:200]}..."))
+            # Process the response
+            if response.status_code == 200:
+                result = response.json().get("response", "").strip()
+                # Insert the generated text into the editor on the main thread
+                editor.after(0, lambda: editor.insert(tk.INSERT, result))
+            else:
+                # Show error message on the main thread
+                editor.after(0, lambda: messagebox.showerror("LLM Error", f"Status: {response.status_code}\nResponse: {response.text[:200]}..."))
 
-            except requests.exceptions.ConnectionError:
-                 editor.after(0, lambda: messagebox.showerror("Connection Error", "Could not connect to LLM API. Is the backend running?"))
-            except Exception as e:
-                # Show any other errors on the main thread
-                editor.after(0, lambda: messagebox.showerror("LLM Generation Error", str(e)))
-            finally:
-                # Hide progress bar on the main thread
-                editor.after(0, lambda: llm_progress_bar.pack_forget())
-                llm_progress_bar.stop()
+        except requests.exceptions.ConnectionError:
+             editor.after(0, lambda: messagebox.showerror("Connection Error", "Could not connect to LLM API. Is the backend running?"))
+        except Exception as e:
+            # Show any other errors on the main thread
+            editor.after(0, lambda: messagebox.showerror("LLM Generation Error", str(e)))
+        finally:
+            # Hide progress bar on the main thread
+            editor.after(0, lambda: llm_progress_bar.pack_forget())
+            editor.after(0, lambda: llm_progress_bar.stop()) # Ensure stop is also on main thread
+
+    def on_history_select(event):
+        widget = event.widget
+        selection = widget.curselection()
+        if selection:
+            index = selection[0]
+            selected_prompt_text = widget.get(index)
+            if selected_prompt_text != "No history yet.":
+                text_prompt.delete("1.0", tk.END)
+                text_prompt.insert("1.0", selected_prompt_text)
+    history_listbox.bind("<<ListboxSelect>>", on_history_select)
+
+    ttk.Label(input_controls_frame, text="Lines before cursor:").grid(row=2, column=0, sticky="w", padx=5, pady=5)
+    entry_back = ttk.Entry(input_controls_frame, width=10)
+    entry_back.insert(0, "5")
+    entry_back.grid(row=2, column=1, sticky="w", padx=5, pady=5)
+
+    ttk.Label(input_controls_frame, text="Lines after cursor:").grid(row=3, column=0, sticky="w", padx=5, pady=5)
+    entry_forward = ttk.Entry(input_controls_frame, width=10)
+    entry_forward.insert(0, "0")
+    entry_forward.grid(row=3, column=1, sticky="w", padx=5, pady=5)
+
+    button_frame = ttk.Frame(input_controls_frame) # Frame for the generate button
+    button_frame.grid(row=4, column=0, columnspan=3, pady=(10,0), sticky="ew") # Span 3 for scrollbar
+    ttk.Button(button_frame, text="Generate", command=lambda: send_prompt()).pack() # send_prompt needs to be defined or passed
+
+    main_pane.add(input_controls_frame, stretch="always") # Add input frame to pane
+
+    # Configure resizing for the Toplevel window itself
+    prompt_window.grid_rowconfigure(0, weight=1)
+    prompt_window.grid_columnconfigure(0, weight=1)
+
+    def send_prompt():
+        user_prompt = text_prompt.get("1.0", tk.END).strip() # Get text from the Text widget
+        try:
+            num_back = int(entry_back.get())
+            num_forward = int(entry_forward.get())
+        except ValueError:
+            messagebox.showerror("Input Error", "Line counts must be integers.", parent=prompt_window)
+            return
+
+        if not user_prompt:
+            messagebox.showwarning("Warning", "The prompt is empty.", parent=prompt_window)
+            return
+
+        # Add to history (most recent at the top)
+        # Do this BEFORE closing the window
+        # The history listbox update within this function is removed as the window is destroyed
+        # The global prompt_history list is correctly updated here.
+        if user_prompt: # Only add non-empty prompts
+            global prompt_history
+            if user_prompt in prompt_history:
+                prompt_history.remove(user_prompt) # Remove to re-add at top
+            prompt_history.insert(0, user_prompt) # Add to the beginning (most recent)
+            if len(prompt_history) > MAX_PROMPT_HISTORY:
+                prompt_history.pop() # Remove the oldest from the end
+
+        # Close the prompt window immediately AFTER updating history
+        prompt_window.destroy()
 
         # Show progress bar and start animation on the main thread
         llm_progress_bar.pack(pady=2)
         llm_progress_bar.start(10) # Start indeterminate animation
 
         # Run the LLM request in a separate thread
-        threading.Thread(target=run_generation, daemon=True).start()
-
-    # Button frame for centering
-    button_frame = ttk.Frame(content_frame)
-    button_frame.grid(row=4, column=0, columnspan=3, pady=(10,0)) # Span all 3 columns (label, text, scrollbar)
-    ttk.Button(button_frame, text="Generate", command=send_prompt).pack()
-
+        threading.Thread(target=run_generation, args=(user_prompt, num_back, num_forward), daemon=True).start()
     text_prompt.focus() # Set focus to the prompt text field
     prompt_window.wait_window() # Wait until the prompt window is closed
 

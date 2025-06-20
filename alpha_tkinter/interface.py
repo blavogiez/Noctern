@@ -30,6 +30,10 @@ max_font_size = 36
 # Timer for heavy updates (syntax, outline, line numbers)
 heavy_update_timer_id = None
 
+# Status bar temporary message state
+_temporary_status_active = False
+_temporary_status_timer_id = None
+
 def perform_heavy_updates():
     """Performs updates that might be computationally heavy."""
     global heavy_update_timer_id
@@ -92,6 +96,36 @@ def zoom_out(_=None): # Accept optional event argument
             line_numbers_canvas.redraw()
         perform_heavy_updates() # Reapply syntax highlighting and outline
 
+## -- Status Bar Feedback -- ##
+
+def show_temporary_status_message(message, duration_ms=2500):
+    """Displays a temporary message on the status bar."""
+    global _temporary_status_active, _temporary_status_timer_id, status_bar, root
+
+    if not status_bar or not root:
+        return
+
+    # Cancel any existing temporary message timer
+    if _temporary_status_timer_id:
+        root.after_cancel(_temporary_status_timer_id)
+
+    _temporary_status_active = True  # Set flag to indicate temporary message is active
+    status_bar.config(text=message)  # Display the temporary message
+
+    # Schedule the message to be cleared
+    _temporary_status_timer_id = root.after(duration_ms, clear_temporary_status_message)
+
+def clear_temporary_status_message():
+    """Clears the temporary message and restores the normal status bar content."""
+    global _temporary_status_active, _temporary_status_timer_id, status_bar
+    _temporary_status_active = False # Clear the flag
+    _temporary_status_timer_id = None # Reset timer ID
+    if status_bar:
+        update_gpu_status() # Immediately refresh with GPU status or default
+        # Also re-apply the current theme colors to ensure temporary colors are removed
+        apply_theme(current_theme)
+
+
 ## -- File Operations -- ##
 
 def open_file():
@@ -117,6 +151,8 @@ def open_file():
 
                 # Perform initial updates
                 perform_heavy_updates()
+                # Show feedback message
+                show_temporary_status_message(f"✅ Opened: {os.path.basename(current_file_path)}")
 
         except Exception as e:
             messagebox.showerror("Error", f"Could not open file:\n{e}")
@@ -134,7 +170,8 @@ def save_file():
         try:
             with open(current_file_path, "w", encoding="utf-8") as f:
                 f.write(content)
-            # messagebox.showinfo("Success", f"File saved:\n{current_file_path}") # Optional confirmation
+            # Show feedback message
+            show_temporary_status_message(f"✅ Saved: {os.path.basename(current_file_path)}")
         except Exception as e:
             messagebox.showerror("Error", f"Error saving file:\n{e}")
     else:
@@ -330,6 +367,10 @@ def setup_gui():
     # Function to update GPU status (runs in a loop)
     def update_gpu_status():
         try:
+            # If a temporary message is active, don't overwrite it with GPU status
+            if _temporary_status_active:
+                root.after(300, update_gpu_status) # Reschedule and check again
+                return
             # Command to get GPU info (works on systems with nvidia-smi)
             output = subprocess.check_output(
                 ["nvidia-smi", "--query-gpu=name,temperature.gpu,utilization.gpu", "--format=csv,noheader,nounits"],
@@ -338,14 +379,19 @@ def setup_gui():
 
             name, temp, usage = output.split(", ")
             status_text = f"🎮 GPU: {name}   🌡 {temp}°C   📊 {usage}% used"
-        except (FileNotFoundError, subprocess.CalledProcessError):
-            # Handle cases where nvidia-smi is not found or fails
-            status_text = "⚠️ GPU status not available (nvidia-smi not found or failed)"
         except Exception as e:
-            # Handle any other unexpected errors
-            status_text = f"⚠️ Error getting GPU status: {str(e)}"
-
-        status_bar.config(text=status_text)
+            # If GPU status fails or temporary message was just cleared,
+            # ensure status_bar is not None before configuring.
+            if status_bar:
+                if isinstance(e, (FileNotFoundError, subprocess.CalledProcessError)):
+                    status_bar.config(text="⚠️ GPU status not available (nvidia-smi error)")
+                else:
+                    status_bar.config(text=f"⚠️ Error getting GPU status")
+            # Still schedule next update even if this one failed
+            root.after(300, update_gpu_status)
+            return
+        if status_bar and not _temporary_status_active: # Check again before setting
+            status_bar.config(text=status_text)
         # Schedule the next update
         root.after(300, update_gpu_status) # Update every 0.3 seconds
 
@@ -423,7 +469,7 @@ def apply_theme(theme_name):
             "input_bg": "#ffffff", "input_fg": "#000000", "input_border": "#cccccc",
             "scrollbar_trough": "#e0e0e0", "scrollbar_slider": "#b0b0b0",
             "progressbar_bg": "#0078d4", "panedwindow_sash": "#d0d0d0",
-            "status_bar_bg": "#e0f0e0", "status_bar_fg": "#333333", # Changed status bar background to light green
+            "status_bar_bg": "#c8e6c9", "status_bar_fg": "#1b5e20", # Soft, non-fluo light green
         }
     elif theme_name == "dark":
         _theme_settings = {
@@ -435,9 +481,9 @@ def apply_theme(theme_name):
             "ln_text_color": "#6a6a6a", "ln_bg_color": "#252526",
             "button_bg": "#3c3c3c", "button_fg": "#f0f0f0", "button_active_bg": "#505050", "button_relief": tk.FLAT,
             "input_bg": "#333333", "input_fg": "#d0d0d0", "input_border": "#555555",
-            "scrollbar_trough": "#333333", "scrollbar_slider": "#505050",
-            "progressbar_bg": "#007acc", "panedwindow_sash": "#3c3c3c",
-            "status_bar_bg": "#3cb371", "status_bar_fg": "#ffffff", # Changed status bar background to dark green
+            "scrollbar_trough": "#3c3c3c", "scrollbar_slider": "#505050", # Adjusted scrollbar trough for dark theme
+            "progressbar_bg": "#007acc", "panedwindow_sash": "#3c3c3c", # Non-fluo dark green
+            "status_bar_bg": "#388e3c", "status_bar_fg": "#ffffff",
         }
     else:
         return
@@ -448,8 +494,11 @@ def apply_theme(theme_name):
     # --- ttk Styles ---
     style.configure(".", font=ui_font_normal, background=_theme_settings["bg_color"], foreground=_theme_settings["fg_color"])
     style.configure("TFrame", background=_theme_settings["bg_color"])
-    style.configure("TLabel", background=_theme_settings["bg_color"], foreground=_theme_settings["fg_color"], font=ui_font_normal)
+    # Configure base TLabel style, status bar gets specific config below
+    style.configure("TLabel", background=_theme_settings["bg_color"], foreground=_theme_settings["fg_color"], font=ui_font_normal, padding=0) # Remove default padding
+
     if 'status_bar' in globals() and status_bar:
+        # Apply specific status bar colors and padding
         status_bar.configure(background=_theme_settings["status_bar_bg"], foreground=_theme_settings["status_bar_fg"], font=ui_font_normal)
 
     style.configure("TButton",
@@ -512,6 +561,12 @@ def apply_theme(theme_name):
         comment_font.configure(slant="italic")
         editor.tag_configure("latex_comment", foreground=_theme_settings["comment_color"], font=comment_font)
 
+    # Apply temporary status bar colors if a temporary message is active
+    # This ensures the temporary color persists if apply_theme is called while it's active
+    if _temporary_status_active and status_bar:
+        # Use a distinct temporary color, e.g., a light blue
+        status_bar.config(background="#a0c0f0", foreground=_theme_settings["fg_color"])
+
     # Update the theme of the line numbers canvas
     if line_numbers_canvas:
         line_numbers_canvas.update_theme(text_color=_theme_settings["ln_text_color"], bg_color=_theme_settings["ln_bg_color"])
@@ -519,4 +574,12 @@ def apply_theme(theme_name):
     # Trigger a heavy update to redraw syntax highlighting, outline, and line numbers
     perform_heavy_updates()
     if root:
+        # Ensure the status bar padding is set correctly after theme application
+        if 'status_bar' in globals() and status_bar:
+             status_bar.configure(padding=(5, 3))
+
+        # Update the background of the root window itself
+        root.configure(bg=_theme_settings["root_bg"])
+
+        # Force an update to apply all configuration changes immediately
         root.update_idletasks()
