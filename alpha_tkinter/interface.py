@@ -31,7 +31,7 @@ max_font_size = 36
 # Threshold for considering a file "large" (in number of lines)
 LARGE_FILE_LINE_THRESHOLD = 1000
 HEAVY_UPDATE_DELAY_NORMAL = 200  # milliseconds
-HEAVY_UPDATE_DELAY_LARGE_FILE = 1000  # milliseconds for large files
+HEAVY_UPDATE_DELAY_LARGE_FILE = 2000  # milliseconds for large files
 heavy_update_timer_id = None
 
 # Status bar temporary message state

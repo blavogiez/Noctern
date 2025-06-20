@@ -8,6 +8,8 @@
 #### https://github.com/blavogiez/AutomaTeX
 
 import tkinter as tk
+import platform
+import ctypes
 
 # Import modules for different functionalities
 import interface
@@ -33,6 +35,13 @@ heavy_update_timer_id = None # Timer ID for scheduled updates, managed by interf
 ### --- MAIN --- ###
 
 if __name__ == "__main__":
+    # Améliorer le rendu sur les écrans HiDPI sous Windows
+    if platform.system() == "Windows":
+        try:
+            ctypes.windll.shcore.SetProcessDpiAwareness(1)
+        except Exception as e:
+            print(f"Note: Could not set DPI awareness - {e}")
+
     # Setup the main GUI window and widgets
     root = interface.setup_gui()
 
