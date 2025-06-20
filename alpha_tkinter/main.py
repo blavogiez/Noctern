@@ -50,7 +50,7 @@ if __name__ == "__main__":
     # This allows them to interact with the main GUI elements
     editor_logic.set_editor_globals(editor, outline_tree, current_file_path)
     latex_compiler.set_compiler_globals(editor, root, current_file_path)
-    llm_logic.set_llm_globals(editor, root, llm_progress_bar, interface.get_theme_setting)
+    llm_logic.set_llm_globals(editor, root, llm_progress_bar, interface.get_theme_setting, interface.get_current_file_path_for_llm)
 
     # Apply the initial theme (e.g., dark mode by default)
     interface.apply_theme("dark")

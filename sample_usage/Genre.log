@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.25 (MiKTeX 24.1) (preloaded format=pdflatex 2025.5.18)  20 JUN 2025 12:13
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (MiKTeX 24.1) (preloaded format=pdflatex 2025.5.18)  20 JUN 2025 12:37
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -365,8 +365,12 @@ x.def
 File: l3backend-pdftex.def 2024-01-04 L3 backend support: PDF output (pdfTeX)
 \l__color_backend_stack_int=\count297
 \l__pdf_internal_box=\box53
-)
-No file Genre.aux.
+) (Genre.aux
+(C:\Users\lab\AppData\Local\Programs\MiKTeX\tex/generic/babel/locale/fr\babel-f
+rench.tex
+Package babel Info: Importing font and identification data for french
+(babel)             from babel-fr.ini. Reported on input line 11.
+))
 \openout1 = `Genre.aux'.
 
 LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 12.
@@ -387,12 +391,6 @@ LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 12.
 LaTeX Font Info:    ... okay on input line 12.
 LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 12.
 LaTeX Font Info:    ... okay on input line 12.
-
-(C:\Users\lab\AppData\Local\Programs\MiKTeX\tex/generic/babel/locale/fr\babel-f
-rench.tex
-Package babel Info: Importing font and identification data for french
-(babel)             from babel-fr.ini. Reported on input line 11.
-)
 LaTeX Info: Redefining \degres on input line 12.
 LaTeX Info: Redefining \up on input line 12.
 
@@ -420,6 +418,7 @@ Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 4
 File: epstopdf-sys.cfg 2021/03/18 v2.0 Configuration of epstopdf for MiKTeX
 ))
 Package hyperref Info: Link coloring OFF on input line 12.
+ (Genre.out) (Genre.out)
 \@outlinefile=\write3
 \openout3 = `Genre.out'.
 
@@ -477,31 +476,24 @@ File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 LaTeX2e <2023-11-01> patch level 1
 L3 programming layer <2024-01-04>
  ***********
-
-
-Package rerunfilecheck Warning: File `Genre.out' has changed.
-(rerunfilecheck)                Rerun to get outlines right
-(rerunfilecheck)                or use package `bookmark'.
-
-Package rerunfilecheck Info: Checksums for `Genre.out':
-(rerunfilecheck)             Before: <no file>
-(rerunfilecheck)             After:  D41D8CD98F00B204E9800998ECF8427E;0.
+Package rerunfilecheck Info: File `Genre.out' has not changed.
+(rerunfilecheck)             Checksum: D41D8CD98F00B204E9800998ECF8427E;0.
  ) 
 Here is how much of TeX's memory you used:
- 12252 strings out of 474485
- 193825 string characters out of 5744678
+ 12261 strings out of 474485
+ 194086 string characters out of 5744678
  1933542 words of memory out of 5000000
- 34391 multiletter control sequences out of 15000+600000
+ 34393 multiletter control sequences out of 15000+600000
  564815 words of font info for 53 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 75i,5n,79p,547b,455s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 75i,5n,79p,605b,455s stack positions out of 10000i,1000n,20000p,200000b,200000s
  <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\ecrm12
 00.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\ec
 bx1728.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi60
 0\ecrm2074.pk>
-Output written on Genre.pdf (2 pages, 43647 bytes).
+Output written on Genre.pdf (2 pages, 46787 bytes).
 PDF statistics:
- 138 PDF objects out of 1000 (max. 8388607)
- 9 named destinations out of 1000 (max. 500000)
+ 146 PDF objects out of 1000 (max. 8388607)
+ 10 named destinations out of 1000 (max. 500000)
  1 words of extra memory for PDF output out of 10000 (max. 10000000)
 

@@ -58,6 +58,11 @@ def get_theme_setting(key, default=None):
     """Gets a value from the current theme settings."""
     return _theme_settings.get(key, default)
 
+def get_current_file_path_for_llm():
+    """Getter function for llm_logic to access the current_file_path."""
+    global current_file_path
+    return current_file_path
+
 ## -- Zoom Functionality -- ##
 
 def zoom_in(_=None): # Accept optional event argument
@@ -148,6 +153,9 @@ def open_file():
                 # Update other modules that need the file path
                 editor_logic.current_file_path = current_file_path
                 latex_compiler.current_file_path = current_file_path
+                
+                # Load prompt history for the newly opened file
+                llm_logic.load_prompt_history(current_file_path)
 
                 # Perform initial updates
                 perform_heavy_updates()
@@ -436,9 +444,13 @@ def setup_gui():
     # Pass the created widgets and variables to the other modules
     editor_logic.set_editor_globals(editor, outline_tree, current_file_path)
     latex_compiler.set_compiler_globals(editor, root, current_file_path)
-    llm_logic.set_llm_globals(editor, root, llm_progress_bar, get_theme_setting)
+    llm_logic.set_llm_globals(editor, root, llm_progress_bar, get_theme_setting, get_current_file_path_for_llm)
 
+    # Load initial prompt history (e.g., for an unsaved file or a global default)
+    # If current_file_path is None, load_prompt_history(None) will result in an empty history.
+    llm_logic.load_prompt_history(current_file_path)
     return root # Return the root window
+
 
 def apply_theme(theme_name):
     """Applies the specified theme (light or dark) to the GUI."""

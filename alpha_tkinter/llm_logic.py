@@ -3,14 +3,41 @@ from tkinter import messagebox, simpledialog, ttk # Added ttk
 import requests
 import threading
 
+# Added for history persistence
+import json
+import os
+
 # Access global variables defined in main.py or interface.py
 editor = None
 root = None
 llm_progress_bar = None
 llm_keywords = [] # To store user-defined LLM keywords
 get_theme_setting_func = None # To get theme colors for dialogs
-prompt_history = [] # To store user prompt history for generation
+prompt_history = [] # Stores tuples: (user_prompt, llm_response)
 MAX_PROMPT_HISTORY = 20 # Maximum number of prompts to store in history
+current_file_path_ref = None # Function to get current .tex file path
+
+def _get_history_filepath(tex_filepath):
+    """Generates the filepath for the prompt history JSON file."""
+    if not tex_filepath:
+        return None # No specific file, so no specific history file
+    base, _ = os.path.splitext(tex_filepath)
+    return f"{base}_prompt_history.json"
+
+def save_prompt_history():
+    """Saves the current prompt_history to a JSON file associated with the current .tex file."""
+    global prompt_history
+    tex_filepath = current_file_path_ref() if current_file_path_ref else None
+    history_filepath = _get_history_filepath(tex_filepath)
+
+    if not history_filepath:
+        return # Not saving if no .tex file is active or path cannot be determined
+
+    try:
+        with open(history_filepath, 'w', encoding='utf-8') as f:
+            json.dump(prompt_history, f, ensure_ascii=False, indent=4)
+    except Exception as e:
+        print(f"Error saving prompt history to {history_filepath}: {e}")
 
 def update_prompt_history_response(user_prompt_key, new_response_text):
     """Updates the response for a given user_prompt_key in the global prompt_history."""
@@ -19,6 +46,7 @@ def update_prompt_history_response(user_prompt_key, new_response_text):
         # Match the specific prompt that was being processed
         if p_user == user_prompt_key and p_resp == "⏳ Generating...":
             prompt_history[i] = (p_user, new_response_text)
+            save_prompt_history() # Save history after updating
             break
 
 def set_llm_globals(editor_widget, root_widget, progress_bar_widget, get_theme_setting_callback):
@@ -28,6 +56,31 @@ def set_llm_globals(editor_widget, root_widget, progress_bar_widget, get_theme_s
     root = root_widget
     llm_progress_bar = progress_bar_widget
     get_theme_setting_func = get_theme_setting_callback
+
+def set_llm_globals(editor_widget, root_widget, progress_bar_widget, get_theme_setting_callback, current_file_path_getter):
+    """Sets the global references to the main widgets and the file path getter."""
+    global editor, root, llm_progress_bar, get_theme_setting_func, current_file_path_ref
+    editor = editor_widget
+    root = root_widget
+    llm_progress_bar = progress_bar_widget
+    get_theme_setting_func = get_theme_setting_callback
+    current_file_path_ref = current_file_path_getter
+
+def load_prompt_history(tex_filepath_for_history):
+    """Loads prompt history from a JSON file associated with the given .tex file path."""
+    global prompt_history
+    history_filepath = _get_history_filepath(tex_filepath_for_history)
+    if history_filepath and os.path.exists(history_filepath):
+        try:
+            with open(history_filepath, 'r', encoding='utf-8') as f:
+                loaded_data = json.load(f)
+                # Ensure loaded data is a list of 2-element lists/tuples
+                prompt_history = [(item[0], item[1]) for item in loaded_data if isinstance(item, (list, tuple)) and len(item) == 2]
+        except Exception as e:
+            print(f"Error loading prompt history from {history_filepath}: {e}")
+            prompt_history = [] # Reset to empty on error
+    else:
+        prompt_history = [] # No history file found or no .tex file active
 
 def get_context(nb_lines_backwards=5, nb_lines_forwards=5):
     """Extracts text context around the cursor."""
@@ -415,6 +468,7 @@ def generate_text_from_prompt(initial_prompt_text=None):
 
             if len(prompt_history) > MAX_PROMPT_HISTORY:
                 prompt_history = prompt_history[:MAX_PROMPT_HISTORY] # Keep the newest items
+            save_prompt_history() # Save history after adding new prompt
         # Close the prompt window immediately AFTER updating history
         prompt_window.destroy()
 
