@@ -9,6 +9,9 @@ and keyword management.
 """
 import tkinter as tk
 from tkinter import messagebox # ttk is used by progressbar if not passed directly
+import os
+import interface # NEW: Import interface for status messages
+import json
 import threading
 
 # Import newly created local modules
@@ -16,6 +19,7 @@ import llm_prompt_history
 import llm_utils
 import llm_api_client
 import llm_dialogs
+import llm_prompt_manager # NEW
 
 # --- Module-level variables to store references from the main application ---
 _editor_widget = None
@@ -24,9 +28,15 @@ _llm_progress_bar_widget = None
 _theme_setting_getter_func = None
 _current_file_path_getter_func = None # Function to get current .tex file path
 
+# --- Prompt Configuration ---
+DEFAULT_PROMPTS_FILE = "default_prompts.json"
+_global_default_prompts = {} # Loaded once at startup
+
 # --- State managed by this service ---
 _llm_keywords_list = []  # Stores user-defined LLM keywords.
 _prompt_history_list = [] # Stores tuples: (user_prompt, llm_response)
+_completion_prompt_template = "" # Loaded per-file
+_generation_prompt_template = "" # Loaded per-file
 
 def initialize_llm_service(editor_widget_ref, root_window_ref, progress_bar_widget_ref,
                            theme_setting_getter_callback, current_file_path_getter_callback):
@@ -43,8 +53,26 @@ def initialize_llm_service(editor_widget_ref, root_window_ref, progress_bar_widg
     _theme_setting_getter_func = theme_setting_getter_callback
     _current_file_path_getter_func = current_file_path_getter_callback
 
-    # Load initial prompt history (e.g., for a new/unsaved file or global default)
+    # Load the master default prompts from the JSON file at startup
+    _load_global_default_prompts()
+
+    # Load initial prompt history and custom prompts
     load_prompt_history_for_current_file()
+    load_prompts_for_current_file()
+
+def _load_global_default_prompts():
+    """Loads the master default prompts from the default_prompts.json file."""
+    global _global_default_prompts
+    try:
+        with open(DEFAULT_PROMPTS_FILE, 'r', encoding='utf-8') as f:
+            _global_default_prompts = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        print(f"CRITICAL ERROR: Could not load {DEFAULT_PROMPTS_FILE}. {e}")
+        _global_default_prompts = {
+            "completion": "Complete this: {current_phrase_start}",
+            "generation": "Generate text for this prompt: {user_prompt}"
+        }
+        messagebox.showerror("Critical Error", f"Could not load default prompts from {DEFAULT_PROMPTS_FILE}. Using basic fallbacks.")
 
 def _get_active_tex_filepath():
     """Helper to safely get the current .tex file path using the provided getter."""
@@ -82,6 +110,17 @@ def _update_history_response_and_save(user_prompt_key, new_response_text):
     active_filepath = _get_active_tex_filepath()
     llm_prompt_history.save_prompt_history_to_file(_prompt_history_list, active_filepath)
 
+# --- Custom Prompts Management ---
+def load_prompts_for_current_file():
+    """Loads custom prompts for the current file. If no custom prompt file
+    exists, it creates one with default values."""
+    global _completion_prompt_template, _generation_prompt_template
+    active_filepath = _get_active_tex_filepath()
+    # The logic to load or create is handled by the prompt manager, using the globally loaded defaults.
+    loaded_prompts = llm_prompt_manager.load_prompts_from_file(active_filepath, _global_default_prompts)
+    _completion_prompt_template = loaded_prompts["completion"]
+    _generation_prompt_template = loaded_prompts["generation"]
+
 
 # --- LLM Text Completion ---
 def request_llm_to_complete_text():
@@ -106,17 +145,11 @@ def request_llm_to_complete_text():
                 previous_context = context[:last_dot_index + 1].strip()
 
             # Construct the prompt for the LLM API
-            full_llm_prompt = f"""
-                "Complete only the current sentence fragment, without rephrasing the context or including tags/code. "
-                "Maintain the same language. The beginning of the completion must strictly follow the beginning of the current phrase. "
-                "Respond only with natural, fluid, and coherent text. "
-                "Do not start a new idea or paragraph; stay in the logical continuation of the text.\n\n"
-                f"Context (up to 30 preceding lines):\n\"{previous_context}\"\n\n"
-                f"Beginning of the phrase to complete:\n\"{current_phrase_start}\"\n\n"
-                "Expected completion (short and natural, no final punctuation if it's already started):"\n
-                Keywords:
-                "{', '.join(_llm_keywords_list)}"
-            """
+            full_llm_prompt = _completion_prompt_template.format(
+                previous_context=previous_context,
+                current_phrase_start=current_phrase_start,
+                keywords=', '.join(_llm_keywords_list)
+            )
 
             api_response = llm_api_client.request_llm_generation(full_llm_prompt)
 
@@ -154,23 +187,11 @@ def open_generate_text_dialog(initial_prompt_text=None):
             """Target function for the LLM generation thread."""
             try:
                 context = llm_utils.extract_editor_context(_editor_widget, local_lines_before, local_lines_after)
-                full_llm_prompt = f"""You are an intelligent writing assistant. A user has given you an instruction to generate text to insert into a document. The user has also provided keywords to guide the generation.
-                    Main constraint: Respond only with the requested generation, without preamble, signature, explanation, or rephrasing the instruction.
-                    Language: Strictly in French, formal but natural register. The tone must remain consistent with the provided context.
-                    User prompt:
-                    "{local_user_prompt}"
-                    Keywords:
-                    "{', '.join(_llm_keywords_list)}"
-                    Context around the cursor:
-                    \"\"\"{context}\"\"\"
-                    Instructions:
-                    - Do not modify the context.
-                    - Generate only the text corresponding to the instruction.
-                    - Respect the logical and thematic continuity of the text.
-                    - Your response should integrate smoothly into the existing content.
-                    - Write your answer following the keywords mentionned.
-                    Text to insert:
-                """
+                full_llm_prompt = _generation_prompt_template.format(
+                    user_prompt=local_user_prompt,
+                    keywords=', '.join(_llm_keywords_list),
+                    context=context
+                )
                 api_response = llm_api_client.request_llm_generation(full_llm_prompt)
 
                 if api_response["success"]:
@@ -230,4 +251,44 @@ def open_set_keywords_dialog():
         theme_setting_getter_func=_theme_setting_getter_func,
         current_llm_keywords_list=_llm_keywords_list,
         on_save_keywords_callback=_handle_keywords_save_from_dialog
+    )
+
+# --- LLM Prompt Management ---
+def get_current_prompts():
+    """Returns the current prompt templates."""
+    return {
+        "completion": _completion_prompt_template,
+        "generation": _generation_prompt_template
+    }
+
+def update_prompts(completion_template, generation_template):
+    """Updates the prompt templates and saves them to a custom file."""
+    global _completion_prompt_template, _generation_prompt_template
+    _completion_prompt_template = completion_template
+    _generation_prompt_template = generation_template
+
+    # Save to file
+    active_filepath = _get_active_tex_filepath()
+    if active_filepath:
+        prompts_to_save = {
+            "completion": _completion_prompt_template,
+            "generation": _generation_prompt_template
+        }
+        llm_prompt_manager.save_prompts_to_file(prompts_to_save, active_filepath)
+        interface.show_temporary_status_message("✅ Prompts saved for this document.") # Use temporary status
+    else:
+        interface.show_temporary_status_message("⚠️ Prompts updated for this session only (no file open).") # Use temporary status
+
+def open_edit_prompts_dialog():
+    """Opens a dialog to edit the LLM prompt templates."""
+    if not _root_window or not _theme_setting_getter_func:
+        messagebox.showerror("LLM Service Error", "UI components not fully initialized for prompts dialog.")
+        return
+
+    llm_dialogs.show_edit_prompts_dialog(
+        root_window=_root_window,
+        theme_setting_getter_func=_theme_setting_getter_func,
+        current_prompts=get_current_prompts(),
+        default_prompts=_global_default_prompts, # Pass the master defaults for the "Restore" button
+        on_save_callback=update_prompts
     )

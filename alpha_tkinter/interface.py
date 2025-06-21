@@ -4,6 +4,7 @@ from tkinter.font import Font
 import os
 import subprocess
 import platform
+import sv_ttk # Import sv_ttk
 
 # Import functions from other modules
 import editor_logic
@@ -172,8 +173,9 @@ def open_file():
                 editor_logic.current_file_path = current_file_path
                 latex_compiler.current_file_path = current_file_path
                 
-                # Load prompt history for the newly opened file via llm_service
+                # Load prompt history and custom prompts for the newly opened file
                 llm_service.load_prompt_history_for_current_file()
+                llm_service.load_prompts_for_current_file()
 
                 # Perform initial updates
                 perform_heavy_updates()
@@ -295,9 +297,9 @@ def setup_gui():
     root.geometry("1200x800") # Adjusted default size
     # Initial background will be set by apply_theme
     # root.iconbitmap("res/automatex.ico") # Ensure icon file exists
-
-    style = ttk.Style()
-    style.theme_use("clam") # Use clam theme as a base
+    
+    # sv_ttk.set_theme("light") # Or "dark", will be set by apply_theme
+    # No need for manual ttk.Style() or theme_use("clam") initially, sv_ttk handles it.
 
     editor_font = Font(family="Consolas", size=12) # Store font globally
 
@@ -317,6 +319,7 @@ def setup_gui():
     ttk.Button(top_frame, text="✨ Complete", command=llm_service.request_llm_to_complete_text).pack(side="left", padx=3, pady=3)
     ttk.Button(top_frame, text="🎯 Generate", command=llm_service.open_generate_text_dialog).pack(side="left", padx=3, pady=3)
     ttk.Button(top_frame, text="🔑 Keywords", command=llm_service.open_set_keywords_dialog).pack(side="left", padx=3, pady=3)
+    ttk.Button(top_frame, text="📝 Edit Prompts", command=llm_service.open_edit_prompts_dialog).pack(side="left", padx=3, pady=3)
 
     # Theme button
     # Use a lambda to toggle between themes
@@ -431,6 +434,7 @@ def setup_gui():
     root.bind_all("<Control-Shift-D>", lambda event: latex_compiler.run_chktex_check())
     root.bind_all("<Control-Shift-V>", lambda event: editor_logic.paste_image())
     root.bind_all("<Control-Shift-K>", lambda event: llm_service.open_set_keywords_dialog()) # MODIFIED: Shortcut for keywords
+    root.bind_all("<Control-Shift-P>", lambda event: llm_service.open_edit_prompts_dialog()) # Shortcut for editing prompts
     root.bind_all("<Control-o>", lambda event: open_file())
 
     # Bind Zoom shortcuts
@@ -477,43 +481,40 @@ def apply_theme(theme_name):
     if not root: # Guard against calling too early
         return
 
+    # Set the theme using sv_ttk
+    sv_ttk.set_theme(theme_name)
     current_theme = theme_name
 
-    style = ttk.Style()
-    style.theme_use("clam") # Reset to base theme before applying custom styles
-
+    # Font for non-ttk widgets (like tk.Text in dialogs if not using editor_font)
+    # sv_ttk will handle fonts for ttk widgets.
     ui_font_family = "Segoe UI" if platform.system() == "Windows" else "Helvetica"
-    ui_font_normal = Font(family=ui_font_family, size=9)
     ui_font_button = Font(family=ui_font_family, size=9, weight="normal")
 
     # Define colors based on theme
     if theme_name == "light":
         _theme_settings = {
-            "root_bg": "#f0f0f0", "bg_color": "#ffffff", "fg_color": "#222222",
-            "disabled_fg_color": "#aaaaaa", "tree_bg": "#ffffff", "tree_fg": "#222222",
-            "sel_bg": "#cce5ff", "sel_fg": "#000000",
+            # sv_ttk typically uses a very light grey or white for root_bg in light mode
+            "root_bg": "#fdfdfd", # Adjusted to match typical sv_ttk light theme
+            "fg_color": "#000000", # General foreground for non-ttk elements
+            "sel_bg": "#0078d4", "sel_fg": "#ffffff", # Selection colors for editor (inspired by Windows)
             "editor_bg": "#ffffff", "editor_fg": "#1e1e1e", "editor_insert_bg": "#333333",
             "comment_color": "#008000", "command_color": "#0000ff", "brace_color": "#ff007f",
             "ln_text_color": "#888888", "ln_bg_color": "#f7f7f7",
-            "button_bg": "#e0e0e0", "button_fg": "#000000", "button_active_bg": "#c0c0c0", "button_relief": tk.FLAT,
-            "input_bg": "#ffffff", "input_fg": "#000000", "input_border": "#cccccc",
-            "scrollbar_trough": "#e0e0e0", "scrollbar_slider": "#b0b0b0",
-            "progressbar_bg": "#0078d4", "panedwindow_sash": "#d0d0d0",
-            "status_bar_bg": "#c8e6c9", "status_bar_fg": "#1b5e20", # Soft, non-fluo light green
+            "panedwindow_sash": "#e6e6e6", # Light sash for PanedWindow if sv_ttk doesn't fully style it
+            # Status bar will now be styled by sv_ttk. If specific colors are needed, they should be harmonious.
+            # "status_bar_bg": "#f0f0f0", "status_bar_fg": "#000000", # Example: neutral status bar
         }
     elif theme_name == "dark":
         _theme_settings = {
-            "root_bg": "#1e1e1e", "bg_color": "#2b2b2b", "fg_color": "#d0d0d0",
-            "disabled_fg_color": "#666666", "tree_bg": "#2b2b2b", "tree_fg": "#d0d0d0",
-            "sel_bg": "#004a9e", "sel_fg": "#ffffff",
+            # sv_ttk uses dark greys for root_bg in dark mode
+            "root_bg": "#202020", # Adjusted to match typical sv_ttk dark theme
+            "fg_color": "#ffffff", # General foreground for non-ttk elements
+            "sel_bg": "#0078d4", "sel_fg": "#ffffff", # Selection colors for editor
             "editor_bg": "#1e1e1e", "editor_fg": "#d4d4d4", "editor_insert_bg": "#d4d4d4",
             "comment_color": "#608b4e", "command_color": "#569cd6", "brace_color": "#c586c0",
             "ln_text_color": "#6a6a6a", "ln_bg_color": "#252526",
-            "button_bg": "#3c3c3c", "button_fg": "#f0f0f0", "button_active_bg": "#505050", "button_relief": tk.FLAT,
-            "input_bg": "#333333", "input_fg": "#d0d0d0", "input_border": "#555555",
-            "scrollbar_trough": "#3c3c3c", "scrollbar_slider": "#505050", # Adjusted scrollbar trough for dark theme
-            "progressbar_bg": "#007acc", "panedwindow_sash": "#3c3c3c", # Non-fluo dark green
-            "status_bar_bg": "#388e3c", "status_bar_fg": "#ffffff",
+            "panedwindow_sash": "#333333", # Dark sash for PanedWindow
+            # "status_bar_bg": "#2b2b2b", "status_bar_fg": "#d0d0d0", # Example: neutral status bar
         }
     else:
         return
@@ -521,63 +522,22 @@ def apply_theme(theme_name):
     # Apply colors to the root window
     root.configure(bg=_theme_settings["root_bg"])
 
-    # --- ttk Styles ---
-    style.configure(".", font=ui_font_normal, background=_theme_settings["bg_color"], foreground=_theme_settings["fg_color"])
-    style.configure("TFrame", background=_theme_settings["bg_color"])
-    # Configure base TLabel style, status bar gets specific config below
-    style.configure("TLabel", background=_theme_settings["bg_color"], foreground=_theme_settings["fg_color"], font=ui_font_normal, padding=0) # Remove default padding
+    # --- ttk Widget Theming ---
+    # All ttk widget styling (buttons, treeview, scrollbars, progressbar, status_bar, etc.)
+    # is now primarily handled by sv_ttk.set_theme() called above.
 
-    if 'status_bar' in globals() and status_bar:
-        # Apply specific status bar colors and padding
-        status_bar.configure(background=_theme_settings["status_bar_bg"], foreground=_theme_settings["status_bar_fg"], font=ui_font_normal)
+    # The status_bar (ttk.Label) will be styled by sv_ttk.
+    # If you need to override its font or specific aspects not covered by sv_ttk's theme:
+    # if 'status_bar' in globals() and status_bar:
+    #     status_bar.configure(font=Font(family=ui_font_family, size=9)) # Example: ensure font
 
-    style.configure("TButton",
-                    background=_theme_settings["button_bg"], foreground=_theme_settings["button_fg"],
-                    relief=_theme_settings["button_relief"], font=ui_font_button,
-                    padding=(8, 4), borderwidth=0, focuscolor=_theme_settings["button_bg"])
-    style.map("TButton",
-              background=[('active', _theme_settings["button_active_bg"]), ('pressed', _theme_settings["button_active_bg"])],
-              foreground=[('disabled', _theme_settings["disabled_fg_color"])])
-
-    # Apply style to Treeview
-    style.configure("Treeview",
-                    background=_theme_settings["tree_bg"], foreground=_theme_settings["tree_fg"],
-                    fieldbackground=_theme_settings["tree_bg"], borderwidth=0, relief=tk.FLAT, font=ui_font_normal)
-    style.map("Treeview",
-              background=[('selected', _theme_settings["sel_bg"])],
-              foreground=[('selected', _theme_settings["sel_fg"])])
-    style.configure("Treeview.Heading", font=ui_font_button, relief=tk.FLAT,
-                    background=_theme_settings["button_bg"], foreground=_theme_settings["button_fg"])
-
-    style.configure("TEntry",
-                    fieldbackground=_theme_settings["input_bg"], foreground=_theme_settings["input_fg"],
-                    insertcolor=_theme_settings["editor_insert_bg"], relief=tk.FLAT,
-                    borderwidth=1, bordercolor=_theme_settings["input_border"],
-                    lightcolor=_theme_settings["input_bg"], darkcolor=_theme_settings["input_bg"])
-    style.map("TEntry",
-              bordercolor=[('focus', _theme_settings["sel_bg"])],
-              foreground=[('disabled', _theme_settings["disabled_fg_color"])],
-              fieldbackground=[('disabled', _theme_settings["root_bg"])])
-
-    style.configure("Vertical.TScrollbar",
-                    troughcolor=_theme_settings["scrollbar_trough"], background=_theme_settings["scrollbar_slider"],
-                    relief=tk.FLAT, borderwidth=0, arrowsize=12, arrowcolor=_theme_settings["fg_color"])
-    style.map("Vertical.TScrollbar", background=[('active', _theme_settings["sel_bg"])])
-
-    style.configure("Horizontal.TScrollbar",
-                    troughcolor=_theme_settings["scrollbar_trough"], background=_theme_settings["scrollbar_slider"],
-                    relief=tk.FLAT, borderwidth=0, arrowsize=12, arrowcolor=_theme_settings["fg_color"])
-    style.map("Horizontal.TScrollbar", background=[('active', _theme_settings["sel_bg"])])
-
-    style.configure("TPanedwindow", background=_theme_settings["root_bg"])
+    # PanedWindow sash color: sv_ttk usually styles sashes well.
+    # or if you want a specific color. sv_ttk usually styles sashes.
     if 'main_pane' in globals() and main_pane:
          main_pane.configure(sashrelief=tk.FLAT, sashwidth=6, bg=_theme_settings["panedwindow_sash"])
 
-    style.configure("Horizontal.TProgressbar",
-                    troughcolor=_theme_settings["bg_color"], background=_theme_settings["progressbar_bg"],
-                    thickness=10, borderwidth=0, relief=tk.FLAT)
-
-    # --- tk Widget Theming (Manual) ---
+    # --- tk Widget Theming (Manual - These are not ttk widgets) ---
+    # These remain essential as sv_ttk only themes ttk widgets.
     if editor:
         editor.configure(
             background=_theme_settings["editor_bg"], foreground=_theme_settings["editor_fg"],
@@ -591,11 +551,13 @@ def apply_theme(theme_name):
         comment_font.configure(slant="italic")
         editor.tag_configure("latex_comment", foreground=_theme_settings["comment_color"], font=comment_font)
 
-    # Apply temporary status bar colors if a temporary message is active
-    # This ensures the temporary color persists if apply_theme is called while it's active
+    # Handle temporary status bar message styling
+    # If a temporary message is active, its specific styling (if any) should be applied
+    # by show_temporary_status_message. When cleared, it reverts.
+    # sv_ttk will handle the default appearance.
     if _temporary_status_active and status_bar:
-        # Use a distinct temporary color, e.g., a light blue
-        status_bar.config(background="#a0c0f0", foreground=_theme_settings["fg_color"])
+        # Example: if temporary messages have a special background
+        pass # status_bar.config(background="<temp_color_bg>", foreground="<temp_color_fg>")
 
     # Update the theme of the line numbers canvas
     if line_numbers_canvas:
@@ -606,8 +568,8 @@ def apply_theme(theme_name):
     if root:
         # Ensure the status bar padding is set correctly after theme application
         if 'status_bar' in globals() and status_bar:
-             status_bar.configure(padding=(5, 3))
-
+             # sv_ttk should handle padding for ttk.Label.
+             pass
         # Update the background of the root window itself
         root.configure(bg=_theme_settings["root_bg"])
 
