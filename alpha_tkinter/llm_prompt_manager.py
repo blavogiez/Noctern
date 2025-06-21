@@ -8,7 +8,7 @@ different prompt configurations for different projects.
 import json
 import os
 
-def _get_prompts_filepath(tex_document_filepath):
+def get_prompts_filepath(tex_document_filepath):
     """Generates the filepath for the custom prompts JSON file."""
     if not tex_document_filepath:
         return None
@@ -17,7 +17,7 @@ def _get_prompts_filepath(tex_document_filepath):
 
 def save_prompts_to_file(prompts_dict, tex_document_filepath):
     """Saves the provided prompts dictionary to a JSON file."""
-    prompts_filepath = _get_prompts_filepath(tex_document_filepath)
+    prompts_filepath = get_prompts_filepath(tex_document_filepath)
     if not prompts_filepath:
         print("Debug: Not saving prompts as no .tex file path is available.")
         return
@@ -29,7 +29,7 @@ def save_prompts_to_file(prompts_dict, tex_document_filepath):
 
 def load_prompts_from_file(tex_document_filepath, default_prompts):
     """Loads custom prompts from a JSON file. If the file doesn't exist, it creates one with the default prompts."""
-    prompts_filepath = _get_prompts_filepath(tex_document_filepath)
+    prompts_filepath = get_prompts_filepath(tex_document_filepath)
 
     # If no file is open, just return the in-memory defaults
     if not prompts_filepath:

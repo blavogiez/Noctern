@@ -20,6 +20,7 @@ llm_progress_bar = None
 line_numbers_canvas = None
 editor_font = None # Store the editor font globally
 current_file_path = None # To track the currently open file
+_last_saved_content = "\n" # Content of the editor at last save
 _theme_settings = {} # Store current theme colors and properties
 current_theme = "light" # Initial theme state, ensure it matches main.py if it sets it first
 
@@ -149,12 +150,41 @@ def clear_temporary_status_message():
         # Also re-apply the current theme colors to ensure temporary colors are removed
         apply_theme(current_theme)
 
+def on_close_request():
+    """Handles closing the main window, checking for unsaved changes."""
+    global root, editor, _last_saved_content
+
+    if not root or not editor:
+        root.destroy()
+        return
+
+    current_content = editor.get("1.0", tk.END)
+
+    if current_content != _last_saved_content:
+        response = messagebox.askyesnocancel(
+            "Unsaved Changes",
+            "You have unsaved changes. Do you want to save before closing?",
+            parent=root
+        )
+        if response is True:  # Yes, save and close
+            save_file() # This will attempt to save
+            # After save_file(), check if content is now saved.
+            # It might not be if the user cancelled the "Save As" dialog.
+            if editor.get("1.0", tk.END) == _last_saved_content:
+                root.destroy()
+            # If not equal, it means save was cancelled, so we do nothing and the window stays open.
+        elif response is False:  # No, just close
+            root.destroy()
+        # else: Cancel, do nothing and the window stays open.
+    else:
+        # No unsaved changes, just close.
+        root.destroy()
 
 ## -- File Operations -- ##
 
 def open_file():
     """Opens a file and loads its content into the editor."""
-    global current_file_path
+    global current_file_path, _last_saved_content
     if not editor or not outline_tree:
         return
 
@@ -168,6 +198,8 @@ def open_file():
                 content = f.read()
                 editor.delete("1.0", tk.END)
                 editor.insert("1.0", content)
+                # IMPORTANT: Get content back from editor to ensure it matches what get() will return later
+                _last_saved_content = editor.get("1.0", tk.END)
                 current_file_path = filepath # Update the global file path
                 # Update other modules that need the file path
                 editor_logic.current_file_path = current_file_path
@@ -187,7 +219,7 @@ def open_file():
 
 def save_file():
     """Saves the current editor content to the current file or a new file."""
-    global current_file_path
+    global current_file_path, _last_saved_content
     if not editor:
         return
 
@@ -198,6 +230,7 @@ def save_file():
         try:
             with open(current_file_path, "w", encoding="utf-8") as f:
                 f.write(content)
+            _last_saved_content = content # Update last saved state
             # Show feedback message
             show_temporary_status_message(f"✅ Saved: {os.path.basename(current_file_path)}")
         except Exception as e:
@@ -471,8 +504,10 @@ def setup_gui():
     # Load initial prompt history (e.g., for an unsaved file or a global default)
     # This is now handled inside llm_service.initialize_llm_service
     # llm_service.load_prompt_history_for_current_file() # Called by initialize_llm_service
-    return root # Return the root window
 
+    # Intercept the window close ('X') button to check for unsaved changes
+    root.protocol("WM_DELETE_WINDOW", on_close_request)
+    return root
 
 def apply_theme(theme_name):
     """Applies the specified theme (light or dark) to the GUI."""

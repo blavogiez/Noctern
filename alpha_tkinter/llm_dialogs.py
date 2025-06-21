@@ -274,7 +274,7 @@ def show_edit_prompts_dialog(root_window, theme_setting_getter_func,
     prompts_window.title("Edit LLM Prompt Templates")
     prompts_window.transient(root_window)
     prompts_window.grab_set()
-    prompts_window.geometry("900x700")
+    prompts_window.geometry("1200x700") # Wider for side-by-side layout
 
     # --- Theming ---
     dialog_bg = theme_setting_getter_func("root_bg", "#f0f0f0")
@@ -299,18 +299,28 @@ def show_edit_prompts_dialog(root_window, theme_setting_getter_func,
     )
     warning_label.pack(fill="x")
 
-    # --- Paned Window for the two prompts ---
-    main_pane = tk.PanedWindow(prompts_window, orient=tk.VERTICAL, sashrelief=tk.FLAT, sashwidth=6)
+    # --- Main Paned Window (HORIZONTAL for side-by-side) ---
+    main_pane = tk.PanedWindow(prompts_window, orient=tk.HORIZONTAL, sashrelief=tk.FLAT, sashwidth=6)
     main_pane.configure(bg=theme_setting_getter_func("panedwindow_sash", "#d0d0d0"))
     main_pane.pack(fill="both", expand=True, padx=10, pady=10)
 
-    # --- Completion Prompt ---
+    # --- State Tracking ---
+    saved_state = {
+        "completion": current_prompts.get("completion", "").strip(),
+        "generation": current_prompts.get("generation", "").strip()
+    }
+
+    # ===================================================================
+    # --- Left Pane: Completion Prompt
+    # ===================================================================
+    completion_pane_frame = ttk.Frame(main_pane)
+
     is_completion_default = (current_prompts.get("completion", "").strip() == default_prompts.get("completion", "").strip())
     completion_label_text = "Completion Prompt ('✨ Complete')"
     if is_completion_default:
         completion_label_text += " (Using Default)"
-
-    completion_labelframe = ttk.LabelFrame(main_pane, text=completion_label_text, padding=5)
+    completion_labelframe = ttk.LabelFrame(completion_pane_frame, text=completion_label_text, padding=5)
+    completion_labelframe.pack(pady=5, padx=5, fill="both", expand=True)
     
     completion_text_frame = ttk.Frame(completion_labelframe)
     completion_text_frame.pack(fill="both", expand=True)
@@ -320,23 +330,26 @@ def show_edit_prompts_dialog(root_window, theme_setting_getter_func,
     completion_text = tk.Text(
         completion_text_frame, wrap="word", font=("Consolas", 10),
         bg=text_bg, fg=text_fg, selectbackground=sel_bg, selectforeground=sel_fg,
-        insertbackground=insert_bg, relief=tk.FLAT, borderwidth=0, highlightthickness=0
+        insertbackground=insert_bg, relief=tk.FLAT, borderwidth=0, highlightthickness=0, undo=True
     )
     completion_text.grid(row=0, column=0, sticky="nsew")
     completion_scrollbar = ttk.Scrollbar(completion_text_frame, orient="vertical", command=completion_text.yview)
     completion_scrollbar.grid(row=0, column=1, sticky="ns")
     completion_text.config(yscrollcommand=completion_scrollbar.set)
     completion_text.insert("1.0", current_prompts.get("completion", ""))
-    main_pane.add(completion_labelframe, minsize=200)
 
-    # --- Generation Prompt ---
+    # ===================================================================
+    # --- Right Pane: Generation Prompt
+    # ===================================================================
+    generation_pane_frame = ttk.Frame(main_pane)
+
     is_generation_default = (current_prompts.get("generation", "").strip() == default_prompts.get("generation", "").strip())
     generation_label_text = "Generation Prompt ('🎯 Generate')"
     if is_generation_default:
         generation_label_text += " (Using Default)"
-
-    generation_labelframe = ttk.LabelFrame(main_pane, text=generation_label_text, padding=5)
-
+    generation_labelframe = ttk.LabelFrame(generation_pane_frame, text=generation_label_text, padding=5)
+    generation_labelframe.pack(pady=5, padx=5, fill="both", expand=True)
+    
     generation_text_frame = ttk.Frame(generation_labelframe)
     generation_text_frame.pack(fill="both", expand=True)
     generation_text_frame.grid_rowconfigure(0, weight=1)
@@ -345,95 +358,99 @@ def show_edit_prompts_dialog(root_window, theme_setting_getter_func,
     generation_text = tk.Text(
         generation_text_frame, wrap="word", font=("Consolas", 10),
         bg=text_bg, fg=text_fg, selectbackground=sel_bg, selectforeground=sel_fg,
-        insertbackground=insert_bg, relief=tk.FLAT, borderwidth=0, highlightthickness=0
+        insertbackground=insert_bg, relief=tk.FLAT, borderwidth=0, highlightthickness=0, undo=True
     )
     generation_text.grid(row=0, column=0, sticky="nsew")
     generation_scrollbar = ttk.Scrollbar(generation_text_frame, orient="vertical", command=generation_text.yview)
     generation_scrollbar.grid(row=0, column=1, sticky="ns")
     generation_text.config(yscrollcommand=generation_scrollbar.set)
     generation_text.insert("1.0", current_prompts.get("generation", ""))
-    main_pane.add(generation_labelframe, minsize=200)
 
-    # Store the initial state of the prompts (stripped) to check for changes on close.
-    # This represents the "last saved" state.
-    initial_completion_prompt = current_prompts.get("completion", "").strip()
-    initial_generation_prompt = current_prompts.get("generation", "").strip()
-
-    # Helper function to update the "Using Default" labels
+    # --- Helper function to update the "Using Default" labels ---
     def update_default_status_labels():
-        nonlocal completion_labelframe, generation_labelframe # Access outer scope variables
-
         is_completion_default_now = (completion_text.get("1.0", tk.END).strip() == default_prompts.get("completion", "").strip())
         is_generation_default_now = (generation_text.get("1.0", tk.END).strip() == default_prompts.get("generation", "").strip())
 
         completion_labelframe.config(text=f"Completion Prompt ('✨ Complete'){' (Using Default)' if is_completion_default_now else ''}")
         generation_labelframe.config(text=f"Generation Prompt ('🎯 Generate'){' (Using Default)' if is_generation_default_now else ''}")
 
-    # --- Buttons ---
-    # The button frame is now packed at the bottom for better visual separation and layout.
-    button_frame = ttk.Frame(prompts_window, padding=(10, 10, 10, 10))
-    button_frame.pack(fill="x", side="bottom")
-
-    def save_action_internal(close_window=True):
-        nonlocal initial_completion_prompt, initial_generation_prompt
+    # --- Core Action: Apply Changes ---
+    def apply_changes():
+        """Saves changes for BOTH prompts to the file but does not close the window."""
         new_completion = completion_text.get("1.0", tk.END).strip()
         new_generation = generation_text.get("1.0", tk.END).strip()
+
         if on_save_callback:
             on_save_callback(new_completion, new_generation)
 
-        # After saving, update the initial state to the current (now saved) state
-        initial_completion_prompt = new_completion
-        initial_generation_prompt = new_generation
+        saved_state["completion"] = new_completion
+        saved_state["generation"] = new_generation
 
-        update_default_status_labels() # Update labels after saving
-        if close_window:
-            prompts_window.destroy()
+        update_default_status_labels()
+        return "break"  # Prevents other bindings from firing
 
-    def on_close_request():
-        """Handles closing the window, checking for unsaved changes."""
-        # Check if the current (stripped) content differs from the last saved state
+    # --- Buttons for Completion Pane ---
+    completion_button_frame = ttk.Frame(completion_pane_frame)
+    completion_button_frame.pack(fill="x", side="bottom", padx=5, pady=(10, 0))
+
+    def restore_completion_default():
+        if messagebox.askyesno("Confirm Restore",
+                               "Are you sure you want to restore the default for the COMPLETION prompt?",
+                               parent=prompts_window):
+            completion_text.delete("1.0", tk.END)
+            completion_text.insert("1.0", default_prompts.get("completion", ""))
+            update_default_status_labels()
+
+    ttk.Button(completion_button_frame, text="Appliquer", command=apply_changes).pack(side="left", padx=(0, 5))
+    ttk.Button(completion_button_frame, text="Restaurer par défaut", command=restore_completion_default).pack(side="left")
+    main_pane.add(completion_pane_frame, minsize=400, stretch="always")
+
+    # --- Buttons for Generation Pane ---
+    generation_button_frame = ttk.Frame(generation_pane_frame)
+    generation_button_frame.pack(fill="x", side="bottom", padx=5, pady=(10, 0))
+
+    def restore_generation_default():
+        if messagebox.askyesno("Confirm Restore",
+                               "Are you sure you want to restore the default for the GENERATION prompt?",
+                               parent=prompts_window):
+            generation_text.delete("1.0", tk.END)
+            generation_text.insert("1.0", default_prompts.get("generation", ""))
+            update_default_status_labels()
+
+    ttk.Button(generation_button_frame, text="Appliquer", command=apply_changes).pack(side="left", padx=(0, 5))
+    ttk.Button(generation_button_frame, text="Restaurer par défaut", command=restore_generation_default).pack(side="left")
+    main_pane.add(generation_pane_frame, minsize=400, stretch="always")
+
+    # --- Bottom Bar with Close Button ---
+    bottom_bar = ttk.Frame(prompts_window, padding=(10, 0, 10, 10))
+    bottom_bar.pack(fill="x", side="bottom")
+
+    def close_window():
         current_completion = completion_text.get("1.0", tk.END).strip()
         current_generation = generation_text.get("1.0", tk.END).strip()
+        has_changes = (current_completion != saved_state["completion"] or
+                       current_generation != saved_state["generation"])
 
-        if (current_completion != initial_completion_prompt or
-            current_generation != initial_generation_prompt):
+        if has_changes:
             response = messagebox.askyesnocancel(
                 "Unsaved Changes",
                 "You have unsaved changes. Do you want to save before closing?",
                 parent=prompts_window
             )
-            if response is True:  # Yes, save and close
-                save_action_internal(close_window=True)
-            elif response is False:  # No, just close
+            if response is True:  # Yes
+                apply_changes()
+                prompts_window.destroy()
+            elif response is False: # No
                 prompts_window.destroy()
             # else: Cancel, do nothing
         else:
             prompts_window.destroy()
 
-    def restore_defaults_action():
-        """Resets the text in the editor boxes to the default prompts without closing the window."""
-        if messagebox.askyesno("Confirm Restore",
-                               "Are you sure you want to restore the default prompts in the editor?\n"
-                               "Your current changes in this window will be lost. "
-                               "You will still need to click 'Save and Close' to persist this change.",
-                               parent=prompts_window):
-            completion_text.delete("1.0", tk.END)
-            completion_text.insert("1.0", default_prompts.get("completion", ""))
-            generation_text.delete("1.0", tk.END)
-            generation_text.insert("1.0", default_prompts.get("generation", ""))
-            update_default_status_labels() # Update labels after restoring defaults in editor
-
-    # Right-aligned buttons (pack in reverse order of appearance for correct visual order)
-    ttk.Button(button_frame, text="Annuler", command=on_close_request).pack(side="right")
-    ttk.Button(button_frame, text="Enregistrer et Fermer", command=lambda: save_action_internal(True)).pack(side="right", padx=5)
-
-    # Left-aligned buttons
-    ttk.Button(button_frame, text="Appliquer (Ctrl+S)", command=lambda: save_action_internal(False)).pack(side="left", padx=5)
-    ttk.Button(button_frame, text="Restaurer par défaut", command=restore_defaults_action).pack(side="left", padx=5)
+    ttk.Button(bottom_bar, text="Fermer", command=close_window).pack(side="right")
 
     # Bind Ctrl+S for saving without closing
-    prompts_window.bind("<Control-s>", lambda event: save_action_internal(False))
+    prompts_window.bind("<Control-s>", lambda event: apply_changes())
 
     # Intercept the window close ('X') button
-    prompts_window.protocol("WM_DELETE_WINDOW", on_close_request)
+    prompts_window.protocol("WM_DELETE_WINDOW", close_window)
     prompts_window.wait_window()

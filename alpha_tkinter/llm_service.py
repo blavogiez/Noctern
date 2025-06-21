@@ -275,7 +275,8 @@ def update_prompts(completion_template, generation_template):
             "generation": _generation_prompt_template
         }
         llm_prompt_manager.save_prompts_to_file(prompts_to_save, active_filepath)
-        interface.show_temporary_status_message("✅ Prompts saved for this document.") # Use temporary status
+        prompts_filename = os.path.basename(llm_prompt_manager.get_prompts_filepath(active_filepath))
+        interface.show_temporary_status_message(f"✅ Prompts saved: {prompts_filename}")
     else:
         interface.show_temporary_status_message("⚠️ Prompts updated for this session only (no file open).") # Use temporary status
 
