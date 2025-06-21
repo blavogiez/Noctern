@@ -266,7 +266,7 @@ def show_set_llm_keywords_dialog(root_window, theme_setting_getter_func,
 def show_edit_prompts_dialog(root_window, theme_setting_getter_func,
                              current_prompts,
                              default_prompts,
-                             on_save_callback): # on_reset_callback is no longer needed here
+                             on_save_callback):
     """
     Displays a dialog for users to edit the LLM prompt templates.
     """
@@ -354,6 +354,11 @@ def show_edit_prompts_dialog(root_window, theme_setting_getter_func,
     generation_text.insert("1.0", current_prompts.get("generation", ""))
     main_pane.add(generation_labelframe, minsize=200)
 
+    # Store the initial state of the prompts (stripped) to check for changes on close.
+    # This represents the "last saved" state.
+    initial_completion_prompt = current_prompts.get("completion", "").strip()
+    initial_generation_prompt = current_prompts.get("generation", "").strip()
+
     # Helper function to update the "Using Default" labels
     def update_default_status_labels():
         nonlocal completion_labelframe, generation_labelframe # Access outer scope variables
@@ -365,16 +370,44 @@ def show_edit_prompts_dialog(root_window, theme_setting_getter_func,
         generation_labelframe.config(text=f"Generation Prompt ('🎯 Generate'){' (Using Default)' if is_generation_default_now else ''}")
 
     # --- Buttons ---
-    button_frame = ttk.Frame(prompts_window, padding=(10, 0, 10, 10))
-    button_frame.pack(fill="x")
+    # The button frame is now packed at the bottom for better visual separation and layout.
+    button_frame = ttk.Frame(prompts_window, padding=(10, 10, 10, 10))
+    button_frame.pack(fill="x", side="bottom")
 
     def save_action_internal(close_window=True):
+        nonlocal initial_completion_prompt, initial_generation_prompt
         new_completion = completion_text.get("1.0", tk.END).strip()
         new_generation = generation_text.get("1.0", tk.END).strip()
         if on_save_callback:
             on_save_callback(new_completion, new_generation)
+
+        # After saving, update the initial state to the current (now saved) state
+        initial_completion_prompt = new_completion
+        initial_generation_prompt = new_generation
+
         update_default_status_labels() # Update labels after saving
         if close_window:
+            prompts_window.destroy()
+
+    def on_close_request():
+        """Handles closing the window, checking for unsaved changes."""
+        # Check if the current (stripped) content differs from the last saved state
+        current_completion = completion_text.get("1.0", tk.END).strip()
+        current_generation = generation_text.get("1.0", tk.END).strip()
+
+        if (current_completion != initial_completion_prompt or
+            current_generation != initial_generation_prompt):
+            response = messagebox.askyesnocancel(
+                "Unsaved Changes",
+                "You have unsaved changes. Do you want to save before closing?",
+                parent=prompts_window
+            )
+            if response is True:  # Yes, save and close
+                save_action_internal(close_window=True)
+            elif response is False:  # No, just close
+                prompts_window.destroy()
+            # else: Cancel, do nothing
+        else:
             prompts_window.destroy()
 
     def restore_defaults_action():
@@ -390,9 +423,17 @@ def show_edit_prompts_dialog(root_window, theme_setting_getter_func,
             generation_text.insert("1.0", default_prompts.get("generation", ""))
             update_default_status_labels() # Update labels after restoring defaults in editor
 
-    ttk.Button(button_frame, text="Save and Close", command=lambda: save_action_internal(True)).pack(side="right", padx=5)
-    ttk.Button(button_frame, text="Apply", command=lambda: save_action_internal(False)).pack(side="right", padx=5) # New Apply button
-    ttk.Button(button_frame, text="Restaurer par défaut", command=restore_defaults_action).pack(side="right", padx=5)
-    ttk.Button(button_frame, text="Cancel", command=prompts_window.destroy).pack(side="right")
+    # Right-aligned buttons (pack in reverse order of appearance for correct visual order)
+    ttk.Button(button_frame, text="Annuler", command=on_close_request).pack(side="right")
+    ttk.Button(button_frame, text="Enregistrer et Fermer", command=lambda: save_action_internal(True)).pack(side="right", padx=5)
 
+    # Left-aligned buttons
+    ttk.Button(button_frame, text="Appliquer (Ctrl+S)", command=lambda: save_action_internal(False)).pack(side="left", padx=5)
+    ttk.Button(button_frame, text="Restaurer par défaut", command=restore_defaults_action).pack(side="left", padx=5)
+
+    # Bind Ctrl+S for saving without closing
+    prompts_window.bind("<Control-s>", lambda event: save_action_internal(False))
+
+    # Intercept the window close ('X') button
+    prompts_window.protocol("WM_DELETE_WINDOW", on_close_request)
     prompts_window.wait_window()
