@@ -45,14 +45,20 @@ def perform_heavy_updates():
     """Performs updates that might be computationally heavy."""
     global heavy_update_timer_id
     heavy_update_timer_id = None  # Reset timer ID
+    
     current_tab = get_current_tab()
-    if current_tab:
-        editor_logic.apply_syntax_highlighting(current_tab.editor)
-    if outline_tree:
-        editor_logic.update_outline_tree(current_tab.editor if current_tab else None)
-    if current_tab and current_tab.line_numbers:
-        current_tab.line_numbers.redraw()
+    
+    # If there is no active tab, clear the outline and stop.
+    if not current_tab:
+        if outline_tree:
+            outline_tree.delete(*outline_tree.get_children())
+        return
 
+    # Perform all updates for the current tab
+    editor_logic.apply_syntax_highlighting(current_tab.editor)
+    editor_logic.update_outline_tree(current_tab.editor)
+    if current_tab.line_numbers:
+        current_tab.line_numbers.redraw()
 def schedule_heavy_updates(_=None):
     """Schedules heavy updates after a short delay."""
     global heavy_update_timer_id

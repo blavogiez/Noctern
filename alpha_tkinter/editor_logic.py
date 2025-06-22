@@ -27,9 +27,13 @@ def update_outline_tree(editor):
     for i, line in enumerate(lines):
         stripped_line = line.strip()
         for level, cmd in enumerate(["section", "subsection", "subsubsection"], 1):
-            match = re.match(rf"\\{cmd}{{(.*?)}}", stripped_line)
+            # Improved regex to handle:
+            # - Starred versions (e.g., \section*{...})
+            # - Optional arguments (e.g., \section[short]{long})
+            # Note: This regex does not support nested braces {} in the title.
+            match = re.match(rf"\\{cmd}\*?(?:\[[^\]]*\])?{{([^}}]*)}}", stripped_line)
             if match:
-                title = match.group(1)
+                title = match.group(1).strip() # Get the title from the first capture group
                 # Ensure parent exists for the current level
                 parent_id = parents.get(level - 1, "")
                 node_id = outline_tree.insert(parent_id, "end", text=title, values=(i + 1,))

@@ -1,4 +1,0 @@
-{
-    "completion": "Complete this: {current_phrase_start}",
-    "generation": "Generate text for this prompt: {user_prompt}"
-}

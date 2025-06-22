@@ -86,15 +86,35 @@ CustomScreenDPI = 0
 
 FileStates [
 	[
+		FilePath = C:\Users\lab\Documents\BUT1\AutomaTeX\sample_usage\newfile.pdf
+		Favorites [
+		]
+		IsPinned = false
+		IsMissing = false
+		OpenCount = 1
+		UseDefaultState = false
+		DisplayMode = continuous
+		ScrollPos = 79.4004 424.6
+		PageNo = 1
+		Zoom = 150
+		Rotation = 0
+		WindowState = 1
+		WindowPos = 950 0 980 1030
+		ShowToc = false
+		SidebarDx = 194
+		DisplayR2L = false
+		ReparseIdx = 0
+	]
+	[
 		FilePath = C:\Users\lab\Documents\BUT1\AutomaTeX\alpha_tkinter\output\main.pdf
 		Favorites [
 		]
 		IsPinned = false
 		IsMissing = false
-		OpenCount = 11
+		OpenCount = 6
 		UseDefaultState = false
 		DisplayMode = continuous
-		ScrollPos = -1 14.8008
+		ScrollPos = -1 14.0008
 		PageNo = 1
 		Zoom = 75
 		Rotation = 0
@@ -111,10 +131,10 @@ FileStates [
 		]
 		IsPinned = false
 		IsMissing = false
-		OpenCount = 6
+		OpenCount = 4
 		UseDefaultState = false
 		DisplayMode = continuous
-		ScrollPos = -1 754.288
+		ScrollPos = -1 -1
 		PageNo = 71
 		Zoom = fit page
 		Rotation = 0
@@ -132,7 +152,7 @@ FileStates [
 		]
 		IsPinned = false
 		IsMissing = false
-		OpenCount = 9
+		OpenCount = 5
 		UseDefaultState = false
 		DisplayMode = continuous
 		ScrollPos = -1 138.771
@@ -152,7 +172,7 @@ FileStates [
 		]
 		IsPinned = false
 		IsMissing = false
-		OpenCount = 22
+		OpenCount = 12
 		UseDefaultState = false
 		DisplayMode = continuous
 		ScrollPos = -1 607.921
@@ -172,7 +192,7 @@ FileStates [
 		]
 		IsPinned = false
 		IsMissing = false
-		OpenCount = 4
+		OpenCount = 2
 		UseDefaultState = false
 		DisplayMode = continuous
 		ScrollPos = -1 -1
@@ -214,7 +234,7 @@ SessionData [
 				PageNo = 71
 				Zoom = fit page
 				Rotation = 0
-				ScrollPos = -1 754.288
+				ScrollPos = -1 -1
 				ShowToc = true
 				TocState = 14 26
 			]
@@ -224,17 +244,26 @@ SessionData [
 				PageNo = 1
 				Zoom = 75
 				Rotation = 0
-				ScrollPos = -1 14.8008
+				ScrollPos = -1 14.0008
+				ShowToc = false
+			]
+			[
+				FilePath = C:\Users\lab\Documents\BUT1\AutomaTeX\sample_usage\newfile.pdf
+				DisplayMode = continuous
+				PageNo = 1
+				Zoom = 150
+				Rotation = 0
+				ScrollPos = 79.4004 424.6
 				ShowToc = false
 			]
 		]
-		TabIndex = 5
+		TabIndex = 6
 		WindowState = 1
 		WindowPos = 950 0 980 1030
 		SidebarDx = 194
 	]
 ]
 TimeOfLastUpdateCheck = 0 0
-OpenCountWeek = 754
+OpenCountWeek = 755
 
 # Settings below are not recognized by the current version
