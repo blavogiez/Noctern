@@ -19,6 +19,7 @@ import llm_utils
 import llm_api_client
 import llm_dialogs
 import llm_prompt_manager # NEW
+import llm_keyword_manager # NEW
 
 # --- Module-level variables to store references from the main application ---
 _root_window = None
@@ -69,6 +70,7 @@ def initialize_llm_service(root_window_ref, progress_bar_widget_ref,
 
     # Load initial prompt history and custom prompts
     load_prompt_history_for_current_file()
+    load_keywords_for_current_file() # NEW: Load keywords on service initialization
     load_prompts_for_current_file()
 
 def _get_active_tex_filepath():
@@ -106,6 +108,14 @@ def _update_history_response_and_save(user_prompt_key, new_response_text):
     llm_prompt_history.update_response_in_history(_prompt_history_list, user_prompt_key, new_response_text)
     active_filepath = _get_active_tex_filepath()
     llm_prompt_history.save_prompt_history_to_file(_prompt_history_list, active_filepath)
+
+# --- Keywords Management ---
+def load_keywords_for_current_file():
+    """Loads the keywords associated with the currently active .tex file."""
+    global _llm_keywords_list
+    active_filepath = _get_active_tex_filepath()
+    _llm_keywords_list = llm_keyword_manager.load_keywords_from_file(active_filepath)
+
 
 # --- Custom Prompts Management ---
 def load_prompts_for_current_file():
@@ -257,6 +267,7 @@ def open_set_keywords_dialog():
         """Callback for when the keywords dialog saves."""
         global _llm_keywords_list
         _llm_keywords_list = new_keywords_list
+        llm_keyword_manager.save_keywords_to_file(_llm_keywords_list, _get_active_tex_filepath()) # Save to file
         if not _llm_keywords_list:
             _show_temporary_status_message_func("✅ LLM keywords cleared.")
             messagebox.showinfo("Keywords Cleared", "LLM keywords list has been cleared.", parent=_root_window) # Parent might need to be dialog

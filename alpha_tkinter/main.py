@@ -66,6 +66,7 @@ if __name__ == "__main__":
         root_ref=root,
         # Callback for when a tab changes: loads LLM history/prompts and schedules heavy UI updates.
         on_tab_changed_cb=lambda: (llm_service.load_prompt_history_for_current_file(),
+                                   llm_service.load_keywords_for_current_file(), # NEW: Load keywords on tab change
                                    llm_service.load_prompts_for_current_file(),
                                    gui_editor_view.perform_heavy_updates()),
         schedule_heavy_updates_cb=gui_editor_view.schedule_heavy_updates, # Callback for scheduling heavy updates
