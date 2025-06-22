@@ -4,6 +4,9 @@ import os
 from tkinter import messagebox
 from PIL import ImageGrab
 
+# NEW: Store the last parsed outline structure
+_last_parsed_outline_structure = []
+
 outline_tree = None
 get_current_tab_func = None # Callback to get the current tab from the GUI manager
 
@@ -15,14 +18,20 @@ def initialize_editor_logic(tree_widget, get_current_tab_callback):
     get_current_tab_func = get_current_tab_callback
 
 def update_outline_tree(editor):
-    """Updates the Treeview widget with LaTeX section structure."""
+    """
+    Updates the Treeview widget with LaTeX section structure,
+    only if the structure has changed.
+    """
+    global _last_parsed_outline_structure
+
     if not outline_tree or not editor:
         return
 
-    outline_tree.delete(*outline_tree.get_children())
     content = editor.get("1.0", tk.END)
     lines = content.split("\n")
-    parents = {0: ""} # Map level to parent node ID
+    
+    current_outline_structure = []
+    # parents = {0: ""} # Map level to parent node ID for building the structure list (not needed for comparison)
 
     for i, line in enumerate(lines):
         stripped_line = line.strip()
@@ -30,19 +39,31 @@ def update_outline_tree(editor):
             # Improved regex to handle:
             # - Starred versions (e.g., \section*{...})
             # - Optional arguments (e.g., \section[short]{long})
-            # Note: This regex does not support nested braces {} in the title.
+            # Note: This regex does not support nested braces {} in the title. (This comment is from original code)
             match = re.match(rf"\\{cmd}\*?(?:\[[^\]]*\])?{{([^}}]*)}}", stripped_line)
             if match:
                 title = match.group(1).strip() # Get the title from the first capture group
-                # Ensure parent exists for the current level
-                parent_id = parents.get(level - 1, "")
-                node_id = outline_tree.insert(parent_id, "end", text=title, values=(i + 1,))
-                parents[level] = node_id
-                # Remove descendants from parent map if we move up the hierarchy
-                for deeper in range(level + 1, 4):
-                    if deeper in parents:
-                        del parents[deeper]
+                # Store (level, title, line_number)
+                current_outline_structure.append((level, title, i + 1))
                 break # Found a section command, move to next line
+
+    # Compare current structure with last known structure
+    if current_outline_structure != _last_parsed_outline_structure:
+        # Structure has changed, so update the Treeview
+        outline_tree.delete(*outline_tree.get_children()) # Clear existing tree
+
+        # Rebuild the Treeview
+        parents_for_tree = {0: ""} # Map level to parent node ID for Treeview insertion
+        for level, title, line_num in current_outline_structure:
+            parent_id = parents_for_tree.get(level - 1, "")
+            node_id = outline_tree.insert(parent_id, "end", text=title, values=(line_num,))
+            parents_for_tree[level] = node_id
+            # Remove descendants from parent map if we move up the hierarchy
+            for deeper in range(level + 1, 4):
+                if deeper in parents_for_tree:
+                    del parents_for_tree[deeper]
+        
+        _last_parsed_outline_structure = current_outline_structure # Update last known structure
 
 def go_to_section(editor, event):
     """Scrolls the editor to the selected section in the outline tree."""
