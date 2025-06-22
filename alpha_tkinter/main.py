@@ -2,10 +2,6 @@
 #### Baptiste Lavogiez, June 2025
 
 #### https://github.com/blavogiez/AutomaTeX
-#### AutomaTeX, a LaTeX editor powered by AI Tools
-#### Baptiste Lavogiez, June 2025
-
-#### https://github.com/blavogiez/AutomaTeX
 
 import tkinter as tk
 import platform
@@ -15,6 +11,7 @@ import ctypes
 import interface
 import editor_logic
 import latex_compiler
+import latex_translator # NEW: Import latex_translator
 import llm_service # MODIFIED: Import new llm_service
 
 # Global variables (defined and managed primarily in interface.py)
@@ -65,7 +62,17 @@ if __name__ == "__main__":
         root_window_ref=root,
         progress_bar_widget_ref=llm_progress_bar,
         theme_setting_getter_callback=interface.get_theme_setting,
-        current_file_path_getter_callback=interface.get_current_file_path_for_llm)
+        current_file_path_getter_callback=interface.get_current_file_path_for_llm
+    )
+
+    # Initialize the translator service
+    latex_translator.initialize_translator(
+        editor_ref=editor,
+        root_ref=root,
+        current_file_path_getter=interface.get_current_file_path_for_llm,
+        theme_getter=interface.get_theme_setting,
+        status_message_func=interface.show_temporary_status_message
+    )
 
     # Apply the initial theme (e.g., dark mode by default)
     interface.apply_theme("dark")

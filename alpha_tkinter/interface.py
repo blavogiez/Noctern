@@ -10,6 +10,7 @@ import sv_ttk # Import sv_ttk
 import editor_logic
 import latex_compiler
 import llm_service # MODIFIED: Import new llm_service
+import latex_translator # NEW: Import latex_translator
 
 # Global variables for main widgets and state
 # These are initialized in setup_gui and accessed by other modules
@@ -352,7 +353,8 @@ def setup_gui():
     ttk.Button(top_frame, text="✨ Complete", command=llm_service.request_llm_to_complete_text).pack(side="left", padx=3, pady=3)
     ttk.Button(top_frame, text="🎯 Generate", command=llm_service.open_generate_text_dialog).pack(side="left", padx=3, pady=3)
     ttk.Button(top_frame, text="🔑 Keywords", command=llm_service.open_set_keywords_dialog).pack(side="left", padx=3, pady=3)
-    ttk.Button(top_frame, text="📝 Edit Prompts", command=llm_service.open_edit_prompts_dialog).pack(side="left", padx=3, pady=3)
+    ttk.Button(top_frame, text="📝 Prompts", command=llm_service.open_edit_prompts_dialog).pack(side="left", padx=3, pady=3) # Shorter text
+    ttk.Button(top_frame, text="🌐 Translate", command=latex_translator.open_translate_dialog).pack(side="left", padx=3, pady=3) # NEW: Translate button
 
     # Theme button
     # Use a lambda to toggle between themes
@@ -470,6 +472,8 @@ def setup_gui():
     root.bind_all("<Control-Shift-P>", lambda event: llm_service.open_edit_prompts_dialog()) # Shortcut for editing prompts
     root.bind_all("<Control-o>", lambda event: open_file())
 
+    root.bind_all("<Control-t>", lambda event: latex_translator.open_translate_dialog()) # NEW: Shortcut for translate
+
     # Bind Zoom shortcuts
     root.bind_all("<Control-equal>", zoom_in) # Ctrl+= is common for zoom in
     root.bind_all("<Control-minus>", zoom_out)
@@ -499,11 +503,7 @@ def setup_gui():
     # Pass the created widgets and variables to the other modules
     editor_logic.set_editor_globals(editor, outline_tree, current_file_path)
     latex_compiler.set_compiler_globals(editor, root, current_file_path)
-    llm_service.initialize_llm_service(editor, root, llm_progress_bar, get_theme_setting, get_current_file_path_for_llm) # MODIFIED
-
-    # Load initial prompt history (e.g., for an unsaved file or a global default)
-    # This is now handled inside llm_service.initialize_llm_service
-    # llm_service.load_prompt_history_for_current_file() # Called by initialize_llm_service
+    # NOTE: Service initializations (LLM, Translator) are now handled in main.py after the GUI is fully set up.
 
     # Intercept the window close ('X') button to check for unsaved changes
     root.protocol("WM_DELETE_WINDOW", on_close_request)
