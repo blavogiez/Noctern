@@ -12,16 +12,18 @@ _welcome_screen = None
 _root = None
 _on_tab_changed_callback = None # Callback for when a tab changes (e.g., to load LLM history)
 _schedule_heavy_updates_callback = None # Callback to schedule heavy updates
+_apply_theme_callback = None # Callback to apply the current theme
 
-def initialize(notebook_ref, tabs_dict_ref, welcome_screen_ref, root_ref, on_tab_changed_cb, schedule_heavy_updates_cb, welcome_button_frame_ref):
+def initialize(notebook_ref, tabs_dict_ref, welcome_screen_ref, root_ref, on_tab_changed_cb, schedule_heavy_updates_cb, welcome_button_frame_ref, apply_theme_cb):
     """Initializes the file and tab manager with necessary GUI component references."""
-    global _notebook, _tabs, _welcome_screen, _root, _on_tab_changed_callback, _schedule_heavy_updates_callback
+    global _notebook, _tabs, _welcome_screen, _root, _on_tab_changed_callback, _schedule_heavy_updates_callback, _apply_theme_callback
     _notebook = notebook_ref
     _tabs = tabs_dict_ref
     _welcome_screen = welcome_screen_ref
     _root = root_ref
     _on_tab_changed_callback = on_tab_changed_cb
     _schedule_heavy_updates_callback = schedule_heavy_updates_cb
+    _apply_theme_callback = apply_theme_cb
 
     _notebook.bind("<<NotebookTabChanged>>", on_tab_changed)
 
@@ -72,14 +74,15 @@ def create_new_tab(file_path=None):
     if is_first_tab:
         toggle_welcome_screen()
 
+    # Apply the current theme to ensure the new tab's widgets are styled correctly.
+    if _apply_theme_callback:
+        _apply_theme_callback()
+
     # Trigger updates for the new tab (e.g., LLM history, syntax highlighting)
     on_tab_changed()
 
     # Now that the tab is added to the notebook, load its content
     new_tab.load_file()
-
-    # Schedule an update to apply syntax highlighting to the newly loaded content
-    _schedule_heavy_updates_callback()
 
 def open_file(show_temporary_status_message_func):
     """Opens a file and loads its content into the editor."""

@@ -44,10 +44,7 @@ def perform_heavy_updates():
     # Perform all updates for the current tab
     _editor_logic.apply_syntax_highlighting(current_tab.editor)
     _editor_logic.update_outline_tree(current_tab.editor)
-    if current_tab.line_numbers:
-        current_tab.line_numbers.redraw()
-    
-    # Re-apply the current line highlight, as redraws might clear it
+    # This call handles both the editor line highlight and redrawing the line numbers
     current_tab._highlight_current_line()
 
 def schedule_heavy_updates(_=None):
@@ -92,7 +89,7 @@ def zoom_in(_=None): # Accept optional event argument
             # Re-create and re-configure the bold font for the current line number
             current_tab.line_numbers.font_bold = current_tab.editor_font.copy()
             current_tab.line_numbers.font_bold.configure(weight="bold")
-            current_tab.line_numbers.tag_configure("current_line_num", font=current_tab.line_numbers.font_bold)
+            # No tag_configure needed here as Canvas redraws text directly with font objects
             current_tab.line_numbers.redraw()
         perform_heavy_updates() # Reapply syntax highlighting and outline
 
@@ -114,6 +111,6 @@ def zoom_out(_=None): # Accept optional event argument
             # Re-create and re-configure the bold font for the current line number
             current_tab.line_numbers.font_bold = current_tab.editor_font.copy()
             current_tab.line_numbers.font_bold.configure(weight="bold")
-            current_tab.line_numbers.tag_configure("current_line_num", font=current_tab.line_numbers.font_bold)
+            # No tag_configure needed here as Canvas redraws text directly with font objects
             current_tab.line_numbers.redraw()
         perform_heavy_updates() # Reapply syntax highlighting and outline

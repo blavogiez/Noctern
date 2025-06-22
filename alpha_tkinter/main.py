@@ -69,7 +69,10 @@ if __name__ == "__main__":
                                    llm_service.load_prompts_for_current_file(),
                                    gui_editor_view.perform_heavy_updates()),
         schedule_heavy_updates_cb=gui_editor_view.schedule_heavy_updates, # Callback for scheduling heavy updates
-        welcome_button_frame_ref=welcome_button_frame # Frame to add buttons to welcome screen
+        welcome_button_frame_ref=welcome_button_frame, # Frame to add buttons to welcome screen
+        # NEW: Pass a callback to re-apply the current theme when a new tab is created.
+        # This ensures new widgets get the correct theme colors.
+        apply_theme_cb=lambda: gui_theme_manager.apply_theme(gui_theme_manager._current_theme)
     )
 
     # 5. Initialize Theme Manager: Needs root, the tabs dictionary, and a callback for heavy updates.
@@ -100,6 +103,10 @@ if __name__ == "__main__":
         active_editor_getter=lambda: gui_file_tab_manager.get_current_tab().editor if gui_file_tab_manager.get_current_tab() else None,
         active_filepath_getter=lambda: gui_file_tab_manager.get_current_tab().file_path if gui_file_tab_manager.get_current_tab() else None
     )
+
+
+
+
 
     # --- Setup UI Buttons (Top Frame) ---
     ttk.Button(top_frame, text="📂 Open", command=lambda: gui_file_tab_manager.open_file(gui_status_bar.show_temporary_status_message)).pack(side="left", padx=3, pady=3)

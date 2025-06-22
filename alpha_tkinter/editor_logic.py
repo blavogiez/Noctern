@@ -63,34 +63,39 @@ def go_to_section(editor, event):
                 # Handle cases where line number might be invalid (e.g., empty file)
                 pass
 
-def apply_syntax_highlighting(editor):
+def apply_syntax_highlighting(editor, full_document=False):
     """
-    Applies syntax highlighting ONLY to the visible portion of the text widget.
-    This is a major performance optimization for large files.
+    Applies syntax highlighting to the text widget.
+    If full_document is True, applies to the entire document.
+    Otherwise, applies only to the visible portion.
     """
     if not editor or not editor.winfo_exists():
         return
 
-    # Define the visible range, with a small buffer for partially visible lines
-    visible_start_index = editor.index("@0,0")
-    visible_end_index = editor.index(f"@0,{editor.winfo_height()}")
-    
-    start_line = int(visible_start_index.split('.')[0])
-    # Add a buffer of a few lines to handle smooth scrolling and partial lines
-    end_line = int(visible_end_index.split('.')[0]) + 2
-    
-    start_index = f"{start_line}.0"
-    end_index = f"{end_line}.end"
+    if full_document:
+        start_index = "1.0"
+        end_index = tk.END
+    else:
+        # Define the visible range, with a small buffer for partially visible lines
+        visible_start_index = editor.index("@0,0")
+        visible_end_index = editor.index(f"@0,{editor.winfo_height()}")
+        
+        start_line = int(visible_start_index.split('.')[0])
+        # Add a buffer of a few lines to handle smooth scrolling and partial lines
+        end_line = int(visible_end_index.split('.')[0]) + 2
+        
+        start_index = f"{start_line}.0"
+        end_index = f"{end_line}.end"
 
-    # Remove existing tags from only the visible range to prevent tag buildup
+    # Remove existing tags from the target range to prevent tag buildup
     editor.tag_remove("latex_command", start_index, end_index)
     editor.tag_remove("latex_brace", start_index, end_index)
     editor.tag_remove("latex_comment", start_index, end_index)
 
-    # Get only the content of the visible lines
+    # Get only the content of the target range
     content = editor.get(start_index, end_index)
 
-    # Helper function to apply tags based on regex matches within the visible content
+    # Helper function to apply tags based on regex matches within the content
     def apply_tags_for_pattern(pattern, tag_name):
         for match in re.finditer(pattern, content):
             # Calculate the absolute start and end indices in the editor from the relative match
@@ -98,7 +103,7 @@ def apply_syntax_highlighting(editor):
             match_end = editor.index(f"{start_index} + {match.end()} chars")
             editor.tag_add(tag_name, match_start, match_end)
 
-    # Apply highlighting for each pattern on the visible content
+    # Apply highlighting for each pattern on the content
     apply_tags_for_pattern(r"\\[a-zA-Z@]+", "latex_command")
     apply_tags_for_pattern(r"[{}]", "latex_brace")
     apply_tags_for_pattern(r"%[^\n]*", "latex_comment")

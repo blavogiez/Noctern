@@ -1,58 +1,51 @@
 # c:\Users\lab\Documents\BUT1\AutomaTeX\alpha_tkinter\editor_tab.py
 import tkinter as tk
+import editor_logic
 from tkinter import ttk, messagebox
 from tkinter.font import Font
 import os
-import math # For ceil
+import math
 
-# Refactor LineNumbers to use a Text widget for better performance
-class LineNumbers(tk.Text):
-    """A Text widget to display line numbers for a main Text editor widget."""
+class LineNumbers(tk.Canvas):
+    """A Canvas widget to display line numbers for a Text editor widget."""
     def __init__(self, master, editor_widget, font, **kwargs):
         super().__init__(master, **kwargs)
         self.editor = editor_widget
         self.font = font
-        self.text_color = "#6a737d"
-        self.text_color_current = "#d4d4d4" # Default current line color
+        self.text_color = "#6a737d" # Default color, will be overridden by theme
+        self.text_color_current = "#d4d4d4" # Default current line color, will be overridden by theme
         self.font_bold = self.font.copy()
         self.font_bold.configure(weight="bold")
         self.bg_color = "#f0f0f0"
         
-        # Configure as read-only text widget for line numbers
         self.config(
-            width=4, # Initial width, will adjust dynamically
-            bg=self.bg_color, fg=self.text_color,
-            font=self.font,
-            relief=tk.FLAT, borderwidth=0, highlightthickness=0,
-            state="disabled", # Make it read-only
-            wrap="none", # No word wrap
-            cursor="arrow", # Standard cursor
+            width=40, # Initial width, will adjust dynamically
+            bg=self.bg_color,
+            highlightthickness=0, bd=0,
+            cursor="arrow" # Standard cursor
         )
-        # Tag for highlighting the current line number
-        self.tag_configure("current_line_num", font=self.font_bold)
         
         # Bind scroll events to synchronize with editor
-        # These bindings are crucial for smooth scrolling of line numbers
+        # Note: These are bound to the editor, not the canvas itself, to capture editor scrolls
         self.editor.bind("<MouseWheel>", self._on_mousewheel)
         self.editor.bind("<Button-4>", self._on_mousewheel) # Linux scroll up
         self.editor.bind("<Button-5>", self._on_mousewheel) # Linux scroll down
         self.editor.bind("<Configure>", self._on_configure) # For resizing the editor, which might affect line numbers
+        self.editor.bind("<KeyRelease>", self._on_editor_content_change) # To update line numbers on new lines
+        self.editor.bind("<ButtonRelease-1>", self._on_editor_content_change) # To update line numbers on click
 
     def update_theme(self, text_color, bg_color, current_line_text_color):
         self.text_color = text_color
         self.bg_color = bg_color
         self.text_color_current = current_line_text_color
-        self.config(bg=self.bg_color, fg=self.text_color)
-        self.tag_configure("current_line_num", foreground=self.text_color_current)
+        self.config(bg=self.bg_color)
         self.redraw() # Redraw content to apply new colors
 
     def redraw(self):
         """Updates the line numbers displayed in the widget."""
-        self.config(state="normal") # Enable editing temporarily
-        self.delete("1.0", tk.END) # Clear existing numbers
+        self.delete("all") # Clear existing numbers
 
         if not self.editor or not self.winfo_exists():
-            self.config(state="disabled")
             return
         
         # Get total lines in the document for width calculation
@@ -63,57 +56,81 @@ class LineNumbers(tk.Text):
         else:
             total_lines_in_doc = int(last_doc_line_index.split('.')[0])
 
-        # Calculate the number of lines to display based on the editor's height
-        # We need to display enough lines to fill the visible area, plus a buffer
-        # Estimate lines per page based on font height
-        line_height = self.font.metrics("linespace")
-        if line_height == 0: line_height = 1 # Avoid division by zero
-        lines_per_page = math.ceil(self.editor.winfo_height() / line_height) if self.editor.winfo_height() > 0 else 50
-        
         # Determine the maximum line number that might be displayed for width calculation
         # This should be the total lines in the document, or the number of lines that fit on screen, whichever is larger
-        max_line_num_for_width = max(total_lines_in_doc, lines_per_page + 10) # Add a buffer for new lines
+        max_line_num_for_width = max(total_lines_in_doc, 1) # Ensure at least 1 for width calc
         max_digits = len(str(max_line_num_for_width)) if max_line_num_for_width > 0 else 1
         
-        # Calculate required width in characters for the line numbers widget
-        # Add 1 for padding/spacing
-        required_width_chars = max_digits + 1 
+        required_width = self.font.measure("0" * max_digits) + 10 # 10 for padding
         
-        # Update width of the line numbers Text widget if it needs to change
-        current_width_chars = self.cget("width")
-        if current_width_chars != required_width_chars:
-            self.config(width=required_width_chars)
+        # Adjust canvas width if needed
+        if abs(self.winfo_width() - required_width) > 2: # Only reconfigure if significant change
+             self.config(width=required_width)
 
-        # Insert line numbers for the entire document (or a large buffer)
-        # This is done once on content change, not on every scroll.
-        # The yview_moveto will handle visible range.
-        for i in range(1, total_lines_in_doc + lines_per_page + 1): # Add buffer for new lines
-            self.insert(tk.END, f"{i}\n")
+        # Iterate through visible lines in the editor
+        first_visible_line_index = self.editor.index("@0,0")
+        last_visible_line_index = self.editor.index(f"@0,{self.editor.winfo_height()}")
         
-        # Synchronize scroll position with the main editor
-        self.yview_moveto(self.editor.yview()[0])
+        # Start from the first visible line
+        current_line_index = first_visible_line_index
+        
+        # Get the current line number from the editor's insert cursor
+        current_editor_line_num = int(self.editor.index(tk.INSERT).split('.')[0])
 
-        self.config(state="disabled") # Disable editing again
+        while True:
+            dline = self.editor.dlineinfo(current_line_index)
+            if dline is None: break # No more lines visible or invalid index
+
+            x, y, width, height, baseline = dline
+            line_num = int(current_line_index.split(".")[0])
+            
+            # Determine font and color for the line number
+            if line_num == current_editor_line_num:
+                font_to_use = self.font_bold
+                color_to_use = self.text_color_current
+            else:
+                font_to_use = self.font
+                color_to_use = self.text_color
+
+            # Draw the line number on the canvas
+            self.create_text(required_width - 5, y, anchor="ne",
+                             text=str(line_num), font=font_to_use, fill=color_to_use)
+
+            # Move to the next line
+            next_line_index = self.editor.index(f"{current_line_index}+1line")
+            if next_line_index == current_line_index: break # No more lines
+            
+            # Stop if we've gone past the visible area or too far
+            if self.editor.compare(current_line_index, ">", last_visible_line_index) and line_num > total_lines_in_doc:
+                break
+            
+            current_line_index = next_line_index
 
     def _on_mousewheel(self, event):
         """Propagates mouse wheel scroll from editor to line numbers."""
-        # The 'units' argument scrolls by lines, 'pages' by page.
-        # event.delta is typically 120 or -120 per scroll "tick"
-        self.yview_scroll(-1 * int(event.delta/120), "units")
-        # Return "break" to prevent the event from propagating further if desired,
-        # but here we want the editor to also scroll.
-        # If the editor's yscrollcommand is properly set, it will handle its own scroll.
-        # We just need to ensure line numbers follow.
+        # This is handled by the editor's yscrollcommand, which calls redraw via schedule_heavy_updates.
+        # We don't need to do anything directly here for scrolling the canvas itself.
+        pass
 
     def _on_configure(self, event):
         """Handles configure events (e.g., resize) to redraw line numbers."""
         self.redraw()
 
+    def _on_editor_content_change(self, event):
+        """Handles content changes in the editor to update line numbers."""
+        # This is called on KeyRelease and ButtonRelease-1.
+        # It triggers a redraw of line numbers to update content and current line highlight.
+        self.redraw()
+
     def highlight_line(self, line_num):
-        """Applies a highlight tag to the specified line number."""
-        self.tag_remove("current_line_num", "1.0", "end")
-        if line_num:
-            self.tag_add("current_line_num", f"{line_num}.0", f"{line_num}.end")
+        """
+        This method is no longer needed as highlighting is done directly in redraw.
+        It's kept as a placeholder or can be removed if no external calls rely on it.
+        """
+        # The current line highlighting is now handled directly within redraw()
+        # by checking if line_num == current_editor_line_num.
+        # This method can be simplified or removed if not used elsewhere.
+        self.redraw() # Force a redraw to update the highlight
 
 class EditorTab(ttk.Frame):
     """Represents a single tab in the editor notebook."""
@@ -144,8 +161,8 @@ class EditorTab(ttk.Frame):
         # --- Configure scroll and events ---
         def sync_scroll_and_redraw(*args):
             self.scrollbar.set(*args)
-            self.line_numbers.yview_moveto(self.editor.yview()[0]) # This part is fast and syncs the scroll position.
-            self.schedule_heavy_updates() # Schedule heavy updates (syntax, outline)
+            self.line_numbers.redraw() # Redraw line numbers instantly for smooth scrolling
+            self.schedule_heavy_updates() # Schedule heavy updates (syntax, outline) with a debounce
 
         self.editor.config(yscrollcommand=sync_scroll_and_redraw)
         
@@ -193,6 +210,12 @@ class EditorTab(ttk.Frame):
                     self.editor.insert("1.0", content)
                     self.last_saved_content = self.get_content()
                     self.update_tab_title()
+                    
+                    # --- NEW: Apply full syntax highlighting on load ---
+                    # This ensures the entire document is highlighted initially.
+                    # It's a direct call, bypassing the debounce for immediate visual feedback.
+                    editor_logic.apply_syntax_highlighting(self.editor, full_document=True)
+                    
                     # Use 'after' to ensure the highlight is applied after the mainloop is idle
                     self.after(10, self._highlight_current_line)
                     self.editor.edit_reset() # Clear undo stack
@@ -201,14 +224,15 @@ class EditorTab(ttk.Frame):
         else:
             # This is a new, unsaved file
             self.update_tab_title()
+            # For new files, still apply initial highlight (empty document) and current line
+            editor_logic.apply_syntax_highlighting(self.editor, full_document=True)
             self.after(10, self._highlight_current_line)
 
     def _highlight_current_line(self, event=None):
         """Highlights the current line in the editor and the corresponding line number."""
         self.editor.tag_remove("current_line", "1.0", "end")
         self.editor.tag_add("current_line", "insert linestart", "insert lineend+1c")
-        current_line_num = self.editor.index(tk.INSERT).split('.')[0]
-        self.line_numbers.highlight_line(current_line_num)
+        self.line_numbers.redraw() # Redraw to update the current line highlight in the numbers canvas
 
     def save_file(self, new_path=None):
         """
