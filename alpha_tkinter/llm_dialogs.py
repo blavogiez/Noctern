@@ -196,6 +196,15 @@ def show_generate_text_dialog(root_window, theme_setting_getter_func,
     text_prompt.focus()
     prompt_window.wait_window()
 
+    # Ensure explicit cleanup if dialog is closed by 'X' button or other means
+    def on_generate_dialog_close():
+        text_prompt.delete("1.0", tk.END)
+        text_response.config(state="normal") # Enable to clear
+        text_response.delete("1.0", tk.END)
+        text_response.config(state="disabled")
+        prompt_window.destroy()
+    prompt_window.protocol("WM_DELETE_WINDOW", on_generate_dialog_close)
+
 
 def show_set_llm_keywords_dialog(root_window, theme_setting_getter_func,
                                  current_llm_keywords_list, # For pre-filling
@@ -263,6 +272,11 @@ def show_set_llm_keywords_dialog(root_window, theme_setting_getter_func,
 
     ttk.Button(keyword_window, text="Save Keywords", command=save_keywords_action_internal).pack(pady=10)
     keyword_text_widget.focus()
+
+    def on_keywords_dialog_close():
+        keyword_text_widget.delete("1.0", tk.END)
+        keyword_window.destroy()
+    keyword_window.protocol("WM_DELETE_WINDOW", on_keywords_dialog_close)
     keyword_window.wait_window()
 
 def show_edit_prompts_dialog(root_window, theme_setting_getter_func,
@@ -446,9 +460,10 @@ def show_edit_prompts_dialog(root_window, theme_setting_getter_func,
                 prompts_window.destroy()
             # else: Cancel, do nothing, so don't destroy the window
         else:
-            completion_text.delete("1.0", tk.END) # Explicitly clear content
-            generation_text.delete("1.0", tk.END) # Explicitly clear content
             prompts_window.destroy()
+        # Always clear content on close, regardless of save status
+        completion_text.delete("1.0", tk.END)
+        generation_text.delete("1.0", tk.END)
 
     ttk.Button(bottom_bar, text="Close", command=close_window).pack(side="right")
 
