@@ -21,6 +21,7 @@ tabs = {} # NEW: Dictionary to hold EditorTab instances, mapping tab_id to tab_o
 outline_tree = None
 llm_progress_bar = None
 status_bar = None
+welcome_screen = None # NEW: To hold the welcome screen widget
 main_pane = None
 _theme_settings = {} # Store current theme colors and properties
 current_theme = "light" # Initial theme state, ensure it matches main.py if it sets it first
@@ -86,6 +87,19 @@ def schedule_heavy_updates(_=None):
 def get_theme_setting(key, default=None):
     """Gets a value from the current theme settings."""
     return _theme_settings.get(key, default)
+
+def toggle_welcome_screen():
+    """Shows or hides the welcome screen based on whether tabs are open."""
+    global notebook, welcome_screen
+    if not welcome_screen or not notebook:
+        return
+
+    if not tabs: # No tabs are open
+        notebook.pack_forget()
+        welcome_screen.pack(fill="both", expand=True)
+    else: # Tabs are open
+        welcome_screen.pack_forget()
+        notebook.pack(fill="both", expand=True)
 
 def get_current_tab():
     """Returns the currently active EditorTab object, or None."""
@@ -221,21 +235,23 @@ def close_current_tab():
     notebook.forget(tab_id)
     del tabs[tab_id]
 
-    if not tabs: # If no tabs are left, create a new empty one
-        create_new_tab()
+    # Show welcome screen if the last tab was closed
+    toggle_welcome_screen()
 
 ## -- File Operations -- ##
 
 def create_new_tab(file_path=None):
     """Creates a new EditorTab, adds it to the notebook, and selects it."""
     global notebook, tabs
-    
     # Check if file is already open
     if file_path:
         for tab in tabs.values():
             if tab.file_path == file_path:
                 notebook.select(tab)
                 return
+
+    # If this is the first tab being created, we will toggle the view after adding it.
+    is_first_tab = not tabs
 
     new_tab = EditorTab(notebook, file_path=file_path, schedule_heavy_updates_callback=schedule_heavy_updates)
     
@@ -245,6 +261,10 @@ def create_new_tab(file_path=None):
     # Store the tab object using its widget ID as the key
     tabs[str(new_tab)] = new_tab
     
+    # If it was the first tab, now switch from welcome screen to notebook view.
+    if is_first_tab:
+        toggle_welcome_screen()
+
     # Apply the current theme to the new tab's widgets
     apply_theme(current_theme)
     
@@ -307,7 +327,7 @@ def on_tab_changed(event=None):
 
 def setup_gui():
     """Sets up the main application window and widgets."""
-    global root, notebook, outline_tree, llm_progress_bar, _theme_settings, status_bar, main_pane
+    global root, notebook, outline_tree, llm_progress_bar, _theme_settings, status_bar, main_pane, welcome_screen
 
     root = tk.Tk()
     root.title("AutomaTeX v1.0")
@@ -359,10 +379,27 @@ def setup_gui():
 
     # --- Editor Notebook ---
     notebook_frame = ttk.Frame(main_pane) # A frame to hold the notebook
-    notebook = ttk.Notebook(notebook_frame)
-    notebook.pack(fill="both", expand=True)
-    notebook.bind("<<NotebookTabChanged>>", on_tab_changed)
+
+    # NEW: Welcome Screen, placed inside the notebook_frame
+    welcome_screen = ttk.Frame(notebook_frame, padding=40)
     
+    welcome_title = ttk.Label(welcome_screen, text="Welcome to AutomaTeX", font=("Segoe UI", 24, "bold"))
+    welcome_title.pack(pady=(20, 10))
+    
+    welcome_subtitle = ttk.Label(welcome_screen, text="Your AI-powered LaTeX Editor", font=("Segoe UI", 14))
+    welcome_subtitle.pack(pady=(0, 40))
+
+    button_frame = ttk.Frame(welcome_screen)
+    button_frame.pack(pady=20)
+
+    new_file_button = ttk.Button(button_frame, text="📄 New File (Ctrl+N)", command=lambda: create_new_tab(file_path=None))
+    new_file_button.pack(side="left", padx=10, ipady=5)
+
+    open_file_button = ttk.Button(button_frame, text="📂 Open File (Ctrl+O)", command=open_file)
+    open_file_button.pack(side="left", padx=10, ipady=5)
+
+    notebook = ttk.Notebook(notebook_frame)
+    notebook.bind("<<NotebookTabChanged>>", on_tab_changed)
     # Add the notebook frame to the main pane
     main_pane.add(notebook_frame, stretch="always", minsize=400)
 
@@ -417,6 +454,7 @@ def setup_gui():
     root.bind_all("<Control-Shift-K>", lambda event: llm_service.open_set_keywords_dialog()) # MODIFIED: Shortcut for keywords
     root.bind_all("<Control-Shift-P>", lambda event: llm_service.open_edit_prompts_dialog()) # Shortcut for editing prompts
     root.bind_all("<Control-o>", lambda event: open_file())
+    root.bind_all("<Control-n>", lambda event: create_new_tab(file_path=None)) # NEW: Shortcut for new file
     root.bind_all("<Control-s>", lambda event: save_file())
     root.bind_all("<Control-w>", lambda event: close_current_tab()) # Shortcut to close tab
 
@@ -426,8 +464,8 @@ def setup_gui():
     root.bind_all("<Control-equal>", zoom_in) # Ctrl+= is common for zoom in
     root.bind_all("<Control-minus>", zoom_out)
 
-    # Create the first empty tab to start with
-    create_new_tab()
+    # Show the welcome screen initially, as no tabs are open
+    toggle_welcome_screen()
 
     # --- Initialize Global References in Other Modules ---
     # NOTE: Service initializations (LLM, Translator) are now handled in main.py after the GUI is fully set up.
@@ -438,7 +476,7 @@ def setup_gui():
 
 def apply_theme(theme_name):
     """Applies the specified theme (light or dark) to the GUI."""
-    global current_theme, _theme_settings, root, outline_tree, status_bar, main_pane, tabs
+    global current_theme, _theme_settings, root, outline_tree, status_bar, main_pane, tabs, welcome_screen
 
     if not root: # Guard against calling too early
         return
@@ -497,6 +535,11 @@ def apply_theme(theme_name):
     # or if you want a specific color. sv_ttk usually styles sashes.
     if 'main_pane' in globals() and main_pane:
          main_pane.configure(sashrelief=tk.FLAT, sashwidth=6, bg=_theme_settings["panedwindow_sash"])
+
+    # The welcome screen and notebook are ttk widgets, so sv_ttk will style them.
+    # The labels and buttons inside the welcome screen are also ttk widgets.
+    if welcome_screen:
+        pass # sv_ttk should handle this.
 
     # --- tk Widget Theming (Manual - These are not ttk widgets) ---
     # These remain essential as sv_ttk only themes ttk widgets.
