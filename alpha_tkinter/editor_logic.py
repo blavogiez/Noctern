@@ -4,21 +4,17 @@ import os
 from tkinter import messagebox
 from PIL import ImageGrab
 
-# Access global variables defined in main.py or interface.py
-# This is a common pattern in simple Tkinter apps, though passing objects
-# would be preferred in larger applications.
-editor = None
+# Import the interface module to get access to the current tab
+import interface
+
 outline_tree = None
-current_file_path = None
 
-def set_editor_globals(editor_widget, tree_widget, file_path_var):
-    """Sets the global references to the main widgets and file path."""
-    global editor, outline_tree, current_file_path
-    editor = editor_widget
+def initialize_editor_logic(tree_widget):
+    """Sets the global reference to the outline tree."""
+    global outline_tree
     outline_tree = tree_widget
-    current_file_path = file_path_var # Note: file_path_var is the actual string path
 
-def update_outline_tree():
+def update_outline_tree(editor):
     """Updates the Treeview widget with LaTeX section structure."""
     if not outline_tree or not editor:
         return
@@ -44,9 +40,9 @@ def update_outline_tree():
                         del parents[deeper]
                 break # Found a section command, move to next line
 
-def go_to_section(event):
+def go_to_section(editor, event):
     """Scrolls the editor to the selected section in the outline tree."""
-    if not editor or not outline_tree:
+    if not editor:
         return
 
     selected = outline_tree.selection()
@@ -63,7 +59,7 @@ def go_to_section(event):
                 # Handle cases where line number might be invalid (e.g., empty file)
                 pass
 
-def apply_syntax_highlighting():
+def apply_syntax_highlighting(editor):
     """Applies syntax highlighting to LaTeX commands, braces, and comments."""
     if not editor:
         return
@@ -130,8 +126,9 @@ def extract_section_structure(content, position_index):
 
 def paste_image():
     """Pastes an image from the clipboard into the editor as a LaTeX figure."""
-    global current_file_path # Access the global variable
-
+    current_tab = interface.get_current_tab()
+    if not current_tab: return
+    editor = current_tab.editor
     if not editor:
         return
 
@@ -143,7 +140,7 @@ def paste_image():
 
         # Determine the base directory for saving figures
         # Use the directory of the current file, or the current working directory if no file is open
-        base_dir = os.path.dirname(current_file_path) if current_file_path else "."
+        base_dir = os.path.dirname(current_tab.file_path) if current_tab.file_path else "."
 
         # Get section titles based on cursor position
         content = editor.get("1.0", tk.END)

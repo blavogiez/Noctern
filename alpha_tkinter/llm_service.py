@@ -22,11 +22,11 @@ import llm_dialogs
 import llm_prompt_manager # NEW
 
 # --- Module-level variables to store references from the main application ---
-_editor_widget = None
 _root_window = None
 _llm_progress_bar_widget = None
 _theme_setting_getter_func = None
-_current_file_path_getter_func = None # Function to get current .tex file path
+_active_editor_getter_func = None # Function to get the active tk.Text widget
+_active_filepath_getter_func = None # Function to get current .tex file path
 
 # --- Prompt Configuration ---
 DEFAULT_PROMPTS_FILE = "default_prompts.json"
@@ -37,28 +37,6 @@ _llm_keywords_list = []  # Stores user-defined LLM keywords.
 _prompt_history_list = [] # Stores tuples: (user_prompt, llm_response)
 _completion_prompt_template = "" # Loaded per-file
 _generation_prompt_template = "" # Loaded per-file
-
-def initialize_llm_service(editor_widget_ref, root_window_ref, progress_bar_widget_ref,
-                           theme_setting_getter_callback, current_file_path_getter_callback):
-    """
-    Initializes the LLM service with necessary references from the main application.
-    This should be called once when the application starts.
-    """
-    global _editor_widget, _root_window, _llm_progress_bar_widget
-    global _theme_setting_getter_func, _current_file_path_getter_func
-
-    _editor_widget = editor_widget_ref
-    _root_window = root_window_ref
-    _llm_progress_bar_widget = progress_bar_widget_ref
-    _theme_setting_getter_func = theme_setting_getter_callback
-    _current_file_path_getter_func = current_file_path_getter_callback
-
-    # Load the master default prompts from the JSON file at startup
-    _load_global_default_prompts()
-
-    # Load initial prompt history and custom prompts
-    load_prompt_history_for_current_file()
-    load_prompts_for_current_file()
 
 def _load_global_default_prompts():
     """Loads the master default prompts from the default_prompts.json file."""
@@ -72,12 +50,32 @@ def _load_global_default_prompts():
             "completion": "Complete this: {current_phrase_start}",
             "generation": "Generate text for this prompt: {user_prompt}"
         }
-        messagebox.showerror("Critical Error", f"Could not load default prompts from {DEFAULT_PROMPTS_FILE}. Using basic fallbacks.")
+        # Cannot show messagebox here as Tk root may not exist yet.
+        # The error will be printed to the console.
+
+def initialize_llm_service(root_window_ref, progress_bar_widget_ref,
+                           theme_setting_getter_func, active_editor_getter, active_filepath_getter):
+    """
+    Initializes the LLM service with necessary references from the main application.
+    This should be called once when the application starts.
+    """
+    global _root_window, _llm_progress_bar_widget
+    global _theme_setting_getter_func, _active_editor_getter_func, _active_filepath_getter_func
+
+    _root_window = root_window_ref
+    _llm_progress_bar_widget = progress_bar_widget_ref
+    _theme_setting_getter_func = theme_setting_getter_func
+    _active_editor_getter_func = active_editor_getter
+    _active_filepath_getter_func = active_filepath_getter
+
+    # Load initial prompt history and custom prompts
+    load_prompt_history_for_current_file()
+    load_prompts_for_current_file()
 
 def _get_active_tex_filepath():
     """Helper to safely get the current .tex file path using the provided getter."""
-    if _current_file_path_getter_func:
-        return _current_file_path_getter_func()
+    if _active_filepath_getter_func:
+        return _active_filepath_getter_func()
     return None
 
 # --- Prompt History Management ---
@@ -121,19 +119,24 @@ def load_prompts_for_current_file():
     _completion_prompt_template = loaded_prompts["completion"]
     _generation_prompt_template = loaded_prompts["generation"]
 
+# --- Call the loader at module import time to ensure defaults are always available ---
+_load_global_default_prompts()
+
 
 # --- LLM Text Completion ---
 def request_llm_to_complete_text():
     """Requests sentence completion from the LLM based on preceding text."""
-    if not _editor_widget or not _root_window or not _llm_progress_bar_widget:
+    editor = _active_editor_getter_func()
+    if not editor or not _root_window or not _llm_progress_bar_widget:
         messagebox.showerror("LLM Service Error", "LLM Service not fully initialized.")
         return
 
     def run_completion_thread_target():
         """Target function for the LLM completion thread."""
+        active_editor = _active_editor_getter_func() # Get it again inside thread
         try:
             # Get context: 30 lines backwards, 0 forwards
-            context = llm_utils.extract_editor_context(_editor_widget, lines_before_cursor=30, lines_after_cursor=0)
+            context = llm_utils.extract_editor_context(active_editor, lines_before_cursor=30, lines_after_cursor=0)
 
             # Find the last sentence ending to isolate the current sentence fragment
             last_dot_index = max(context.rfind("."), context.rfind("!"), context.rfind("?"))
@@ -156,15 +159,15 @@ def request_llm_to_complete_text():
             if api_response["success"]:
                 completion_raw = api_response["data"].strip('"')
                 cleaned_completion = llm_utils.remove_prefix_overlap_from_completion(current_phrase_start, completion_raw)
-                _editor_widget.after(0, lambda: _editor_widget.insert(tk.INSERT, cleaned_completion))
+                active_editor.after(0, lambda: active_editor.insert(tk.INSERT, cleaned_completion))
             else:
-                _editor_widget.after(0, lambda: messagebox.showerror("LLM Completion Error", api_response["error"]))
+                active_editor.after(0, lambda: messagebox.showerror("LLM Completion Error", api_response["error"]))
         except Exception as e:
-            _editor_widget.after(0, lambda: messagebox.showerror("LLM Completion Error", f"An unexpected error occurred: {str(e)}"))
+            active_editor.after(0, lambda: messagebox.showerror("LLM Completion Error", f"An unexpected error occurred: {str(e)}"))
         finally:
-            if _llm_progress_bar_widget and _editor_widget: # Check if widgets still exist
-                _editor_widget.after(0, lambda: _llm_progress_bar_widget.pack_forget())
-                _editor_widget.after(0, lambda: _llm_progress_bar_widget.stop())
+            if _llm_progress_bar_widget and active_editor: # Check if widgets still exist
+                active_editor.after(0, lambda: _llm_progress_bar_widget.pack_forget())
+                active_editor.after(0, lambda: _llm_progress_bar_widget.stop())
 
     _llm_progress_bar_widget.pack(pady=2)
     _llm_progress_bar_widget.start(10)
@@ -176,7 +179,8 @@ def open_generate_text_dialog(initial_prompt_text=None):
     Opens a dialog for the user to input a custom prompt for LLM text generation.
     Manages the process of getting user input, calling the LLM, and updating history.
     """
-    if not _editor_widget or not _root_window or not _llm_progress_bar_widget or not _theme_setting_getter_func:
+    editor = _active_editor_getter_func()
+    if not editor or not _root_window or not _llm_progress_bar_widget or not _theme_setting_getter_func:
         messagebox.showerror("LLM Service Error", "LLM Service or UI components not fully initialized.")
         return
 
@@ -185,8 +189,9 @@ def open_generate_text_dialog(initial_prompt_text=None):
 
         def run_generation_thread_target(local_user_prompt, local_lines_before, local_lines_after):
             """Target function for the LLM generation thread."""
+            active_editor = _active_editor_getter_func() # Get it again inside thread
             try:
-                context = llm_utils.extract_editor_context(_editor_widget, local_lines_before, local_lines_after)
+                context = llm_utils.extract_editor_context(active_editor, local_lines_before, local_lines_after)
                 full_llm_prompt = _generation_prompt_template.format(
                     user_prompt=local_user_prompt,
                     keywords=', '.join(_llm_keywords_list),
@@ -196,20 +201,20 @@ def open_generate_text_dialog(initial_prompt_text=None):
 
                 if api_response["success"]:
                     generated_text = api_response["data"]
-                    _editor_widget.after(0, lambda: _editor_widget.insert(tk.INSERT, generated_text))
-                    _editor_widget.after(0, lambda: _update_history_response_and_save(local_user_prompt, generated_text))
+                    active_editor.after(0, lambda: active_editor.insert(tk.INSERT, generated_text))
+                    active_editor.after(0, lambda: _update_history_response_and_save(local_user_prompt, generated_text))
                 else:
                     error_msg = api_response["error"]
-                    _editor_widget.after(0, lambda: messagebox.showerror("LLM Generation Error", error_msg))
-                    _editor_widget.after(0, lambda: _update_history_response_and_save(local_user_prompt, f"❌ Error: {error_msg[:100]}..."))
+                    active_editor.after(0, lambda: messagebox.showerror("LLM Generation Error", error_msg))
+                    active_editor.after(0, lambda: _update_history_response_and_save(local_user_prompt, f"❌ Error: {error_msg[:100]}..."))
             except Exception as e:
                 error_str = str(e)
-                _editor_widget.after(0, lambda: messagebox.showerror("LLM Generation Error", f"An unexpected error occurred: {error_str}"))
-                _editor_widget.after(0, lambda: _update_history_response_and_save(local_user_prompt, f"❌ Exception: {error_str[:100]}..."))
+                active_editor.after(0, lambda: messagebox.showerror("LLM Generation Error", f"An unexpected error occurred: {error_str}"))
+                active_editor.after(0, lambda: _update_history_response_and_save(local_user_prompt, f"❌ Exception: {error_str[:100]}..."))
             finally:
-                if _llm_progress_bar_widget and _editor_widget: # Check if widgets still exist
-                    _editor_widget.after(0, lambda: _llm_progress_bar_widget.pack_forget())
-                    _editor_widget.after(0, lambda: _llm_progress_bar_widget.stop())
+                if _llm_progress_bar_widget and active_editor: # Check if widgets still exist
+                    active_editor.after(0, lambda: _llm_progress_bar_widget.pack_forget())
+                    active_editor.after(0, lambda: _llm_progress_bar_widget.stop())
 
         _llm_progress_bar_widget.pack(pady=2)
         _llm_progress_bar_widget.start(10)

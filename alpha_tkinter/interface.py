@@ -11,17 +11,17 @@ import editor_logic
 import latex_compiler
 import llm_service # MODIFIED: Import new llm_service
 import latex_translator # NEW: Import latex_translator
+from editor_tab import EditorTab # NEW: Import the EditorTab class
 
 # Global variables for main widgets and state
 # These are initialized in setup_gui and accessed by other modules
 root = None
-editor = None
+notebook = None # NEW: Replaces the single editor
+tabs = {} # NEW: Dictionary to hold EditorTab instances, mapping tab_id to tab_object
 outline_tree = None
 llm_progress_bar = None
-line_numbers_canvas = None
-editor_font = None # Store the editor font globally
-current_file_path = None # To track the currently open file
-_last_saved_content = "\n" # Content of the editor at last save
+status_bar = None
+main_pane = None
 _theme_settings = {} # Store current theme colors and properties
 current_theme = "light" # Initial theme state, ensure it matches main.py if it sets it first
 
@@ -44,29 +44,31 @@ _temporary_status_timer_id = None
 def perform_heavy_updates():
     """Performs updates that might be computationally heavy."""
     global heavy_update_timer_id
-    heavy_update_timer_id = None # Reset timer ID
-    if editor:
-        editor_logic.apply_syntax_highlighting()
+    heavy_update_timer_id = None  # Reset timer ID
+    current_tab = get_current_tab()
+    if current_tab:
+        editor_logic.apply_syntax_highlighting(current_tab.editor)
     if outline_tree:
-        editor_logic.update_outline_tree()
-    if line_numbers_canvas:
-        line_numbers_canvas.redraw()
+        editor_logic.update_outline_tree(current_tab.editor if current_tab else None)
+    if current_tab and current_tab.line_numbers:
+        current_tab.line_numbers.redraw()
 
 def schedule_heavy_updates(_=None):
     """Schedules heavy updates after a short delay."""
     global heavy_update_timer_id
     if root and heavy_update_timer_id is not None:
         root.after_cancel(heavy_update_timer_id)
-    if root and editor: # Ensure root and editor are available
+    current_tab = get_current_tab()
+    if root and current_tab: # Ensure root and a tab are available
         current_delay = HEAVY_UPDATE_DELAY_NORMAL
         try:
             # Get total lines to determine if the file is large
-            last_line_index_str = editor.index("end-1c")
+            last_line_index_str = current_tab.editor.index("end-1c")
             # Correctly get total_lines, handling empty editor
             total_lines = 0
             if last_line_index_str: # Ensure index is not None or empty
                 total_lines = int(last_line_index_str.split(".")[0])
-                if total_lines == 1 and not editor.get("1.0", "1.end").strip(): # Check if line 1 is empty
+                if total_lines == 1 and not current_tab.editor.get("1.0", "1.end").strip(): # Check if line 1 is empty
                     total_lines = 0
             
             if total_lines > LARGE_FILE_LINE_THRESHOLD:
@@ -79,47 +81,53 @@ def get_theme_setting(key, default=None):
     """Gets a value from the current theme settings."""
     return _theme_settings.get(key, default)
 
-def get_current_file_path_for_llm():
-    """Getter function for llm_logic to access the current_file_path."""
-    global current_file_path
-    return current_file_path
+def get_current_tab():
+    """Returns the currently active EditorTab object, or None."""
+    global notebook, tabs
+    if not notebook or not tabs:
+        return None
+    try:
+        selected_tab_id = notebook.select()
+        return tabs.get(selected_tab_id)
+    except tk.TclError: # Happens if no tabs are present
+        return None
 
 ## -- Zoom Functionality -- ##
 
 def zoom_in(_=None): # Accept optional event argument
     """Increases the editor font size."""
-    global editor_font
-    if not editor or not editor_font:
+    current_tab = get_current_tab()
+    if not current_tab:
         return
 
-    current_size = editor_font.cget("size")
+    current_size = current_tab.editor_font.cget("size")
     new_size = int(current_size * zoom_factor)
     new_size = min(new_size, max_font_size)
 
     if new_size != current_size:
-        editor_font = Font(family=editor_font.cget("family"), size=new_size, weight=editor_font.cget("weight"), slant=editor_font.cget("slant"))
-        editor.config(font=editor_font)
-        if line_numbers_canvas:
-            line_numbers_canvas.font = editor_font # Update the font reference
-            line_numbers_canvas.redraw()
+        current_tab.editor_font = Font(family=current_tab.editor_font.cget("family"), size=new_size, weight=current_tab.editor_font.cget("weight"), slant=current_tab.editor_font.cget("slant"))
+        current_tab.editor.config(font=current_tab.editor_font)
+        if current_tab.line_numbers:
+            current_tab.line_numbers.font = current_tab.editor_font # Update the font reference
+            current_tab.line_numbers.redraw()
         perform_heavy_updates() # Reapply syntax highlighting and outline
 
 def zoom_out(_=None): # Accept optional event argument
     """Decreases the editor font size."""
-    global editor_font
-    if not editor or not editor_font:
+    current_tab = get_current_tab()
+    if not current_tab:
         return
 
-    current_size = editor_font.cget("size")
+    current_size = current_tab.editor_font.cget("size")
     new_size = int(current_size / zoom_factor)
     new_size = max(new_size, min_font_size)
 
     if new_size != current_size:
-        editor_font = Font(family=editor_font.cget("family"), size=new_size, weight=editor_font.cget("weight"), slant=editor_font.cget("slant"))
-        editor.config(font=editor_font)
-        if line_numbers_canvas:
-            line_numbers_canvas.font = editor_font # Update the font reference
-            line_numbers_canvas.redraw()
+        current_tab.editor_font = Font(family=current_tab.editor_font.cget("family"), size=new_size, weight=current_tab.editor_font.cget("weight"), slant=current_tab.editor_font.cget("slant"))
+        current_tab.editor.config(font=current_tab.editor_font)
+        if current_tab.line_numbers:
+            current_tab.line_numbers.font = current_tab.editor_font # Update the font reference
+            current_tab.line_numbers.redraw()
         perform_heavy_updates() # Reapply syntax highlighting and outline
 
 ## -- Status Bar Feedback -- ##
@@ -153,27 +161,31 @@ def clear_temporary_status_message():
 
 def on_close_request():
     """Handles closing the main window, checking for unsaved changes."""
-    global root, editor, _last_saved_content
+    global root, tabs
 
-    if not root or not editor:
+    if not root:
         root.destroy()
         return
 
-    current_content = editor.get("1.0", tk.END)
+    dirty_tabs = [tab for tab in tabs.values() if tab.is_dirty()]
 
-    if current_content != _last_saved_content:
+    if dirty_tabs:
+        file_list = "\n - ".join([os.path.basename(tab.file_path) if tab.file_path else "Untitled" for tab in dirty_tabs])
         response = messagebox.askyesnocancel(
             "Unsaved Changes",
-            "You have unsaved changes. Do you want to save before closing?",
+            f"You have unsaved changes in the following files:\n - {file_list}\n\nDo you want to save them before closing?",
             parent=root
         )
         if response is True:  # Yes, save and close
-            save_file() # This will attempt to save
-            # After save_file(), check if content is now saved.
-            # It might not be if the user cancelled the "Save As" dialog.
-            if editor.get("1.0", tk.END) == _last_saved_content:
-                root.destroy()
-            # If not equal, it means save was cancelled, so we do nothing and the window stays open.
+            all_saved = True
+            for tab in dirty_tabs:
+                # Switch to the tab to save it
+                notebook.select(tab)
+                if not save_file(): # save_file will handle the current tab
+                    all_saved = False
+                    break # User cancelled a "Save As" dialog
+            if all_saved:
+                root.destroy() # Close if all saves were successful
         elif response is False:  # No, just close
             root.destroy()
         # else: Cancel, do nothing and the window stays open.
@@ -181,150 +193,115 @@ def on_close_request():
         # No unsaved changes, just close.
         root.destroy()
 
+def close_current_tab():
+    """Closes the currently active tab."""
+    current_tab = get_current_tab()
+    if not current_tab:
+        return
+
+    if current_tab.is_dirty():
+        response = messagebox.askyesnocancel(
+            "Unsaved Changes",
+            f"The file '{os.path.basename(current_tab.file_path) if current_tab.file_path else 'Untitled'}' has unsaved changes. Do you want to save before closing it?",
+            parent=root
+        )
+        if response is True: # Yes
+            if not save_file():
+                return # User cancelled save, so don't close tab
+        elif response is None: # Cancel
+            return
+
+    tab_id = notebook.select()
+    notebook.forget(tab_id)
+    del tabs[tab_id]
+
+    if not tabs: # If no tabs are left, create a new empty one
+        create_new_tab()
+
 ## -- File Operations -- ##
+
+def create_new_tab(file_path=None):
+    """Creates a new EditorTab, adds it to the notebook, and selects it."""
+    global notebook, tabs
+    
+    # Check if file is already open
+    if file_path:
+        for tab in tabs.values():
+            if tab.file_path == file_path:
+                notebook.select(tab)
+                return
+
+    new_tab = EditorTab(notebook, file_path=file_path, schedule_heavy_updates_callback=schedule_heavy_updates)
+    
+    notebook.add(new_tab, text=os.path.basename(file_path) if file_path else "Untitled")
+    notebook.select(new_tab) # Make the new tab active
+    
+    # Store the tab object using its widget ID as the key
+    tabs[str(new_tab)] = new_tab
+    
+    # Apply the current theme to the new tab's widgets
+    apply_theme(current_theme)
+    
+    # Trigger updates for the new tab
+    on_tab_changed()
+
+    # Now that the tab is added to the notebook, load its content
+    new_tab.load_file()
 
 def open_file():
     """Opens a file and loads its content into the editor."""
-    global current_file_path, _last_saved_content
-    if not editor or not outline_tree:
-        return
-
     filepath = filedialog.askopenfilename(
         title="Open File",
         filetypes=[("LaTeX Files", "*.tex"), ("Text Files", "*.txt"), ("All Files", "*.*")]
     )
     if filepath:
-        try:
-            with open(filepath, "r", encoding="utf-8") as f:
-                content = f.read()
-                editor.delete("1.0", tk.END)
-                editor.insert("1.0", content)
-                # IMPORTANT: Get content back from editor to ensure it matches what get() will return later
-                _last_saved_content = editor.get("1.0", tk.END)
-                current_file_path = filepath # Update the global file path
-                # Update other modules that need the file path
-                editor_logic.current_file_path = current_file_path
-                latex_compiler.current_file_path = current_file_path
-                
-                # Load prompt history and custom prompts for the newly opened file
-                llm_service.load_prompt_history_for_current_file()
-                llm_service.load_prompts_for_current_file()
-
-                # Perform initial updates
-                perform_heavy_updates()
-                # Show feedback message
-                show_temporary_status_message(f"✅ Opened: {os.path.basename(current_file_path)}")
-
-        except Exception as e:
-            messagebox.showerror("Error", f"Could not open file:\n{e}")
+        create_new_tab(file_path=filepath)
+        show_temporary_status_message(f"✅ Opened: {os.path.basename(filepath)}")
 
 def save_file():
     """Saves the current editor content to the current file or a new file."""
-    global current_file_path, _last_saved_content
-    if not editor:
-        return
+    current_tab = get_current_tab()
+    if not current_tab:
+        return False
 
-    content = editor.get("1.0", tk.END)
-
-    if current_file_path:
-        # Save to the existing file
-        try:
-            with open(current_file_path, "w", encoding="utf-8") as f:
-                f.write(content)
-            _last_saved_content = content # Update last saved state
-            # Show feedback message
-            show_temporary_status_message(f"✅ Saved: {os.path.basename(current_file_path)}")
-        except Exception as e:
-            messagebox.showerror("Error", f"Error saving file:\n{e}")
+    if current_tab.file_path:
+        if current_tab.save_file():
+            show_temporary_status_message(f"✅ Saved: {os.path.basename(current_tab.file_path)}")
+            return True
+        return False
     else:
-        # Ask user for a new file path
-        new_filepath = filedialog.asksaveasfilename(
-            defaultextension=".tex",
-            filetypes=[("LaTeX Files", "*.tex"), ("Text Files", "*.txt"), ("All Files", "*.*")],
-            title="Save File As"
-        )
-        if new_filepath:
-            current_file_path = new_filepath # Update the global file path
-            # Update other modules that need the file path
-            editor_logic.current_file_path = current_file_path
-            latex_compiler.current_file_path = current_file_path
-            # Now save to the new file path
-            save_file() # Recursive call to save to the newly set path
+        return save_file_as()
 
-## -- Line Numbering Canvas -- ##
+def save_file_as():
+    """Saves the current tab to a new file path."""
+    current_tab = get_current_tab()
+    if not current_tab:
+        return False
 
-class LineNumbers(tk.Canvas):
-    """A Canvas widget to display line numbers for a Text widget."""
-    def __init__(self, master, editor_widget, font, **kwargs):
-        super().__init__(master, **kwargs)
-        self.editor = editor_widget
-        self.font = font
-        # Default colors (will be updated by apply_theme)
-        self.text_color = "#6a737d"
-        self.bg_color = "#f0f0f0"
-        self.config(width=40, bg=self.bg_color, highlightthickness=0, bd=0)
+    new_filepath = filedialog.asksaveasfilename(
+        defaultextension=".tex",
+        filetypes=[("LaTeX Files", "*.tex"), ("Text Files", "*.txt"), ("All Files", "*.*")],
+        title="Save File As"
+    )
+    if new_filepath:
+        if current_tab.save_file(new_path=new_filepath):
+            show_temporary_status_message(f"✅ Saved as: {os.path.basename(new_filepath)}")
+            # Update services that depend on file path
+            on_tab_changed()
+            return True
+    return False
 
-    def update_theme(self, text_color, bg_color):
-        """Updates the colors and redraws the line numbers."""
-        self.text_color = text_color
-        self.bg_color = bg_color
-        self.config(bg=self.bg_color)
-        self.redraw()
-
-    def redraw(self, *args):
-        """Redraws the line numbers based on the editor's visible content."""
-        self.delete("all") # Clear previous numbers
-        if not self.editor or not self.winfo_exists():
-            return
-
-        # Get the first visible line index in the editor
-        first_visible_line_index = self.editor.index("@0,0")
-
-        # Calculate the total number of lines in the document
-        last_doc_line_index = self.editor.index("end-1c")
-        # Handle empty editor case (index is "1.0" but no content)
-        last_doc_line_num = int(last_doc_line_index.split('.')[0])
-        if last_doc_line_index == "1.0" and not self.editor.get("1.0", "1.end"):
-             last_doc_line_num = 0
-
-        # Adjust the canvas width based on the number of digits in the last line number
-        max_digits = len(str(last_doc_line_num)) if last_doc_line_num > 0 else 1
-        # Calculate required width: width of max digits + padding
-        required_width = self.font.measure("0" * max_digits) + 10 # 5px padding on each side
-        # Update canvas width if it's significantly different
-        if abs(self.winfo_width() - required_width) > 2: # Use a small tolerance
-             self.config(width=required_width)
-
-        # Iterate over visible lines and draw line numbers
-        current_line_index = first_visible_line_index
-        while True:
-            # Get bounding box info for the current line
-            dline = self.editor.dlineinfo(current_line_index)
-            if dline is None:
-                # No more visible lines
-                break
-
-            x, y, width, height, baseline = dline
-            line_num_str = current_line_index.split(".")[0]
-
-            # Draw the line number text
-            self.create_text(required_width - 5, y, anchor="ne",
-                             text=line_num_str, font=self.font, fill=self.text_color)
-
-            # Move to the next line index
-            next_line_index = self.editor.index(f"{current_line_index}+1line")
-            if next_line_index == current_line_index:
-                # Reached the end of the document
-                break
-            current_line_index = next_line_index
-
-            # Safety break in case of infinite loop (shouldn't happen with +1line)
-            if int(current_line_index.split('.')[0]) > last_doc_line_num + 100: # Check up to 100 lines past end
-                 break
+def on_tab_changed(event=None):
+    """Handles logic when the active tab changes."""
+    # Load prompt history and custom prompts for the newly active file
+    llm_service.load_prompt_history_for_current_file()
+    llm_service.load_prompts_for_current_file()
+    # Update outline, syntax highlighting, etc.
+    perform_heavy_updates()
 
 def setup_gui():
-    """Sets up the main application window and widgets.""" # Corrected global list
-    global root, editor, outline_tree, llm_progress_bar, line_numbers_canvas, editor_font, current_file_path, _theme_settings, status_bar, main_pane
+    """Sets up the main application window and widgets."""
+    global root, notebook, outline_tree, llm_progress_bar, _theme_settings, status_bar, main_pane
 
     root = tk.Tk()
     root.title("AutomaTeX v1.0")
@@ -335,15 +312,14 @@ def setup_gui():
     # sv_ttk.set_theme("light") # Or "dark", will be set by apply_theme
     # No need for manual ttk.Style() or theme_use("clam") initially, sv_ttk handles it.
 
-    editor_font = Font(family="Consolas", size=12) # Store font globally
-
     # --- Top Buttons Frame ---
     top_frame = ttk.Frame(root, padding=10) # Increased padding
     top_frame.pack(fill="x", pady=(0, 5)) # Add some pady below top_frame
 
     # File buttons
     ttk.Button(top_frame, text="📂 Open", command=open_file).pack(side="left", padx=3, pady=3)
-    ttk.Button(top_frame, text="💾 Save", command=save_file).pack(side="left", padx=3, pady=3)
+    ttk.Button(top_frame, text="💾 Save", command=save_file).pack(side="left", padx=3, pady=3) # Shorter text
+    ttk.Button(top_frame, text="💾 Save As", command=save_file_as).pack(side="left", padx=3, pady=3) # Shorter text
 
     # LaTeX buttons
     ttk.Button(top_frame, text="🛠 Compile", command=latex_compiler.compile_latex).pack(side="left", padx=3, pady=3) # Shorter text
@@ -371,54 +347,18 @@ def setup_gui():
     outline_tree = ttk.Treeview(outline_frame, show="tree")
     outline_tree.pack(fill="both", expand=True)
     # Bind selection event to go_to_section function
-    outline_tree.bind("<<TreeviewSelect>>", editor_logic.go_to_section)
+    outline_tree.bind("<<TreeviewSelect>>", lambda event: editor_logic.go_to_section(get_current_tab().editor if get_current_tab() else None, event))
     # Add the outline frame to the main pane
     main_pane.add(outline_frame, width=250, minsize=150) # Added minsize
 
-    # --- Editor Container Frame (Line Numbers + Text Editor + Scrollbar) ---
-    # Use a ttk.Frame for consistency and theme support
-    editor_container = ttk.Frame(main_pane) # No specific padding here
-
-    # Text Editor widget
-    editor = tk.Text(editor_container, wrap="word", font=editor_font, undo=True,
-                     relief=tk.FLAT, borderwidth=0, highlightthickness=0) # Modern flat look
-
-    # Vertical Scrollbar for the editor
-    # Must be created before configuring the editor's yscrollcommand
-    editor_scrollbar = ttk.Scrollbar(editor_container, orient="vertical", command=editor.yview)
-
-    # Line Numbers Canvas
-    line_numbers_canvas = LineNumbers(editor_container, editor_widget=editor, font=editor_font)
-    line_numbers_canvas.pack(side="left", fill="y") # Pack to the left of the editor
-
-    # Pack the scrollbar and editor
-    editor_scrollbar.pack(side="right", fill="y") # Pack scrollbar to the right
-    editor.pack(side="left", fill="both", expand=True) # Editor fills the remaining space
-
-    # Configure the editor's yscrollcommand to update both the scrollbar and line numbers
-    def sync_scroll_and_redraw_linenums(*args):
-        editor_scrollbar.set(*args) # Update the scrollbar position
-        if line_numbers_canvas:
-            # editor.yview() returns (top_fraction, bottom_fraction)
-            # Move the line numbers canvas view to match the editor's top fraction
-            current_y_view = editor.yview()
-            line_numbers_canvas.yview_moveto(current_y_view[0])
-            # Redraw line numbers (important for adding/removing lines)
-            line_numbers_canvas.redraw()
-
-    editor.config(yscrollcommand=sync_scroll_and_redraw_linenums)
-
-    # Add the editor container to the main pane
-    main_pane.add(editor_container, stretch="always", minsize=400) # Added minsize
-
-    # --- Configure Syntax Highlighting Tags ---
-    # These tags are configured here but applied in editor_logic.apply_syntax_highlighting
-    # Default light theme colors
-    editor.tag_configure("latex_command", font=editor_font) # Colors set in apply_theme
-    editor.tag_configure("latex_brace", font=editor_font)   # Colors set in apply_theme
-    comment_font_initial = editor_font.copy()
-    comment_font_initial.configure(slant="italic")
-    editor.tag_configure("latex_comment", font=comment_font_initial) # Colors set in apply_theme
+    # --- Editor Notebook ---
+    notebook_frame = ttk.Frame(main_pane) # A frame to hold the notebook
+    notebook = ttk.Notebook(notebook_frame)
+    notebook.pack(fill="both", expand=True)
+    notebook.bind("<<NotebookTabChanged>>", on_tab_changed)
+    
+    # Add the notebook frame to the main pane
+    main_pane.add(notebook_frame, stretch="always", minsize=400)
 
     # --- LLM Progress Bar ---
     llm_progress_bar = ttk.Progressbar(root, mode="indeterminate", length=200)
@@ -471,38 +411,19 @@ def setup_gui():
     root.bind_all("<Control-Shift-K>", lambda event: llm_service.open_set_keywords_dialog()) # MODIFIED: Shortcut for keywords
     root.bind_all("<Control-Shift-P>", lambda event: llm_service.open_edit_prompts_dialog()) # Shortcut for editing prompts
     root.bind_all("<Control-o>", lambda event: open_file())
+    root.bind_all("<Control-s>", lambda event: save_file())
+    root.bind_all("<Control-w>", lambda event: close_current_tab()) # Shortcut to close tab
 
     root.bind_all("<Control-t>", lambda event: latex_translator.open_translate_dialog()) # NEW: Shortcut for translate
 
     # Bind Zoom shortcuts
     root.bind_all("<Control-equal>", zoom_in) # Ctrl+= is common for zoom in
     root.bind_all("<Control-minus>", zoom_out)
-    root.bind_all("<Control-s>", lambda event: save_file())
 
-    # --- Bind Editor Events for Updates ---
-    # Bind KeyRelease to schedule heavy updates (syntax, outline, line numbers)
-    # This is triggered after text is entered or deleted
-    def on_editor_key_release(event):
-        # Trigger updates on keys that likely change structure or content significantly
-        if event.keysym in ["Return", "BackSpace", "Delete", "Control_L", "Control_R", "Shift_L", "Shift_R"]:
-            schedule_heavy_updates()
-        # Also trigger on punctuation that might affect syntax or outline
-        elif event.char in "{}[]();,.":
-            schedule_heavy_updates()
-        # Space and Tab can also affect outline structure
-        elif event.keysym == "space" or event.keysym == "Tab":
-             schedule_heavy_updates()
-        # For other simple text entry, the scroll command binding handles line number positions.
-        # A full redraw is less critical immediately.
-
-    editor.bind("<KeyRelease>", on_editor_key_release)
-    # Bind Configure event to redraw line numbers if editor size changes (e.g., window resize, wrap changes)
-    editor.bind("<Configure>", schedule_heavy_updates)
+    # Create the first empty tab to start with
+    create_new_tab()
 
     # --- Initialize Global References in Other Modules ---
-    # Pass the created widgets and variables to the other modules
-    editor_logic.set_editor_globals(editor, outline_tree, current_file_path)
-    latex_compiler.set_compiler_globals(editor, root, current_file_path)
     # NOTE: Service initializations (LLM, Translator) are now handled in main.py after the GUI is fully set up.
 
     # Intercept the window close ('X') button to check for unsaved changes
@@ -511,7 +432,7 @@ def setup_gui():
 
 def apply_theme(theme_name):
     """Applies the specified theme (light or dark) to the GUI."""
-    global current_theme, line_numbers_canvas, editor_font, _theme_settings, root, editor, outline_tree, status_bar, main_pane
+    global current_theme, _theme_settings, root, outline_tree, status_bar, main_pane, tabs
 
     if not root: # Guard against calling too early
         return
@@ -573,30 +494,29 @@ def apply_theme(theme_name):
 
     # --- tk Widget Theming (Manual - These are not ttk widgets) ---
     # These remain essential as sv_ttk only themes ttk widgets.
-    if editor:
-        editor.configure(
-            background=_theme_settings["editor_bg"], foreground=_theme_settings["editor_fg"],
-            selectbackground=_theme_settings["sel_bg"], selectforeground=_theme_settings["sel_fg"],
-            insertbackground=_theme_settings["editor_insert_bg"],
-            relief=tk.FLAT, borderwidth=0
-        )
-        editor.tag_configure("latex_command", foreground=_theme_settings["command_color"], font=editor_font)
-        editor.tag_configure("latex_brace", foreground=_theme_settings["brace_color"], font=editor_font)
-        comment_font = editor_font.copy()
-        comment_font.configure(slant="italic")
-        editor.tag_configure("latex_comment", foreground=_theme_settings["comment_color"], font=comment_font)
+    # We now need to iterate through all open tabs and apply the theme to each one.
+    for tab in tabs.values():
+        if tab.editor:
+            tab.editor.configure(
+                background=_theme_settings["editor_bg"], foreground=_theme_settings["editor_fg"],
+                selectbackground=_theme_settings["sel_bg"], selectforeground=_theme_settings["sel_fg"],
+                insertbackground=_theme_settings["editor_insert_bg"],
+                relief=tk.FLAT, borderwidth=0
+            )
+            # Configure tags for each editor instance
+            tab.editor.tag_configure("latex_command", foreground=_theme_settings["command_color"], font=tab.editor_font)
+            tab.editor.tag_configure("latex_brace", foreground=_theme_settings["brace_color"], font=tab.editor_font)
+            comment_font = tab.editor_font.copy()
+            comment_font.configure(slant="italic")
+            tab.editor.tag_configure("latex_comment", foreground=_theme_settings["comment_color"], font=comment_font)
+        
+        # Update the theme of the line numbers canvas for each tab
+        if tab.line_numbers:
+            tab.line_numbers.update_theme(text_color=_theme_settings["ln_text_color"], bg_color=_theme_settings["ln_bg_color"])
 
     # Handle temporary status bar message styling
     # If a temporary message is active, its specific styling (if any) should be applied
-    # by show_temporary_status_message. When cleared, it reverts.
-    # sv_ttk will handle the default appearance.
-    if _temporary_status_active and status_bar:
-        # Example: if temporary messages have a special background
-        pass # status_bar.config(background="<temp_color_bg>", foreground="<temp_color_fg>")
 
-    # Update the theme of the line numbers canvas
-    if line_numbers_canvas:
-        line_numbers_canvas.update_theme(text_color=_theme_settings["ln_text_color"], bg_color=_theme_settings["ln_bg_color"])
 
     # Trigger a heavy update to redraw syntax highlighting, outline, and line numbers
     perform_heavy_updates()

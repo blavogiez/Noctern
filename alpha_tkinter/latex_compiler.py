@@ -5,28 +5,26 @@ import webbrowser
 import tkinter as tk
 from tkinter import messagebox
 
-# Access global variables defined in main.py or interface.py
-editor = None
-root = None
-current_file_path = None
+# Import the interface module to get access to the current tab
+import interface
 
-def set_compiler_globals(editor_widget, root_widget, file_path_var):
-    """Sets the global references to the main widgets and file path."""
-    global editor, root, current_file_path
-    editor = editor_widget
+root = None
+
+def initialize_compiler(root_widget):
+    """Sets the global reference to the root window."""
+    global root
     root = root_widget
-    current_file_path = file_path_var # Note: file_path_var is the actual string path
 
 def run_chktex_check():
     """Runs chktex on the current editor content."""
-    if not editor or not root:
-        return
-
+    current_tab = interface.get_current_tab()
+    if not current_tab: return
+    editor = current_tab.editor
     code = editor.get("1.0", tk.END)
 
     # Use the current file path or a temporary file
-    if current_file_path:
-        tex_path = current_file_path
+    if current_tab.file_path:
+        tex_path = current_tab.file_path
         try:
             with open(tex_path, "w", encoding="utf-8") as f:
                 f.write(code)
@@ -73,7 +71,7 @@ def run_chktex_check():
         messagebox.showerror("chkTeX Error", str(e))
     finally:
         # Clean up temporary file if one was used
-        if not current_file_path and os.path.exists(tex_path):
+        if not current_tab.file_path and os.path.exists(tex_path):
              try:
                  os.remove(tex_path)
              except OSError as e:
@@ -81,12 +79,11 @@ def run_chktex_check():
 
 def compile_latex():
     """Compiles the current editor content using pdflatex."""
-    global current_file_path # Access the global variable
-
-    if not editor or not root:
-        return
-
+    current_tab = interface.get_current_tab()
+    if not current_tab: return
+    editor = current_tab.editor
     code = editor.get("1.0", tk.END)
+    current_file_path = current_tab.file_path
 
     source_dir = "output" # Default output directory
     file_name = "main.tex" # Default file name

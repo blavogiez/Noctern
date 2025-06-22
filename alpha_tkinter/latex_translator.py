@@ -13,22 +13,23 @@ except ImportError:
     print("Warning: argostranslate module not found. Translation functionality will be disabled.")
 
 # Global variables to store references from the main application
-_editor = None
 _root = None
-_current_file_path_getter_func = None
 _theme_setting_getter_func = None
 _show_temporary_status_message_func = None
+_active_editor_getter_func = None
+_active_filepath_getter_func = None
 
-def initialize_translator(editor_ref, root_ref, current_file_path_getter, theme_getter, status_message_func):
+def initialize_translator(root_ref, theme_getter, status_message_func, active_editor_getter, active_filepath_getter):
     """
     Initializes the LaTeX translator service with necessary references from the main application.
     """
-    global _editor, _root, _current_file_path_getter_func, _theme_setting_getter_func, _show_temporary_status_message_func
-    _editor = editor_ref
+    global _root, _theme_setting_getter_func, _show_temporary_status_message_func
+    global _active_editor_getter_func, _active_filepath_getter_func
     _root = root_ref
-    _current_file_path_getter_func = current_file_path_getter
     _theme_setting_getter_func = theme_getter
     _show_temporary_status_message_func = status_message_func
+    _active_editor_getter_func = active_editor_getter
+    _active_filepath_getter_func = active_filepath_getter
 
 def _get_available_translation_pairs():
     """
@@ -118,15 +119,16 @@ def open_translate_dialog():
     """
     Opens a dialog for the user to select source and target languages for translation.
     """
-    if not _editor or not _root or not _current_file_path_getter_func or not _theme_setting_getter_func or not _show_temporary_status_message_func:
+    editor = _active_editor_getter_func()
+    if not editor or not _root or not _theme_setting_getter_func or not _show_temporary_status_message_func:
         messagebox.showerror("Translator Error", "Translator service not fully initialized.")
         return
 
     if not _ARGOS_TRANSLATE_AVAILABLE:
         messagebox.showerror("Argos Translate Error", "The 'argostranslate' Python module is not installed. Please install it using 'pip install argostranslate' to enable translation features.")
         return
-
-    source_text = _editor.get("1.0", tk.END)
+    
+    source_text = editor.get("1.0", tk.END)
     if not source_text.strip():
         messagebox.showwarning("Translation", "The editor is empty. Nothing to translate.")
         return
@@ -193,14 +195,14 @@ def open_translate_dialog():
                 _install_language_package_threaded(from_code, to_code, dialog,
                                                    lambda: _perform_translation_threaded(
                                                        source_text, from_code, to_code,
-                                                       _current_file_path_getter_func(), dialog
+                                                       _active_filepath_getter_func(), dialog
                                                    ))
             else:
                 dialog.destroy()
             return
 
         # If installed, proceed directly to translation
-        _perform_translation_threaded(source_text, from_code, to_code, _current_file_path_getter_func(), dialog)
+        _perform_translation_threaded(source_text, from_code, to_code, _active_filepath_getter_func(), dialog)
 
     translate_button = ttk.Button(main_frame, text="Translate", command=on_translate_button_click)
     translate_button.pack(pady=10)

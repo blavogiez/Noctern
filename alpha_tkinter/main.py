@@ -17,14 +17,8 @@ import llm_service # MODIFIED: Import new llm_service
 # Global variables (defined and managed primarily in interface.py)
 # We declare them here to make it clear they are part of the application state
 # and accessed across modules.
-root = None
-editor = None
-outline_tree = None
-llm_progress_bar = None
-line_numbers_canvas = None
-editor_font = None
-current_file_path = None
-current_theme = "light" # Initial theme state
+root = None # The main Tkinter window
+
 heavy_update_timer_id = None # Timer ID for scheduled updates, managed by interface.py
 
 ### --- MAIN APPLICATION ENTRY POINT --- ###
@@ -42,36 +36,29 @@ if __name__ == "__main__":
     # Setup the main GUI window and widgets
     root = interface.setup_gui()
 
-    # Assign global variables from the interface module
-    editor = interface.editor
-    outline_tree = interface.outline_tree
-    llm_progress_bar = interface.llm_progress_bar
-    line_numbers_canvas = interface.line_numbers_canvas
-    editor_font = interface.editor_font
-    current_file_path = interface.current_file_path
-    current_theme = interface.current_theme
-    heavy_update_timer_id = interface.heavy_update_timer_id
+    # --- Initialize Services ---
+    # The services are initialized with getter functions to dynamically access
+    # the state of the currently active tab from the interface.
 
-    # Pass global references to other modules
-    # This allows them to interact with the main GUI elements
-    editor_logic.set_editor_globals(editor, outline_tree, current_file_path)
-    latex_compiler.set_compiler_globals(editor, root, current_file_path)
-    # MODIFIED: Call the new initialization function for llm_service
+    editor_logic.initialize_editor_logic(interface.outline_tree)
+    latex_compiler.initialize_compiler(root)
+
     llm_service.initialize_llm_service(
-        editor_widget_ref=editor,
         root_window_ref=root,
-        progress_bar_widget_ref=llm_progress_bar,
-        theme_setting_getter_callback=interface.get_theme_setting,
-        current_file_path_getter_callback=interface.get_current_file_path_for_llm
+        progress_bar_widget_ref=interface.llm_progress_bar,
+        theme_setting_getter_func=interface.get_theme_setting,
+        # Provide functions to get the active editor and its file path
+        active_editor_getter=lambda: interface.get_current_tab().editor if interface.get_current_tab() else None,
+        active_filepath_getter=lambda: interface.get_current_tab().file_path if interface.get_current_tab() else None
     )
 
-    # Initialize the translator service
     latex_translator.initialize_translator(
-        editor_ref=editor,
         root_ref=root,
-        current_file_path_getter=interface.get_current_file_path_for_llm,
         theme_getter=interface.get_theme_setting,
-        status_message_func=interface.show_temporary_status_message
+        status_message_func=interface.show_temporary_status_message,
+        # Provide functions to get the active editor and its file path
+        active_editor_getter=lambda: interface.get_current_tab().editor if interface.get_current_tab() else None,
+        active_filepath_getter=lambda: interface.get_current_tab().file_path if interface.get_current_tab() else None
     )
 
     # Apply the initial theme (e.g., dark mode by default)
