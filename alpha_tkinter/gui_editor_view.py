@@ -12,12 +12,12 @@ _editor_logic = None # Will be set during initialization
 # Zoom settings
 _zoom_factor = 1.1
 _min_font_size = 8
-_max_font_size = 36
+_max_font_size = 36 # No change needed here
 
 # Heavy update settings
 _LARGE_FILE_LINE_THRESHOLD = 1000
-_HEAVY_UPDATE_DELAY_NORMAL = 200
-_HEAVY_UPDATE_DELAY_LARGE_FILE = 2000
+_HEAVY_UPDATE_DELAY_NORMAL = 300 # Even more responsive for typing
+_HEAVY_UPDATE_DELAY_LARGE_FILE = 2000 # Faster for large files, as syntax highlighting is now visible-only
 _heavy_update_timer_id = None
 
 def initialize(root_ref, get_current_tab_cb, outline_tree_ref, editor_logic_module):
