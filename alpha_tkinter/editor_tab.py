@@ -13,6 +13,9 @@ class LineNumbers(tk.Text):
         self.editor = editor_widget
         self.font = font
         self.text_color = "#6a737d"
+        self.text_color_current = "#d4d4d4" # Default current line color
+        self.font_bold = self.font.copy()
+        self.font_bold.configure(weight="bold")
         self.bg_color = "#f0f0f0"
         
         # Configure as read-only text widget for line numbers
@@ -23,8 +26,10 @@ class LineNumbers(tk.Text):
             relief=tk.FLAT, borderwidth=0, highlightthickness=0,
             state="disabled", # Make it read-only
             wrap="none", # No word wrap
-            cursor="arrow" # Standard cursor
+            cursor="arrow", # Standard cursor
         )
+        # Tag for highlighting the current line number
+        self.tag_configure("current_line_num", font=self.font_bold)
         
         # Bind scroll events to synchronize with editor
         # These bindings are crucial for smooth scrolling of line numbers
@@ -33,10 +38,12 @@ class LineNumbers(tk.Text):
         self.editor.bind("<Button-5>", self._on_mousewheel) # Linux scroll down
         self.editor.bind("<Configure>", self._on_configure) # For resizing the editor, which might affect line numbers
 
-    def update_theme(self, text_color, bg_color):
+    def update_theme(self, text_color, bg_color, current_line_text_color):
         self.text_color = text_color
         self.bg_color = bg_color
-        self.config(bg=self.bg_color)
+        self.text_color_current = current_line_text_color
+        self.config(bg=self.bg_color, fg=self.text_color)
+        self.tag_configure("current_line_num", foreground=self.text_color_current)
         self.redraw() # Redraw content to apply new colors
 
     def redraw(self):
@@ -102,6 +109,12 @@ class LineNumbers(tk.Text):
         """Handles configure events (e.g., resize) to redraw line numbers."""
         self.redraw()
 
+    def highlight_line(self, line_num):
+        """Applies a highlight tag to the specified line number."""
+        self.tag_remove("current_line_num", "1.0", "end")
+        if line_num:
+            self.tag_add("current_line_num", f"{line_num}.0", f"{line_num}.end")
+
 class EditorTab(ttk.Frame):
     """Represents a single tab in the editor notebook."""
     def __init__(self, parent_notebook, file_path=None, schedule_heavy_updates_callback=None):
@@ -117,6 +130,9 @@ class EditorTab(ttk.Frame):
         # --- Editor Widgets for this tab ---
         self.editor = tk.Text(self, wrap="word", font=self.editor_font, undo=True,
                               relief=tk.FLAT, borderwidth=0, highlightthickness=0)
+        
+        # Configure a tag for highlighting the current line in the editor
+        self.editor.tag_configure("current_line", background="#e8f0f8") # Default color
         
         self.scrollbar = ttk.Scrollbar(self, orient="vertical", command=self.editor.yview) # Main editor scrollbar
         self.line_numbers = LineNumbers(self, editor_widget=self.editor, font=self.editor_font)
@@ -134,13 +150,19 @@ class EditorTab(ttk.Frame):
         self.editor.config(yscrollcommand=sync_scroll_and_redraw)
         
         # Bind events to the editor instance of this tab
-        self.editor.bind("<KeyRelease>", self.on_key_release)
-        self.editor.bind("<Configure>", self.schedule_heavy_updates)
+        self.editor.bind("<KeyRelease>", self._on_editor_event)
+        self.editor.bind("<ButtonRelease-1>", self._on_editor_event)
+        self.editor.bind("<FocusIn>", self._on_editor_event)
+        self.editor.bind("<Configure>", self._on_editor_event)
 
-    def on_key_release(self, event=None):
-        """Handle key release events to check for dirtiness and schedule updates."""
+    def _on_editor_event(self, event=None):
+        """
+        Central handler for events that should trigger updates.
+        This includes key presses, mouse clicks, and configuration changes.
+        """
         self.update_tab_title()
         self.schedule_heavy_updates(event)
+        self._highlight_current_line()
 
     def schedule_heavy_updates(self, event=None):
         """Schedules heavy updates for this specific tab by calling the main interface scheduler callback."""
@@ -171,12 +193,22 @@ class EditorTab(ttk.Frame):
                     self.editor.insert("1.0", content)
                     self.last_saved_content = self.get_content()
                     self.update_tab_title()
+                    # Use 'after' to ensure the highlight is applied after the mainloop is idle
+                    self.after(10, self._highlight_current_line)
                     self.editor.edit_reset() # Clear undo stack
             except Exception as e:
                 messagebox.showerror("Error", f"Could not open file:\n{e}")
         else:
             # This is a new, unsaved file
             self.update_tab_title()
+            self.after(10, self._highlight_current_line)
+
+    def _highlight_current_line(self, event=None):
+        """Highlights the current line in the editor and the corresponding line number."""
+        self.editor.tag_remove("current_line", "1.0", "end")
+        self.editor.tag_add("current_line", "insert linestart", "insert lineend+1c")
+        current_line_num = self.editor.index(tk.INSERT).split('.')[0]
+        self.line_numbers.highlight_line(current_line_num)
 
     def save_file(self, new_path=None):
         """

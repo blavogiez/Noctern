@@ -46,6 +46,9 @@ def perform_heavy_updates():
     _editor_logic.update_outline_tree(current_tab.editor)
     if current_tab.line_numbers:
         current_tab.line_numbers.redraw()
+    
+    # Re-apply the current line highlight, as redraws might clear it
+    current_tab._highlight_current_line()
 
 def schedule_heavy_updates(_=None):
     """Schedules heavy updates after a short delay."""
@@ -86,6 +89,10 @@ def zoom_in(_=None): # Accept optional event argument
         current_tab.editor.config(font=current_tab.editor_font)
         if current_tab.line_numbers:
             current_tab.line_numbers.font = current_tab.editor_font # Update the font reference
+            # Re-create and re-configure the bold font for the current line number
+            current_tab.line_numbers.font_bold = current_tab.editor_font.copy()
+            current_tab.line_numbers.font_bold.configure(weight="bold")
+            current_tab.line_numbers.tag_configure("current_line_num", font=current_tab.line_numbers.font_bold)
             current_tab.line_numbers.redraw()
         perform_heavy_updates() # Reapply syntax highlighting and outline
 
@@ -104,5 +111,9 @@ def zoom_out(_=None): # Accept optional event argument
         current_tab.editor.config(font=current_tab.editor_font)
         if current_tab.line_numbers:
             current_tab.line_numbers.font = current_tab.editor_font # Update the font reference
+            # Re-create and re-configure the bold font for the current line number
+            current_tab.line_numbers.font_bold = current_tab.editor_font.copy()
+            current_tab.line_numbers.font_bold.configure(weight="bold")
+            current_tab.line_numbers.tag_configure("current_line_num", font=current_tab.line_numbers.font_bold)
             current_tab.line_numbers.redraw()
         perform_heavy_updates() # Reapply syntax highlighting and outline

@@ -41,7 +41,8 @@ def apply_theme(theme_name):
             "sel_bg": "#0078d4", "sel_fg": "#ffffff", # Selection colors for editor (inspired by Windows)
             "editor_bg": "#ffffff", "editor_fg": "#1e1e1e", "editor_insert_bg": "#333333",
             "comment_color": "#008000", "command_color": "#0000ff", "brace_color": "#ff007f",
-            "ln_text_color": "#888888", "ln_bg_color": "#f7f7f7",
+            "ln_text_color": "#888888", "ln_bg_color": "#f7f7f7", "ln_current_text_color": "#2d2d2d",
+            "current_line_bg": "#f1f1f1", # A more subtle light grey
             "panedwindow_sash": "#e6e6e6", # Light sash for PanedWindow if sv_ttk doesn't fully style it
         }
     elif theme_name == "dark":
@@ -51,7 +52,8 @@ def apply_theme(theme_name):
             "sel_bg": "#0078d4", "sel_fg": "#ffffff", # Selection colors for editor
             "editor_bg": "#1e1e1e", "editor_fg": "#d4d4d4", "editor_insert_bg": "#d4d4d4",
             "comment_color": "#608b4e", "command_color": "#569cd6", "brace_color": "#c586c0",
-            "ln_text_color": "#6a6a6a", "ln_bg_color": "#252526",
+            "ln_text_color": "#6a6a6a", "ln_bg_color": "#252526", "ln_current_text_color": "#e5e5e5", # Brighter for more prominence
+            "current_line_bg": "#282828", # A more subtle dark grey
             "panedwindow_sash": "#333333", # Dark sash for PanedWindow
         }
     else:
@@ -70,6 +72,7 @@ def apply_theme(theme_name):
                     insertbackground=_theme_settings["editor_insert_bg"],
                     relief=tk.FLAT, borderwidth=0
                 )
+                tab_widget.editor.tag_configure("current_line", background=_theme_settings["current_line_bg"])
                 # Configure tags for each editor instance
                 tab_widget.editor.tag_configure("latex_command", foreground=_theme_settings["command_color"], font=tab_widget.editor_font)
                 tab_widget.editor.tag_configure("latex_brace", foreground=_theme_settings["brace_color"], font=tab_widget.editor_font)
@@ -79,7 +82,10 @@ def apply_theme(theme_name):
             
             # Update the theme of the line numbers canvas for each tab
             if tab_widget.line_numbers:
-                tab_widget.line_numbers.update_theme(text_color=_theme_settings["ln_text_color"], bg_color=_theme_settings["ln_bg_color"])
+                tab_widget.line_numbers.update_theme(
+                    text_color=_theme_settings["ln_text_color"], bg_color=_theme_settings["ln_bg_color"],
+                    current_line_text_color=_theme_settings["ln_current_text_color"]
+                )
 
     # Trigger a heavy update to redraw syntax highlighting, outline, and line numbers
     _perform_heavy_updates_callback()

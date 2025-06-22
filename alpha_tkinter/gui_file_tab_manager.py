@@ -78,6 +78,9 @@ def create_new_tab(file_path=None):
     # Now that the tab is added to the notebook, load its content
     new_tab.load_file()
 
+    # Schedule an update to apply syntax highlighting to the newly loaded content
+    _schedule_heavy_updates_callback()
+
 def open_file(show_temporary_status_message_func):
     """Opens a file and loads its content into the editor."""
     filepath = filedialog.askopenfilename(
