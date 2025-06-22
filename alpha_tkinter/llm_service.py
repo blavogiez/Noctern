@@ -10,7 +10,6 @@ and keyword management.
 import tkinter as tk
 from tkinter import messagebox # ttk is used by progressbar if not passed directly
 import os
-import interface # NEW: Import interface for status messages
 import json
 import threading
 
@@ -26,6 +25,7 @@ _root_window = None
 _llm_progress_bar_widget = None
 _theme_setting_getter_func = None
 _active_editor_getter_func = None # Function to get the active tk.Text widget
+_show_temporary_status_message_func = None # Callback for status messages
 _active_filepath_getter_func = None # Function to get current .tex file path
 
 # --- Prompt Configuration ---
@@ -54,14 +54,13 @@ def _load_global_default_prompts():
         # The error will be printed to the console.
 
 def initialize_llm_service(root_window_ref, progress_bar_widget_ref,
-                           theme_setting_getter_func, active_editor_getter, active_filepath_getter):
-    """
-    Initializes the LLM service with necessary references from the main application.
-    This should be called once when the application starts.
-    """
-    global _root_window, _llm_progress_bar_widget
-    global _theme_setting_getter_func, _active_editor_getter_func, _active_filepath_getter_func
+                           theme_setting_getter_func, active_editor_getter,
+                           active_filepath_getter, show_temporary_status_message_func):
+    """Initializes the LLM service with necessary references from the main application."""
+    global _root_window, _llm_progress_bar_widget, _theme_setting_getter_func
+    global _active_editor_getter_func, _active_filepath_getter_func, _show_temporary_status_message_func
 
+    _show_temporary_status_message_func = show_temporary_status_message_func
     _root_window = root_window_ref
     _llm_progress_bar_widget = progress_bar_widget_ref
     _theme_setting_getter_func = theme_setting_getter_func
@@ -130,6 +129,8 @@ def request_llm_to_complete_text():
     if not editor or not _root_window or not _llm_progress_bar_widget:
         messagebox.showerror("LLM Service Error", "LLM Service not fully initialized.")
         return
+    
+    _show_temporary_status_message_func("⏳ Requesting LLM completion...")
 
     def run_completion_thread_target():
         """Target function for the LLM completion thread."""
@@ -159,11 +160,14 @@ def request_llm_to_complete_text():
             if api_response["success"]:
                 completion_raw = api_response["data"].strip('"')
                 cleaned_completion = llm_utils.remove_prefix_overlap_from_completion(current_phrase_start, completion_raw)
+                _show_temporary_status_message_func("✅ LLM completion received.")
                 active_editor.after(0, lambda: active_editor.insert(tk.INSERT, cleaned_completion))
             else:
                 active_editor.after(0, lambda: messagebox.showerror("LLM Completion Error", api_response["error"]))
+                _show_temporary_status_message_func(f"❌ LLM completion failed: {api_response['error'][:50]}...")
         except Exception as e:
             active_editor.after(0, lambda: messagebox.showerror("LLM Completion Error", f"An unexpected error occurred: {str(e)}"))
+            _show_temporary_status_message_func(f"❌ LLM completion error: {str(e)[:50]}...")
         finally:
             if _llm_progress_bar_widget and active_editor: # Check if widgets still exist
                 active_editor.after(0, lambda: _llm_progress_bar_widget.pack_forget())
@@ -184,6 +188,8 @@ def open_generate_text_dialog(initial_prompt_text=None):
         messagebox.showerror("LLM Service Error", "LLM Service or UI components not fully initialized.")
         return
 
+    _show_temporary_status_message_func("⏳ Opening LLM generation dialog...")
+
     def _handle_generation_request_from_dialog(user_prompt, lines_before, lines_after):
         """Callback for when the dialog requests generation. Runs in main thread initially."""
 
@@ -191,6 +197,7 @@ def open_generate_text_dialog(initial_prompt_text=None):
             """Target function for the LLM generation thread."""
             active_editor = _active_editor_getter_func() # Get it again inside thread
             try:
+                _show_temporary_status_message_func("⏳ Requesting LLM generation...")
                 context = llm_utils.extract_editor_context(active_editor, local_lines_before, local_lines_after)
                 full_llm_prompt = _generation_prompt_template.format(
                     user_prompt=local_user_prompt,
@@ -201,16 +208,19 @@ def open_generate_text_dialog(initial_prompt_text=None):
 
                 if api_response["success"]:
                     generated_text = api_response["data"]
+                    _show_temporary_status_message_func("✅ LLM generation received.")
                     active_editor.after(0, lambda: active_editor.insert(tk.INSERT, generated_text))
                     active_editor.after(0, lambda: _update_history_response_and_save(local_user_prompt, generated_text))
                 else:
                     error_msg = api_response["error"]
                     active_editor.after(0, lambda: messagebox.showerror("LLM Generation Error", error_msg))
                     active_editor.after(0, lambda: _update_history_response_and_save(local_user_prompt, f"❌ Error: {error_msg[:100]}..."))
+                    _show_temporary_status_message_func(f"❌ LLM generation failed: {error_msg[:50]}...")
             except Exception as e:
                 error_str = str(e)
                 active_editor.after(0, lambda: messagebox.showerror("LLM Generation Error", f"An unexpected error occurred: {error_str}"))
                 active_editor.after(0, lambda: _update_history_response_and_save(local_user_prompt, f"❌ Exception: {error_str[:100]}..."))
+                _show_temporary_status_message_func(f"❌ LLM generation error: {error_str[:50]}...")
             finally:
                 if _llm_progress_bar_widget and active_editor: # Check if widgets still exist
                     active_editor.after(0, lambda: _llm_progress_bar_widget.pack_forget())
@@ -240,6 +250,7 @@ def open_set_keywords_dialog():
     global _llm_keywords_list # Keywords are managed globally within this service
     if not _root_window or not _theme_setting_getter_func:
         messagebox.showerror("LLM Service Error", "UI components not fully initialized for keywords dialog.")
+        _show_temporary_status_message_func("❌ LLM Keywords dialog failed to open.")
         return
 
     def _handle_keywords_save_from_dialog(new_keywords_list):
@@ -247,8 +258,10 @@ def open_set_keywords_dialog():
         global _llm_keywords_list
         _llm_keywords_list = new_keywords_list
         if not _llm_keywords_list:
+            _show_temporary_status_message_func("✅ LLM keywords cleared.")
             messagebox.showinfo("Keywords Cleared", "LLM keywords list has been cleared.", parent=_root_window) # Parent might need to be dialog
         else:
+            _show_temporary_status_message_func("✅ LLM keywords saved.")
             messagebox.showinfo("Keywords Saved", f"LLM keywords registered:\n- {', '.join(_llm_keywords_list)}", parent=_root_window)
 
     llm_dialogs.show_set_llm_keywords_dialog(
@@ -280,10 +293,9 @@ def update_prompts(completion_template, generation_template):
             "generation": _generation_prompt_template
         }
         llm_prompt_manager.save_prompts_to_file(prompts_to_save, active_filepath)
-        prompts_filename = os.path.basename(llm_prompt_manager.get_prompts_filepath(active_filepath))
-        interface.show_temporary_status_message(f"✅ Prompts saved: {prompts_filename}")
+        _show_temporary_status_message_func(f"✅ Prompts saved: {os.path.basename(llm_prompt_manager.get_prompts_filepath(active_filepath))}")
     else:
-        interface.show_temporary_status_message("⚠️ Prompts updated for this session only (no file open).") # Use temporary status
+        _show_temporary_status_message_func("⚠️ Prompts updated for this session only (no file open).")
 
 def open_edit_prompts_dialog():
     """Opens a dialog to edit the LLM prompt templates."""
@@ -291,6 +303,7 @@ def open_edit_prompts_dialog():
         messagebox.showerror("LLM Service Error", "UI components not fully initialized for prompts dialog.")
         return
 
+    _show_temporary_status_message_func("⏳ Opening LLM prompt templates dialog...")
     llm_dialogs.show_edit_prompts_dialog(
         root_window=_root_window,
         theme_setting_getter_func=_theme_setting_getter_func,

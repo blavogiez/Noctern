@@ -401,8 +401,8 @@ def show_edit_prompts_dialog(root_window, theme_setting_getter_func,
             completion_text.insert("1.0", default_prompts.get("completion", ""))
             update_default_status_labels()
 
-    ttk.Button(completion_button_frame, text="Appliquer", command=apply_changes).pack(side="left", padx=(0, 5))
-    ttk.Button(completion_button_frame, text="Restaurer par défaut", command=restore_completion_default).pack(side="left")
+    ttk.Button(completion_button_frame, text="Apply", command=apply_changes).pack(side="left", padx=(0, 5))
+    ttk.Button(completion_button_frame, text="Restore Default", command=restore_completion_default).pack(side="left")
     main_pane.add(completion_pane_frame, minsize=400, stretch="always")
 
     # --- Buttons for Generation Pane ---
@@ -417,8 +417,8 @@ def show_edit_prompts_dialog(root_window, theme_setting_getter_func,
             generation_text.insert("1.0", default_prompts.get("generation", ""))
             update_default_status_labels()
 
-    ttk.Button(generation_button_frame, text="Appliquer", command=apply_changes).pack(side="left", padx=(0, 5))
-    ttk.Button(generation_button_frame, text="Restaurer par défaut", command=restore_generation_default).pack(side="left")
+    ttk.Button(generation_button_frame, text="Apply", command=apply_changes).pack(side="left", padx=(0, 5))
+    ttk.Button(generation_button_frame, text="Restore Default", command=restore_generation_default).pack(side="left")
     main_pane.add(generation_pane_frame, minsize=400, stretch="always")
 
     # --- Bottom Bar with Close Button ---
@@ -446,7 +446,7 @@ def show_edit_prompts_dialog(root_window, theme_setting_getter_func,
         else:
             prompts_window.destroy()
 
-    ttk.Button(bottom_bar, text="Fermer", command=close_window).pack(side="right")
+    ttk.Button(bottom_bar, text="Close", command=close_window).pack(side="right")
 
     # Bind Ctrl+S for saving without closing
     prompts_window.bind("<Control-s>", lambda event: apply_changes())

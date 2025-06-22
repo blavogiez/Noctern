@@ -5,19 +5,19 @@ import webbrowser
 import tkinter as tk
 from tkinter import messagebox
 
-# Import the interface module to get access to the current tab
-import interface
-
 root = None
+get_current_tab_func = None # Callback to get the current tab
 
-def initialize_compiler(root_widget):
+def initialize_compiler(root_widget, get_current_tab_callback):
     """Sets the global reference to the root window."""
     global root
+    global get_current_tab_func
     root = root_widget
+    get_current_tab_func = get_current_tab_callback
 
 def run_chktex_check():
     """Runs chktex on the current editor content."""
-    current_tab = interface.get_current_tab()
+    current_tab = get_current_tab_func()
     if not current_tab: return
     editor = current_tab.editor
     code = editor.get("1.0", tk.END)
@@ -79,7 +79,7 @@ def run_chktex_check():
 
 def compile_latex():
     """Compiles the current editor content using pdflatex."""
-    current_tab = interface.get_current_tab()
+    current_tab = get_current_tab_func()
     if not current_tab: return
     editor = current_tab.editor
     code = editor.get("1.0", tk.END)

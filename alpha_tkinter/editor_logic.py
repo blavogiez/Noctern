@@ -4,15 +4,15 @@ import os
 from tkinter import messagebox
 from PIL import ImageGrab
 
-# Import the interface module to get access to the current tab
-import interface
-
 outline_tree = None
+get_current_tab_func = None # Callback to get the current tab from the GUI manager
 
-def initialize_editor_logic(tree_widget):
+def initialize_editor_logic(tree_widget, get_current_tab_callback):
     """Sets the global reference to the outline tree."""
     global outline_tree
+    global get_current_tab_func
     outline_tree = tree_widget
+    get_current_tab_func = get_current_tab_callback
 
 def update_outline_tree(editor):
     """Updates the Treeview widget with LaTeX section structure."""
@@ -130,7 +130,7 @@ def extract_section_structure(content, position_index):
 
 def paste_image():
     """Pastes an image from the clipboard into the editor as a LaTeX figure."""
-    current_tab = interface.get_current_tab()
+    current_tab = get_current_tab_func()
     if not current_tab: return
     editor = current_tab.editor
     if not editor:
