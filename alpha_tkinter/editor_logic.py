@@ -63,29 +63,13 @@ def go_to_section(editor, event):
                 # Handle cases where line number might be invalid (e.g., empty file)
                 pass
 
-def apply_syntax_highlighting(editor, full_document=False):
+def highlight_range(editor, start_index, end_index):
     """
-    Applies syntax highlighting to the text widget.
-    If full_document is True, applies to the entire document.
-    Otherwise, applies only to the visible portion.
+    Applies syntax highlighting to a specific range within the text widget.
+    This is the core, reusable highlighting function.
     """
     if not editor or not editor.winfo_exists():
         return
-
-    if full_document:
-        start_index = "1.0"
-        end_index = tk.END
-    else:
-        # Define the visible range, with a small buffer for partially visible lines
-        visible_start_index = editor.index("@0,0")
-        visible_end_index = editor.index(f"@0,{editor.winfo_height()}")
-        
-        start_line = int(visible_start_index.split('.')[0])
-        # Add a buffer of a few lines to handle smooth scrolling and partial lines
-        end_line = int(visible_end_index.split('.')[0]) + 2
-        
-        start_index = f"{start_line}.0"
-        end_index = f"{end_line}.end"
 
     # Remove existing tags from the target range to prevent tag buildup
     editor.tag_remove("latex_command", start_index, end_index)
@@ -107,6 +91,33 @@ def apply_syntax_highlighting(editor, full_document=False):
     apply_tags_for_pattern(r"\\[a-zA-Z@]+", "latex_command")
     apply_tags_for_pattern(r"[{}]", "latex_brace")
     apply_tags_for_pattern(r"%[^\n]*", "latex_comment")
+
+def apply_syntax_highlighting(editor, full_document=False):
+    """
+    Applies syntax highlighting to the text widget.
+    If full_document is True, applies to the entire document.
+    Otherwise, applies only to the visible portion.
+    """
+    if full_document:
+        highlight_range(editor, "1.0", tk.END)
+    else:
+        # Define the visible range, with a small buffer for partially visible lines
+        visible_start_index = editor.index("@0,0")
+        visible_end_index = editor.index(f"@0,{editor.winfo_height()}")
+        
+        start_line = int(visible_start_index.split('.')[0])
+        # Add a buffer of a few lines to handle smooth scrolling and partial lines
+        end_line = int(visible_end_index.split('.')[0]) + 2
+        
+        start_index = f"{start_line}.0"
+        end_index = f"{end_line}.end"
+        highlight_range(editor, start_index, end_index)
+
+def highlight_current_line_syntax(editor):
+    """A highly efficient function to re-highlight only the line the cursor is on."""
+    start_of_line = "insert linestart"
+    end_of_line = "insert lineend"
+    highlight_range(editor, start_of_line, end_of_line)
 
 def extract_section_structure(content, position_index):
     """
@@ -202,3 +213,6 @@ def paste_image():
 
     except Exception as e:
         messagebox.showerror("Error", f"Error pasting image:\n{str(e)}")
+    finally:
+        if 'image' in locals() and image is not None:
+            del image # Explicitly delete the PIL Image object

@@ -16,8 +16,8 @@ _max_font_size = 36 # No change needed here
 
 # Heavy update settings
 _LARGE_FILE_LINE_THRESHOLD = 1000
-_HEAVY_UPDATE_DELAY_NORMAL = 300 # Even more responsive for typing
-_HEAVY_UPDATE_DELAY_LARGE_FILE = 2000 # Faster for large files, as syntax highlighting is now visible-only
+_HEAVY_UPDATE_DELAY_NORMAL = 150 # Tuned for high responsiveness with intelligent updates
+_HEAVY_UPDATE_DELAY_LARGE_FILE = 750 # Still responsive, but gives outline scan more breathing room
 _heavy_update_timer_id = None
 
 def initialize(root_ref, get_current_tab_cb, outline_tree_ref, editor_logic_module):
@@ -42,10 +42,9 @@ def perform_heavy_updates():
         return
 
     # Perform all updates for the current tab
-    _editor_logic.apply_syntax_highlighting(current_tab.editor)
+    _editor_logic.apply_syntax_highlighting(current_tab.editor, full_document=False)
     _editor_logic.update_outline_tree(current_tab.editor)
-    # This call handles both the editor line highlight and redrawing the line numbers
-    current_tab._highlight_current_line()
+    current_tab.line_numbers.redraw() # Explicitly redraw line numbers as part of the debounced update
 
 def schedule_heavy_updates(_=None):
     """Schedules heavy updates after a short delay."""

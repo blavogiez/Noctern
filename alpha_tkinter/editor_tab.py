@@ -4,7 +4,6 @@ import editor_logic
 from tkinter import ttk, messagebox
 from tkinter.font import Font
 import os
-import math
 
 class LineNumbers(tk.Canvas):
     """A Canvas widget to display line numbers for a Text editor widget."""
@@ -28,11 +27,9 @@ class LineNumbers(tk.Canvas):
         # Bind scroll events to synchronize with editor
         # Note: These are bound to the editor, not the canvas itself, to capture editor scrolls
         self.editor.bind("<MouseWheel>", self._on_mousewheel)
-        self.editor.bind("<Button-4>", self._on_mousewheel) # Linux scroll up
-        self.editor.bind("<Button-5>", self._on_mousewheel) # Linux scroll down
-        self.editor.bind("<Configure>", self._on_configure) # For resizing the editor, which might affect line numbers
-        self.editor.bind("<KeyRelease>", self._on_editor_content_change) # To update line numbers on new lines
-        self.editor.bind("<ButtonRelease-1>", self._on_editor_content_change) # To update line numbers on click
+        self.editor.bind("<Button-4>", self._on_mousewheel)  # Linux scroll up
+        self.editor.bind("<Button-5>", self._on_mousewheel)  # Linux scroll down
+        self.editor.bind("<Configure>", self._on_configure)  # For resizing the editor, which might affect line numbers
 
     def update_theme(self, text_color, bg_color, current_line_text_color):
         self.text_color = text_color
@@ -43,7 +40,7 @@ class LineNumbers(tk.Canvas):
 
     def redraw(self):
         """Updates the line numbers displayed in the widget."""
-        self.delete("all") # Clear existing numbers
+        self.delete("all") # Clear existing numbers on the canvas
 
         if not self.editor or not self.winfo_exists():
             return
@@ -57,7 +54,7 @@ class LineNumbers(tk.Canvas):
             total_lines_in_doc = int(last_doc_line_index.split('.')[0])
 
         # Determine the maximum line number that might be displayed for width calculation
-        # This should be the total lines in the document, or the number of lines that fit on screen, whichever is larger
+        # This should be the total lines in the document, or a reasonable minimum for empty files
         max_line_num_for_width = max(total_lines_in_doc, 1) # Ensure at least 1 for width calc
         max_digits = len(str(max_line_num_for_width)) if max_line_num_for_width > 0 else 1
         
@@ -68,7 +65,7 @@ class LineNumbers(tk.Canvas):
              self.config(width=required_width)
 
         # Iterate through visible lines in the editor
-        first_visible_line_index = self.editor.index("@0,0")
+        first_visible_line_index = self.editor.index("@0,0") # Get index of the first visible character
         last_visible_line_index = self.editor.index(f"@0,{self.editor.winfo_height()}")
         
         # Start from the first visible line
@@ -76,7 +73,7 @@ class LineNumbers(tk.Canvas):
         
         # Get the current line number from the editor's insert cursor
         current_editor_line_num = int(self.editor.index(tk.INSERT).split('.')[0])
-
+        
         while True:
             dline = self.editor.dlineinfo(current_line_index)
             if dline is None: break # No more lines visible or invalid index
@@ -100,26 +97,19 @@ class LineNumbers(tk.Canvas):
             next_line_index = self.editor.index(f"{current_line_index}+1line")
             if next_line_index == current_line_index: break # No more lines
             
-            # Stop if we've gone past the visible area or too far
-            if self.editor.compare(current_line_index, ">", last_visible_line_index) and line_num > total_lines_in_doc:
+            # Stop if we've drawn past the visible area.
+            # Adding a small buffer (e.g., 2 lines) can prevent flicker at the bottom.
+            if self.editor.compare(current_line_index, ">", last_visible_line_index + "+2lines"):
                 break
             
             current_line_index = next_line_index
 
     def _on_mousewheel(self, event):
         """Propagates mouse wheel scroll from editor to line numbers."""
-        # This is handled by the editor's yscrollcommand, which calls redraw via schedule_heavy_updates.
-        # We don't need to do anything directly here for scrolling the canvas itself.
         pass
 
     def _on_configure(self, event):
         """Handles configure events (e.g., resize) to redraw line numbers."""
-        self.redraw()
-
-    def _on_editor_content_change(self, event):
-        """Handles content changes in the editor to update line numbers."""
-        # This is called on KeyRelease and ButtonRelease-1.
-        # It triggers a redraw of line numbers to update content and current line highlight.
         self.redraw()
 
     def highlight_line(self, line_num):
@@ -161,8 +151,8 @@ class EditorTab(ttk.Frame):
         # --- Configure scroll and events ---
         def sync_scroll_and_redraw(*args):
             self.scrollbar.set(*args)
-            self.line_numbers.redraw() # Redraw line numbers instantly for smooth scrolling
-            self.schedule_heavy_updates() # Schedule heavy updates (syntax, outline) with a debounce
+            # Line numbers redraw is now handled by perform_heavy_updates, which is debounced.
+            self.schedule_heavy_updates() # Schedule heavy updates (syntax, outline, and line numbers) with a debounce
 
         self.editor.config(yscrollcommand=sync_scroll_and_redraw)
         
@@ -232,7 +222,7 @@ class EditorTab(ttk.Frame):
         """Highlights the current line in the editor and the corresponding line number."""
         self.editor.tag_remove("current_line", "1.0", "end")
         self.editor.tag_add("current_line", "insert linestart", "insert lineend+1c")
-        self.line_numbers.redraw() # Redraw to update the current line highlight in the numbers canvas
+        # Line numbers redraw is now handled by perform_heavy_updates, which is debounced.
 
     def save_file(self, new_path=None):
         """

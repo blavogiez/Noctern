@@ -182,6 +182,7 @@ def show_generate_text_dialog(root_window, theme_setting_getter_func,
         if on_generate_request_callback:
             on_generate_request_callback(user_prompt, num_back, num_forward)
 
+        text_prompt.delete("1.0", tk.END) # Explicitly clear content
         prompt_window.destroy()
 
     button_frame = ttk.Frame(input_controls_frame)
@@ -257,6 +258,7 @@ def show_set_llm_keywords_dialog(root_window, theme_setting_getter_func,
         if on_save_keywords_callback:
             on_save_keywords_callback(new_keywords) # Pass the processed list
 
+        keyword_text_widget.delete("1.0", tk.END) # Explicitly clear content
         keyword_window.destroy()
 
     ttk.Button(keyword_window, text="Save Keywords", command=save_keywords_action_internal).pack(pady=10)
@@ -442,8 +444,10 @@ def show_edit_prompts_dialog(root_window, theme_setting_getter_func,
                 prompts_window.destroy()
             elif response is False: # No
                 prompts_window.destroy()
-            # else: Cancel, do nothing
+            # else: Cancel, do nothing, so don't destroy the window
         else:
+            completion_text.delete("1.0", tk.END) # Explicitly clear content
+            generation_text.delete("1.0", tk.END) # Explicitly clear content
             prompts_window.destroy()
 
     ttk.Button(bottom_bar, text="Close", command=close_window).pack(side="right")
