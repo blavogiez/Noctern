@@ -8,7 +8,7 @@ the main entry points for LLM features like text completion, generation,
 and keyword management.
 """
 import tkinter as tk
-from tkinter import messagebox # ttk is used by progressbar if not passed directly
+from tkinter import messagebox, ttk
 import os
 import json
 import requests # Import the requests library to handle its exceptions
@@ -21,6 +21,7 @@ import llm_api_client
 import llm_dialogs
 import llm_prompt_manager # NEW
 import llm_keyword_manager # NEW
+from gui_generation_controller import GenerationUIController # NEW
 
 # --- Module-level variables to store references from the main application ---
 _root_window = None
@@ -29,6 +30,11 @@ _theme_setting_getter_func = None
 _active_editor_getter_func = None # Function to get the active tk.Text widget
 _show_temporary_status_message_func = None # Callback for status messages
 _active_filepath_getter_func = None # Function to get current .tex file path
+
+# --- NEW: State for interactive generation ---
+_generation_thread = None
+_cancel_event = threading.Event()
+_generation_ui = None
 
 # --- Prompt Configuration ---
 DEFAULT_PROMPTS_FILE = "default_prompts.json"
@@ -137,6 +143,10 @@ def _handle_llm_api_error(error_type, exception_obj, active_editor, user_prompt=
     active_editor.after(0, lambda: messagebox.showerror("LLM Error", error_msg))
     _show_temporary_status_message_func(status_msg)
 
+    # NEW: Clean up the interactive UI on error
+    if active_editor:
+        active_editor.after(0, lambda: _cancel_current_generation(discard_text=True))
+
     if user_prompt and _update_history_response_and_save:
         active_editor.after(0, lambda: _update_history_response_and_save(user_prompt, history_update_text))
 
@@ -163,6 +173,83 @@ def load_prompts_for_current_file():
 _load_global_default_prompts()
 
 
+def _cancel_current_generation(discard_text=True):
+    """Stops any active generation thread and cleans up the UI."""
+    global _generation_thread, _cancel_event, _generation_ui
+
+    if _generation_thread and _generation_thread.is_alive():
+        _cancel_event.set() # Signal thread to stop
+
+    if _generation_ui:
+        # get text before cleanup for history
+        generated_text = _generation_ui.get_text()
+        _generation_ui.cleanup(is_accept=not discard_text)
+        _generation_ui = None
+        return generated_text
+
+    _generation_thread = None
+    return ""
+
+def _execute_llm_generation(full_llm_prompt, user_prompt_for_history):
+    """
+    The main function to execute an LLM generation with an interactive UI.
+    """
+    global _generation_thread, _cancel_event, _generation_ui
+
+    editor = _active_editor_getter_func()
+    if not editor: return
+
+    _cancel_current_generation(discard_text=True)
+    _cancel_event.clear()
+
+    _generation_ui = GenerationUIController(editor, _theme_setting_getter_func)
+
+    def on_accept():
+        generated_text = _cancel_current_generation(discard_text=False)
+        _show_temporary_status_message_func("✅ Generation accepted.")
+        _update_history_response_and_save(user_prompt_for_history, generated_text)
+
+    def on_rephrase(text_to_rephrase):
+        _cancel_current_generation(discard_text=True)
+        rephrase_user_prompt = f"Rephrase the following text: \"{text_to_rephrase}\""
+        rephrase_full_prompt = _generation_prompt_template.format(
+            user_prompt=rephrase_user_prompt,
+            keywords=', '.join(_llm_keywords_list),
+            context="" # No context for rephrasing
+        )
+        _add_entry_to_history_and_save(rephrase_user_prompt)
+        _execute_llm_generation(rephrase_full_prompt, rephrase_user_prompt)
+
+    def on_cancel():
+        _cancel_current_generation(discard_text=True)
+        _show_temporary_status_message_func("❌ Generation cancelled.")
+        _update_history_response_and_save(user_prompt_for_history, "❌ Cancelled by user.")
+
+    _generation_ui.accept_callback = on_accept
+    _generation_ui.rephrase_callback = on_rephrase
+    _generation_ui.cancel_callback = on_cancel
+
+    def run_thread(prompt, ui_controller, cancel_event, user_prompt_key):
+        try:
+            for chunk in llm_api_client.request_llm_generation(prompt):
+                if cancel_event.is_set(): break
+                if editor and ui_controller: editor.after(0, lambda c=chunk: ui_controller.insert_chunk(c))
+        except (requests.exceptions.ConnectionError, requests.exceptions.RequestException) as e:
+            _handle_llm_api_error(type(e).__name__, e, editor, user_prompt_key)
+        except Exception as e:
+            _handle_llm_api_error("UnexpectedError", e, editor, user_prompt_key)
+        finally:
+            if editor and ui_controller and not cancel_event.is_set():
+                editor.after(0, ui_controller.show_finished_state)
+            if _llm_progress_bar_widget and editor:
+                editor.after(0, lambda: (_llm_progress_bar_widget.pack_forget(), _llm_progress_bar_widget.stop()))
+
+    _llm_progress_bar_widget.pack(pady=2)
+    _llm_progress_bar_widget.start(10)
+    _generation_ui.show_generating_state()
+    _generation_thread = threading.Thread(target=run_thread, args=(full_llm_prompt, _generation_ui, _cancel_event, user_prompt_for_history), daemon=True)
+    _generation_thread.start()
+
 # --- LLM Text Completion ---
 def request_llm_to_complete_text():
     """Requests sentence completion from the LLM based on preceding text."""
@@ -170,59 +257,31 @@ def request_llm_to_complete_text():
     if not editor or not _root_window or not _llm_progress_bar_widget:
         messagebox.showerror("LLM Service Error", "LLM Service not fully initialized.")
         return
-    
+
     _show_temporary_status_message_func("⏳ Requesting LLM completion...")
 
-    def run_completion_thread_target():
-        """Target function for the LLM completion thread."""
-        active_editor = _active_editor_getter_func() # Get it again inside thread
-        full_llm_prompt = None # Initialize to ensure it's available in the except block
-        try:
-            # Get context: 30 lines backwards, 0 forwards
-            context = llm_utils.extract_editor_context(active_editor, lines_before_cursor=30, lines_after_cursor=0)
+    # Get context: 30 lines backwards, 0 forwards
+    context = llm_utils.extract_editor_context(editor, lines_before_cursor=30, lines_after_cursor=0)
 
-            # Find the last sentence ending to isolate the current sentence fragment
-            last_dot_index = max(context.rfind("."), context.rfind("!"), context.rfind("?"))
-            if last_dot_index == -1:
-                current_phrase_start = context.strip()
-                previous_context = ""
-            else:
-                current_phrase_start = context[last_dot_index + 1:].strip()
-                previous_context = context[:last_dot_index + 1].strip()
+    # Find the last sentence ending to isolate the current sentence fragment
+    last_dot_index = max(context.rfind("."), context.rfind("!"), context.rfind("?"))
+    if last_dot_index == -1:
+        current_phrase_start = context.strip()
+        previous_context = ""
+    else:
+        current_phrase_start = context[last_dot_index + 1:].strip()
+        previous_context = context[:last_dot_index + 1].strip()
 
-            # Construct the prompt for the LLM API
-            full_llm_prompt = _completion_prompt_template.format(
-                previous_context=previous_context,
-                current_phrase_start=current_phrase_start,
-                keywords=', '.join(_llm_keywords_list)
-            )
+    # Construct the prompt for the LLM API
+    full_llm_prompt = _completion_prompt_template.format(
+        previous_context=previous_context,
+        current_phrase_start=current_phrase_start,
+        keywords=', '.join(_llm_keywords_list)
+    )
 
-            full_completion_raw = ""
-            try:
-                for chunk in llm_api_client.request_llm_generation(full_llm_prompt):
-                    full_completion_raw += chunk
-                    active_editor.after(0, lambda c=chunk: active_editor.insert(tk.INSERT, c))
-
-                _show_temporary_status_message_func("✅ LLM completion received.")
-                # Save the raw streamed output to history.
-                # If a cleaned version is preferred for history, apply llm_utils.remove_prefix_overlap_from_completion here.
-                # For now, we save the raw output as it was streamed.
-                # active_editor.after(0, lambda: _update_history_response_and_save(full_llm_prompt, llm_utils.remove_prefix_overlap_from_completion(current_phrase_start, full_completion_raw.strip('"'))))
-                active_editor.after(0, lambda: _update_history_response_and_save(full_llm_prompt, full_completion_raw))
-            except requests.exceptions.ConnectionError as e:
-                _handle_llm_api_error("ConnectionError", e, active_editor, full_llm_prompt)
-            except requests.exceptions.RequestException as e:
-                _handle_llm_api_error("RequestException", e, active_editor, full_llm_prompt)
-        except Exception as e:
-            _handle_llm_api_error("UnexpectedError", e, active_editor, full_llm_prompt)
-        finally:
-            if _llm_progress_bar_widget and active_editor: # Check if widgets still exist
-                active_editor.after(0, lambda: _llm_progress_bar_widget.pack_forget())
-                active_editor.after(0, lambda: _llm_progress_bar_widget.stop())
-
-    _llm_progress_bar_widget.pack(pady=2)
-    _llm_progress_bar_widget.start(10)
-    threading.Thread(target=run_completion_thread_target, daemon=True).start()
+    # Use the full prompt as the key for history
+    _add_entry_to_history_and_save(full_llm_prompt)
+    _execute_llm_generation(full_llm_prompt, full_llm_prompt)
 
 # --- LLM Text Generation via Dialog ---
 def open_generate_text_dialog(initial_prompt_text=None):
@@ -240,40 +299,14 @@ def open_generate_text_dialog(initial_prompt_text=None):
     def _handle_generation_request_from_dialog(user_prompt, lines_before, lines_after):
         """Callback for when the dialog requests generation. Runs in main thread initially."""
 
-        def run_generation_thread_target(local_user_prompt, local_lines_before, local_lines_after):
-            """Target function for the LLM generation thread."""
-            active_editor = _active_editor_getter_func() # Get it again inside thread
-            full_llm_prompt = None # Initialize to ensure it's available in the except block
-            try:
-                _show_temporary_status_message_func("⏳ Requesting LLM generation...")
-                context = llm_utils.extract_editor_context(active_editor, local_lines_before, local_lines_after)
-                full_llm_prompt = _generation_prompt_template.format(
-                    user_prompt=local_user_prompt,
-                    keywords=', '.join(_llm_keywords_list),
-                    context=context
-                )
-                full_generated_text = ""
-                try:
-                    for chunk in llm_api_client.request_llm_generation(full_llm_prompt):
-                        full_generated_text += chunk
-                        active_editor.after(0, lambda c=chunk: active_editor.insert(tk.INSERT, c))
-
-                    _show_temporary_status_message_func("✅ LLM generation received.")
-                    active_editor.after(0, lambda: _update_history_response_and_save(local_user_prompt, full_generated_text))
-                except requests.exceptions.ConnectionError as e:
-                    _handle_llm_api_error("ConnectionError", e, active_editor, local_user_prompt)
-                except requests.exceptions.RequestException as e:
-                    _handle_llm_api_error("RequestException", e, active_editor, local_user_prompt)
-            except Exception as e:
-                _handle_llm_api_error("UnexpectedError", e, active_editor, local_user_prompt)
-            finally:
-                if _llm_progress_bar_widget and active_editor: # Check if widgets still exist
-                    active_editor.after(0, lambda: _llm_progress_bar_widget.pack_forget())
-                    active_editor.after(0, lambda: _llm_progress_bar_widget.stop())
-
-        _llm_progress_bar_widget.pack(pady=2)
-        _llm_progress_bar_widget.start(10)
-        threading.Thread(target=run_generation_thread_target, args=(user_prompt, lines_before, lines_after), daemon=True).start()
+        _show_temporary_status_message_func("⏳ Requesting LLM generation...")
+        context = llm_utils.extract_editor_context(editor, lines_before, lines_after)
+        full_llm_prompt = _generation_prompt_template.format(
+            user_prompt=user_prompt,
+            keywords=', '.join(_llm_keywords_list),
+            context=context
+        )
+        _execute_llm_generation(full_llm_prompt, user_prompt)
 
     def _handle_history_entry_addition_from_dialog(user_prompt):
         """Callback to add 'Generating...' to history when dialog's Generate is clicked."""
