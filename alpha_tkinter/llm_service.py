@@ -11,6 +11,7 @@ import tkinter as tk
 from tkinter import messagebox # ttk is used by progressbar if not passed directly
 import os
 import json
+import requests # Import the requests library to handle its exceptions
 import threading
 
 # Import newly created local modules
@@ -109,6 +110,36 @@ def _update_history_response_and_save(user_prompt_key, new_response_text):
     active_filepath = _get_active_tex_filepath()
     llm_prompt_history.save_prompt_history_to_file(_prompt_history_list, active_filepath)
 
+# --- Centralized LLM API Error Handling ---
+def _handle_llm_api_error(error_type, exception_obj, active_editor, user_prompt=None):
+    """
+    Centralized error handling for LLM API requests.
+    Displays an error message and updates the status bar.
+    Optionally updates history if a user_prompt is provided.
+    """
+    error_msg = ""
+    status_msg = ""
+    history_update_text = ""
+
+    if error_type == "ConnectionError":
+        error_msg = "Connection Error: Could not connect to LLM API. Is the backend running?"
+        status_msg = "❌ LLM connection failed."
+        history_update_text = "❌ Connection Error"
+    elif error_type == "RequestException":
+        error_msg = f"API Error: {str(exception_obj)}"
+        status_msg = "❌ LLM API request failed."
+        history_update_text = f"❌ API Error: {str(exception_obj)[:50]}..."
+    else: # Catch-all for other unexpected errors
+        error_msg = f"An unexpected error occurred: {str(exception_obj)}"
+        status_msg = "❌ LLM operation failed unexpectedly."
+        history_update_text = f"❌ Unexpected Error: {str(exception_obj)[:50]}..."
+
+    active_editor.after(0, lambda: messagebox.showerror("LLM Error", error_msg))
+    _show_temporary_status_message_func(status_msg)
+
+    if user_prompt and _update_history_response_and_save:
+        active_editor.after(0, lambda: _update_history_response_and_save(user_prompt, history_update_text))
+
 # --- Keywords Management ---
 def load_keywords_for_current_file():
     """Loads the keywords associated with the currently active .tex file."""
@@ -145,6 +176,7 @@ def request_llm_to_complete_text():
     def run_completion_thread_target():
         """Target function for the LLM completion thread."""
         active_editor = _active_editor_getter_func() # Get it again inside thread
+        full_llm_prompt = None # Initialize to ensure it's available in the except block
         try:
             # Get context: 30 lines backwards, 0 forwards
             context = llm_utils.extract_editor_context(active_editor, lines_before_cursor=30, lines_after_cursor=0)
@@ -165,19 +197,24 @@ def request_llm_to_complete_text():
                 keywords=', '.join(_llm_keywords_list)
             )
 
-            api_response = llm_api_client.request_llm_generation(full_llm_prompt)
+            full_completion_raw = ""
+            try:
+                for chunk in llm_api_client.request_llm_generation(full_llm_prompt):
+                    full_completion_raw += chunk
+                    active_editor.after(0, lambda c=chunk: active_editor.insert(tk.INSERT, c))
 
-            if api_response["success"]:
-                completion_raw = api_response["data"].strip('"')
-                cleaned_completion = llm_utils.remove_prefix_overlap_from_completion(current_phrase_start, completion_raw)
                 _show_temporary_status_message_func("✅ LLM completion received.")
-                active_editor.after(0, lambda: active_editor.insert(tk.INSERT, cleaned_completion))
-            else:
-                active_editor.after(0, lambda: messagebox.showerror("LLM Completion Error", api_response["error"]))
-                _show_temporary_status_message_func(f"❌ LLM completion failed: {api_response['error'][:50]}...")
+                # Save the raw streamed output to history.
+                # If a cleaned version is preferred for history, apply llm_utils.remove_prefix_overlap_from_completion here.
+                # For now, we save the raw output as it was streamed.
+                # active_editor.after(0, lambda: _update_history_response_and_save(full_llm_prompt, llm_utils.remove_prefix_overlap_from_completion(current_phrase_start, full_completion_raw.strip('"'))))
+                active_editor.after(0, lambda: _update_history_response_and_save(full_llm_prompt, full_completion_raw))
+            except requests.exceptions.ConnectionError as e:
+                _handle_llm_api_error("ConnectionError", e, active_editor, full_llm_prompt)
+            except requests.exceptions.RequestException as e:
+                _handle_llm_api_error("RequestException", e, active_editor, full_llm_prompt)
         except Exception as e:
-            active_editor.after(0, lambda: messagebox.showerror("LLM Completion Error", f"An unexpected error occurred: {str(e)}"))
-            _show_temporary_status_message_func(f"❌ LLM completion error: {str(e)[:50]}...")
+            _handle_llm_api_error("UnexpectedError", e, active_editor, full_llm_prompt)
         finally:
             if _llm_progress_bar_widget and active_editor: # Check if widgets still exist
                 active_editor.after(0, lambda: _llm_progress_bar_widget.pack_forget())
@@ -206,6 +243,7 @@ def open_generate_text_dialog(initial_prompt_text=None):
         def run_generation_thread_target(local_user_prompt, local_lines_before, local_lines_after):
             """Target function for the LLM generation thread."""
             active_editor = _active_editor_getter_func() # Get it again inside thread
+            full_llm_prompt = None # Initialize to ensure it's available in the except block
             try:
                 _show_temporary_status_message_func("⏳ Requesting LLM generation...")
                 context = llm_utils.extract_editor_context(active_editor, local_lines_before, local_lines_after)
@@ -214,23 +252,20 @@ def open_generate_text_dialog(initial_prompt_text=None):
                     keywords=', '.join(_llm_keywords_list),
                     context=context
                 )
-                api_response = llm_api_client.request_llm_generation(full_llm_prompt)
+                full_generated_text = ""
+                try:
+                    for chunk in llm_api_client.request_llm_generation(full_llm_prompt):
+                        full_generated_text += chunk
+                        active_editor.after(0, lambda c=chunk: active_editor.insert(tk.INSERT, c))
 
-                if api_response["success"]:
-                    generated_text = api_response["data"]
                     _show_temporary_status_message_func("✅ LLM generation received.")
-                    active_editor.after(0, lambda: active_editor.insert(tk.INSERT, generated_text))
-                    active_editor.after(0, lambda: _update_history_response_and_save(local_user_prompt, generated_text))
-                else:
-                    error_msg = api_response["error"]
-                    active_editor.after(0, lambda: messagebox.showerror("LLM Generation Error", error_msg))
-                    active_editor.after(0, lambda: _update_history_response_and_save(local_user_prompt, f"❌ Error: {error_msg[:100]}..."))
-                    _show_temporary_status_message_func(f"❌ LLM generation failed: {error_msg[:50]}...")
+                    active_editor.after(0, lambda: _update_history_response_and_save(local_user_prompt, full_generated_text))
+                except requests.exceptions.ConnectionError as e:
+                    _handle_llm_api_error("ConnectionError", e, active_editor, local_user_prompt)
+                except requests.exceptions.RequestException as e:
+                    _handle_llm_api_error("RequestException", e, active_editor, local_user_prompt)
             except Exception as e:
-                error_str = str(e)
-                active_editor.after(0, lambda: messagebox.showerror("LLM Generation Error", f"An unexpected error occurred: {error_str}"))
-                active_editor.after(0, lambda: _update_history_response_and_save(local_user_prompt, f"❌ Exception: {error_str[:100]}..."))
-                _show_temporary_status_message_func(f"❌ LLM generation error: {error_str[:50]}...")
+                _handle_llm_api_error("UnexpectedError", e, active_editor, local_user_prompt)
             finally:
                 if _llm_progress_bar_widget and active_editor: # Check if widgets still exist
                     active_editor.after(0, lambda: _llm_progress_bar_widget.pack_forget())
