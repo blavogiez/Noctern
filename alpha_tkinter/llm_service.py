@@ -92,30 +92,45 @@ def _get_active_tex_filepath():
 # --- Generation History Management (NEW) ---
 def load_generation_history_for_current_file():
     """
-    Loads the generation history for the current file and applies styling.
-    NOTE: This method has a side effect of modifying the editor view.
+    Loads the generation history for the current file and applies styling
+    by searching for the saved text content in the editor.
     """
     global _generation_history_list
     active_filepath = _get_active_tex_filepath()
+    # History is now a list of strings (the generated content)
     _generation_history_list = llm_generation_history.load_generation_history_from_file(active_filepath)
 
     editor = _active_editor_getter_func()
     if editor and _generation_history_list:
         # The "generated_text" tag is configured in EditorTab.__init__
-        # Clear any previous styling before applying, in case the history file changed.
+        # Clear any previous styling before applying.
         editor.tag_remove("generated_text", "1.0", tk.END)
-        for start_index, end_index in _generation_history_list:
-            try:
-                editor.tag_add("generated_text", start_index, end_index)
-            except tk.TclError:
-                # This can happen if indices are invalid due to file edits.
-                # This is a known limitation of this approach.
-                print(f"Warning: Could not apply 'generated' style for range {start_index}-{end_index}. File may have been edited since generation.")
 
-def _add_entry_to_generation_history_and_save(indices):
+        # For each saved generated phrase, search for it in the document and apply the tag.
+        for phrase in _generation_history_list:
+            if not phrase.strip(): # Skip empty/whitespace-only strings
+                continue
+
+            start_index = "1.0"
+            while True:
+                # The search method requires a Tcl variable to return the length of the match.
+                match_len_var = tk.StringVar()
+                pos = editor.search(phrase, start_index, stopindex=tk.END, exact=True, count=match_len_var)
+                
+                if not pos:
+                    break # No more occurrences of this phrase found
+
+                # Calculate the end index based on the start position and the length of the match.
+                end_index = f"{pos}+{match_len_var.get()}c"
+                editor.tag_add("generated_text", pos, end_index)
+                
+                # Update the start_index to continue searching from the end of the last match.
+                start_index = end_index
+
+def _add_entry_to_generation_history_and_save(content):
     """Internal helper to add a new entry and save the generation history."""
     global _generation_history_list
-    llm_generation_history.add_generation_to_history(_generation_history_list, indices)
+    llm_generation_history.add_generation_to_history(_generation_history_list, content)
     active_filepath = _get_active_tex_filepath()
     llm_generation_history.save_generation_history_to_file(_generation_history_list, active_filepath)
 
@@ -216,19 +231,13 @@ def _cancel_current_generation(discard_text=True):
     if _generation_ui:
         # get text before cleanup for history
         generated_text = _generation_ui.get_text()
-        indices = None
-        if not discard_text: # if accepted
-            # Get indices before cleanup
-            start_index = _generation_ui.get_start_index()
-            end_index = _generation_ui.get_end_index()
-            indices = (start_index, end_index)
 
         _generation_ui.cleanup(is_accept=not discard_text)
         _generation_ui = None
-        return generated_text, indices
+        return generated_text
 
     _generation_thread = None
-    return "", None
+    return ""
 
 def _execute_llm_generation(full_llm_prompt, user_prompt_for_history):
     """
@@ -245,15 +254,13 @@ def _execute_llm_generation(full_llm_prompt, user_prompt_for_history):
     _generation_ui = GenerationUIController(editor, _theme_setting_getter_func)
 
     def on_accept():
-        generated_text, indices = _cancel_current_generation(discard_text=False)
-        if indices:
-            # Convert tuple to list for JSON serialization
-            _add_entry_to_generation_history_and_save(list(indices))
+        generated_text = _cancel_current_generation(discard_text=False)
+        _add_entry_to_generation_history_and_save(generated_text)
         _show_temporary_status_message_func("✅ Generation accepted.")
         _update_history_response_and_save(user_prompt_for_history, generated_text)
 
     def on_rephrase(text_to_rephrase):
-        _cancel_current_generation(discard_text=True) # Cleanup UI, ignore return values
+        _cancel_current_generation(discard_text=True) # Cleanup UI, ignore return value
         rephrase_user_prompt = f"Rephrase the following text: \"{text_to_rephrase}\""
         rephrase_full_prompt = _generation_prompt_template.format(
             user_prompt=rephrase_user_prompt,
@@ -264,7 +271,7 @@ def _execute_llm_generation(full_llm_prompt, user_prompt_for_history):
         _execute_llm_generation(rephrase_full_prompt, rephrase_user_prompt)
 
     def on_cancel():
-        _cancel_current_generation(discard_text=True) # Cleanup UI, ignore return values
+        _cancel_current_generation(discard_text=True) # Cleanup UI, ignore return value
         _show_temporary_status_message_func("❌ Generation cancelled.")
         _update_history_response_and_save(user_prompt_for_history, "❌ Cancelled by user.")
 

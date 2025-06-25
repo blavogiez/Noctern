@@ -19,8 +19,10 @@ def save_generation_history_to_file(history_list, tex_document_filepath):
         return
 
     try:
+        # Use dict.fromkeys to create an ordered set to remove duplicates
+        unique_history = list(dict.fromkeys(history_list))
         with open(history_filepath, 'w', encoding='utf-8') as f:
-            json.dump(history_list, f, ensure_ascii=False, indent=4)
+            json.dump(unique_history, f, ensure_ascii=False, indent=4)
     except Exception as e:
         print(f"Error saving generation history to {history_filepath}: {e}")
 
@@ -31,13 +33,16 @@ def load_generation_history_from_file(tex_document_filepath):
         try:
             with open(history_filepath, 'r', encoding='utf-8') as f:
                 loaded_data = json.load(f)
-                if isinstance(loaded_data, list):
+                # Check if it's a list and all items are strings (new format)
+                if isinstance(loaded_data, list) and all(isinstance(item, str) for item in loaded_data):
                     return loaded_data
         except Exception as e:
             print(f"Error loading generation history from {history_filepath}: {e}")
     return []
 
-def add_generation_to_history(history_list, indices):
-    """Adds a new generation's indices to the history list."""
-    # In the future, this could merge overlapping ranges. For now, just append.
-    history_list.append(indices)
+def add_generation_to_history(history_list, content):
+    """Adds a new generation's content to the history list."""
+    # The save function will handle ensuring uniqueness.
+    # We only add non-empty content.
+    if content and content.strip():
+        history_list.append(content)
