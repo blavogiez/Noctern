@@ -140,6 +140,12 @@ class EditorTab(ttk.Frame):
         
         # Configure a tag for highlighting the current line in the editor
         self.editor.tag_configure("current_line", background="#e8f0f8") # Default color
+
+        # NEW: Add a tag for persisted generated text.
+        # The font is derived from the main editor font and will be updated by theme/zoom changes.
+        self.generated_text_font = self.editor_font.copy()
+        self.generated_text_font.configure(slant="italic")
+        self.editor.tag_configure("generated_text", font=self.generated_text_font)
         
         self.scrollbar = ttk.Scrollbar(self, orient="vertical", command=self.editor.yview) # Main editor scrollbar
         self.line_numbers = LineNumbers(self, editor_widget=self.editor, font=self.editor_font)

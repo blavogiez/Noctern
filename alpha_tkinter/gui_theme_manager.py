@@ -72,6 +72,12 @@ def apply_theme(theme_name):
                     insertbackground=_theme_settings["editor_insert_bg"],
                     relief=tk.FLAT, borderwidth=0
                 )
+
+                # Update the generated_text tag font
+                generated_text_font = tab_widget.editor_font.copy()
+                generated_text_font.configure(slant="italic")
+                tab_widget.editor.tag_configure("generated_text", font=generated_text_font)
+
                 tab_widget.editor.tag_configure("current_line", background=_theme_settings["current_line_bg"])
                 # Configure tags for each editor instance
                 tab_widget.editor.tag_configure("latex_command", foreground=_theme_settings["command_color"], font=tab_widget.editor_font)

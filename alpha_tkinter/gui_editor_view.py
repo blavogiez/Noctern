@@ -83,6 +83,11 @@ def zoom_in(_=None): # Accept optional event argument
     if new_size != current_size:
         current_tab.editor_font = Font(family=current_tab.editor_font.cget("family"), size=new_size, weight=current_tab.editor_font.cget("weight"), slant=current_tab.editor_font.cget("slant"))
         current_tab.editor.config(font=current_tab.editor_font)
+
+        # Update derived fonts for tags
+        generated_text_font = current_tab.editor_font.copy()
+        generated_text_font.configure(slant="italic")
+        current_tab.editor.tag_configure("generated_text", font=generated_text_font)
         if current_tab.line_numbers:
             current_tab.line_numbers.font = current_tab.editor_font # Update the font reference
             # Re-create and re-configure the bold font for the current line number
@@ -105,6 +110,11 @@ def zoom_out(_=None): # Accept optional event argument
     if new_size != current_size:
         current_tab.editor_font = Font(family=current_tab.editor_font.cget("family"), size=new_size, weight=current_tab.editor_font.cget("weight"), slant=current_tab.editor_font.cget("slant"))
         current_tab.editor.config(font=current_tab.editor_font)
+
+        # Update derived fonts for tags
+        generated_text_font = current_tab.editor_font.copy()
+        generated_text_font.configure(slant="italic")
+        current_tab.editor.tag_configure("generated_text", font=generated_text_font)
         if current_tab.line_numbers:
             current_tab.line_numbers.font = current_tab.editor_font # Update the font reference
             # Re-create and re-configure the bold font for the current line number

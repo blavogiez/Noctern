@@ -113,6 +113,14 @@ class GenerationUIController:
         """Returns the text that has been generated so far."""
         return self.editor.get(self.start_mark_name, self.end_mark_name)
 
+    def get_start_index(self):
+        """Returns the start index of the generated text."""
+        return self.editor.index(self.start_mark_name)
+
+    def get_end_index(self):
+        """Returns the end index of the generated text."""
+        return self.editor.index(self.end_mark_name)
+
     def cleanup(self, is_accept=False):
         """Removes the UI and the generated text (if not accepted)."""
         self._unbind_keys() # Unbind keys as soon as interaction is over
