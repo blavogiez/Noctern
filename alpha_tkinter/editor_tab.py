@@ -4,6 +4,9 @@ import editor_logic
 from tkinter import ttk, messagebox
 from tkinter.font import Font
 import os
+import re # NEW: Import re for regular expressions
+
+INDENT_WIDTH = 4 # Define indentation width in spaces
 
 class LineNumbers(tk.Canvas):
     """A Canvas widget to display line numbers for a Text editor widget."""
@@ -74,14 +77,11 @@ class LineNumbers(tk.Canvas):
         # Get the current line number from the editor's insert cursor
         current_editor_line_num = int(self.editor.index(tk.INSERT).split('.')[0])
         
-        # NEW: Check for multi-line selection
-        is_multi_line_selection = False
+        # Check for any selection
+        has_selection = False
         sel_ranges = self.editor.tag_ranges("sel")
         if sel_ranges:
-            sel_start_line = int(self.editor.index(sel_ranges[0]).split('.')[0])
-            sel_end_line = int(self.editor.index(sel_ranges[1]).split('.')[0])
-            if sel_start_line != sel_end_line:
-                is_multi_line_selection = True
+            has_selection = True
 
         while True:
             dline = self.editor.dlineinfo(current_line_index)
@@ -90,8 +90,8 @@ class LineNumbers(tk.Canvas):
             x, y, width, height, baseline = dline
             line_num = int(current_line_index.split(".")[0])
             
-            # Determine font and color for the line number: apply bold/current color only if not in a multi-line selection AND it's the current line
-            if not is_multi_line_selection and line_num == current_editor_line_num:
+            # Determine font and color for the line number: apply bold/current color only if no selection AND it's the current line
+            if not has_selection and line_num == current_editor_line_num:
                 font_to_use = self.font_bold
                 color_to_use = self.text_color_current
             else:
@@ -170,6 +170,10 @@ class EditorTab(ttk.Frame):
         self.editor.bind("<ButtonRelease-1>", self._on_editor_event)
         self.editor.bind("<FocusIn>", self._on_editor_event)
         self.editor.bind("<Configure>", self._on_editor_event)
+        # Bind common editor shortcuts
+        self.editor.bind("<Tab>", self._on_tab_key)
+        self.editor.bind("<Shift-Tab>", self._on_shift_tab_key)
+        self.editor.bind("<Control-BackSpace>", self._on_ctrl_backspace_key)
 
     def _on_editor_event(self, event=None):
         """
@@ -231,23 +235,20 @@ class EditorTab(ttk.Frame):
         """Highlights the current line in the editor and the corresponding line number."""
         # Always remove existing highlight first
         self.editor.tag_remove("current_line", "1.0", "end")
-
-        # Assume we should highlight unless it's a multi-line selection
+        
+        # Assume we should highlight unless there is ANY selection
         should_highlight = True
         
         # Check for selection
         sel_ranges = self.editor.tag_ranges("sel")
         if sel_ranges:
-            # A selection exists. Check if it spans multiple lines.
-            sel_start_line = int(self.editor.index(sel_ranges[0]).split('.')[0])
-            sel_end_line = int(self.editor.index(sel_ranges[1]).split('.')[0])
-            
-            if sel_start_line != sel_end_line:
-                # It's a multi-line selection, so do not highlight the current line.
-                should_highlight = False
+            should_highlight = False # If any selection exists, do not highlight the current line.
 
         if should_highlight:
             self.editor.tag_add("current_line", "insert linestart", "insert lineend+1c")
+        
+        # Always redraw line numbers immediately to reflect highlight state
+        self.line_numbers.redraw()
 
     def save_file(self, new_path=None):
         """
@@ -270,3 +271,84 @@ class EditorTab(ttk.Frame):
         except Exception as e:
             messagebox.showerror("Error", f"Error saving file:\n{e}")
             return False
+
+    def _on_tab_key(self, event):
+        """Handles the Tab key for indentation."""
+        try:
+            self.editor.edit_separator()  # Group operations for undo
+            if self.editor.tag_ranges("sel"):
+                # Multi-line selection: indent all selected lines
+                start_index = self.editor.index("sel.first linestart")
+                end_index = self.editor.index("sel.last lineend")
+
+                selected_text = self.editor.get(start_index, end_index)
+                lines = selected_text.split('\n')
+                indented_lines = [" " * INDENT_WIDTH + line for line in lines]
+                new_text = '\n'.join(indented_lines)
+
+                self.editor.delete(start_index, end_index)
+                self.editor.insert(start_index, new_text)
+                # Re-select the indented block
+                self.editor.tag_add("sel", start_index, self.editor.index(f"{start_index}+{len(new_text)}c"))
+            else:
+                # No selection: insert spaces at cursor
+                self.editor.insert(tk.INSERT, " " * INDENT_WIDTH)
+        finally:
+            self.editor.edit_separator()  # End group
+        return "break"  # Prevent default Tkinter tab behavior
+
+    def _on_shift_tab_key(self, event):
+        """Handles Shift+Tab for unindentation."""
+        try:
+            self.editor.edit_separator()  # Group operations for undo
+            if self.editor.tag_ranges("sel"):
+                # Multi-line selection: unindent all selected lines
+                start_index = self.editor.index("sel.first linestart")
+                end_index = self.editor.index("sel.last lineend")
+
+                selected_text = self.editor.get(start_index, end_index)
+                lines = selected_text.split('\n')
+                dedented_lines = []
+                for line in lines:
+                    if line.startswith(" " * INDENT_WIDTH):
+                        dedented_lines.append(line[INDENT_WIDTH:])
+                    elif line.startswith("\t"):
+                        dedented_lines.append(line[1:])
+                    else:
+                        # If less than INDENT_WIDTH spaces, remove all leading spaces
+                        leading_spaces_match = re.match(r"^\s*", line)
+                        if leading_spaces_match:
+                            num_leading_spaces = len(leading_spaces_match.group(0))
+                            dedented_lines.append(line[num_leading_spaces:])
+                        else:
+                            dedented_lines.append(line)
+                new_text = '\n'.join(dedented_lines)
+
+                self.editor.delete(start_index, end_index)
+                self.editor.insert(start_index, new_text)
+                # Re-select the dedented block
+                self.editor.tag_add("sel", start_index, self.editor.index(f"{start_index}+{len(new_text)}c"))
+            else:
+                # No selection: unindent current line
+                current_line_start = self.editor.index("insert linestart")
+                line_start_content = self.editor.get(current_line_start, f"{current_line_start} + {INDENT_WIDTH} chars")
+                if line_start_content.startswith(" " * INDENT_WIDTH):
+                    self.editor.delete(current_line_start, f"{current_line_start}+{INDENT_WIDTH}c") # Remove INDENT_WIDTH spaces
+                elif line_start_content.startswith("\t"):
+                    self.editor.delete(current_line_start, f"{current_line_start}+1c") # Remove one tab
+                else:
+                    # If less than INDENT_WIDTH spaces, remove all leading spaces
+                    full_line_content = self.editor.get(current_line_start, f"{current_line_start} lineend")
+                    leading_spaces_match = re.match(r"^\s*", full_line_content)
+                    if leading_spaces_match:
+                        num_leading_spaces = len(leading_spaces_match.group(0))
+                        if num_leading_spaces > 0:
+                            self.editor.delete(current_line_start, f"{current_line_start}+{num_leading_spaces}c")
+        finally:
+            self.editor.edit_separator()  # End group
+        return "break"  # Prevent default Tkinter shift-tab behavior
+
+    def _on_ctrl_backspace_key(self, event):
+        """Handles Ctrl+Backspace for deleting a word backwards."""
+        self.editor.delete("insert -1 chars wordstart", "insert")
+        return "break"  # Prevent default behavior
