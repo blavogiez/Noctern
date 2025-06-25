@@ -116,7 +116,9 @@ if __name__ == "__main__":
         theme_setting_getter_func=gui_theme_manager.get_theme_setting,
         active_editor_getter=lambda: gui_file_tab_manager.get_current_tab().editor if gui_file_tab_manager.get_current_tab() else None, # Pass getter for active editor
         active_filepath_getter=lambda: gui_file_tab_manager.get_current_tab().file_path if gui_file_tab_manager.get_current_tab() else None, # Pass getter for active file path
-        show_temporary_status_message_func=gui_status_bar.show_temporary_status_message # Pass status message func
+        show_temporary_status_message_func=gui_status_bar.show_temporary_status_message, # Pass status message func
+        pause_heavy_updates_cb=gui_editor_view.pause_heavy_updates, # NEW: Callback to pause updates
+        resume_heavy_updates_cb=gui_editor_view.resume_heavy_updates # NEW: Callback to resume updates
     )
 
     # LaTeX Translator initialization: Needs various GUI component references and callbacks.

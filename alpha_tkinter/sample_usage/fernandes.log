@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.25 (MiKTeX 24.1) (preloaded format=pdflatex 2025.5.18)  25 JUN 2025 18:17
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (MiKTeX 24.1) (preloaded format=pdflatex 2025.5.18)  25 JUN 2025 18:24
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -250,8 +250,12 @@ LaTeX Font Info:    External font `cmex10' loaded for size
 (Font)              <5> on input line 42.
 [1
 
-{C:/Users/lab/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map}] [2]
-(fernandes.aux)
+{C:/Users/lab/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map}]
+Overfull \hbox (324.73418pt too wide) in paragraph at lines 55--65
+ [][] 
+ []
+
+[2] (fernandes.aux)
  ***********
 LaTeX2e <2023-11-01> patch level 1
 L3 programming layer <2024-01-04>
@@ -264,10 +268,10 @@ Package rerunfilecheck Info: File `fernandes.out' has not changed.
 (rerunfilecheck)             Checksum: D41D8CD98F00B204E9800998ECF8427E;0.
  ) 
 Here is how much of TeX's memory you used:
- 8771 strings out of 474485
- 139610 string characters out of 5744678
+ 8773 strings out of 474485
+ 139642 string characters out of 5744678
  1933542 words of memory out of 5000000
- 30983 multiletter control sequences out of 15000+600000
+ 30984 multiletter control sequences out of 15000+600000
  565754 words of font info for 52 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  75i,8n,79p,237b,477s stack positions out of 10000i,1000n,20000p,200000b,200000s
@@ -277,9 +281,9 @@ rm1000.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi60
 0\ecrm1000.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/d
 pi600\ecbx1440.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/
 ec/dpi600\ecrm1728.pk>
-Output written on fernandes.pdf (2 pages, 45091 bytes).
+Output written on fernandes.pdf (2 pages, 53542 bytes).
 PDF statistics:
- 158 PDF objects out of 1000 (max. 8388607)
- 10 named destinations out of 1000 (max. 500000)
+ 183 PDF objects out of 1000 (max. 8388607)
+ 11 named destinations out of 1000 (max. 500000)
  1 words of extra memory for PDF output out of 10000 (max. 10000000)
 

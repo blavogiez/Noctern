@@ -31,6 +31,8 @@ _theme_setting_getter_func = None
 _active_editor_getter_func = None # Function to get the active tk.Text widget
 _show_temporary_status_message_func = None # Callback for status messages
 _active_filepath_getter_func = None # Function to get current .tex file path
+_pause_heavy_updates_func = None # NEW: Callback to pause heavy editor updates
+_resume_heavy_updates_func = None # NEW: Callback to resume heavy editor updates
 
 # --- NEW: State for interactive generation ---
 _generation_thread = None
@@ -80,11 +82,13 @@ def _load_global_default_prompts():
         # The error will be printed to the console.
 
 def initialize_llm_service(root_window_ref, progress_bar_widget_ref,
-                           theme_setting_getter_func, active_editor_getter,
-                           active_filepath_getter, show_temporary_status_message_func):
+                           theme_setting_getter_func, active_editor_getter, # Renamed from active_editor_getter to active_editor_getter
+                           active_filepath_getter, show_temporary_status_message_func,
+                           pause_heavy_updates_cb, resume_heavy_updates_cb): # NEW Callbacks
     """Initializes the LLM service with necessary references from the main application."""
     global _root_window, _llm_progress_bar_widget, _theme_setting_getter_func
     global _active_editor_getter_func, _active_filepath_getter_func, _show_temporary_status_message_func
+    global _pause_heavy_updates_func, _resume_heavy_updates_func # NEW
 
     _show_temporary_status_message_func = show_temporary_status_message_func
     _root_window = root_window_ref
@@ -92,6 +96,8 @@ def initialize_llm_service(root_window_ref, progress_bar_widget_ref,
     _theme_setting_getter_func = theme_setting_getter_func
     _active_editor_getter_func = active_editor_getter
     _active_filepath_getter_func = active_filepath_getter
+    _pause_heavy_updates_func = pause_heavy_updates_cb # NEW
+    _resume_heavy_updates_func = resume_heavy_updates_cb # NEW
 
     # Load initial prompt history and custom prompts
     load_prompt_history_for_current_file()
@@ -235,6 +241,10 @@ def _execute_llm_generation(full_llm_prompt, user_prompt_for_history, model_name
     editor = _active_editor_getter_func()
     if not editor: return
 
+    # Pause heavy editor updates (syntax highlighting, outline) during generation
+    if _pause_heavy_updates_func:
+        _pause_heavy_updates_func()
+
     _cancel_current_generation(discard_text=True)
     _cancel_event.clear()
 
@@ -305,6 +315,9 @@ def _execute_llm_generation(full_llm_prompt, user_prompt_for_history, model_name
                 editor.after(0, ui_controller.show_finished_state)
             if _llm_progress_bar_widget and editor:
                 editor.after(0, lambda: (_llm_progress_bar_widget.pack_forget(), _llm_progress_bar_widget.stop()))
+            # NEW: Resume heavy updates after generation is complete (success, error, or cancel)
+            if editor and _resume_heavy_updates_func:
+                editor.after(0, _resume_heavy_updates_func)
 
     _llm_progress_bar_widget.pack(pady=2)
     _llm_progress_bar_widget.start(10)

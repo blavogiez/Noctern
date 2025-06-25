@@ -19,6 +19,7 @@ _LARGE_FILE_LINE_THRESHOLD = 1000
 _HEAVY_UPDATE_DELAY_NORMAL = 150 # Tuned for high responsiveness with intelligent updates
 _HEAVY_UPDATE_DELAY_LARGE_FILE = 750 # Still responsive, but gives outline scan more breathing room
 _heavy_update_timer_id = None
+_heavy_updates_paused = False # NEW: Flag to control heavy updates
 
 def initialize(root_ref, get_current_tab_cb, outline_tree_ref, editor_logic_module):
     """Initializes the editor view manager."""
@@ -27,6 +28,20 @@ def initialize(root_ref, get_current_tab_cb, outline_tree_ref, editor_logic_modu
     _get_current_tab_callback = get_current_tab_cb
     _outline_tree = outline_tree_ref
     _editor_logic = editor_logic_module
+
+def pause_heavy_updates():
+    """Pauses the scheduling of heavy updates and cancels any pending one."""
+    global _heavy_updates_paused, _heavy_update_timer_id
+    _heavy_updates_paused = True
+    if _root and _heavy_update_timer_id is not None:
+        _root.after_cancel(_heavy_update_timer_id)
+        _heavy_update_timer_id = None
+
+def resume_heavy_updates():
+    """Resumes heavy updates and schedules one immediately."""
+    global _heavy_updates_paused
+    _heavy_updates_paused = False
+    schedule_heavy_updates() # Trigger an update now that we're unpaused
 
 def perform_heavy_updates():
     """Performs updates that might be computationally heavy."""
@@ -49,6 +64,10 @@ def perform_heavy_updates():
 def schedule_heavy_updates(_=None):
     """Schedules heavy updates after a short delay."""
     global _heavy_update_timer_id
+    # If updates are paused (e.g., during LLM generation), do nothing.
+    if _heavy_updates_paused:
+        return
+
     if _root and _heavy_update_timer_id is not None:
         _root.after_cancel(_heavy_update_timer_id)
     current_tab = _get_current_tab_callback()
