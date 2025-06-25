@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.25 (MiKTeX 24.1) (preloaded format=pdflatex 2025.5.18)  22 JUN 2025 19:30
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (MiKTeX 24.1) (preloaded format=pdflatex 2025.5.18)  25 JUN 2025 14:33
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -167,28 +167,28 @@ LaTeX Font Info:    External font `cmex10' loaded for size
  [1
 
 {C:/Users/lab/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map}] [2]
-(en_renoir.aux)
+[3] (en_renoir.aux)
  ***********
 LaTeX2e <2023-11-01> patch level 1
 L3 programming layer <2024-01-04>
  ***********
  ) 
 Here is how much of TeX's memory you used:
- 3176 strings out of 474485
- 55164 string characters out of 5744678
- 1928542 words of memory out of 5000000
- 25446 multiletter control sequences out of 15000+600000
+ 3173 strings out of 474485
+ 55100 string characters out of 5744678
+ 1931542 words of memory out of 5000000
+ 25443 multiletter control sequences out of 15000+600000
  563129 words of font info for 45 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 61i,6n,69p,327b,197s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 61i,6n,69p,2390b,197s stack positions out of 10000i,1000n,20000p,200000b,200000s
  <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\ecrm12
 00.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\ec
 bx1728.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi60
 0\ecrm1440.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/d
 pi600\ecrm2074.pk>
-Output written on en_renoir.pdf (2 pages, 42868 bytes).
+Output written on en_renoir.pdf (3 pages, 58797 bytes).
 PDF statistics:
- 127 PDF objects out of 1000 (max. 8388607)
+ 166 PDF objects out of 1000 (max. 8388607)
  0 named destinations out of 1000 (max. 500000)
  1 words of extra memory for PDF output out of 10000 (max. 10000000)
 
