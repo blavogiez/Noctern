@@ -74,6 +74,15 @@ class LineNumbers(tk.Canvas):
         # Get the current line number from the editor's insert cursor
         current_editor_line_num = int(self.editor.index(tk.INSERT).split('.')[0])
         
+        # NEW: Check for multi-line selection
+        is_multi_line_selection = False
+        sel_ranges = self.editor.tag_ranges("sel")
+        if sel_ranges:
+            sel_start_line = int(self.editor.index(sel_ranges[0]).split('.')[0])
+            sel_end_line = int(self.editor.index(sel_ranges[1]).split('.')[0])
+            if sel_start_line != sel_end_line:
+                is_multi_line_selection = True
+
         while True:
             dline = self.editor.dlineinfo(current_line_index)
             if dline is None: break # No more lines visible or invalid index
@@ -81,8 +90,8 @@ class LineNumbers(tk.Canvas):
             x, y, width, height, baseline = dline
             line_num = int(current_line_index.split(".")[0])
             
-            # Determine font and color for the line number
-            if line_num == current_editor_line_num:
+            # Determine font and color for the line number: apply bold/current color only if not in a multi-line selection AND it's the current line
+            if not is_multi_line_selection and line_num == current_editor_line_num:
                 font_to_use = self.font_bold
                 color_to_use = self.text_color_current
             else:
@@ -220,9 +229,25 @@ class EditorTab(ttk.Frame):
 
     def _highlight_current_line(self, event=None):
         """Highlights the current line in the editor and the corresponding line number."""
+        # Always remove existing highlight first
         self.editor.tag_remove("current_line", "1.0", "end")
-        self.editor.tag_add("current_line", "insert linestart", "insert lineend+1c")
-        # Line numbers redraw is now handled by perform_heavy_updates, which is debounced.
+
+        # Assume we should highlight unless it's a multi-line selection
+        should_highlight = True
+        
+        # Check for selection
+        sel_ranges = self.editor.tag_ranges("sel")
+        if sel_ranges:
+            # A selection exists. Check if it spans multiple lines.
+            sel_start_line = int(self.editor.index(sel_ranges[0]).split('.')[0])
+            sel_end_line = int(self.editor.index(sel_ranges[1]).split('.')[0])
+            
+            if sel_start_line != sel_end_line:
+                # It's a multi-line selection, so do not highlight the current line.
+                should_highlight = False
+
+        if should_highlight:
+            self.editor.tag_add("current_line", "insert linestart", "insert lineend+1c")
 
     def save_file(self, new_path=None):
         """
