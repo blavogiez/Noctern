@@ -46,7 +46,6 @@ _global_default_prompts = {} # Loaded once at startup
 # --- State managed by this service ---
 _llm_keywords_list = []  # Stores user-defined LLM keywords.
 _prompt_history_list = [] # Stores tuples: (user_prompt, llm_response)
-_generation_history_list = [] # NEW: Stores list of [start, end] for generated text
 _completion_prompt_template = "" # Loaded per-file
 _generation_prompt_template = "" # Loaded per-file
 _latex_code_generation_prompt_template = "" # NEW: Loaded per-file for LaTeX code
@@ -56,7 +55,12 @@ def _load_global_default_prompts():
     global _global_default_prompts
     try:
         with open(DEFAULT_PROMPTS_FILE, 'r', encoding='utf-8') as f:
-            _global_default_prompts = json.load(f)
+            loaded_data = json.load(f)
+            # Add a check to ensure the loaded data is a dictionary with content.
+            # An empty file or a file with just "{}" would cause issues.
+            if not isinstance(loaded_data, dict) or not loaded_data:
+                raise json.JSONDecodeError("File is empty or not a valid dictionary.", "", 0)
+            _global_default_prompts = loaded_data
             # NEW: Print loaded prompts to console for verification at startup
             print("="*50)
             print(f"Successfully loaded default prompts from: {os.path.basename(DEFAULT_PROMPTS_FILE)}")
@@ -65,12 +69,12 @@ def _load_global_default_prompts():
                 print(f"  - {key}: '{value[:70].replace(chr(10), ' ')}...'")
             print("="*50)
     except (FileNotFoundError, json.JSONDecodeError) as e:
-        # This error should ideally be handled more robustly, e.g., by creating the file.
         filename = os.path.basename(DEFAULT_PROMPTS_FILE)
         print(f"WARNING: Could not load {filename}. Using hardcoded defaults. {e}")
         _global_default_prompts = {
             "completion": "Complete this: {current_phrase_start}",
-            "generation": "Generate text for this prompt: {user_prompt}"
+            "generation": "Generate text for this prompt: {user_prompt}",
+            "latex_code_generation": "You are a LaTeX coding assistant embedded within a LaTeX editor. Your task is to generate valid LaTeX code that fulfills the user's instruction.\n\n**Primary Goal:**\nProduce syntactically correct and logically coherent LaTeX code that integrates cleanly with the surrounding context.\n\n**Key Instructions:**\n- **Output only LaTeX code.** Do not include any explanatory text, comments, or formatting outside the LaTeX syntax.\n- Ensure that all commands and environments are properly opened and closed.\n- Use appropriate LaTeX packages if implied by the context (e.g., `amsmath`, `graphicx`, `tikz`).\n- Match the **language** and **style** of the surrounding context.\n- Be concise and avoid unnecessary boilerplate unless requested.\n- Maintain compatibility with standard LaTeX compilers.\n\n**Context (existing LaTeX code around the cursor):**\n---\n{context}\n---\n\n**User's Instruction:**\n\"{user_prompt}\"\n\n**Keywords:**\n{keywords}\n\n**Generated LaTeX code:"
         }
         # Cannot show messagebox here as Tk root may not exist yet.
         # The error will be printed to the console.
@@ -91,7 +95,7 @@ def initialize_llm_service(root_window_ref, progress_bar_widget_ref,
 
     # Load initial prompt history and custom prompts
     load_prompt_history_for_current_file()
-    load_generation_history_for_current_file() # NEW
+    # load_generation_history_for_current_file() # REMOVED: This feature is now disabled.
     load_keywords_for_current_file() # NEW: Load keywords on service initialization
     load_prompts_for_current_file()
 
@@ -101,50 +105,18 @@ def _get_active_tex_filepath(): # Renamed from _get_active_tex_filepath to _get_
         return _active_filepath_getter_func()
     return None
 
-# --- Generation History Management (NEW) ---
+# --- Generation History Management (REMOVED) ---
 def load_generation_history_for_current_file():
     """
+    (This feature is now disabled)
     Loads the generation history for the current file and applies styling
     by searching for the saved text content in the editor.
     """
-    global _generation_history_list
-    active_filepath = _get_active_tex_filepath()
-    # History is now a list of strings (the generated content)
-    _generation_history_list = llm_generation_history.load_generation_history_from_file(active_filepath)
-
-    editor = _active_editor_getter_func()
-    if editor and _generation_history_list:
-        # The "generated_text" tag is configured in EditorTab.__init__
-        # Clear any previous styling before applying.
-        editor.tag_remove("generated_text", "1.0", tk.END)
-
-        # For each saved generated phrase, search for it in the document and apply the tag.
-        for phrase in _generation_history_list:
-            if not phrase.strip(): # Skip empty/whitespace-only strings
-                continue
-
-            start_index = "1.0"
-            while True:
-                # The search method requires a Tcl variable to return the length of the match.
-                match_len_var = tk.StringVar()
-                pos = editor.search(phrase, start_index, stopindex=tk.END, exact=True, count=match_len_var)
-                
-                if not pos:
-                    break # No more occurrences of this phrase found
-
-                # Calculate the end index based on the start position and the length of the match.
-                end_index = f"{pos}+{match_len_var.get()}c"
-                editor.tag_add("generated_text", pos, end_index)
-                
-                # Update the start_index to continue searching from the end of the last match.
-                start_index = end_index
+    pass
 
 def _add_entry_to_generation_history_and_save(content):
-    """Internal helper to add a new entry and save the generation history."""
-    global _generation_history_list
-    llm_generation_history.add_generation_to_history(_generation_history_list, content)
-    active_filepath = _get_active_tex_filepath()
-    llm_generation_history.save_generation_history_to_file(_generation_history_list, active_filepath)
+    """(This feature is now disabled) Internal helper to add a new entry and save the generation history."""
+    pass
 
 # --- Prompt History Management ---
 def load_prompt_history_for_current_file():
@@ -254,7 +226,7 @@ def _cancel_current_generation(discard_text=True):
     _generation_thread = None
     return ""
 
-def _execute_llm_generation(full_llm_prompt, user_prompt_for_history, model_name=llm_api_client.DEFAULT_LLM_MODEL):
+def _execute_llm_generation(full_llm_prompt, user_prompt_for_history, model_name=llm_api_client.DEFAULT_LLM_MODEL, text_for_completion_cleanup=None):
     """
     The main function to execute an LLM generation with an interactive UI.
     """
@@ -269,18 +241,35 @@ def _execute_llm_generation(full_llm_prompt, user_prompt_for_history, model_name
     _generation_ui = GenerationUIController(editor, _theme_setting_getter_func)
 
     def on_accept():
-        generated_text = _cancel_current_generation(discard_text=False)
+        # Before cleaning up the UI, which will destroy the marks, get their positions.
+        start_index = _generation_ui.get_start_index()
+        end_index = _generation_ui.get_end_index()
+
+        # This gets the raw text from the editor and cleans up the UI (removes buttons, etc.)
+        # but leaves the text in place because discard_text=False.
+        raw_generated_text = _cancel_current_generation(discard_text=False)
+
+        final_text = raw_generated_text
+        # If this was a completion task, clean up any repeated text from the prompt.
+        if text_for_completion_cleanup:
+            final_text = llm_utils.remove_prefix_overlap_from_completion(
+                text_before_completion=text_for_completion_cleanup,
+                llm_generated_completion=raw_generated_text
+            )
+            # If the text was changed, we need to update the editor content.
+            if final_text != raw_generated_text and editor:
+                editor.delete(start_index, end_index)
+                editor.insert(start_index, final_text)
 
         # NEW: Print prompt and response to console for validation
         print("="*80)
         print(f"[LLM Generation Accepted]")
         print(f"  PROMPT SENT TO API:\n---\n{full_llm_prompt}\n---")
-        print(f"  LLM RESPONSE:\n---\n{generated_text}\n---")
+        print(f"  LLM RESPONSE:\n---\n{final_text}\n---")
         print("="*80)
 
-        _add_entry_to_generation_history_and_save(generated_text)
         _show_temporary_status_message_func("✅ Generation accepted.")
-        _update_history_response_and_save(user_prompt_for_history, generated_text)
+        _update_history_response_and_save(user_prompt_for_history, final_text)
 
     def on_rephrase(text_to_rephrase):
         _cancel_current_generation(discard_text=True) # Cleanup UI, ignore return value
@@ -357,7 +346,7 @@ def request_llm_to_complete_text():
     # We also truncate the phrase to avoid overly long history entries.
     user_prompt_for_history = f"Complete: \"{current_phrase_start.strip()[:60]}...\""
     _add_entry_to_history_and_save(user_prompt_for_history)
-    _execute_llm_generation(full_llm_prompt, user_prompt_for_history)
+    _execute_llm_generation(full_llm_prompt, user_prompt_for_history, text_for_completion_cleanup=current_phrase_start)
 
 # --- LLM Text Generation via Dialog ---
 def open_generate_text_dialog(initial_prompt_text=None):

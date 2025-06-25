@@ -46,12 +46,27 @@ def extract_editor_context(editor_widget, lines_before_cursor=5, lines_after_cur
         return ""
 
 def remove_prefix_overlap_from_completion(text_before_completion, llm_generated_completion):
-    """Removes redundant overlap if the LLM completion starts by repeating the input text."""
-    start_words = text_before_completion.split()
-    completion_words = llm_generated_completion.split()
+    """
+    Removes redundant overlap if the LLM completion starts by repeating the input text.
+    This comparison is case-insensitive and word-based.
+    """
+    # Normalize and split into words
+    start_words = text_before_completion.strip().split()
+    completion_words = llm_generated_completion.strip().split()
 
-    overlap_length = 0
-    for i in range(1, min(len(start_words), len(completion_words)) + 1):
-        if start_words[-i:] == completion_words[:i]:
-            overlap_length = i
-    return " ".join(completion_words[overlap_length:]).strip()
+    if not start_words or not completion_words:
+        return llm_generated_completion # Nothing to compare
+
+    overlap_word_count = 0
+    # Find the longest suffix of start_words that is a prefix of completion_words (case-insensitive)
+    for i in range(min(len(start_words), len(completion_words)), 0, -1):
+        # Get the suffix and prefix for this length
+        suffix_of_start = start_words[-i:]
+        prefix_of_completion = completion_words[:i]
+
+        # Compare them case-insensitively
+        if [w.lower() for w in suffix_of_start] == [w.lower() for w in prefix_of_completion]:
+            overlap_word_count = i
+            break # Found the longest possible overlap, no need to check shorter ones
+
+    return " ".join(completion_words[overlap_word_count:]).strip()

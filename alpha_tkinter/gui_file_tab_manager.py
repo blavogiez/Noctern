@@ -95,25 +95,25 @@ def open_file(show_temporary_status_message_func):
         if show_temporary_status_message_func:
             show_temporary_status_message_func(f"✅ Opened: {os.path.basename(filepath)}")
 
-def save_file(show_temporary_status_message_func):
+def save_file(show_temporary_status_message_func, tab_to_save=None):
     """Saves the current editor content to the current file or a new file."""
-    current_tab = get_current_tab()
-    if not current_tab:
+    tab = tab_to_save or get_current_tab()
+    if not tab:
         return False
 
-    if current_tab.file_path:
-        if current_tab.save_file():
+    if tab.file_path:
+        if tab.save_file():
             if show_temporary_status_message_func:
-                show_temporary_status_message_func(f"✅ Saved: {os.path.basename(current_tab.file_path)}")
+                show_temporary_status_message_func(f"✅ Saved: {os.path.basename(tab.file_path)}")
             return True
         return False
     else:
-        return save_file_as(show_temporary_status_message_func)
+        return save_file_as(show_temporary_status_message_func, tab_to_save=tab)
 
-def save_file_as(show_temporary_status_message_func):
+def save_file_as(show_temporary_status_message_func, tab_to_save=None):
     """Saves the current tab to a new file path."""
-    current_tab = get_current_tab()
-    if not current_tab:
+    tab = tab_to_save or get_current_tab()
+    if not tab:
         return False
 
     new_filepath = filedialog.asksaveasfilename(
@@ -122,7 +122,7 @@ def save_file_as(show_temporary_status_message_func):
         title="Save File As"
     )
     if new_filepath:
-        if current_tab.save_file(new_path=new_filepath):
+        if tab.save_file(new_path=new_filepath):
             if show_temporary_status_message_func:
                 show_temporary_status_message_func(f"✅ Saved as: {os.path.basename(new_filepath)}")
             # Update services that depend on file path (e.g., LLM prompts/history)

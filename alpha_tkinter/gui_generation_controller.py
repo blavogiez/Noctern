@@ -144,8 +144,8 @@ class GenerationUIController:
             if not is_accept:
                 self.editor.delete(self.start_mark_name, self.end_mark_name)
             else:
-                # If accepted, just remove the background from the tag, leaving the italic font
-                self.editor.tag_configure(self.tag_name, background="")
+                # If accepted, remove all styling from the generated text.
+                self.editor.tag_remove(self.tag_name, self.start_mark_name, self.end_mark_name)
 
             if self.frame.winfo_exists():
                 self.frame.destroy()

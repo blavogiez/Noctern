@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.25 (MiKTeX 24.1) (preloaded format=pdflatex 2025.5.18)  25 JUN 2025 16:36
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (MiKTeX 24.1) (preloaded format=pdflatex 2025.5.18)  25 JUN 2025 18:17
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -206,8 +206,7 @@ x.def
 File: l3backend-pdftex.def 2024-01-04 L3 backend support: PDF output (pdfTeX)
 \l__color_backend_stack_int=\count275
 \l__pdf_internal_box=\box51
-)
-No file fernandes.aux.
+) (fernandes.aux)
 \openout1 = `fernandes.aux'.
 
 LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 12.
@@ -229,6 +228,7 @@ LaTeX Font Info:    ... okay on input line 12.
 LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 12.
 LaTeX Font Info:    ... okay on input line 12.
 Package hyperref Info: Link coloring OFF on input line 12.
+ (fernandes.out) (fernandes.out)
 \@outlinefile=\write3
 \openout3 = `fernandes.out'.
 
@@ -244,9 +244,13 @@ Overfull \hbox (1.58203pt too wide) in paragraph at lines 17--18
 s for the English
  []
 
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <7> on input line 42.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <5> on input line 42.
 [1
 
-{C:/Users/lab/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map}]
+{C:/Users/lab/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map}] [2]
 (fernandes.aux)
  ***********
 LaTeX2e <2023-11-01> patch level 1
@@ -254,29 +258,28 @@ L3 programming layer <2024-01-04>
  ***********
 
 
-Package rerunfilecheck Warning: File `fernandes.out' has changed.
-(rerunfilecheck)                Rerun to get outlines right
-(rerunfilecheck)                or use package `bookmark'.
+LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
 
-Package rerunfilecheck Info: Checksums for `fernandes.out':
-(rerunfilecheck)             Before: <no file>
-(rerunfilecheck)             After:  D41D8CD98F00B204E9800998ECF8427E;0.
+Package rerunfilecheck Info: File `fernandes.out' has not changed.
+(rerunfilecheck)             Checksum: D41D8CD98F00B204E9800998ECF8427E;0.
  ) 
 Here is how much of TeX's memory you used:
- 8747 strings out of 474485
- 139035 string characters out of 5744678
- 1930542 words of memory out of 5000000
- 30970 multiletter control sequences out of 15000+600000
- 564643 words of font info for 50 fonts, out of 8000000 for 9000
+ 8771 strings out of 474485
+ 139610 string characters out of 5744678
+ 1933542 words of memory out of 5000000
+ 30983 multiletter control sequences out of 15000+600000
+ 565754 words of font info for 52 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 75i,5n,79p,237b,448s stack positions out of 10000i,1000n,20000p,200000b,200000s
- <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\ecrm10
-00.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\ec
-bx1440.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi60
-0\ecrm1728.pk>
-Output written on fernandes.pdf (1 page, 35576 bytes).
+ 75i,8n,79p,237b,477s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\ecbx10
+00.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\tc
+rm1000.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi60
+0\ecrm1000.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/d
+pi600\ecbx1440.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/
+ec/dpi600\ecrm1728.pk>
+Output written on fernandes.pdf (2 pages, 45091 bytes).
 PDF statistics:
- 123 PDF objects out of 1000 (max. 8388607)
- 7 named destinations out of 1000 (max. 500000)
+ 158 PDF objects out of 1000 (max. 8388607)
+ 10 named destinations out of 1000 (max. 500000)
  1 words of extra memory for PDF output out of 10000 (max. 10000000)
 

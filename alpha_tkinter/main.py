@@ -57,6 +57,14 @@ if __name__ == "__main__":
             "Please fix 'default_prompts.json' and restart the application."
         )
 
+    # --- Main Application Callbacks ---
+    def _on_tab_changed():
+        """Handles all actions that need to occur when the active tab changes."""
+        llm_service.load_prompt_history_for_current_file()
+        llm_service.load_keywords_for_current_file()
+        llm_service.load_prompts_for_current_file()
+        gui_editor_view.perform_heavy_updates()
+
     # --- Initialize Services ---
     # Initialize GUI sub-modules first, as other services depend on them.
     # The order of initialization below is important due to inter-module dependencies.
@@ -83,12 +91,7 @@ if __name__ == "__main__":
         tabs_dict_ref=tabs_dict,
         welcome_screen_ref=welcome_screen,
         root_ref=root,
-        # Callback for when a tab changes: loads LLM history/prompts and schedules heavy UI updates.
-        on_tab_changed_cb=lambda: (llm_service.load_prompt_history_for_current_file(),
-                                   llm_service.load_generation_history_for_current_file(), # NEW
-                                   llm_service.load_keywords_for_current_file(), # NEW: Load keywords on tab change
-                                   llm_service.load_prompts_for_current_file(),
-                                   gui_editor_view.perform_heavy_updates()),
+        on_tab_changed_cb=_on_tab_changed, # Pass the named function as a callback
         schedule_heavy_updates_cb=gui_editor_view.schedule_heavy_updates, # Callback for scheduling heavy updates
         welcome_button_frame_ref=welcome_button_frame, # Frame to add buttons to welcome screen
         # NEW: Pass a callback to re-apply the current theme when a new tab is created.
@@ -125,10 +128,6 @@ if __name__ == "__main__":
         active_filepath_getter=lambda: gui_file_tab_manager.get_current_tab().file_path if gui_file_tab_manager.get_current_tab() else None
     )
 
-
-
-
-
     # --- Setup UI Buttons (Top Frame) ---
     ttk.Button(top_frame, text="📂 Open", command=lambda: gui_file_tab_manager.open_file(gui_status_bar.show_temporary_status_message)).pack(side="left", padx=3, pady=3)
     ttk.Button(top_frame, text="💾 Save", command=lambda: gui_file_tab_manager.save_file(gui_status_bar.show_temporary_status_message)).pack(side="left", padx=3, pady=3)
@@ -159,10 +158,10 @@ if __name__ == "__main__":
 
     # Intercept the window close ('X') button to check for unsaved changes
     root.protocol("WM_DELETE_WINDOW", lambda: gui_main_window.on_close_request(
-        gui_file_tab_manager.get_current_tab, # Pass getter for current tab
-        lambda: gui_file_tab_manager.save_file(gui_status_bar.show_temporary_status_message), # Pass save function
-        root,
-        tabs_dict # Pass the tabs dictionary
+        save_file_func=gui_file_tab_manager.save_file,
+        root_ref=root,
+        tabs_dict_ref=tabs_dict,
+        show_status_message_func=gui_status_bar.show_temporary_status_message
     ))
 
     # Bind outline tree selection after gui_file_tab_manager is ready

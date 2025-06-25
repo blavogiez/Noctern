@@ -30,8 +30,8 @@ def save_prompts_to_file(prompts_dict, tex_document_filepath):
 def load_prompts_from_file(tex_document_filepath, default_prompts):
     """
     Loads custom prompts from a JSON file. If the file doesn't exist, it creates one with the default prompts.
-    It also automatically upgrades outdated simple prompts in existing files to the new defaults,
-    while preserving actual user customizations.
+    If the file exists, it loads it and ensures all keys from the default prompts are present,
+    adding any missing ones without overwriting existing user modifications.
     """
     prompts_filepath = get_prompts_filepath(tex_document_filepath)
 
@@ -47,36 +47,25 @@ def load_prompts_from_file(tex_document_filepath, default_prompts):
             if not isinstance(file_prompts, dict):
                 raise TypeError("Prompts file is not a valid dictionary.")
 
-            # Start with the current, correct defaults.
-            final_prompts = default_prompts.copy()
+            # Start with the prompts loaded from the file. This is the source of truth.
+            final_prompts = file_prompts.copy()
             needs_resave = False
 
-            # If the loaded file is already up-to-date, no changes needed.
-            if file_prompts == final_prompts:
-                return final_prompts
-
-            # Intelligently merge the file's prompts with the defaults.
+            # Check for any keys that are in the defaults but missing from the file.
             for key, default_value in default_prompts.items():
-                file_value = file_prompts.get(key)
-
-                if file_value is None:
-                    needs_resave = True # Key is missing, file needs update.
-                    continue # The default value is already in final_prompts.
-
-                # Heuristic: old fallbacks were simple, single-line strings.
-                # A prompt with no newlines is likely an old default, not a custom one.
-                if '\n' not in file_value:
-                    needs_resave = True # Mark for healing, use the new default.
-                else:
-                    # The value is multi-line, so we trust it as a customization.
-                    final_prompts[key] = file_value
+                if key not in final_prompts:
+                    # A new prompt type has been added to the application.
+                    # Add it to this document's prompts and mark for saving.
+                    final_prompts[key] = default_value
+                    needs_resave = True
             
             if needs_resave:
-                print(f"Debug: Upgrading prompts file for {os.path.basename(prompts_filepath)} with latest defaults.")
+                print(f"Debug: Adding new prompt keys to {os.path.basename(prompts_filepath)}.")
                 save_prompts_to_file(final_prompts, tex_document_filepath)
 
             return final_prompts
         except (json.JSONDecodeError, TypeError) as e:
+            # The file is corrupt. Overwrite it with defaults to fix it.
             print(f"Error loading or parsing custom prompts from {prompts_filepath}, overwriting with defaults. Error: {e}")
             save_prompts_to_file(default_prompts, tex_document_filepath)
             return default_prompts

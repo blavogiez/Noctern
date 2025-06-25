@@ -27,11 +27,10 @@ def show_generate_text_dialog(root_window, theme_setting_getter_func,
         current_prompt_history_list (list): The current list of prompt-response tuples for display.
         on_generate_request_callback (function): Callback function to be invoked when the
                                                  user confirms the prompt.
-                                                 Expected signature: func(user_prompt, lines_before, lines_after)
-                                                 NEW: func(user_prompt, lines_before, lines_after, is_latex_oriented)
+                                                 Expected signature: func(user_prompt, lines_before, lines_after, is_latex_oriented)
         on_history_entry_add_callback (function): Callback to add the new prompt (with a
                                                   placeholder response) to the main history list.
-                                                  Expected signature: func(user_prompt)
+                                                  Expected signature: func(user_prompt, is_latex_oriented)
         initial_prompt_text (str, optional): Text to pre-fill in the prompt input.
     """
     prompt_window = tk.Toplevel(root_window)
@@ -172,6 +171,14 @@ def show_generate_text_dialog(root_window, theme_setting_getter_func,
     ttk.Checkbutton(input_controls_frame, text="LaTeX Oriented Generation", variable=is_latex_oriented_var).grid(
         row=4, column=0, columnspan=2, sticky="w", padx=5, pady=5)
 
+    # --- Unified Cleanup Logic ---
+    def cleanup_and_close():
+        text_prompt.delete("1.0", tk.END)
+        text_response.config(state="normal") # Enable to clear
+        text_response.delete("1.0", tk.END)
+        text_response.config(state="disabled")
+        prompt_window.destroy()
+
     # --- Generate Button ---
     def handle_send_prompt_action():
         user_prompt = text_prompt.get("1.0", tk.END).strip()
@@ -195,8 +202,7 @@ def show_generate_text_dialog(root_window, theme_setting_getter_func,
         if on_generate_request_callback:
             on_generate_request_callback(user_prompt, num_back, num_forward, is_latex_oriented)
 
-        text_prompt.delete("1.0", tk.END) # Explicitly clear content
-        prompt_window.destroy()
+        cleanup_and_close()
 
     button_frame = ttk.Frame(input_controls_frame)
     button_frame.grid(row=5, column=0, columnspan=3, pady=(10,0), sticky="ew") # Adjusted row
@@ -207,16 +213,8 @@ def show_generate_text_dialog(root_window, theme_setting_getter_func,
     prompt_window.grid_columnconfigure(0, weight=1)
 
     text_prompt.focus()
+    prompt_window.protocol("WM_DELETE_WINDOW", cleanup_and_close)
     prompt_window.wait_window()
-
-    # Ensure explicit cleanup if dialog is closed by 'X' button or other means
-    def on_generate_dialog_close():
-        text_prompt.delete("1.0", tk.END)
-        text_response.config(state="normal") # Enable to clear
-        text_response.delete("1.0", tk.END)
-        text_response.config(state="disabled")
-        prompt_window.destroy()
-    prompt_window.protocol("WM_DELETE_WINDOW", on_generate_dialog_close)
 
 
 def show_set_llm_keywords_dialog(root_window, theme_setting_getter_func,
@@ -395,7 +393,10 @@ def show_edit_prompts_dialog(root_window, theme_setting_getter_func,
     latex_code_scrollbar = ttk.Scrollbar(latex_code_text_frame, orient="vertical", command=latex_code_text.yview)
     latex_code_scrollbar.grid(row=0, column=1, sticky="ns")
     latex_code_text.config(yscrollcommand=latex_code_scrollbar.set)
-    latex_code_text.insert("1.0", current_prompts.get("latex_code_generation", ""))
+    # If the current prompt is empty, pre-fill with the default LaTeX code generation prompt.
+    # This ensures that if a document's prompt file was saved with an empty LaTeX prompt,
+    # the user sees the full default prompt when editing.
+    latex_code_text.insert("1.0", current_prompts.get("latex_code_generation", default_prompts.get("latex_code_generation", "")))
 
     # Add the new pane to the main PanedWindow
     main_pane.add(latex_code_pane_frame, minsize=400, stretch="always")
@@ -450,6 +451,7 @@ def show_edit_prompts_dialog(root_window, theme_setting_getter_func,
 
         saved_state["completion"] = new_completion
         saved_state["generation"] = new_generation
+        saved_state["latex_code_generation"] = new_latex_code_generation # FIX: Update saved state for latex prompt
 
         update_default_status_labels()
         return "break"  # Prevents other bindings from firing

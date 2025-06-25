@@ -84,7 +84,7 @@ def setup_gui():
         "tabs_dict": tabs # The global dictionary to be managed by gui_file_tab_manager
     }
 
-def on_close_request(get_current_tab_func, save_file_func, root_ref, tabs_dict_ref):
+def on_close_request(save_file_func, root_ref, tabs_dict_ref, show_status_message_func):
     """Handles closing the main window, checking for unsaved changes."""
     if not root_ref: # Guard against calling if root is already destroyed
         return
@@ -101,9 +101,8 @@ def on_close_request(get_current_tab_func, save_file_func, root_ref, tabs_dict_r
         if response is True:  # Yes, save and close
             all_saved = True
             for tab in dirty_tabs:
-                # Select the tab to ensure it's the active one for saving
-                root_ref.nametowidget(tab.winfo_name()).select() 
-                if not save_file_func(): # save_file will handle the current tab
+                # Pass the specific tab to the save function
+                if not save_file_func(show_status_message_func, tab_to_save=tab):
                     all_saved = False
                     break # User cancelled a "Save As" dialog
             if all_saved:
