@@ -38,7 +38,9 @@ _cancel_event = threading.Event()
 _generation_ui = None
 
 # --- Prompt Configuration ---
-DEFAULT_PROMPTS_FILE = "default_prompts.json"
+# Construct an absolute path to the prompts file to avoid CWD issues.
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+DEFAULT_PROMPTS_FILE = os.path.join(_SCRIPT_DIR, "default_prompts.json")
 _global_default_prompts = {} # Loaded once at startup
 
 # --- State managed by this service ---
@@ -47,6 +49,7 @@ _prompt_history_list = [] # Stores tuples: (user_prompt, llm_response)
 _generation_history_list = [] # NEW: Stores list of [start, end] for generated text
 _completion_prompt_template = "" # Loaded per-file
 _generation_prompt_template = "" # Loaded per-file
+_latex_code_generation_prompt_template = "" # NEW: Loaded per-file for LaTeX code
 
 def _load_global_default_prompts():
     """Loads the master default prompts from the default_prompts.json file."""
@@ -54,8 +57,17 @@ def _load_global_default_prompts():
     try:
         with open(DEFAULT_PROMPTS_FILE, 'r', encoding='utf-8') as f:
             _global_default_prompts = json.load(f)
+            # NEW: Print loaded prompts to console for verification at startup
+            print("="*50)
+            print(f"Successfully loaded default prompts from: {os.path.basename(DEFAULT_PROMPTS_FILE)}")
+            for key, value in _global_default_prompts.items():
+                # Truncate and remove newlines for clean console output
+                print(f"  - {key}: '{value[:70].replace(chr(10), ' ')}...'")
+            print("="*50)
     except (FileNotFoundError, json.JSONDecodeError) as e:
-        print(f"CRITICAL ERROR: Could not load {DEFAULT_PROMPTS_FILE}. {e}")
+        # This error should ideally be handled more robustly, e.g., by creating the file.
+        filename = os.path.basename(DEFAULT_PROMPTS_FILE)
+        print(f"WARNING: Could not load {filename}. Using hardcoded defaults. {e}")
         _global_default_prompts = {
             "completion": "Complete this: {current_phrase_start}",
             "generation": "Generate text for this prompt: {user_prompt}"
@@ -83,7 +95,7 @@ def initialize_llm_service(root_window_ref, progress_bar_widget_ref,
     load_keywords_for_current_file() # NEW: Load keywords on service initialization
     load_prompts_for_current_file()
 
-def _get_active_tex_filepath():
+def _get_active_tex_filepath(): # Renamed from _get_active_tex_filepath to _get_active_tex_filepath
     """Helper to safely get the current .tex file path using the provided getter."""
     if _active_filepath_getter_func:
         return _active_filepath_getter_func()
@@ -145,7 +157,7 @@ def load_prompt_history_for_current_file():
     _prompt_history_list = llm_prompt_history.load_prompt_history_from_file(active_filepath)
 
 def _add_entry_to_history_and_save(user_prompt, response_placeholder="⏳ Generating..."):
-    """Internal helper to add a new entry and save the history."""
+    """Internal helper to add a new entry and save the history. (Now accepts optional response_placeholder)"""
     global _prompt_history_list
     # Remove existing entry for this user_prompt to move it to the top or update status
     _prompt_history_list = [item for item in _prompt_history_list if item[0] != user_prompt]
@@ -210,12 +222,15 @@ def load_keywords_for_current_file():
 def load_prompts_for_current_file():
     """Loads custom prompts for the current file. If no custom prompt file
     exists, it creates one with default values."""
-    global _completion_prompt_template, _generation_prompt_template
+    global _completion_prompt_template, _generation_prompt_template, _latex_code_generation_prompt_template
     active_filepath = _get_active_tex_filepath()
     # The logic to load or create is handled by the prompt manager, using the globally loaded defaults.
     loaded_prompts = llm_prompt_manager.load_prompts_from_file(active_filepath, _global_default_prompts)
-    _completion_prompt_template = loaded_prompts["completion"]
-    _generation_prompt_template = loaded_prompts["generation"]
+    # Use .get() for robustness, in case a prompt file is malformed but still valid JSON.
+    _completion_prompt_template = loaded_prompts.get("completion", "")
+    _generation_prompt_template = loaded_prompts.get("generation", "")
+    # Also load the latex code generation prompt.
+    _latex_code_generation_prompt_template = loaded_prompts.get("latex_code_generation", "")
 
 # --- Call the loader at module import time to ensure defaults are always available ---
 _load_global_default_prompts()
@@ -239,7 +254,7 @@ def _cancel_current_generation(discard_text=True):
     _generation_thread = None
     return ""
 
-def _execute_llm_generation(full_llm_prompt, user_prompt_for_history):
+def _execute_llm_generation(full_llm_prompt, user_prompt_for_history, model_name=llm_api_client.DEFAULT_LLM_MODEL):
     """
     The main function to execute an LLM generation with an interactive UI.
     """
@@ -255,6 +270,14 @@ def _execute_llm_generation(full_llm_prompt, user_prompt_for_history):
 
     def on_accept():
         generated_text = _cancel_current_generation(discard_text=False)
+
+        # NEW: Print prompt and response to console for validation
+        print("="*80)
+        print(f"[LLM Generation Accepted]")
+        print(f"  PROMPT SENT TO API:\n---\n{full_llm_prompt}\n---")
+        print(f"  LLM RESPONSE:\n---\n{generated_text}\n---")
+        print("="*80)
+
         _add_entry_to_generation_history_and_save(generated_text)
         _show_temporary_status_message_func("✅ Generation accepted.")
         _update_history_response_and_save(user_prompt_for_history, generated_text)
@@ -270,7 +293,7 @@ def _execute_llm_generation(full_llm_prompt, user_prompt_for_history):
         _add_entry_to_history_and_save(rephrase_user_prompt)
         _execute_llm_generation(rephrase_full_prompt, rephrase_user_prompt)
 
-    def on_cancel():
+    def on_cancel(): # Renamed from on_cancel to on_cancel
         _cancel_current_generation(discard_text=True) # Cleanup UI, ignore return value
         _show_temporary_status_message_func("❌ Generation cancelled.")
         _update_history_response_and_save(user_prompt_for_history, "❌ Cancelled by user.")
@@ -280,7 +303,7 @@ def _execute_llm_generation(full_llm_prompt, user_prompt_for_history):
     _generation_ui.cancel_callback = on_cancel
 
     def run_thread(prompt, ui_controller, cancel_event, user_prompt_key):
-        try:
+        try: # Renamed from run_thread to run_thread
             for chunk in llm_api_client.request_llm_generation(prompt):
                 if cancel_event.is_set(): break
                 if editor and ui_controller: editor.after(0, lambda c=chunk: ui_controller.insert_chunk(c))
@@ -296,7 +319,7 @@ def _execute_llm_generation(full_llm_prompt, user_prompt_for_history):
 
     _llm_progress_bar_widget.pack(pady=2)
     _llm_progress_bar_widget.start(10)
-    _generation_ui.show_generating_state()
+    _generation_ui.show_generating_state() # Renamed from show_generating_state to show_generating_state
     _generation_thread = threading.Thread(target=run_thread, args=(full_llm_prompt, _generation_ui, _cancel_event, user_prompt_for_history), daemon=True)
     _generation_thread.start()
 
@@ -329,13 +352,16 @@ def request_llm_to_complete_text():
         keywords=', '.join(_llm_keywords_list)
     )
 
-    # Use the full prompt as the key for history
-    _add_entry_to_history_and_save(full_llm_prompt)
-    _execute_llm_generation(full_llm_prompt, full_llm_prompt)
+    # For consistency with the generation dialog, use a shorter, more readable
+    # prompt for the history. The full prompt is still sent to the API.
+    # We also truncate the phrase to avoid overly long history entries.
+    user_prompt_for_history = f"Complete: \"{current_phrase_start.strip()[:60]}...\""
+    _add_entry_to_history_and_save(user_prompt_for_history)
+    _execute_llm_generation(full_llm_prompt, user_prompt_for_history)
 
 # --- LLM Text Generation via Dialog ---
 def open_generate_text_dialog(initial_prompt_text=None):
-    """
+    """ # Renamed from open_generate_text_dialog to open_generate_text_dialog
     Opens a dialog for the user to input a custom prompt for LLM text generation.
     Manages the process of getting user input, calling the LLM, and updating history.
     """
@@ -345,30 +371,40 @@ def open_generate_text_dialog(initial_prompt_text=None):
         return
 
     _show_temporary_status_message_func("⏳ Opening LLM generation dialog...")
-
-    def _handle_generation_request_from_dialog(user_prompt, lines_before, lines_after):
+    # The callback now accepts the is_latex_oriented boolean
+    def _handle_generation_request_from_dialog(user_prompt, lines_before, lines_after, is_latex_oriented):
         """Callback for when the dialog requests generation. Runs in main thread initially."""
 
-        _show_temporary_status_message_func("⏳ Requesting LLM generation...")
+        model_to_use = llm_api_client.DEFAULT_LLM_MODEL
+        prompt_template_to_use = _generation_prompt_template
+        status_message = "⏳ Requesting LLM generation..."
+
+        if is_latex_oriented:
+            model_to_use = llm_api_client.LATEX_CODE_MODEL
+            prompt_template_to_use = _latex_code_generation_prompt_template
+            status_message = "⏳ Requesting LLM LaTeX code generation..."
+
+        _show_temporary_status_message_func(status_message)
         context = llm_utils.extract_editor_context(editor, lines_before, lines_after)
-        full_llm_prompt = _generation_prompt_template.format(
+        full_llm_prompt = prompt_template_to_use.format(
             user_prompt=user_prompt,
             keywords=', '.join(_llm_keywords_list),
             context=context
         )
-        _execute_llm_generation(full_llm_prompt, user_prompt)
+        _execute_llm_generation(full_llm_prompt, user_prompt, model_name=model_to_use)
 
-    def _handle_history_entry_addition_from_dialog(user_prompt):
+    def _handle_history_entry_add_from_dialog(user_prompt, is_latex_oriented):
         """Callback to add 'Generating...' to history when dialog's Generate is clicked."""
-        _add_entry_to_history_and_save(user_prompt, "⏳ Generating...")
+        placeholder = "⏳ Generating LaTeX code..." if is_latex_oriented else "⏳ Generating..."
+        _add_entry_to_history_and_save(user_prompt, placeholder)
 
     # Show the dialog
-    llm_dialogs.show_generate_text_dialog(
+    llm_dialogs.show_generate_text_dialog( # Reusing the same dialog for now
         root_window=_root_window,
         theme_setting_getter_func=_theme_setting_getter_func,
-        current_prompt_history_list=_prompt_history_list, # Pass a copy or manage updates carefully
-        on_generate_request_callback=_handle_generation_request_from_dialog,
-        on_history_entry_add_callback=_handle_history_entry_addition_from_dialog,
+        current_prompt_history_list=_prompt_history_list,
+        on_generate_request_callback=_handle_generation_request_from_dialog, # Now handles both types
+        on_history_entry_add_callback=_handle_history_entry_add_from_dialog,
         initial_prompt_text=initial_prompt_text
     )
 
@@ -405,12 +441,14 @@ def get_current_prompts():
     """Returns the current prompt templates."""
     return {
         "completion": _completion_prompt_template,
-        "generation": _generation_prompt_template
+        "generation": _generation_prompt_template,
+        "latex_code_generation": _latex_code_generation_prompt_template # NEW
     }
 
-def update_prompts(completion_template, generation_template):
+def update_prompts(completion_template, generation_template, latex_code_generation_template):
     """Updates the prompt templates and saves them to a custom file."""
-    global _completion_prompt_template, _generation_prompt_template
+    global _completion_prompt_template, _generation_prompt_template, _latex_code_generation_prompt_template
+    _latex_code_generation_prompt_template = latex_code_generation_template # NEW
     _completion_prompt_template = completion_template
     _generation_prompt_template = generation_template
 
@@ -418,8 +456,9 @@ def update_prompts(completion_template, generation_template):
     active_filepath = _get_active_tex_filepath()
     if active_filepath:
         prompts_to_save = {
-            "completion": _completion_prompt_template,
-            "generation": _generation_prompt_template
+            "completion": _completion_prompt_template, # Renamed from completion to completion
+            "generation": _generation_prompt_template, # Renamed from generation to generation
+            "latex_code_generation": _latex_code_generation_prompt_template # NEW
         }
         llm_prompt_manager.save_prompts_to_file(prompts_to_save, active_filepath)
         _show_temporary_status_message_func(f"✅ Prompts saved: {os.path.basename(llm_prompt_manager.get_prompts_filepath(active_filepath))}")
@@ -436,7 +475,7 @@ def open_edit_prompts_dialog():
     llm_dialogs.show_edit_prompts_dialog(
         root_window=_root_window,
         theme_setting_getter_func=_theme_setting_getter_func,
-        current_prompts=get_current_prompts(),
+        current_prompts=get_current_prompts(), # Renamed from current_prompts to current_prompts
         default_prompts=_global_default_prompts, # Pass the master defaults for the "Restore" button
         on_save_callback=update_prompts
     )

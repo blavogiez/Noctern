@@ -16,7 +16,8 @@ def show_generate_text_dialog(root_window, theme_setting_getter_func,
                               current_prompt_history_list, # For display
                               on_generate_request_callback, # Called when user clicks "Generate"
                               on_history_entry_add_callback, # Called to add "Generating..." to history
-                              initial_prompt_text=None):
+                              initial_prompt_text=None,
+                              is_latex_oriented_default=False): # NEW: Default state for LaTeX checkbox
     """
     Displays a dialog for users to input a custom prompt for LLM text generation.
 
@@ -27,6 +28,7 @@ def show_generate_text_dialog(root_window, theme_setting_getter_func,
         on_generate_request_callback (function): Callback function to be invoked when the
                                                  user confirms the prompt.
                                                  Expected signature: func(user_prompt, lines_before, lines_after)
+                                                 NEW: func(user_prompt, lines_before, lines_after, is_latex_oriented)
         on_history_entry_add_callback (function): Callback to add the new prompt (with a
                                                   placeholder response) to the main history list.
                                                   Expected signature: func(user_prompt)
@@ -37,6 +39,11 @@ def show_generate_text_dialog(root_window, theme_setting_getter_func,
     prompt_window.transient(root_window)
     prompt_window.grab_set()
     prompt_window.geometry("800x600")
+
+    # Defensive check: Ensure the window is still valid before setting protocol
+    if not prompt_window.winfo_exists():
+        print("WARNING: Dialog window was destroyed immediately after creation. Aborting setup.")
+        return # Exit the function if the window is already gone
 
     # --- Theming ---
     dialog_bg = theme_setting_getter_func("root_bg", "#f0f0f0")
@@ -160,6 +167,11 @@ def show_generate_text_dialog(root_window, theme_setting_getter_func,
     entry_forward.insert(0, "0")
     entry_forward.grid(row=3, column=1, sticky="w", padx=5, pady=5)
 
+    # NEW: LaTeX Oriented Checkbox
+    is_latex_oriented_var = tk.BooleanVar(prompt_window, value=is_latex_oriented_default)
+    ttk.Checkbutton(input_controls_frame, text="LaTeX Oriented Generation", variable=is_latex_oriented_var).grid(
+        row=4, column=0, columnspan=2, sticky="w", padx=5, pady=5)
+
     # --- Generate Button ---
     def handle_send_prompt_action():
         user_prompt = text_prompt.get("1.0", tk.END).strip()
@@ -174,19 +186,20 @@ def show_generate_text_dialog(root_window, theme_setting_getter_func,
             messagebox.showwarning("Warning", "The prompt is empty.", parent=prompt_window)
             return
 
+        is_latex_oriented = is_latex_oriented_var.get() # Get the state of the checkbox
         # 1. Call back to add "Generating..." to history immediately
         if on_history_entry_add_callback:
-            on_history_entry_add_callback(user_prompt)
-
+            # Adjust placeholder message based on LaTeX orientation
+            on_history_entry_add_callback(user_prompt, is_latex_oriented)
         # 2. Call back to trigger the actual LLM generation process
         if on_generate_request_callback:
-            on_generate_request_callback(user_prompt, num_back, num_forward)
+            on_generate_request_callback(user_prompt, num_back, num_forward, is_latex_oriented)
 
         text_prompt.delete("1.0", tk.END) # Explicitly clear content
         prompt_window.destroy()
 
     button_frame = ttk.Frame(input_controls_frame)
-    button_frame.grid(row=4, column=0, columnspan=3, pady=(10,0), sticky="ew")
+    button_frame.grid(row=5, column=0, columnspan=3, pady=(10,0), sticky="ew") # Adjusted row
     ttk.Button(button_frame, text="Generate", command=handle_send_prompt_action).pack()
 
     main_pane.add(input_controls_frame, stretch="always")
@@ -323,12 +336,14 @@ def show_edit_prompts_dialog(root_window, theme_setting_getter_func,
     # --- State Tracking ---
     saved_state = {
         "completion": current_prompts.get("completion", "").strip(),
-        "generation": current_prompts.get("generation", "").strip()
+        "generation": current_prompts.get("generation", "").strip(),
+        "latex_code_generation": current_prompts.get("latex_code_generation", "").strip() # NEW
     }
 
     # ===================================================================
     # --- Left Pane: Completion Prompt
     # ===================================================================
+    # Renamed from completion_pane_frame to completion_pane_frame
     completion_pane_frame = ttk.Frame(main_pane)
 
     is_completion_default = (current_prompts.get("completion", "").strip() == default_prompts.get("completion", "").strip())
@@ -353,6 +368,37 @@ def show_edit_prompts_dialog(root_window, theme_setting_getter_func,
     completion_scrollbar.grid(row=0, column=1, sticky="ns")
     completion_text.config(yscrollcommand=completion_scrollbar.set)
     completion_text.insert("1.0", current_prompts.get("completion", ""))
+
+    # ===================================================================
+    # --- Middle Pane: LaTeX Code Generation Prompt (NEW)
+    # ===================================================================
+    latex_code_pane_frame = ttk.Frame(main_pane)
+
+    is_latex_code_default = (current_prompts.get("latex_code_generation", "").strip() == default_prompts.get("latex_code_generation", "").strip())
+    latex_code_label_text = "LaTeX Code Generation Prompt ('💻 Code LaTeX')"
+    if is_latex_code_default:
+        latex_code_label_text += " (Using Default)"
+    latex_code_labelframe = ttk.LabelFrame(latex_code_pane_frame, text=latex_code_label_text, padding=5)
+    latex_code_labelframe.pack(pady=5, padx=5, fill="both", expand=True)
+    
+    latex_code_text_frame = ttk.Frame(latex_code_labelframe)
+    latex_code_text_frame.pack(fill="both", expand=True)
+    latex_code_text_frame.grid_rowconfigure(0, weight=1)
+    latex_code_text_frame.grid_columnconfigure(0, weight=1)
+
+    latex_code_text = tk.Text(
+        latex_code_text_frame, wrap="word", font=("Consolas", 10),
+        bg=text_bg, fg=text_fg, selectbackground=sel_bg, selectforeground=sel_fg,
+        insertbackground=insert_bg, relief=tk.FLAT, borderwidth=0, highlightthickness=0, undo=True
+    )
+    latex_code_text.grid(row=0, column=0, sticky="nsew")
+    latex_code_scrollbar = ttk.Scrollbar(latex_code_text_frame, orient="vertical", command=latex_code_text.yview)
+    latex_code_scrollbar.grid(row=0, column=1, sticky="ns")
+    latex_code_text.config(yscrollcommand=latex_code_scrollbar.set)
+    latex_code_text.insert("1.0", current_prompts.get("latex_code_generation", ""))
+
+    # Add the new pane to the main PanedWindow
+    main_pane.add(latex_code_pane_frame, minsize=400, stretch="always")
 
     # ===================================================================
     # --- Right Pane: Generation Prompt
@@ -385,19 +431,22 @@ def show_edit_prompts_dialog(root_window, theme_setting_getter_func,
     # --- Helper function to update the "Using Default" labels ---
     def update_default_status_labels():
         is_completion_default_now = (completion_text.get("1.0", tk.END).strip() == default_prompts.get("completion", "").strip())
+        is_latex_code_default_now = (latex_code_text.get("1.0", tk.END).strip() == default_prompts.get("latex_code_generation", "").strip()) # NEW
         is_generation_default_now = (generation_text.get("1.0", tk.END).strip() == default_prompts.get("generation", "").strip())
 
         completion_labelframe.config(text=f"Completion Prompt ('✨ Complete'){' (Using Default)' if is_completion_default_now else ''}")
+        latex_code_labelframe.config(text=f"LaTeX Code Generation Prompt ('💻 Code LaTeX'){' (Using Default)' if is_latex_code_default_now else ''}") # NEW
         generation_labelframe.config(text=f"Generation Prompt ('🎯 Generate'){' (Using Default)' if is_generation_default_now else ''}")
 
-    # --- Core Action: Apply Changes ---
+    # --- Core Action: Apply Changes --- # Renamed from apply_changes to apply_changes
     def apply_changes():
         """Saves changes for BOTH prompts to the file but does not close the window."""
         new_completion = completion_text.get("1.0", tk.END).strip()
         new_generation = generation_text.get("1.0", tk.END).strip()
+        new_latex_code_generation = latex_code_text.get("1.0", tk.END).strip() # NEW
 
-        if on_save_callback:
-            on_save_callback(new_completion, new_generation)
+        if on_save_callback: # Renamed from on_save_callback to on_save_callback
+            on_save_callback(new_completion, new_generation, new_latex_code_generation) # Pass new LaTeX prompt
 
         saved_state["completion"] = new_completion
         saved_state["generation"] = new_generation
@@ -421,6 +470,20 @@ def show_edit_prompts_dialog(root_window, theme_setting_getter_func,
     ttk.Button(completion_button_frame, text="Restore Default", command=restore_completion_default).pack(side="left")
     main_pane.add(completion_pane_frame, minsize=400, stretch="always")
 
+    # --- Buttons for LaTeX Code Pane (NEW) ---
+    latex_code_button_frame = ttk.Frame(latex_code_pane_frame)
+    latex_code_button_frame.pack(fill="x", side="bottom", padx=5, pady=(10, 0))
+
+    def restore_latex_code_default():
+        if messagebox.askyesno("Confirm Restore",
+                               "Are you sure you want to restore the default for the LaTeX CODE GENERATION prompt?",
+                               parent=prompts_window):
+            latex_code_text.delete("1.0", tk.END)
+            latex_code_text.insert("1.0", default_prompts.get("latex_code_generation", ""))
+            update_default_status_labels()
+
+    ttk.Button(latex_code_button_frame, text="Apply", command=apply_changes).pack(side="left", padx=(0, 5))
+    ttk.Button(latex_code_button_frame, text="Restore Default", command=restore_latex_code_default).pack(side="left")
     # --- Buttons for Generation Pane ---
     generation_button_frame = ttk.Frame(generation_pane_frame)
     generation_button_frame.pack(fill="x", side="bottom", padx=5, pady=(10, 0))
@@ -443,8 +506,10 @@ def show_edit_prompts_dialog(root_window, theme_setting_getter_func,
 
     def close_window():
         current_completion = completion_text.get("1.0", tk.END).strip()
+        current_latex_code_generation = latex_code_text.get("1.0", tk.END).strip() # NEW
         current_generation = generation_text.get("1.0", tk.END).strip()
         has_changes = (current_completion != saved_state["completion"] or
+                       current_latex_code_generation != saved_state["latex_code_generation"] or # NEW
                        current_generation != saved_state["generation"])
 
         if has_changes:
@@ -463,6 +528,7 @@ def show_edit_prompts_dialog(root_window, theme_setting_getter_func,
             prompts_window.destroy()
         # Always clear content on close, regardless of save status
         completion_text.delete("1.0", tk.END)
+        latex_code_text.delete("1.0", tk.END) # NEW
         generation_text.delete("1.0", tk.END)
 
     ttk.Button(bottom_bar, text="Close", command=close_window).pack(side="right")

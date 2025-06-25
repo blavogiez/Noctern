@@ -12,6 +12,7 @@ class GenerationUIController:
         self.editor = editor
         self.theme_getter = theme_getter
         self.frame = ttk.Frame(self.editor)
+        self.is_cleaned_up = False
 
         # Callbacks to be set by the service
         self.accept_callback = None
@@ -98,6 +99,8 @@ class GenerationUIController:
 
     def show_finished_state(self):
         """Displays the UI in its 'finished' state (accept, rephrase, discard buttons)."""
+        if self.is_cleaned_up:
+            return
         for widget in self.frame.winfo_children(): widget.pack_forget()
         self.accept_button.pack(side="left", padx=2)
         self.rephrase_button.pack(side="left", padx=2)
@@ -107,7 +110,15 @@ class GenerationUIController:
 
     def insert_chunk(self, chunk):
         """Inserts a chunk of generated text into the editor."""
-        self.editor.insert(self.end_mark_name, chunk, (self.tag_name,))
+        if self.is_cleaned_up:
+            return
+
+        try:
+            self.editor.insert(self.end_mark_name, chunk, (self.tag_name,))
+        except tk.TclError as e:
+            # This can happen if the editor/tab is closed while generating.
+            print(f"Harmless TclError in insert_chunk (widget likely destroyed): {e}")
+            self.is_cleaned_up = True # Prevent further attempts
 
     def get_text(self):
         """Returns the text that has been generated so far."""
@@ -123,17 +134,25 @@ class GenerationUIController:
 
     def cleanup(self, is_accept=False):
         """Removes the UI and the generated text (if not accepted)."""
+        if self.is_cleaned_up:
+            return
+        self.is_cleaned_up = True
+
         self._unbind_keys() # Unbind keys as soon as interaction is over
 
-        if not is_accept:
-            self.editor.delete(self.start_mark_name, self.end_mark_name)
-        else:
-            # If accepted, just remove the background from the tag, leaving the italic font
-            self.editor.tag_configure(self.tag_name, background="")
+        try:
+            if not is_accept:
+                self.editor.delete(self.start_mark_name, self.end_mark_name)
+            else:
+                # If accepted, just remove the background from the tag, leaving the italic font
+                self.editor.tag_configure(self.tag_name, background="")
 
-        if self.frame.winfo_exists():
-            self.frame.destroy()
+            if self.frame.winfo_exists():
+                self.frame.destroy()
 
-        # Clean up the marks to prevent them from lingering
-        self.editor.mark_unset(self.start_mark_name)
-        self.editor.mark_unset(self.end_mark_name)
+            # Clean up the marks to prevent them from lingering
+            self.editor.mark_unset(self.start_mark_name)
+            self.editor.mark_unset(self.end_mark_name)
+        except tk.TclError as e:
+            # This can happen if the editor/tab is closed before cleanup completes.
+            print(f"Harmless TclError during cleanup (widget likely destroyed): {e}")

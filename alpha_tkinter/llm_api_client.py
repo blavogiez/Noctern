@@ -11,7 +11,8 @@ import json
 
 # Configuration for the LLM API endpoint.
 LLM_API_URL = "http://localhost:11434/api/generate"
-DEFAULT_LLM_MODEL = "mistral" # Default model to use if not specified
+DEFAULT_LLM_MODEL = "mistral"  # Default model for general text generation (e.g., mistral)
+LATEX_CODE_MODEL = "codellama:7b-code" # Specific model for LaTeX code generation (e.g., codellama:7b-code)
 
 def request_llm_generation(prompt_text, model_name=DEFAULT_LLM_MODEL):
     """

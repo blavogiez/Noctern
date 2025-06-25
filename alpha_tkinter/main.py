@@ -3,7 +3,7 @@ import platform
 from tkinter import ttk # Import ttk module
 import ctypes
 
-# Import modules for different functionalities
+import json # Import json for pre-check
 import editor_logic
 import latex_compiler # Handles LaTeX compilation and chktex checks
 import latex_translator # Manages translation functionality
@@ -37,6 +37,25 @@ if __name__ == "__main__":
     llm_progress_bar = gui_components["llm_progress_bar"]
     status_bar = gui_components["status_bar"]
     tabs_dict = gui_components["tabs_dict"] # The global dictionary to hold EditorTab instances
+
+    # --- Pre-initialization Check ---
+    # Before initializing any services that depend on prompts, check if the
+    # default prompts file is valid. This prevents the creation of corrupted
+    # per-document prompt files if the default is broken.
+    try:
+        with open(llm_service.DEFAULT_PROMPTS_FILE, 'r', encoding='utf-8') as f:
+            json.load(f)
+    except Exception as e:
+        # This messagebox is crucial as it alerts the user to the root cause
+        # of the problem they are experiencing, preventing confusion.
+        messagebox.showerror(
+            "Critical Configuration Error",
+            f"Could not load or parse 'default_prompts.json'.\n\n"
+            f"Error: {e}\n\n"
+            "The application's AI features will use hardcoded fallback prompts. "
+            "If you open a new file, a prompts file will be created for it with these simple fallbacks. "
+            "Please fix 'default_prompts.json' and restart the application."
+        )
 
     # --- Initialize Services ---
     # Initialize GUI sub-modules first, as other services depend on them.
