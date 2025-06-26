@@ -12,6 +12,21 @@ from tkinter import ttk, messagebox
 # adapting the Toplevel window code from the original llm_logic.py.
 # The following are structural placeholders and key interaction points.
 
+# A list of common languages for the dropdown.
+# Sourced from a common list, can be expanded.
+_LANGUAGES = [
+    "English", "French", "Spanish", "German", "Italian", "Portuguese",
+    "Dutch", "Russian", "Chinese (Simplified)", "Japanese", "Korean",
+    "Arabic", "Hindi", "Bengali", "Turkish", "Polish", "Swedish",
+    "Danish", "Norwegian", "Finnish", "Greek", "Hebrew", "Thai",
+    "Vietnamese", "Indonesian", "Malay", "Czech", "Hungarian", "Romanian",
+    "the same language as the prompt" # Special option
+]
+
+# NEW: To remember the last used language across dialog openings within a session.
+_last_used_language = "English"
+
+
 def show_generate_text_dialog(root_window, theme_setting_getter_func,
                               current_prompt_history_list, # For display
                               on_generate_request_callback, # Called when user clicks "Generate"
@@ -27,7 +42,7 @@ def show_generate_text_dialog(root_window, theme_setting_getter_func,
         current_prompt_history_list (list): The current list of prompt-response tuples for display.
         on_generate_request_callback (function): Callback function to be invoked when the
                                                  user confirms the prompt.
-                                                 Expected signature: func(user_prompt, lines_before, lines_after, is_latex_oriented)
+                                                 Expected signature: func(user_prompt, lines_before, lines_after, is_latex_oriented, language)
         on_history_entry_add_callback (function): Callback to add the new prompt (with a
                                                   placeholder response) to the main history list.
                                                   Expected signature: func(user_prompt, is_latex_oriented)
@@ -91,7 +106,7 @@ def show_generate_text_dialog(root_window, theme_setting_getter_func,
     # --- Right Pane: Prompt Input and Controls ---
     input_controls_frame = ttk.Frame(main_pane, padding=(5,0,0,0))
     input_controls_frame.grid_rowconfigure(1, weight=1) # Prompt text
-    input_controls_frame.grid_rowconfigure(6, weight=0) # Response text (initially hidden)
+    input_controls_frame.grid_rowconfigure(8, weight=0) # Response text (initially hidden)
     input_controls_frame.grid_columnconfigure(0, weight=1)
 
     ttk.Label(input_controls_frame, text="Your Prompt:").grid(row=0, column=0, columnspan=2, sticky="nw", padx=5, pady=(0,5))
@@ -135,9 +150,9 @@ def show_generate_text_dialog(root_window, theme_setting_getter_func,
                 text_prompt.delete("1.0", tk.END)
                 text_prompt.insert("1.0", selected_user_prompt)
 
-                llm_response_label.grid(row=5, column=0, columnspan=2, sticky="nw", padx=5, pady=(10,5))
-                response_text_frame.grid(row=6, column=0, columnspan=2, padx=5, pady=(0,5), sticky="nsew")
-                input_controls_frame.grid_rowconfigure(6, weight=1)
+                llm_response_label.grid(row=7, column=0, columnspan=2, sticky="nw", padx=5, pady=(10,5))
+                response_text_frame.grid(row=8, column=0, columnspan=2, padx=5, pady=(0,5), sticky="nsew")
+                input_controls_frame.grid_rowconfigure(8, weight=1)
                 text_response.grid(row=0, column=0, sticky="nsew") # Inside response_text_frame
                 response_scrollbar = ttk.Scrollbar(response_text_frame, orient="vertical", command=text_response.yview)
                 response_scrollbar.grid(row=0, column=1, sticky="ns")
@@ -150,7 +165,7 @@ def show_generate_text_dialog(root_window, theme_setting_getter_func,
             else: # "No history yet." or invalid
                 llm_response_label.grid_remove()
                 response_text_frame.grid_remove()
-                input_controls_frame.grid_rowconfigure(6, weight=0)
+                input_controls_frame.grid_rowconfigure(8, weight=0)
         # ... (handle deselection: clear response area)
 
     history_listbox.bind("<<ListboxSelect>>", on_history_item_selected)
@@ -166,10 +181,21 @@ def show_generate_text_dialog(root_window, theme_setting_getter_func,
     entry_forward.insert(0, "0")
     entry_forward.grid(row=3, column=1, sticky="w", padx=5, pady=5)
 
+    # NEW: Language Input with Combobox
+    ttk.Label(input_controls_frame, text="Response Language:").grid(row=4, column=0, sticky="w", padx=5, pady=5)
+    language_var = tk.StringVar(prompt_window)
+    lang_combobox = ttk.Combobox(input_controls_frame, textvariable=language_var, values=_LANGUAGES, width=25)
+    # Set the default/last-used language
+    if _last_used_language in _LANGUAGES:
+        lang_combobox.set(_last_used_language)
+    else:
+        lang_combobox.set("English") # Fallback
+    lang_combobox.grid(row=4, column=1, sticky="w", padx=5, pady=5)
+
     # NEW: LaTeX Oriented Checkbox
     is_latex_oriented_var = tk.BooleanVar(prompt_window, value=is_latex_oriented_default)
     ttk.Checkbutton(input_controls_frame, text="LaTeX Oriented Generation", variable=is_latex_oriented_var).grid(
-        row=4, column=0, columnspan=2, sticky="w", padx=5, pady=5)
+        row=5, column=0, columnspan=2, sticky="w", padx=5, pady=5)
 
     # --- Unified Cleanup Logic ---
     def cleanup_and_close():
@@ -193,6 +219,13 @@ def show_generate_text_dialog(root_window, theme_setting_getter_func,
             messagebox.showwarning("Warning", "The prompt is empty.", parent=prompt_window)
             return
 
+        # NEW: Get language and remember it for next time
+        global _last_used_language
+        language = language_var.get().strip()
+        if not language:
+            language = "the same language as the prompt" # Fallback if field is cleared
+        _last_used_language = language
+        
         is_latex_oriented = is_latex_oriented_var.get() # Get the state of the checkbox
         # 1. Call back to add "Generating..." to history immediately
         if on_history_entry_add_callback:
@@ -200,12 +233,12 @@ def show_generate_text_dialog(root_window, theme_setting_getter_func,
             on_history_entry_add_callback(user_prompt, is_latex_oriented)
         # 2. Call back to trigger the actual LLM generation process
         if on_generate_request_callback:
-            on_generate_request_callback(user_prompt, num_back, num_forward, is_latex_oriented)
+            on_generate_request_callback(user_prompt, num_back, num_forward, is_latex_oriented, language)
 
         cleanup_and_close()
 
     button_frame = ttk.Frame(input_controls_frame)
-    button_frame.grid(row=5, column=0, columnspan=3, pady=(10,0), sticky="ew") # Adjusted row
+    button_frame.grid(row=6, column=0, columnspan=3, pady=(10,0), sticky="ew") # Adjusted row
     ttk.Button(button_frame, text="Generate", command=handle_send_prompt_action).pack()
 
     main_pane.add(input_controls_frame, stretch="always")
@@ -320,7 +353,7 @@ def show_edit_prompts_dialog(root_window, theme_setting_getter_func,
         text="⚠️ Warning: Modifying these prompts can significantly affect AI behavior and performance. "
              "Changes are saved per-document.\n"
              "Available placeholders for Completion: {previous_context}, {current_phrase_start}, {keywords}\n"
-             "Available placeholders for Generation: {user_prompt}, {keywords}, {context}",
+             "Available placeholders for Generation: {user_prompt}, {keywords}, {context}, {language}",
         wraplength=850,
         justify="left"
     )

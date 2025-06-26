@@ -20,8 +20,8 @@ class GenerationUIController:
         self.cancel_callback = None
 
         # Buttons
-        self.accept_button = ttk.Button(self.frame, text="✅ Accept (Tab)", command=self._on_accept, style="Accent.TButton")
-        self.rephrase_button = ttk.Button(self.frame, text="🔄 Rephrase (r)", command=self._on_rephrase)
+        self.accept_button = ttk.Button(self.frame, text="✅ Accept (Tab/Enter)", command=self._on_accept, style="Accent.TButton")
+        self.rephrase_button = ttk.Button(self.frame, text="🔄 Rephrase (r)", command=self._on_rephrase) # Kept as 'r' for consistency with existing code
         self.cancel_button = ttk.Button(self.frame, text="❌ Cancel (c)", command=self._on_cancel)
 
         # Marks and tags for the generated text
@@ -29,16 +29,13 @@ class GenerationUIController:
         self.end_mark_name = f"gen_end_{id(self)}"
         self.tag_name = f"live_gen_{id(self)}"
 
-        # Keyboard shortcut binding management
-        self.bindings = {}
-
         # Set the marks at the current cursor position and define their gravity
         self.editor.mark_set(self.start_mark_name, "insert")
         self.editor.mark_set(self.end_mark_name, "insert")
         self.editor.mark_gravity(self.start_mark_name, "left")
         self.editor.mark_gravity(self.end_mark_name, "right")
 
-        # Create an italic font for the generated text
+        # Create an italic font for the generated text, and initialize storage for original Tab binding
         try:
             # Create a new Font object based on the editor's current font configuration
             current_font = Font(font=self.editor.cget("font"))
@@ -52,7 +49,9 @@ class GenerationUIController:
         gen_bg = "#2a2d31" if self.theme_getter("root_bg", "").startswith("#2") else "#e8f0f8"
         self.editor.tag_configure(self.tag_name, background=gen_bg, font=italic_font)
 
-    def _on_accept(self):
+        self.original_tab_binding_func = None # To store the original Tab binding function
+
+    def _on_accept(self): # Renamed from _on_accept to _on_accept
         """Handles the 'Accept' button click."""
         if self.accept_callback: self.accept_callback()
 
@@ -69,26 +68,36 @@ class GenerationUIController:
         if self.cancel_callback: self.cancel_callback()
 
     def _bind_keys_for_generating(self):
-        """Binds keys for the 'generating' state."""
+        """Binds keys for the 'generating' state, taking precedence over editor's default Tab."""
         self._unbind_keys()
-        self.bindings['<c>'] = self.editor.bind('<c>', lambda event: (self._on_cancel(), "break")[1], add='+')
+        # Store the original <Tab> binding function and replace it with our handler
+        self.original_tab_binding_func = self.editor.bind('<Tab>', lambda event: (self._on_cancel(), "break")[1]) # Tab also cancels during generation
+        # Bind 'c' for cancel. Returning "break" prevents the character from being inserted.
+        self.editor.bind('<c>', lambda event: (self._on_cancel(), "break")[1])
 
     def _bind_keys_for_finished(self):
-        """Binds keys for the 'finished' state."""
+        """Binds keys for the 'finished' state, taking precedence over editor's default Tab."""
         self._unbind_keys()
-        self.bindings['<Tab>'] = self.editor.bind('<Tab>', lambda event: (self._on_accept(), "break")[1], add='+')
-        self.bindings['<r>'] = self.editor.bind('<r>', lambda event: (self._on_rephrase(), "break")[1], add='+')
-        self.bindings['<c>'] = self.editor.bind('<c>', lambda event: (self._on_cancel(), "break")[1], add='+')
+        # Store the original <Tab> binding function and replace it with our accept handler
+        self.original_tab_binding_func = self.editor.bind('<Tab>', lambda event: (self._on_accept(), "break")[1])
+        # Also bind <Return> (Enter key) for acceptance. Returning "break" prevents a newline.
+        self.editor.bind('<Return>', lambda event: (self._on_accept(), "break")[1])
+        
+        # Bind 'r' and 'c'. Returning "break" prevents the characters from being inserted.
+        self.editor.bind('<r>', lambda event: (self._on_rephrase(), "break")[1])
+        self.editor.bind('<c>', lambda event: (self._on_cancel(), "break")[1])
 
     def _unbind_keys(self):
-        """Unbinds all keys managed by this controller."""
-        for key, binding_id in self.bindings.items():
-            try:
-                self.editor.unbind(key, binding_id)
-            except tk.TclError:
-                # This can happen if the widget is destroyed before unbinding
-                pass
-        self.bindings.clear()
+        """Unbinds all keys managed by this controller and restores original bindings."""
+        # Restore original Tab binding if it was stored
+        if self.original_tab_binding_func:
+            self.editor.bind('<Tab>', self.original_tab_binding_func)
+            self.original_tab_binding_func = None # Clear it after restoring
+
+        # Explicitly unbind the keys we set. This restores their default class behavior (e.g., inserting the character).
+        self.editor.bind('<Return>', '') # Remove all <Return> bindings added by this controller
+        self.editor.bind('<r>', '') # Remove all 'r' bindings added by this controller
+        self.editor.bind('<c>', '') # Remove all 'c' bindings added by this controller
 
     def show_generating_state(self):
         """Displays the UI in its 'generating' state (only cancel button)."""
@@ -102,7 +111,7 @@ class GenerationUIController:
         if self.is_cleaned_up:
             return
         for widget in self.frame.winfo_children(): widget.pack_forget()
-        self.accept_button.pack(side="left", padx=2)
+        self.accept_button.pack(side="left", padx=2) # Renamed from accept_button to accept_button
         self.rephrase_button.pack(side="left", padx=2)
         self.cancel_button.config(text="❌ Discard (c)")
         self.cancel_button.pack(side="left", padx=2)

@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.25 (MiKTeX 24.1) (preloaded format=pdflatex 2025.5.18)  25 JUN 2025 18:24
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (MiKTeX 24.1) (preloaded format=pdflatex 2025.5.18)  26 JUN 2025 12:46
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -244,17 +244,24 @@ Overfull \hbox (1.58203pt too wide) in paragraph at lines 17--18
 s for the English
  []
 
-LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <7> on input line 42.
-LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <5> on input line 42.
 [1
 
 {C:/Users/lab/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map}]
-Overfull \hbox (324.73418pt too wide) in paragraph at lines 55--65
- [][] 
+Overfull \hbox (9.21906pt too wide) in paragraph at lines 43--44
+\T1/cmr/m/n/10 humble beginnings in Portugal's Boavista academy to the lofty he
+ights of European
  []
 
+
+Overfull \hbox (2.63733pt too wide) in paragraph at lines 47--48
+\T1/cmr/m/n/10 career flourishing, we can expect him to continue making signifi
+cant contributions
+ []
+
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <7> on input line 54.
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <5> on input line 54.
 [2] (fernandes.aux)
  ***********
 LaTeX2e <2023-11-01> patch level 1
@@ -262,28 +269,35 @@ L3 programming layer <2024-01-04>
  ***********
 
 
-LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
+Package rerunfilecheck Warning: File `fernandes.out' has changed.
+(rerunfilecheck)                Rerun to get outlines right
+(rerunfilecheck)                or use package `bookmark'.
 
-Package rerunfilecheck Info: File `fernandes.out' has not changed.
-(rerunfilecheck)             Checksum: D41D8CD98F00B204E9800998ECF8427E;0.
+Package rerunfilecheck Info: Checksums for `fernandes.out':
+(rerunfilecheck)             Before: DBC64941AE70A1EBC56AF326C03CDCA8;53
+(rerunfilecheck)             After:  D41D8CD98F00B204E9800998ECF8427E;0.
  ) 
 Here is how much of TeX's memory you used:
- 8773 strings out of 474485
- 139642 string characters out of 5744678
- 1933542 words of memory out of 5000000
- 30984 multiletter control sequences out of 15000+600000
+ 8776 strings out of 474485
+ 139677 string characters out of 5744678
+ 1932542 words of memory out of 5000000
+ 30986 multiletter control sequences out of 15000+600000
  565754 words of font info for 52 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 75i,8n,79p,237b,477s stack positions out of 10000i,1000n,20000p,200000b,200000s
- <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\ecbx10
-00.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\tc
-rm1000.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi60
-0\ecrm1000.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/d
-pi600\ecbx1440.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/
-ec/dpi600\ecrm1728.pk>
-Output written on fernandes.pdf (2 pages, 53542 bytes).
+ 75i,8n,79p,472b,449s stack positions out of 10000i,1000n,20000p,200000b,200000s
+
+pdfTeX warning (dest): name{subsection.0.1} has been referenced but does not ex
+ist, replaced by a fixed one
+
+ <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\ecbx1000
+.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\tcrm
+1000.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\
+ecrm1000.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi
+600\ecbx1440.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec
+/dpi600\ecrm1728.pk>
+Output written on fernandes.pdf (2 pages, 48407 bytes).
 PDF statistics:
- 183 PDF objects out of 1000 (max. 8388607)
- 11 named destinations out of 1000 (max. 500000)
- 1 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 169 PDF objects out of 1000 (max. 8388607)
+ 12 named destinations out of 1000 (max. 500000)
+ 9 words of extra memory for PDF output out of 10000 (max. 10000000)
 

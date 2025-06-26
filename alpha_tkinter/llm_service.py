@@ -75,8 +75,8 @@ def _load_global_default_prompts():
         print(f"WARNING: Could not load {filename}. Using hardcoded defaults. {e}")
         _global_default_prompts = {
             "completion": "Complete this: {current_phrase_start}",
-            "generation": "Generate text for this prompt: {user_prompt}",
-            "latex_code_generation": "You are a LaTeX coding assistant embedded within a LaTeX editor. Your task is to generate valid LaTeX code that fulfills the user's instruction.\n\n**Primary Goal:**\nProduce syntactically correct and logically coherent LaTeX code that integrates cleanly with the surrounding context.\n\n**Key Instructions:**\n- **Output only LaTeX code.** Do not include any explanatory text, comments, or formatting outside the LaTeX syntax.\n- Ensure that all commands and environments are properly opened and closed.\n- Use appropriate LaTeX packages if implied by the context (e.g., `amsmath`, `graphicx`, `tikz`).\n- Match the **language** and **style** of the surrounding context.\n- Be concise and avoid unnecessary boilerplate unless requested.\n- Maintain compatibility with standard LaTeX compilers.\n\n**Context (existing LaTeX code around the cursor):**\n---\n{context}\n---\n\n**User's Instruction:**\n\"{user_prompt}\"\n\n**Keywords:**\n{keywords}\n\n**Generated LaTeX code:"
+            "generation": "Generate text for this prompt: {user_prompt}\n\n**Keywords:** {keywords}\n\n**IMPORTANT: The response MUST be in the following language:** {language}",
+            "latex_code_generation": "You are a LaTeX coding assistant embedded within a LaTeX editor. Your task is to generate valid LaTeX code that fulfills the user's instruction.\n\n**Primary Goal:**\nProduce syntactically correct and logically coherent LaTeX code that integrates cleanly with the surrounding context.\n\n**Key Instructions:**\n- **Output only LaTeX code.** Do not include any explanatory text, comments, or formatting outside the LaTeX syntax.\n- **Language Adherence:** You MUST generate the response in the language specified below. This is a strict requirement. All explanatory text within the code (e.g., comments) must also be in this language.\n- Ensure that all commands and environments are properly opened and closed.\n- Use appropriate LaTeX packages if implied by the context (e.g., `amsmath`, `graphicx`, `tikz`).\n- Match the style of the surrounding context.\n- Be concise and avoid unnecessary boilerplate unless requested.\n- Maintain compatibility with standard LaTeX compilers.\n\n**Context (existing LaTeX code around the cursor):**\n---\n{context}\n---\n\n**User's Instruction:**\n\"{user_prompt}\"\n\n**Keywords:**\n{keywords}\n\n**Response Language (Strict Requirement):**\n{language}\n\n**Generated LaTeX code:"
         }
         # Cannot show messagebox here as Tk root may not exist yet.
         # The error will be printed to the console.
@@ -374,7 +374,7 @@ def open_generate_text_dialog(initial_prompt_text=None):
 
     _show_temporary_status_message_func("⏳ Opening LLM generation dialog...")
     # The callback now accepts the is_latex_oriented boolean
-    def _handle_generation_request_from_dialog(user_prompt, lines_before, lines_after, is_latex_oriented):
+    def _handle_generation_request_from_dialog(user_prompt, lines_before, lines_after, is_latex_oriented, language):
         """Callback for when the dialog requests generation. Runs in main thread initially."""
 
         model_to_use = llm_api_client.DEFAULT_LLM_MODEL
@@ -391,7 +391,8 @@ def open_generate_text_dialog(initial_prompt_text=None):
         full_llm_prompt = prompt_template_to_use.format(
             user_prompt=user_prompt,
             keywords=', '.join(_llm_keywords_list),
-            context=context
+            context=context,
+            language=language
         )
         _execute_llm_generation(full_llm_prompt, user_prompt, model_name=model_to_use)
 

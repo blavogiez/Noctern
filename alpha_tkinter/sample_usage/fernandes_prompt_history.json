@@ -1,5 +1,37 @@
 [
     [
+        "Tell about a french translator",
+        " As we delve further into the world of soccer, let us introduce a pivotal figure who plays an essential role in facilitating global communication and understanding - the French translator. This unseen hero ensures that the beautiful game can be enjoyed by millions across the globe, breaking down language barriers and fostering a sense of unity among fans everywhere.\n\nTake, for instance, the talented football analyst from France, who effortlessly translates match analysis, player interviews, and team strategies into multiple languages. His work enables Bruno Fernandes's devoted supporters in Portugal, Spain, and beyond to follow his journey closely, regardless of their native language. This unsung hero is an integral part of the soccer community, making it possible for individuals from diverse backgrounds to share in the excitement of the game together.\n\nIn recognition of these tireless translators, we say merci - thank you for allowing us to experience the world's most beautiful sport with people from all corners of the globe! It is a testament to the power of soccer as a universal language, and a reminder that collaboration and communication are crucial elements in achieving success on the field and beyond."
+    ],
+    [
+        "Rephrase the following text: \" Through his unparalleled skill, unwavering commitment, and indomitable spirit, he has garnered international acclaim and esteem among sports enthusiasts, weaving a tale of triumph and inspiration for up-and-coming athletes.\"",
+        "❌ Cancelled by user."
+    ],
+    [
+        "Rephrase the following text: \" His talent, dedication, and resilience have earned him the admiration and respect of fans worldwide, making his journey an inspiring story for aspiring athletes.\"",
+        "⏳ Generating..."
+    ],
+    [
+        "Complete: \"...\"",
+        "⏳ Generating..."
+    ],
+    [
+        "Make a conclusion",
+        " \\section*{Conclusion}\n\nIn conclusion, Bruno Fernandes has traversed an extraordinary path from his humble beginnings in Portugal's Boavista academy to the lofty heights of European football. His journey is a testament to his unwavering determination, skill, and adaptability. From Italy's Serie B, to Portugal's Primeira Liga, Turkey's Super Lig, and now England's Premier League, Fernandes has consistently proven himself as a formidable force on the pitch.\n\nAs a key player for Manchester United, he has not only brought vitality and leadership but also multiple accolades to the club. His achievements, including the Premier League Player of the Month award twice in his debut season and the UEFA Europa League Squad of the Season, are a testament to his exceptional talent and impact on the game.\n\nLooking ahead, Fernandes's future seems limitless. With his international career flourishing, we can expect him to continue making significant contributions for both Manchester United and Portugal's national team in the years to come. Bruno Fernandes is undoubtedly a soccer star whose journey is far from over, and we eagerly anticipate witnessing his continued success on the global stage of football."
+    ],
+    [
+        "Complete: \"Throughout his career he has achieved...\"",
+        "numerous accolades, including the Primeira Liga Player of the Year award, the Premier League Player of the Month award twice, and the UEFA Europa League Squad of the Season."
+    ],
+    [
+        "Rephrase the following text: \" His artistic journey continued to captivate audiences worldwide, earning him accolades that underscored his versatility as a global acting talent. In the year 2019, he was recognized with a Satellite Award nomination for Best Actor and a National Board of Review Award for Best Supporting Actor, both for his outstanding performance in \"Once Upon a Time...in Hollywood.\" The following year, he expanded his award collection with the Screen Actors Guild Award for Outstanding Performance by a Male Actor in a Supporting Role. These accolades served as testament to Fernandes's dedication to expanding his acting repertoire and delving into various aspects of the craft, thereby preventing any risk of typecasting in his artistic endeavors.\"",
+        "❌ Cancelled by user."
+    ],
+    [
+        "Rephrase the following text: \" He continued to impress with accolades that further solidified his status as a global talent. In 2019, he was nominated for the Satellite Award for Best Actor and won the National Board of Review Award for Best Supporting Actor for his role in \"Once Upon a Time...in Hollywood.\" The following year, he added another award to his collection, taking home the Screen Actors Guild Award for Outstanding Performance by a Male Actor in a Supporting Role. These achievements underscored Fernandes's commitment to diversifying his roles and exploring different facets of acting, ensuring his artistry would never be typecast.                        \"",
+        "⏳ Generating..."
+    ],
+    [
         "Write me a beautiful latex code parting everything right and making weird things",
         " \\begin{table}[h!]\n      \\centering\n      \\begin{tabular}{ |c|c|c| }\n        \\hline\n         \\textbf{Year} & \\textbf{Award/Honor} & \\textbf{Description} \\\\\n        \\hline\n        \\textbf{2015} & Golden Globe for Best Actor & Awarded for his outstanding performance in the film \"The Imitation Game.\" \\\\\n        \\textbf{2016} & Academy Award for Best Actor & Recognized for his exceptional work in the movie \"The Theory of Everything\". \\\\\n        \\textbf{2017} & BAFTA Award for Best Actor & Honored for his role in the film \"Steve Jobs\". \\\\\n        \\textbf{2018} & The Weirdest Award Ever & An award given by a non-traditional organization, celebrating his versatility and unique approach to acting. \\\\\n        \\hline\n      \\end{tabular}\n      \\caption*{An eclectic mix of awards and honors received by Fernandes in his career, showcasing both his traditional success and his dedication to the off-beat and unconventional.}\n   \\label{tab:awards_honors_weird}\n   \\end{table}"
     ],

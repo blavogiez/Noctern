@@ -173,7 +173,7 @@ if __name__ == "__main__":
     gui_file_tab_manager.toggle_welcome_screen()
 
     # Apply the initial theme (e.g., dark mode by default)
-    gui_theme_manager.apply_theme("dark")
+    # gui_theme_manager.apply_theme("dark")
 
     # Start the GPU status update loop
     gui_status_bar.update_gpu_status()
