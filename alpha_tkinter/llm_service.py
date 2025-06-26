@@ -7,7 +7,9 @@ prompt history management, utility functions, and dialogs. It provides
 the main entry points for LLM features like text completion, generation,
 and keyword management.
 """
+
 import tkinter as tk
+from datetime import datetime # NEW: Import datetime for timestamps
 from tkinter import messagebox, ttk
 import os
 import json
@@ -33,6 +35,8 @@ _show_temporary_status_message_func = None # Callback for status messages
 _active_filepath_getter_func = None # Function to get current .tex file path
 _pause_heavy_updates_func = None # NEW: Callback to pause heavy editor updates
 _resume_heavy_updates_func = None # NEW: Callback to resume heavy editor updates
+_full_editor_refresh_cb = None # NEW: Callback for full editor refresh (undo stack, full syntax, outline)
+_llm_generation_count = 0 # NEW: Counter for LLM generations to trigger periodic cleanup
 
 # --- NEW: State for interactive generation ---
 _generation_thread = None
@@ -83,13 +87,14 @@ def _load_global_default_prompts():
 
 def initialize_llm_service(root_window_ref, progress_bar_widget_ref,
                            theme_setting_getter_func, active_editor_getter, # Renamed from active_editor_getter to active_editor_getter
-                           active_filepath_getter, show_temporary_status_message_func,
-                           pause_heavy_updates_cb, resume_heavy_updates_cb): # NEW Callbacks
+                           active_filepath_getter, show_temporary_status_message_func, # Renamed from show_temporary_status_message_func to show_temporary_status_message_func
+                           pause_heavy_updates_cb, resume_heavy_updates_cb, # Renamed from resume_heavy_updates_cb to resume_heavy_updates_cb
+                           full_editor_refresh_cb): # NEW Callback
     """Initializes the LLM service with necessary references from the main application."""
     global _root_window, _llm_progress_bar_widget, _theme_setting_getter_func
     global _active_editor_getter_func, _active_filepath_getter_func, _show_temporary_status_message_func
-    global _pause_heavy_updates_func, _resume_heavy_updates_func # NEW
-
+    global _pause_heavy_updates_func, _resume_heavy_updates_func, _full_editor_refresh_cb # NEW
+    
     _show_temporary_status_message_func = show_temporary_status_message_func
     _root_window = root_window_ref
     _llm_progress_bar_widget = progress_bar_widget_ref
@@ -98,6 +103,7 @@ def initialize_llm_service(root_window_ref, progress_bar_widget_ref,
     _active_filepath_getter_func = active_filepath_getter
     _pause_heavy_updates_func = pause_heavy_updates_cb # NEW
     _resume_heavy_updates_func = resume_heavy_updates_cb # NEW
+    _full_editor_refresh_cb = full_editor_refresh_cb # NEW
 
     # Load initial prompt history and custom prompts
     load_prompt_history_for_current_file()
@@ -285,6 +291,12 @@ def _execute_llm_generation(full_llm_prompt, user_prompt_for_history, model_name
         print(f"  LLM RESPONSE:\n---\n{final_text}\n---")
         print("="*80)
 
+        global _llm_generation_count
+        _llm_generation_count += 1
+        if _llm_generation_count % 4 == 0 and _full_editor_refresh_cb:
+            print("[Perf] Triggering full editor refresh (4 gens).")
+            _full_editor_refresh_cb()
+
         _show_temporary_status_message_func("✅ Generation accepted.")
         _update_history_response_and_save(user_prompt_for_history, final_text)
 
@@ -302,6 +314,12 @@ def _execute_llm_generation(full_llm_prompt, user_prompt_for_history, model_name
     def on_cancel(): # Renamed from on_cancel to on_cancel
         _cancel_current_generation(discard_text=True) # Cleanup UI, ignore return value
         _show_temporary_status_message_func("❌ Generation cancelled.")
+
+        global _llm_generation_count
+        _llm_generation_count += 1
+        if _llm_generation_count % 4 == 0 and _full_editor_refresh_cb:
+            print("[Perf] Triggering full editor refresh (4 gens).")
+            _full_editor_refresh_cb()
         _update_history_response_and_save(user_prompt_for_history, "❌ Cancelled by user.")
 
     _generation_ui.accept_callback = on_accept

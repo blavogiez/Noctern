@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.25 (MiKTeX 24.1) (preloaded format=pdflatex 2025.5.18)  26 JUN 2025 12:46
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (MiKTeX 24.1) (preloaded format=pdflatex 2025.5.18)  26 JUN 2025 15:39
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -258,15 +258,73 @@ Overfull \hbox (2.63733pt too wide) in paragraph at lines 47--48
 cant contributions
  []
 
+
+Overfull \hbox (6.24756pt too wide) in paragraph at lines 53--54
+\T1/cmr/m/n/10 Spain, and beyond to follow his journey closely, regardless of t
+heir native language.
+ []
+
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <7> on input line 54.
+(Font)              <7> on input line 60.
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <5> on input line 54.
-[2] (fernandes.aux)
+(Font)              <5> on input line 60.
+[2]
+
+LaTeX Warning: Reference `tab:future_recognition' on page 3 undefined on input 
+line 82.
+
+[3]
+
+LaTeX Warning: Reference `tab:future_recognition' on page 4 undefined on input 
+line 86.
+
+
+Overfull \hbox (23.73404pt too wide) in paragraph at lines 86--87
+\T1/cmr/m/n/10 burgeoning future of Cristiano Ronaldo's illustrious football ca
+reer. With nominations
+ []
+
+
+Overfull \hbox (9.41711pt too wide) in paragraph at lines 90--91
+[]\T1/cmr/m/n/10 His repeated displays of skill and unyielding commitment to th
+e sport exemplify
+ []
+
+
+Overfull \hbox (4.51541pt too wide) in paragraph at lines 90--91
+\T1/cmr/m/n/10 his indomitable spirit and relentless pursuit of greatness. A th
+orough examination
+ []
+
+
+Overfull \hbox (0.38788pt too wide) in paragraph at lines 94--95
+\T1/cmr/m/n/10 inspiration for those brave enough to chase their dreams with un
+wavering resolve.
+ []
+
+
+Overfull \hbox (0.52673pt too wide) in paragraph at lines 94--95
+\T1/cmr/m/n/10 one truth remains indisputable: his influence on football will r
+everberate through
+ []
+
+[4]
+Overfull \hbox (7.46948pt too wide) in paragraph at lines 103--103
+\T1/cmr/m/n/10 Conversely, the rivalry between Cristiano Ronaldo and Lionel Mes
+si has captivated
+ []
+
+[5] (fernandes.aux)
  ***********
 LaTeX2e <2023-11-01> patch level 1
 L3 programming layer <2024-01-04>
  ***********
+
+
+LaTeX Warning: There were undefined references.
+
+
+LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
 
 
 Package rerunfilecheck Warning: File `fernandes.out' has changed.
@@ -274,30 +332,27 @@ Package rerunfilecheck Warning: File `fernandes.out' has changed.
 (rerunfilecheck)                or use package `bookmark'.
 
 Package rerunfilecheck Info: Checksums for `fernandes.out':
-(rerunfilecheck)             Before: DBC64941AE70A1EBC56AF326C03CDCA8;53
-(rerunfilecheck)             After:  D41D8CD98F00B204E9800998ECF8427E;0.
+(rerunfilecheck)             Before: D41D8CD98F00B204E9800998ECF8427E;0
+(rerunfilecheck)             After:  60BF0EDA5FB8BDBA8EBBEEE0EFD5F16F;53.
  ) 
 Here is how much of TeX's memory you used:
- 8776 strings out of 474485
- 139677 string characters out of 5744678
- 1932542 words of memory out of 5000000
- 30986 multiletter control sequences out of 15000+600000
- 565754 words of font info for 52 fonts, out of 8000000 for 9000
+ 8795 strings out of 474485
+ 139871 string characters out of 5744678
+ 1933542 words of memory out of 5000000
+ 30992 multiletter control sequences out of 15000+600000
+ 566530 words of font info for 53 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 75i,8n,79p,472b,449s stack positions out of 10000i,1000n,20000p,200000b,200000s
-
-pdfTeX warning (dest): name{subsection.0.1} has been referenced but does not ex
-ist, replaced by a fixed one
-
- <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\ecbx1000
-.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\tcrm
-1000.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\
-ecrm1000.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi
-600\ecbx1440.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec
-/dpi600\ecrm1728.pk>
-Output written on fernandes.pdf (2 pages, 48407 bytes).
+ 75i,8n,79p,1959b,478s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\ecbx12
+00.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\ec
+bx1000.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi60
+0\tcrm1000.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/d
+pi600\ecrm1000.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/
+ec/dpi600\ecbx1440.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknap
+pen/ec/dpi600\ecrm1728.pk>
+Output written on fernandes.pdf (5 pages, 70278 bytes).
 PDF statistics:
- 169 PDF objects out of 1000 (max. 8388607)
- 12 named destinations out of 1000 (max. 500000)
- 9 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 229 PDF objects out of 1000 (max. 8388607)
+ 24 named destinations out of 1000 (max. 500000)
+ 1 words of extra memory for PDF output out of 10000 (max. 10000000)
 

@@ -1,10 +1,12 @@
 import tkinter as tk
 from tkinter.font import Font
+from datetime import datetime # NEW: Import datetime for timestamps
 
 # References to main GUI components and callbacks
 _root = None
 _get_current_tab_callback = None
 _outline_tree = None
+_editor_logic = None # Will be set during initialization
 
 # External modules that need to be called for heavy updates
 _editor_logic = None # Will be set during initialization
@@ -158,3 +160,18 @@ def zoom_out(_=None): # Accept optional event argument
             # No tag_configure needed here as Canvas redraws text directly with font objects
             current_tab.line_numbers.redraw()
         perform_heavy_updates() # Reapply syntax highlighting and outline
+
+def full_editor_refresh():
+    """
+    Performs a full refresh of the editor: clears undo stack,
+    re-applies full syntax highlighting, and triggers heavy updates
+    (outline, line numbers).
+    """
+    print(f"[{datetime.now().strftime('%H:%M:%S.%f')[:-3]}] [Perf] full_editor_refresh: Clearing undo, full re-highlight, updating outline.")
+    current_tab = _get_current_tab_callback()
+    if not current_tab or not current_tab.editor:
+        return
+
+    current_tab.editor.edit_reset() # Clear undo stack
+    _editor_logic.apply_syntax_highlighting(current_tab.editor, full_document=True)
+    perform_heavy_updates() # This will update outline and line numbers

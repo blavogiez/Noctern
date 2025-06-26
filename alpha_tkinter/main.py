@@ -118,7 +118,8 @@ if __name__ == "__main__":
         active_filepath_getter=lambda: gui_file_tab_manager.get_current_tab().file_path if gui_file_tab_manager.get_current_tab() else None, # Pass getter for active file path
         show_temporary_status_message_func=gui_status_bar.show_temporary_status_message, # Pass status message func
         pause_heavy_updates_cb=gui_editor_view.pause_heavy_updates, # NEW: Callback to pause updates
-        resume_heavy_updates_cb=gui_editor_view.resume_heavy_updates # NEW: Callback to resume updates
+        resume_heavy_updates_cb=gui_editor_view.resume_heavy_updates, # NEW: Callback to resume updates
+        full_editor_refresh_cb=gui_editor_view.full_editor_refresh # NEW: Callback for full editor refresh
     )
 
     # LaTeX Translator initialization: Needs various GUI component references and callbacks.

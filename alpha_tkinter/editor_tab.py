@@ -181,6 +181,7 @@ class EditorTab(ttk.Frame):
         This includes key presses, mouse clicks, and configuration changes.
         """
         self.update_tab_title()
+        # Removed: Apply syntax highlighting on KeyRelease as it was too frequent. Syntax highlighting will now be part of the debounced heavy updates.
         self.schedule_heavy_updates(event)
         self._highlight_current_line()
 
@@ -267,6 +268,7 @@ class EditorTab(ttk.Frame):
                 f.write(content)
             self.last_saved_content = content
             self.update_tab_title()
+            self.editor.edit_reset() # Clear undo stack to free memory
             return True
         except Exception as e:
             messagebox.showerror("Error", f"Error saving file:\n{e}")

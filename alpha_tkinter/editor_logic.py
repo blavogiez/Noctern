@@ -1,12 +1,14 @@
 import tkinter as tk
 import re
 import os
+from datetime import datetime # NEW: Import datetime for timestamps
 from tkinter import messagebox
 from PIL import ImageGrab
 
 # NEW: Store the last parsed outline structure
 _last_parsed_outline_structure = []
 
+_last_content_for_outline_parsing = "" # NEW: Store the content that generated the last outline
 outline_tree = None
 get_current_tab_func = None # Callback to get the current tab from the GUI manager
 
@@ -22,10 +24,16 @@ def update_outline_tree(editor):
     Updates the Treeview widget with LaTeX section structure,
     only if the structure has changed.
     """
-    global _last_parsed_outline_structure
+    global _last_parsed_outline_structure, _last_content_for_outline_parsing
 
     if not outline_tree or not editor:
         return
+    
+    content = editor.get("1.0", tk.END)
+    if content == _last_content_for_outline_parsing:
+        return # Content hasn't changed, no need to re-parse outline
+
+    print(f"[{datetime.now().strftime('%H:%M:%S.%f')[:-3]}] [Perf] update_outline_tree: Re-parsing document structure.")
 
     content = editor.get("1.0", tk.END)
     lines = content.split("\n")
@@ -62,8 +70,9 @@ def update_outline_tree(editor):
             for deeper in range(level + 1, 4):
                 if deeper in parents_for_tree:
                     del parents_for_tree[deeper]
-        
-        _last_parsed_outline_structure = current_outline_structure # Update last known structure
+
+        _last_parsed_outline_structure = current_outline_structure # Update last known outline structure
+        _last_content_for_outline_parsing = content # Update last known content for outline
 
 def go_to_section(editor, event):
     """Scrolls the editor to the selected section in the outline tree."""
@@ -119,6 +128,8 @@ def apply_syntax_highlighting(editor, full_document=False):
     If full_document is True, applies to the entire document.
     Otherwise, applies only to the visible portion.
     """
+    scope = "full document" if full_document else "visible area"
+    print(f"[{datetime.now().strftime('%H:%M:%S.%f')[:-3]}] [Perf] apply_syntax_highlighting: Highlighting {scope}.")
     if full_document:
         highlight_range(editor, "1.0", tk.END)
     else:
