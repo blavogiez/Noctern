@@ -239,6 +239,10 @@ def show_generate_text_dialog(root_window, theme_setting_getter_func,
                                 current_prompt_history_list, on_generate_request_callback,
                                 on_history_entry_add_callback, initial_prompt_text,
                                 is_latex_oriented_default)
+    # Always raise the dialog to the front and focus
+    dialog.setWindowModality(QtCore.Qt.WindowModality.ApplicationModal)
+    dialog.raise_()
+    dialog.activateWindow()
     dialog.exec()
 
 class SetLLMKeywordsDialog(QtWidgets.QDialog):

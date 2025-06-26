@@ -31,16 +31,45 @@ def request_llm_generation(prompt_text, model_name=DEFAULT_LLM_MODEL):
         requests.exceptions.RequestException: For other HTTP-related errors (e.g., non-200 status).
         json.JSONDecodeError: If a received chunk is not valid JSON.
     """
-    response = requests.post(LLM_API_URL, json={
-        "model": model_name,
-        "prompt": prompt_text,
-        "stream": True
-    }, stream=True)
-
-    response.raise_for_status() # Raise an HTTPError for bad responses (4xx or 5xx)
-
-    for line in response.iter_lines():
-        if line:
-            json_chunk = json.loads(line.decode('utf-8'))
-            if "response" in json_chunk:
-                yield json_chunk["response"]
+    try:
+        print(f"[LLM_API_CLIENT] Connecting to {LLM_API_URL} with model '{model_name}'...")
+        response = requests.post(
+            LLM_API_URL,
+            json={
+                "model": model_name,
+                "prompt": prompt_text,
+                "stream": True
+            },
+            stream=True,
+            timeout=120
+        )
+        print(f"[LLM_API_CLIENT] HTTP status: {response.status_code}")
+        response.raise_for_status()
+        got_any_response = False
+        chunk_count = 0
+        for line in response.iter_lines():
+            if not line:
+                continue
+            for part in line.split(b"\r"):
+                part = part.strip()
+                if not part:
+                    continue
+                try:
+                    json_chunk = json.loads(part.decode("utf-8"))
+                    if "response" in json_chunk:
+                        got_any_response = True
+                        chunk_count += 1
+                        print(f"[LLM_API_CLIENT] Received chunk {chunk_count}: {repr(json_chunk['response'][:60])}...")
+                        yield json_chunk["response"]
+                    elif "done" in json_chunk and json_chunk["done"]:
+                        print("[LLM_API_CLIENT] Received 'done' from backend.")
+                        return
+                except Exception as e:
+                    print(f"[LLM_API_CLIENT] Could not decode chunk: {e} | Raw: {repr(part)}")
+        if not got_any_response:
+            print("[LLM_API_CLIENT] WARNING: No response chunks received from backend. Check your model and prompt.")
+        else:
+            print(f"[LLM_API_CLIENT] Finished streaming response from backend. Total chunks: {chunk_count}")
+    except Exception as e:
+        print(f"[LLM_API_CLIENT] LLM API request failed: {e}")
+        raise

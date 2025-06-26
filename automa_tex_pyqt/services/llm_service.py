@@ -210,9 +210,13 @@ def _execute_llm_generation(full_llm_prompt, user_prompt_for_history, model_name
     global _generation_thread, _cancel_event
 
     editor = _active_editor_getter_func()
-    if not editor: return
+    if not editor:
+        print("[LLM] No active editor found.")
+        _show_temporary_status_message_func("❌ No active editor found.")
+        return
 
     if _generation_thread and _generation_thread.is_alive():
+        print("[LLM] Generation already in progress.")
         _show_temporary_status_message_func("⚠️ Another LLM generation is already in progress.")
         return
 
@@ -220,70 +224,78 @@ def _execute_llm_generation(full_llm_prompt, user_prompt_for_history, model_name
 
     # Store the initial cursor position where the text will be inserted
     insert_start_cursor = editor.textCursor()
+    insert_position = insert_start_cursor.position()
 
     def run_generation_in_thread():
-        generated_text_buffer = []
+        got_any_chunk = False
+        inserted_length = 0
+
+        def insert_chunk_main_thread(chunk, pos, length):
+            cursor = editor.textCursor()
+            cursor.setPosition(pos + length)
+            editor.setTextCursor(cursor)
+            editor.insertPlainText(chunk)
+
         try:
-            # Show progress bar
             if _llm_progress_bar_widget:
-                QtCore.QMetaObject.invokeMethod(_llm_progress_bar_widget, 'show', QtCore.Qt.ConnectionType.QueuedConnection)
-                QtCore.QMetaObject.invokeMethod(_llm_progress_bar_widget, 'start', QtCore.Qt.ConnectionType.QueuedConnection)
-            
+                QtCore.QTimer.singleShot(0, _llm_progress_bar_widget.show)
             _show_temporary_status_message_func("⏳ Generating text...")
+            print("[LLM] Sending prompt to backend...")
+            print(f"[LLM] Model: {model_name}")
+            print(f"[LLM] Prompt (first 200 chars): {full_llm_prompt[:200]}{'...' if len(full_llm_prompt) > 200 else ''}")
 
             for chunk in llm_api_client.request_llm_generation(full_llm_prompt, model_name):
-                if _cancel_event.is_set():
-                    break
-                if not editor.isVisible(): # Check if editor widget still exists and is visible
-                    break
-                
-                generated_text_buffer.append(chunk)
-                # Insert chunk directly at the current insert position
-                QtCore.QMetaObject.invokeMethod(editor, 'insertPlainText', QtCore.Qt.ConnectionType.QueuedConnection, chunk)
-            
-            final_generated_text = "".join(generated_text_buffer)
-
-            # If this was a completion task, clean up any repeated text from the prompt.
-            if text_for_completion_cleanup:
-                # Get the raw text that was just inserted
-                # This requires getting the text between the initial cursor position and the current one
-                current_cursor = editor.textCursor()
-                current_cursor.setPosition(insert_start_cursor.position())
-                current_cursor.setPosition(editor.textCursor().position(), QtGui.QTextCursor.MoveMode.KeepAnchor)
-                raw_inserted_text = current_cursor.selectedText()
-                
-                cleaned_text = llm_utils.remove_prefix_overlap_from_completion(
-                    text_before_completion=text_for_completion_cleanup,
-                    llm_generated_completion=raw_inserted_text
+                got_any_chunk = True
+                print(f"[LLM] Got chunk: {repr(chunk[:60])}...")
+                # Schedule each chunk for insertion in the main thread
+                QtCore.QTimer.singleShot(
+                    0,
+                    lambda chunk=chunk, pos=insert_position, length=inserted_length: insert_chunk_main_thread(chunk, pos, length)
                 )
-                
-                if cleaned_text != raw_inserted_text:
-                    # Delete the old text and insert the cleaned text
-                    current_cursor.removeSelectedText()
-                    current_cursor.insertText(cleaned_text)
-                    final_generated_text = cleaned_text # Update for history
-                else:
-                    final_generated_text = raw_inserted_text
+                inserted_length += len(chunk)
 
-            _show_temporary_status_message_func("✅ Generation complete.")
-            QtCore.QMetaObject.invokeMethod(_root_window, lambda: _update_history_response_and_save(user_prompt_for_history, final_generated_text), QtCore.Qt.ConnectionType.QueuedConnection)
+            def postprocess_and_finalize():
+                if not got_any_chunk:
+                    print("[LLM] No response received from backend. (Model may not be loaded, or prompt is empty, or model is not compatible.)")
+                    _show_temporary_status_message_func("❌ No response from LLM backend. Try a different model or check your prompt.")
+                    _update_history_response_and_save(user_prompt_for_history, "❌ No response from LLM backend.")
+                    return
+                # Select the inserted text region for post-processing
+                cursor = editor.textCursor()
+                cursor.setPosition(insert_position)
+                cursor.setPosition(insert_position + inserted_length, QtGui.QTextCursor.MoveMode.KeepAnchor)
+                editor.setTextCursor(cursor)
+                raw_inserted_text = cursor.selectedText()
+                final_generated_text = raw_inserted_text
+                if text_for_completion_cleanup:
+                    cleaned_text = llm_utils.remove_prefix_overlap_from_completion(
+                        text_before_completion=text_for_completion_cleanup,
+                        llm_generated_completion=raw_inserted_text
+                    )
+                    if cleaned_text != raw_inserted_text:
+                        cursor.removeSelectedText()
+                        cursor.insertText(cleaned_text)
+                        final_generated_text = cleaned_text
+                print(f"[LLM] Generation complete. Inserted {len(final_generated_text)} chars.")
+                print(f"[LLM] Final inserted text (first 200 chars): {final_generated_text[:200]!r}")
+                _show_temporary_status_message_func("✅ Generation complete.")
+                _update_history_response_and_save(user_prompt_for_history, final_generated_text)
+
+            QtCore.QTimer.singleShot(0, postprocess_and_finalize)
 
         except (requests.exceptions.ConnectionError, requests.exceptions.RequestException) as e:
-            QtCore.QMetaObject.invokeMethod(_root_window, lambda: _handle_llm_api_error(type(e).__name__, e, editor, user_prompt_for_history), QtCore.Qt.ConnectionType.QueuedConnection)
+            print(f"[LLM] Request error: {e}")
+            QtCore.QTimer.singleShot(0, lambda: _handle_llm_api_error(type(e).__name__, e, editor, user_prompt_for_history))
         except Exception as e:
-            QtCore.QMetaObject.invokeMethod(_root_window, lambda: _handle_llm_api_error("UnexpectedError", e, editor, user_prompt_for_history), QtCore.Qt.ConnectionType.QueuedConnection)
+            print(f"[LLM] Unexpected error: {e}")
+            QtCore.QTimer.singleShot(0, lambda: _handle_llm_api_error("UnexpectedError", e, editor, user_prompt_for_history))
         finally:
-            # Hide progress bar
             if _llm_progress_bar_widget:
-                QtCore.QMetaObject.invokeMethod(_llm_progress_bar_widget, 'hide', QtCore.Qt.ConnectionType.QueuedConnection)
-            
-            # Resume heavy updates
+                QtCore.QTimer.singleShot(0, _llm_progress_bar_widget.hide)
             if _resume_heavy_updates_func:
-                QtCore.QMetaObject.invokeMethod(_root_window, _resume_heavy_updates_func, QtCore.Qt.ConnectionType.QueuedConnection)
-            
+                QtCore.QTimer.singleShot(0, _resume_heavy_updates_func)
             _generation_thread = None
 
-    # Pause heavy editor updates (syntax highlighting, outline) during generation
     if _pause_heavy_updates_func:
         _pause_heavy_updates_func()
 
@@ -427,6 +439,13 @@ def open_edit_prompts_dialog():
         return
 
     _show_temporary_status_message_func("⏳ Opening LLM prompt templates dialog...")
+    llm_dialogs.show_edit_prompts_dialog(
+        root_window=_root_window,
+        theme_setting_getter_func=_theme_setting_getter_func,
+        current_prompts=get_current_prompts(),
+        default_prompts=_global_default_prompts,
+        on_save_callback=update_prompts
+    )
     llm_dialogs.show_edit_prompts_dialog(
         root_window=_root_window,
         theme_setting_getter_func=_theme_setting_getter_func,

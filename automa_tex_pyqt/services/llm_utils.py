@@ -11,15 +11,6 @@ from PyQt6 import QtGui
 def extract_editor_context(editor_widget, lines_before_cursor=5, lines_after_cursor=5):
     """
     Extracts text context from the editor widget around the current cursor position.
-
-    Args:
-        editor_widget (QTextEdit): The PyQt QTextEdit widget (the editor).
-        lines_before_cursor (int): Number of lines to extract before the cursor line.
-        lines_after_cursor (int): Number of lines to extract after the cursor line.
-
-    Returns:
-        str: A string containing the extracted context, with lines separated by newlines.
-             Returns an empty string if the editor widget is not available or on error.
     """
     if not editor_widget:
         return ""
@@ -36,8 +27,8 @@ def extract_editor_context(editor_widget, lines_before_cursor=5, lines_after_cur
         context_lines = []
         for i in range(start_block_num, end_block_num + 1):
             block = document.findBlockByLineNumber(i)
-            context_lines.append(block.text())
-
+            if block.isValid():
+                context_lines.append(block.text())
         return "\n".join(context_lines)
     except Exception as e:
         print(f"Error getting context: {e}")

@@ -60,7 +60,14 @@ def update_outline_tree(editor):
             parent_item = parents_for_tree.get(level - 1)
             if parent_item:
                 node_item = QtWidgets.QTreeWidgetItem(parent_item, [title])
-                node_item.setData(0, QtCore.Qt.ItemDataRole.UserRole, line_num) # Store line number
+                # Defensive: ensure line_num is int and >= 1
+                try:
+                    safe_line_num = int(line_num)
+                    if safe_line_num < 1:
+                        safe_line_num = 1
+                except Exception:
+                    safe_line_num = 1
+                node_item.setData(0, QtCore.Qt.ItemDataRole.UserRole, safe_line_num)
                 parents_for_tree[level] = node_item
                 for deeper in range(level + 1, 4):
                     if deeper in parents_for_tree:
