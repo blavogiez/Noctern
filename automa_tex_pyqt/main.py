@@ -1,3 +1,4 @@
+# File: main.py
 import sys
 import os
 import platform
@@ -122,6 +123,16 @@ if __name__ == "__main__":
         status_message_func=status_bar.show_temporary_status_message,
         active_editor_getter=lambda: file_tab_manager.get_current_tab().editor if file_tab_manager.get_current_tab() else None,
         active_filepath_getter=lambda: file_tab_manager.get_current_tab().file_path if file_tab_manager.get_current_tab() else None
+    )
+
+    # Connect actions that depend on services being initialized
+    main_window_instance.action_paste_image.triggered.connect(editor_logic.paste_image)
+
+    # Setup the main window close event to handle unsaved changes
+    file_tab_manager.setup_main_window_close_event(
+        main_window_instance,
+        file_tab_manager.save_file,
+        status_bar.show_temporary_status_message
     )
 
     # Show the welcome screen initially, as no tabs are open

@@ -1,3 +1,4 @@
+# File: llm_api_client.py
 # automa_tex_pyqt/services/llm_api_client.py
 """
 Client for interacting with the LLM (Large Language Model) API.

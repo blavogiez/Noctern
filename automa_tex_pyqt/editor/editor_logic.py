@@ -1,7 +1,11 @@
+# File: editor_logic.py
 import re
 import os
 from datetime import datetime
 from PyQt6 import QtWidgets, QtCore, QtGui
+
+# Import theme manager to get color settings for syntax highlighting
+from gui import theme_manager
 
 outline_tree = None
 get_current_tab_func = None # Callback to get the current tab from the GUI manager
@@ -93,14 +97,14 @@ def apply_syntax_highlighting(editor, full_document=False):
     
     # Define formats (these should ideally come from theme_manager)
     comment_format = QtGui.QTextCharFormat()
-    comment_format.setForeground(QtGui.QColor("#608b4e")) # Dark theme green
+    comment_format.setForeground(QtGui.QColor(theme_manager.get_theme_setting("comment_color", "#608b4e"))) # Use theme setting
     comment_format.setFontItalic(True)
 
     command_format = QtGui.QTextCharFormat()
-    command_format.setForeground(QtGui.QColor("#569cd6")) # Dark theme blue
+    command_format.setForeground(QtGui.QColor(theme_manager.get_theme_setting("command_color", "#569cd6"))) # Use theme setting
 
     brace_format = QtGui.QTextCharFormat()
-    brace_format.setForeground(QtGui.QColor("#c586c0")) # Dark theme purple
+    brace_format.setForeground(QtGui.QColor(theme_manager.get_theme_setting("brace_color", "#c586c0"))) # Use theme setting
 
     # Clear existing formats in the target range
     if full_document:

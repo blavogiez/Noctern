@@ -1,3 +1,4 @@
+# File: latex_translator.py
 import os
 import threading
 from PyQt6 import QtWidgets, QtCore, QtGui

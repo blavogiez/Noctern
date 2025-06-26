@@ -1,3 +1,4 @@
+# File: editor_view.py
 from PyQt6 import QtWidgets, QtCore, QtGui
 from datetime import datetime
 

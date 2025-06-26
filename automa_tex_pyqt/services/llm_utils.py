@@ -1,3 +1,4 @@
+# File: llm_utils.py
 # automa_tex_pyqt/services/llm_utils.py
 """
 Utility functions for LLM (Large Language Model) operations.

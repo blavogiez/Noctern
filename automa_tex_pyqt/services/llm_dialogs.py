@@ -1,3 +1,4 @@
+# File: llm_dialogs.py
 # automa_tex_pyqt/services/llm_dialogs.py
 """
 Manages dialog windows for LLM (Large Language Model) interactions.

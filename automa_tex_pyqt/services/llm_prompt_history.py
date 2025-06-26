@@ -1,3 +1,4 @@
+# File: llm_prompt_history.py
 # automa_tex_pyqt/services/llm_prompt_history.py
 """
 Manages the prompt history for the LLM interactions.

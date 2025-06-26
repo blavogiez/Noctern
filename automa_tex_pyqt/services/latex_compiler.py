@@ -1,3 +1,4 @@
+# File: latex_compiler.py
 import subprocess
 import os
 import platform

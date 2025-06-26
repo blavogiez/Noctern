@@ -1,3 +1,4 @@
+# File: file_tab_manager.py
 import os
 from PyQt6 import QtWidgets, QtCore, QtGui
 

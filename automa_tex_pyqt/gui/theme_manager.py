@@ -1,3 +1,4 @@
+# File: theme_manager.py
 from PyQt6 import QtWidgets, QtCore, QtGui
 
 # References to main GUI components and callbacks

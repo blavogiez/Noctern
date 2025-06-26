@@ -1,3 +1,4 @@
+# File: status_bar.py
 import subprocess
 import platform
 from PyQt6 import QtWidgets, QtCore

@@ -1,9 +1,12 @@
+# File: editor_tab.py
 import os
 import re
 from PyQt6 import QtWidgets, QtCore, QtGui
 
 # Import editor_logic for syntax highlighting and outline updates
 from editor import editor_logic
+# Import theme manager to get color settings
+from gui import theme_manager
 
 INDENT_WIDTH = 4 # Define indentation width in spaces
 
@@ -80,8 +83,8 @@ class Editor(QtWidgets.QTextEdit):
         self.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
 
         # Signals for updating line numbers and syntax highlighting
-        self.blockCountChanged.connect(self.update_line_number_area_width)
-        self.updateRequest.connect(self.update_line_number_area)
+        self.document().blockCountChanged.connect(self.update_line_number_area_width)
+        self.verticalScrollBar().valueChanged.connect(self.line_number_area.update)
         self.cursorPositionChanged.connect(self._on_editor_event)
         self.textChanged.connect(self._on_editor_event)
 
@@ -138,7 +141,7 @@ class Editor(QtWidgets.QTextEdit):
             selection = QtWidgets.QTextEdit.ExtraSelection()
             selection.cursor = self.textCursor()
             selection.cursor.clearSelection() # Ensure no text is selected
-            selection.format.setBackground(QtGui.QColor("#f8f8f8")) # Default light theme
+            selection.format.setBackground(QtGui.QColor(theme_manager.get_theme_setting("current_line_bg", "#f8f8f8"))) # Use theme setting
             selection.format.setProperty(QtGui.QTextFormat.Property.FullWidthSelection, True)
             extra_selections.append(selection)
         self.setExtraSelections(extra_selections)
@@ -290,7 +293,6 @@ class EditorTab(QtWidgets.QWidget):
                 # For simplicity, we'll just ensure cursor is visible
                 self.editor.ensureCursorVisible()
 
-            editor_logic.apply_syntax_highlighting(self.editor, full_document=True)
             self.editor.document().setModified(self._is_dirty_override or False)
             self.update_tab_title()
             return
@@ -302,13 +304,11 @@ class EditorTab(QtWidgets.QWidget):
                     self.editor.setPlainText(content)
                     self.update_tab_title()
                     
-                    editor_logic.apply_syntax_highlighting(self.editor, full_document=True)
                     self.editor.document().setModified(False) # Set modified state to False after load
             except Exception as e:
                 QtWidgets.QMessageBox.showerror(self, "Error", f"Could not open file:\n{e}")
         else:
             self.update_tab_title()
-            editor_logic.apply_syntax_highlighting(self.editor, full_document=True)
             self.editor.document().setModified(False)
 
     def save_file(self, new_path=None):

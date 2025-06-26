@@ -1,3 +1,4 @@
+# File: llm_service.py
 # automa_tex_pyqt/services/llm_service.py
 """
 Service layer for LLM (Large Language Model) functionalities.
@@ -90,7 +91,7 @@ def initialize_llm_service(root_window_ref, progress_bar_widget_ref,
     _active_editor_getter_func = active_editor_getter
     _active_filepath_getter_func = active_filepath_getter
     _pause_heavy_updates_func = pause_heavy_updates_cb
-    _resume_heavy_updates_func = resume_heavy_updates_cb
+    _resume_heavy_updates_cb = resume_heavy_updates_cb
     _full_editor_refresh_cb = full_editor_refresh_cb
 
     # Connect buttons and actions

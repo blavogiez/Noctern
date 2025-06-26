@@ -1,3 +1,4 @@
+# File: llm_prompt_manager.py
 # automa_tex_pyqt/services/llm_prompt_manager.py
 """
 Manages loading and saving custom LLM prompt templates.

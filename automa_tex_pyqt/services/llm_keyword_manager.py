@@ -1,3 +1,4 @@
+# File: llm_keyword_manager.py
 # automa_tex_pyqt/services/llm_keyword_manager.py
 import json
 import os
