@@ -59,8 +59,10 @@ def perform_heavy_updates():
         return
 
     # Perform all updates for the current tab
-    # --- PATCH: Do NOT apply syntax highlighting automatically after LLM insertion ---
-    # _editor_logic.apply_syntax_highlighting(current_tab.editor, full_document=False)
+    # After an edit or LLM generation, we need to re-apply syntax highlighting
+    # to the visible area to catch any changes. This is more efficient than a full
+    # document scan on every keystroke.
+    _editor_logic.apply_syntax_highlighting(current_tab.editor, full_document=False)
     _editor_logic.update_outline_tree(current_tab.editor)
     current_tab.line_numbers.redraw() # Explicitly redraw line numbers as part of the debounced update
 
@@ -165,13 +167,23 @@ def full_editor_refresh():
     """
     Performs a full refresh of the editor: clears undo stack,
     re-applies full syntax highlighting, and triggers heavy updates
-    (outline, line numbers).
+    (outline, line numbers). It also resumes normal updates if they were paused.
     """
     print(f"[{datetime.now().strftime('%H:%M:%S.%f')[:-3]}] [Perf] full_editor_refresh: Clearing undo, full re-highlight, updating outline.")
     current_tab = _get_current_tab_callback()
     if not current_tab or not current_tab.editor:
+        # If we can't refresh, we must at least resume updates to prevent the UI from freezing.
+        resume_heavy_updates()
         return
 
     current_tab.editor.edit_reset() # Clear undo stack
     _editor_logic.apply_syntax_highlighting(current_tab.editor, full_document=True)
-    perform_heavy_updates() # This will update outline and line numbers
+
+    # A full refresh implies that heavy updates are no longer paused.
+    # We un-pause them here and then manually trigger one perform_heavy_updates cycle.
+    # This is more direct than calling resume_heavy_updates(), which would schedule
+    # another redundant update.
+    global _heavy_updates_paused
+    _heavy_updates_paused = False
+
+    perform_heavy_updates() # This will update the outline and line numbers based on the new full highlighting.

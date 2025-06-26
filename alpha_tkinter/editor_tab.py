@@ -138,7 +138,14 @@ class EditorTab(ttk.Frame):
         self.notebook = parent_notebook
         self.file_path = file_path
         self._schedule_heavy_updates_callback = schedule_heavy_updates_callback # Store the callback
-        self.last_saved_content = "" if file_path else "\n"
+        # The last_saved_content variable is no longer needed. We will use the
+        # editor's built-in 'modified' flag for a much more performant way
+        # to check if the content has changed.
+
+        # Caches for performance, specific to this tab's editor, to prevent
+        # re-parsing the entire document on every minor change.
+        self.last_content_for_outline_parsing = ""
+        self.last_parsed_outline_structure = []
 
         # Each tab has its own font object to manage zoom level independently
         self.editor_font = Font(family="Consolas", size=12)
@@ -175,6 +182,9 @@ class EditorTab(ttk.Frame):
         self.editor.bind("<Shift-Tab>", self._on_shift_tab_key)
         self.editor.bind("<Control-BackSpace>", self._on_ctrl_backspace_key)
 
+        # Set the initial modified state to False. Any user edit will set it to True.
+        self.editor.edit_modified(False)
+
     def _on_editor_event(self, event=None):
         """
         Central handler for events that should trigger updates.
@@ -196,7 +206,10 @@ class EditorTab(ttk.Frame):
 
     def is_dirty(self):
         """Checks if the editor content has changed since the last save."""
-        return self.get_content() != self.last_saved_content
+        # Using the editor's built-in modified flag is instantaneous and avoids
+        # getting the entire document content on every check (e.g., on keypress).
+        # This drastically improves typing performance.
+        return self.editor.edit_modified()
 
     def update_tab_title(self):
         """Updates the notebook tab text to show a '*' if the file is dirty."""
@@ -212,7 +225,6 @@ class EditorTab(ttk.Frame):
                     content = f.read()
                     self.editor.delete("1.0", tk.END)
                     self.editor.insert("1.0", content)
-                    self.last_saved_content = self.get_content()
                     self.update_tab_title()
                     
                     # --- NEW: Apply full syntax highlighting on load ---
@@ -223,6 +235,7 @@ class EditorTab(ttk.Frame):
                     # Use 'after' to ensure the highlight is applied after the mainloop is idle
                     self.after(10, self._highlight_current_line)
                     self.editor.edit_reset() # Clear undo stack
+                    self.editor.edit_modified(False) # Set modified state to False after load
             except Exception as e:
                 messagebox.showerror("Error", f"Could not open file:\n{e}")
         else:
@@ -231,6 +244,7 @@ class EditorTab(ttk.Frame):
             # For new files, still apply initial highlight (empty document) and current line
             editor_logic.apply_syntax_highlighting(self.editor, full_document=True)
             self.after(10, self._highlight_current_line)
+            self.editor.edit_modified(False)
 
     def _highlight_current_line(self, event=None):
         """Highlights the current line in the editor and the corresponding line number."""
@@ -266,9 +280,9 @@ class EditorTab(ttk.Frame):
             content = self.get_content()
             with open(self.file_path, "w", encoding="utf-8") as f:
                 f.write(content)
-            self.last_saved_content = content
             self.update_tab_title()
             self.editor.edit_reset() # Clear undo stack to free memory
+            self.editor.edit_modified(False) # Set modified state to False after save
             return True
         except Exception as e:
             messagebox.showerror("Error", f"Error saving file:\n{e}")

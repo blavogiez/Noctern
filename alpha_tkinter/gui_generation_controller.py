@@ -156,6 +156,10 @@ class GenerationUIController:
                 # If accepted, remove all styling from the generated text.
                 self.editor.tag_remove(self.tag_name, self.start_mark_name, self.end_mark_name)
 
+            # CRITICAL: Delete the unique tag definition to prevent accumulation over multiple
+            # generations, which causes progressive performance degradation.
+            self.editor.tag_delete(self.tag_name)
+
             if self.frame.winfo_exists():
                 self.frame.destroy()
 

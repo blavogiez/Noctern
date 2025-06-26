@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.25 (MiKTeX 24.1) (preloaded format=pdflatex 2025.5.18)  26 JUN 2025 15:39
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (MiKTeX 24.1) (preloaded format=pdflatex 2025.5.18)  26 JUN 2025 16:52
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -268,17 +268,7 @@ LaTeX Font Info:    External font `cmex10' loaded for size
 (Font)              <7> on input line 60.
 LaTeX Font Info:    External font `cmex10' loaded for size
 (Font)              <5> on input line 60.
-[2]
-
-LaTeX Warning: Reference `tab:future_recognition' on page 3 undefined on input 
-line 82.
-
-[3]
-
-LaTeX Warning: Reference `tab:future_recognition' on page 4 undefined on input 
-line 86.
-
-
+[2] [3]
 Overfull \hbox (23.73404pt too wide) in paragraph at lines 86--87
 \T1/cmr/m/n/10 burgeoning future of Cristiano Ronaldo's illustrious football ca
 reer. With nominations
@@ -314,32 +304,95 @@ Overfull \hbox (7.46948pt too wide) in paragraph at lines 103--103
 si has captivated
  []
 
-[5] (fernandes.aux)
+
+Overfull \hbox (21.79007pt too wide) in paragraph at lines 105--106
+\T1/cmr/m/n/10 Lionel Messi share. Their journeys provide a testament to the po
+wer of determination,
+ []
+
+
+Overfull \hbox (29.38803pt too wide) in paragraph at lines 107--107
+[][]\T1/cmr/bx/n/14.4 A Brilliant Future Awaits Cristiano Ronaldo Fernandes 
+ []
+
+
+Overfull \hbox (1.40616pt too wide) in paragraph at lines 109--110
+\T1/cmr/m/n/10 Ronaldo Fernandes' distinguished career. With nominations for es
+teemed awards
+ []
+
+[5]
+Overfull \hbox (3.97034pt too wide) in paragraph at lines 122--123
+\T1/cmr/m/n/10 welcome the continued evolution of Cristiano Ronaldo Fernandes' 
+career, knowing
+ []
+
+
+Overfull \hbox (25.19104pt too wide) in paragraph at lines 124--126
+[]\T1/cmr/m/n/10 jfeziezijfizefuizefuizeiufzeiufzeiufziueuifzeiuzeiu uzeiguiezu
+gizeiugzeiugzeiugezgezgj 
+ []
+
+
+Overfull \hbox (48.20953pt too wide) in paragraph at lines 131--132
+\T1/cmr/m/n/10 absolute joy to witness his journey unfold." "jfeziezijfizefuize
+fuizeiufzeiufzeiufziueuifzeiuzeiu
+ []
+
+
+Overfull \hbox (13.91016pt too wide) in paragraph at lines 131--132
+\T1/cmr/m/n/10 uzeiguiezugizeiugzeiugzeiugezgezgj DSKSDK I love seeing all that
+ brought together,
+ []
+
+[6]
+! Undefined control sequence.
+l.151     \includegraphics
+                          [width=0.8\textwidth]{figures/pf/default/default/f...
+The control sequence at the end of the top line
+of your error message was never \def'ed. If you have
+misspelled it (e.g., `\hobx'), type `I' and the correct
+spelling (e.g., `I\hbox'). Otherwise just continue,
+and I'll forget about whatever was undefined.
+
+! Missing number, treated as zero.
+<to be read again> 
+                   ]
+l.151     \includegraphics[width=0.8\textwidth]
+                                               {figures/pf/default/default/f...
+A number should have been here; I inserted `0'.
+(If you can't figure out why I needed to see a number,
+look up `weird error' in the index to The TeXbook.)
+
+! Illegal unit of measure (pt inserted).
+<to be read again> 
+                   ]
+l.151     \includegraphics[width=0.8\textwidth]
+                                               {figures/pf/default/default/f...
+Dimensions can be in units of em, ex, in, pt, pc,
+cm, mm, dd, cc, nd, nc, bp, or sp; but yours is a new one!
+I'll assume that you meant to say pt, for printer's points.
+To recover gracefully from this error, it's best to
+delete the erroneous units; e.g., type `2' to delete
+two letters. (See Chapter 27 of The TeXbook.)
+
+[7] (fernandes.aux)
  ***********
 LaTeX2e <2023-11-01> patch level 1
 L3 programming layer <2024-01-04>
  ***********
 
 
-LaTeX Warning: There were undefined references.
-
-
 LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
 
-
-Package rerunfilecheck Warning: File `fernandes.out' has changed.
-(rerunfilecheck)                Rerun to get outlines right
-(rerunfilecheck)                or use package `bookmark'.
-
-Package rerunfilecheck Info: Checksums for `fernandes.out':
-(rerunfilecheck)             Before: D41D8CD98F00B204E9800998ECF8427E;0
-(rerunfilecheck)             After:  60BF0EDA5FB8BDBA8EBBEEE0EFD5F16F;53.
+Package rerunfilecheck Info: File `fernandes.out' has not changed.
+(rerunfilecheck)             Checksum: 60BF0EDA5FB8BDBA8EBBEEE0EFD5F16F;53.
  ) 
 Here is how much of TeX's memory you used:
- 8795 strings out of 474485
- 139871 string characters out of 5744678
+ 8804 strings out of 474485
+ 139989 string characters out of 5744678
  1933542 words of memory out of 5000000
- 30992 multiletter control sequences out of 15000+600000
+ 30997 multiletter control sequences out of 15000+600000
  566530 words of font info for 53 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  75i,8n,79p,1959b,478s stack positions out of 10000i,1000n,20000p,200000b,200000s
@@ -350,9 +403,9 @@ bx1000.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi60
 pi600\ecrm1000.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/
 ec/dpi600\ecbx1440.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknap
 pen/ec/dpi600\ecrm1728.pk>
-Output written on fernandes.pdf (5 pages, 70278 bytes).
+Output written on fernandes.pdf (7 pages, 78017 bytes).
 PDF statistics:
- 229 PDF objects out of 1000 (max. 8388607)
- 24 named destinations out of 1000 (max. 500000)
- 1 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 255 PDF objects out of 1000 (max. 8388607)
+ 28 named destinations out of 1000 (max. 500000)
+ 9 words of extra memory for PDF output out of 10000 (max. 10000000)
 

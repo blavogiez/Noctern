@@ -36,7 +36,6 @@ _active_filepath_getter_func = None # Function to get current .tex file path
 _pause_heavy_updates_func = None # NEW: Callback to pause heavy editor updates
 _resume_heavy_updates_func = None # NEW: Callback to resume heavy editor updates
 _full_editor_refresh_cb = None # NEW: Callback for full editor refresh (undo stack, full syntax, outline)
-_llm_generation_count = 0 # NEW: Counter for LLM generations to trigger periodic cleanup
 
 # --- NEW: State for interactive generation ---
 _generation_thread = None
@@ -277,13 +276,6 @@ def _execute_llm_generation(full_llm_prompt, user_prompt_for_history, model_name
                 editor.delete(start_index, end_index)
                 editor.insert(start_index, final_text)
 
-        # --- PATCH: Highlight only the generated lines after LLM generation ---
-        try:
-            import gui_editor_view
-            gui_editor_view.highlight_generated_lines(start_index, end_index)
-        except Exception:
-            pass
-
         # NEW: Print prompt and response to console for validation
         print("="*80)
         print(f"[LLM Generation Accepted]")
@@ -291,11 +283,11 @@ def _execute_llm_generation(full_llm_prompt, user_prompt_for_history, model_name
         print(f"  LLM RESPONSE:\n---\n{final_text}\n---")
         print("="*80)
 
-        global _llm_generation_count
-        _llm_generation_count += 1
-        if _llm_generation_count % 4 == 0 and _full_editor_refresh_cb:
-            print("[Perf] Triggering full editor refresh (4 gens).")
-            _full_editor_refresh_cb()
+        # The root cause of performance degradation (a tag definition leak) has been fixed.
+        # The periodic heavy refresh is no longer necessary and can be disruptive (clears undo).
+        # A standard debounced refresh is now sufficient to update the UI.
+        if _resume_heavy_updates_func:
+            _resume_heavy_updates_func()
 
         _show_temporary_status_message_func("✅ Generation accepted.")
         _update_history_response_and_save(user_prompt_for_history, final_text)
@@ -315,11 +307,11 @@ def _execute_llm_generation(full_llm_prompt, user_prompt_for_history, model_name
         _cancel_current_generation(discard_text=True) # Cleanup UI, ignore return value
         _show_temporary_status_message_func("❌ Generation cancelled.")
 
-        global _llm_generation_count
-        _llm_generation_count += 1
-        if _llm_generation_count % 4 == 0 and _full_editor_refresh_cb:
-            print("[Perf] Triggering full editor refresh (4 gens).")
-            _full_editor_refresh_cb()
+        # The root cause of performance degradation (a tag definition leak) has been fixed.
+        # A standard debounced refresh is sufficient to restore the UI state.
+        if _resume_heavy_updates_func:
+            _resume_heavy_updates_func()
+
         _update_history_response_and_save(user_prompt_for_history, "❌ Cancelled by user.")
 
     _generation_ui.accept_callback = on_accept
@@ -340,9 +332,8 @@ def _execute_llm_generation(full_llm_prompt, user_prompt_for_history, model_name
                 editor.after(0, ui_controller.show_finished_state)
             if _llm_progress_bar_widget and editor:
                 editor.after(0, lambda: (_llm_progress_bar_widget.pack_forget(), _llm_progress_bar_widget.stop()))
-            # NEW: Resume heavy updates after generation is complete (success, error, or cancel)
-            if editor and _resume_heavy_updates_func:
-                editor.after(0, _resume_heavy_updates_func)
+            # Heavy updates are now resumed in the on_accept/on_cancel callbacks,
+            # ensuring the refresh happens *after* the UI is finalized.
 
     _llm_progress_bar_widget.pack(pady=2)
     _llm_progress_bar_widget.start(10)

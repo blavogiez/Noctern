@@ -5,10 +5,6 @@ from datetime import datetime # NEW: Import datetime for timestamps
 from tkinter import messagebox
 from PIL import ImageGrab
 
-# NEW: Store the last parsed outline structure
-_last_parsed_outline_structure = []
-
-_last_content_for_outline_parsing = "" # NEW: Store the content that generated the last outline
 outline_tree = None
 get_current_tab_func = None # Callback to get the current tab from the GUI manager
 
@@ -21,21 +17,26 @@ def initialize_editor_logic(tree_widget, get_current_tab_callback):
 
 def update_outline_tree(editor):
     """
-    Updates the Treeview widget with LaTeX section structure,
-    only if the structure has changed.
+    Updates the Treeview widget with LaTeX section structure.
+    To improve performance, it uses a per-tab cache to avoid re-parsing the
+    entire document unless the content has actually changed.
     """
-    global _last_parsed_outline_structure, _last_content_for_outline_parsing
-
     if not outline_tree or not editor:
         return
-    
+
+    current_tab = get_current_tab_func()
+    if not current_tab or current_tab.editor != editor:
+        # This can happen if a tab is being closed or is not the active one during a refresh.
+        return
+
     content = editor.get("1.0", tk.END)
-    if content == _last_content_for_outline_parsing:
+    # Use the tab-specific cache to check if a re-parse is needed.
+    if content == current_tab.last_content_for_outline_parsing:
         return # Content hasn't changed, no need to re-parse outline
 
     print(f"[{datetime.now().strftime('%H:%M:%S.%f')[:-3]}] [Perf] update_outline_tree: Re-parsing document structure.")
 
-    content = editor.get("1.0", tk.END)
+    # The content has changed, so we must re-parse it.
     lines = content.split("\n")
     
     current_outline_structure = []
@@ -55,8 +56,8 @@ def update_outline_tree(editor):
                 current_outline_structure.append((level, title, i + 1))
                 break # Found a section command, move to next line
 
-    # Compare current structure with last known structure
-    if current_outline_structure != _last_parsed_outline_structure:
+    # Compare current structure with this tab's last known structure
+    if current_outline_structure != current_tab.last_parsed_outline_structure:
         # Structure has changed, so update the Treeview
         outline_tree.delete(*outline_tree.get_children()) # Clear existing tree
 
@@ -71,8 +72,9 @@ def update_outline_tree(editor):
                 if deeper in parents_for_tree:
                     del parents_for_tree[deeper]
 
-        _last_parsed_outline_structure = current_outline_structure # Update last known outline structure
-        _last_content_for_outline_parsing = content # Update last known content for outline
+        current_tab.last_parsed_outline_structure = current_outline_structure # Update tab's outline cache
+
+    current_tab.last_content_for_outline_parsing = content # Always update tab's content cache after a parse
 
 def go_to_section(editor, event):
     """Scrolls the editor to the selected section in the outline tree."""
