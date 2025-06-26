@@ -1,6 +1,8 @@
 # File: file_tab_manager.py
 import os
 from PyQt6 import QtWidgets, QtCore, QtGui
+
+# Import EditorTab class
 from editor_tab import EditorTab
 
 # References to main GUI components and callbacks

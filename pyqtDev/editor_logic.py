@@ -1,215 +1,261 @@
-# File: latex_translator.py
+# File: editor_logic.py
+import re
 import os
-import threading
+from datetime import datetime
 from PyQt6 import QtWidgets, QtCore, QtGui
+
+# Import theme manager to get color settings for syntax highlighting
 import theme_manager
 
-try:
-    import argostranslate.package
-    import argostranslate.translate
-    _ARGOS_TRANSLATE_AVAILABLE = True
-except ImportError:
-    _ARGOS_TRANSLATE_AVAILABLE = False
-    print("Warning: argostranslate module not found. Translation functionality will be disabled.")
+outline_tree = None
+get_current_tab_func = None # Callback to get the current tab from the GUI manager
 
-# Global variables to store references from the main application
-_root = None
-_theme_setting_getter_func = None
-_show_temporary_status_message_func = None
-_active_editor_getter_func = None
-_active_filepath_getter_func = None
+def initialize_editor_logic(tree_widget, get_current_tab_callback):
+    """Sets the global reference to the outline tree."""
+    global outline_tree
+    global get_current_tab_func
+    outline_tree = tree_widget
+    get_current_tab_func = get_current_tab_callback
 
-def initialize_translator(root_ref, theme_getter, status_message_func, active_editor_getter, active_filepath_getter):
-    """
-    Initializes the LaTeX translator service with necessary references from the main application.
-    """
-    global _root, _theme_setting_getter_func, _show_temporary_status_message_func
-    global _active_editor_getter_func, _active_filepath_getter_func
-    _root = root_ref
-    _theme_setting_getter_func = theme_getter
-    _show_temporary_status_message_func = status_message_func
-    _active_editor_getter_func = active_editor_getter
-    _active_filepath_getter_func = active_filepath_getter
+    # Connect outline tree selection to go_to_section
+    outline_tree.itemClicked.connect(lambda item: go_to_section(get_current_tab_func().editor if get_current_tab_func() else None, item))
 
-    # Connect button and action
-    _root.btn_translate.clicked.connect(open_translate_dialog)
-    _root.action_translate.triggered.connect(open_translate_dialog)
+def update_outline_tree(editor):
+    """
+    Updates the QTreeWidget with LaTeX section structure.
+    To improve performance, it uses a per-tab cache to avoid re-parsing the
+    entire document unless the content has actually changed.
+    """
+    if not outline_tree or not editor:
+        return
 
-def _get_available_translation_pairs():
+    current_tab = get_current_tab_func()
+    if not current_tab or current_tab.editor != editor:
+        return
+
+    content = editor.toPlainText()
+    if content == current_tab.last_content_for_outline_parsing:
+        return
+
+    print(f"[{datetime.now().strftime('%H:%M:%S.%f')[:-3]}] [Perf] update_outline_tree: Re-parsing document structure.")
+
+    lines = content.split("\n")
+    
+    current_outline_structure = []
+
+    for i, line in enumerate(lines):
+        stripped_line = line.strip()
+        for level, cmd in enumerate(["section", "subsection", "subsubsection"], 1):
+            match = re.match(rf"\\{cmd}\*?(?:\[[^\]]*\])?{{([^}}]*)}}", stripped_line)
+            if match:
+                title = match.group(1).strip()
+                current_outline_structure.append((level, title, i + 1))
+                break
+
+    if current_outline_structure != current_tab.last_parsed_outline_structure:
+        outline_tree.clear() # Clear existing tree
+
+        parents_for_tree = {0: outline_tree.invisibleRootItem()} # Map level to parent QTreeWidgetItem
+        for level, title, line_num in current_outline_structure:
+            parent_item = parents_for_tree.get(level - 1)
+            if parent_item:
+                node_item = QtWidgets.QTreeWidgetItem(parent_item, [title])
+                # Defensive: ensure line_num is int and >= 1
+                try:
+                    safe_line_num = int(line_num)
+                    if safe_line_num < 1:
+                        safe_line_num = 1
+                except Exception:
+                    safe_line_num = 1
+                node_item.setData(0, QtCore.Qt.ItemDataRole.UserRole, safe_line_num)
+                parents_for_tree[level] = node_item
+                for deeper in range(level + 1, 4):
+                    if deeper in parents_for_tree:
+                        del parents_for_tree[deeper]
+
+        current_tab.last_parsed_outline_structure = current_outline_structure
+
+    current_tab.last_content_for_outline_parsing = content
+
+def go_to_section(editor, item):
+    """Scrolls the editor to the selected section in the outline tree."""
+    if not editor or not item:
+        return
+
+    line_num = item.data(0, QtCore.Qt.ItemDataRole.UserRole)
+    if line_num is not None:
+        cursor = editor.textCursor()
+        block = editor.document().findBlockByLineNumber(line_num - 1) # Line numbers are 0-indexed in QTextDocument
+        if block.isValid():
+            cursor.setPosition(block.position())
+            editor.setTextCursor(cursor)
+            editor.ensureCursorVisible()
+
+def apply_syntax_highlighting(editor, full_document=False):
     """
-    Gets available translation pairs (source -> target) from argostranslate.
-    Returns a list of tuples: (from_lang_code, to_lang_code, display_name).
+    Applies syntax highlighting to the text widget.
+    If full_document is True, applies to the entire document.
+    Otherwise, applies only to the visible portion.
     """
-    if not _ARGOS_TRANSLATE_AVAILABLE:
-        return []
+    scope = "full document" if full_document else "visible area"
+    print(f"[{datetime.now().strftime('%H:%M:%S.%f')[:-3]}] [Perf] apply_syntax_highlighting: Highlighting {scope}.")
+
+    doc = editor.document()
+    cursor = QtGui.QTextCursor(doc)
+    doc_length = doc.characterCount() - 1
+
+    # Define formats (these should ideally come from theme_manager)
+    comment_format = QtGui.QTextCharFormat()
+    comment_format.setForeground(QtGui.QColor(theme_manager.get_theme_setting("comment_color", "#608b4e"))) # Use theme setting
+    comment_format.setFontItalic(True)
+
+    command_format = QtGui.QTextCharFormat()
+    command_format.setForeground(QtGui.QColor(theme_manager.get_theme_setting("command_color", "#569cd6"))) # Use theme setting
+
+    brace_format = QtGui.QTextCharFormat()
+    brace_format.setForeground(QtGui.QColor(theme_manager.get_theme_setting("brace_color", "#c586c0"))) # Use theme setting
+
+    # Clear existing formats in the target range
+    if full_document:
+        cursor.select(QtGui.QTextCursor.SelectionType.Document)
+        cursor.setCharFormat(QtGui.QTextCharFormat()) # Clear all formats
+        start_pos = 0
+        end_pos = doc_length
+    else:
+        # Get visible area
+        viewport_rect = editor.viewport().rect()
+        top_left = editor.mapToGlobal(viewport_rect.topLeft())
+        bottom_right = editor.mapToGlobal(viewport_rect.bottomRight())
+
+        start_cursor = editor.cursorForPosition(editor.mapFromGlobal(top_left))
+        end_cursor = editor.cursorForPosition(editor.mapFromGlobal(bottom_right))
+
+        start_block = start_cursor.blockNumber()
+        end_block = end_cursor.blockNumber()
+
+        # Clamp block numbers
+        start_block = max(0, min(start_block, doc.blockCount() - 1))
+        end_block = max(0, min(end_block, doc.blockCount() - 1))
+
+        # Expand to full lines and add buffer
+        start_pos = doc.findBlockByLineNumber(max(0, start_block - 2)).position()
+        end_block_for_range = min(doc.blockCount() - 1, end_block + 2)
+        end_block_obj = doc.findBlockByLineNumber(end_block_for_range)
+        end_pos = end_block_obj.position() + end_block_obj.length()
+        # Clamp positions
+        start_pos = max(0, min(start_pos, doc_length))
+        end_pos = max(start_pos, min(end_pos, doc_length))
+
+        if end_pos < start_pos:
+            end_pos = start_pos
+
+        # Clear formats in the visible range
+        temp_cursor = QtGui.QTextCursor(doc)
+        temp_cursor.setPosition(start_pos)
+        temp_cursor.setPosition(end_pos, QtGui.QTextCursor.MoveMode.KeepAnchor)
+        temp_cursor.setCharFormat(QtGui.QTextCharFormat())
+
+    # Get text content for the range
+    text_in_range = doc.toPlainText()[start_pos:end_pos]
+
+    # Apply highlighting for each pattern
+    def apply_format(pattern, format_obj):
+        for match in re.finditer(pattern, text_in_range):
+            start = start_pos + match.start()
+            end = start_pos + match.end()
+            # Clamp positions
+            start = max(0, min(start, doc_length))
+            end = max(start, min(end, doc_length))
+            temp_cursor = QtGui.QTextCursor(doc)
+            temp_cursor.setPosition(start)
+            temp_cursor.setPosition(end, QtGui.QTextCursor.MoveMode.KeepAnchor)
+            temp_cursor.mergeCharFormat(format_obj)
+
+    apply_format(r"%[^\n]*", comment_format)
+    apply_format(r"\\[a-zA-Z@]+", command_format)
+    apply_format(r"[{}]", brace_format)
+
+def extract_section_structure(content, position_index):
+    """
+    Extracts the current section, subsection, subsubsection titles
+    based on the cursor position.
+    """
+    lines = content[:position_index].split("\n")
+
+    section = "default"
+    subsection = "default"
+    subsubsection = "default"
+
+    for line in lines:
+        if r"\section{" in line:
+            match = re.search(r"\\section\{(.+?)\}", line)
+            if match:
+                section = match.group(1).strip().replace(" ", "_").replace("{", "").replace("}", "")
+                subsection = "default"
+                subsubsection = "default"
+        elif r"\subsection{" in line:
+            match = re.search(r"\\subsection\{(.+?)\}", line)
+            if match:
+                subsection = match.group(1).strip().replace(" ", "_").replace("{", "").replace("}", "")
+                subsubsection = "default"
+        elif r"\subsubsection{" in line:
+            match = re.search(r"\\subsubsection\{(.+?)\}", line)
+            if match:
+                subsubsection = match.group(1).strip().replace(" ", "_").replace("{", "").replace("}", "")
+
+    section = re.sub(r'[^\w\-_\.]', '', section)
+    subsection = re.sub(r'[^\w\-_\.]', '', subsection)
+    subsubsection = re.sub(r'[^\w\-_\.]', '', subsubsection)
+
+    return section, subsection, subsubsection
+
+def paste_image():
+    """Pastes an image from the clipboard into the editor as a LaTeX figure."""
+    current_tab = get_current_tab_func()
+    if not current_tab: return
+    editor = current_tab.editor
+    if not editor:
+        return
+
+    clipboard = QtWidgets.QApplication.clipboard()
+    image = clipboard.image()
+
+    if image.isNull():
+        QtWidgets.QMessageBox.warning(None, "Warning", "No image found in clipboard.")
+        return
+
     try:
-        available_packages = argostranslate.package.get_available_packages()
-        translation_pairs = []
-        for p in available_packages:
-            if p.from_code and p.to_code:
-                is_installed = any(
-                    installed_p.from_code == p.from_code and installed_p.to_code == p.to_code
-                    for installed_p in argostranslate.package.get_installed_packages()
-                )
-                status = " (Installed)" if is_installed else " (Not Installed)"
-                translation_pairs.append((p.from_code, p.to_code, f"{p.from_name} -> {p.to_name}{status}"))
-        return translation_pairs
-    except Exception as e:
-        print(f"Error getting Argos Translate packages: {e}")
-        return []
+        base_dir = os.path.dirname(current_tab.file_path) if current_tab.file_path else "."
 
-def _install_language_package_threaded(from_code, to_code, dialog_window, callback):
-    """
-    Installs a language package in a separate thread.
-    """
-    if not _ARGOS_TRANSLATE_AVAILABLE:
-        QtWidgets.QMessageBox.critical(dialog_window, "Installation Error", "Argos Translate module is not available.")
-        return
+        content = editor.toPlainText()
+        cursor_pos = editor.textCursor().position()
+        section, subsection, subsubsection = extract_section_structure(content, cursor_pos)
 
-    def run_install():
-        try:
-            QtCore.QMetaObject.invokeMethod(dialog_window, lambda: _show_temporary_status_message_func(f"⏳ Installing {from_code} to {to_code} language package... This may take a while."), QtCore.Qt.ConnectionType.QueuedConnection)
-            argostranslate.package.install_from_path(
-                argostranslate.package.get_package_path(from_code, to_code)
-            )
-            QtCore.QMetaObject.invokeMethod(dialog_window, lambda: _show_temporary_status_message_func(f"✅ Language package {from_code} to {to_code} installed."), QtCore.Qt.ConnectionType.QueuedConnection)
-            QtCore.QMetaObject.invokeMethod(dialog_window, callback, QtCore.Qt.ConnectionType.QueuedConnection)
-        except Exception as e:
-            QtCore.QMetaObject.invokeMethod(dialog_window, lambda: QtWidgets.QMessageBox.critical(dialog_window, "Installation Error", f"Failed to install language package: {e}"), QtCore.Qt.ConnectionType.QueuedConnection)
-            QtCore.QMetaObject.invokeMethod(dialog_window, lambda: _show_temporary_status_message_func(f"❌ Installation failed for {from_code} to {to_code}."), QtCore.Qt.ConnectionType.QueuedConnection)
+        fig_dir_path = os.path.join(base_dir, "figures", section, subsection, subsubsection)
+        os.makedirs(fig_dir_path, exist_ok=True)
 
-    threading.Thread(target=run_install, daemon=True).start()
+        index = 1
+        while True:
+            file_name = f"fig{index}.png"
+            full_file_path = os.path.join(fig_dir_path, file_name)
+            if not os.path.exists(full_file_path):
+                break
+            index += 1
 
-def _perform_translation_threaded(source_text, from_code, to_code, original_filepath, dialog_window):
-    """
-    Performs the actual translation in a separate thread and saves the result.
-    """
-    if not _ARGOS_TRANSLATE_AVAILABLE:
-        QtWidgets.QMessageBox.critical(dialog_window, "Translation Error", "Argos Translate module is not available.")
-        dialog_window.accept() # Close dialog
-        return
+        image.save(full_file_path, "PNG")
 
-    def run_translation():
-        try:
-            QtCore.QMetaObject.invokeMethod(dialog_window, lambda: _show_temporary_status_message_func(f"⏳ Translating from {from_code} to {to_code}..."), QtCore.Qt.ConnectionType.QueuedConnection)
-            translated_text = argostranslate.translate.translate(source_text, from_code, to_code)
+        latex_path = os.path.relpath(full_file_path, base_dir).replace("\\", "/")
 
-            if original_filepath:
-                base_name, ext = os.path.splitext(os.path.basename(original_filepath))
-                translated_filename = f"{to_code}_{base_name}{ext}"
-                translated_filepath = os.path.join(os.path.dirname(original_filepath), translated_filename)
-            else:
-                output_dir = "output"
-                os.makedirs(output_dir, exist_ok=True)
-                translated_filename = f"{to_code}_temp_document.tex"
-                translated_filepath = os.path.join(output_dir, translated_filename)
-
-            with open(translated_filepath, "w", encoding="utf-8") as f:
-                f.write(translated_text)
-
-            QtCore.QMetaObject.invokeMethod(dialog_window, lambda: _show_temporary_status_message_func(f"✅ Document translated and saved to {os.path.basename(translated_filepath)}"), QtCore.Qt.ConnectionType.QueuedConnection)
-            QtCore.QMetaObject.invokeMethod(dialog_window, lambda: QtWidgets.QMessageBox.information(dialog_window, "Translation Success", f"Document translated and saved to:\n{translated_filepath}"), QtCore.Qt.ConnectionType.QueuedConnection)
-        except Exception as e:
-            QtCore.QMetaObject.invokeMethod(dialog_window, lambda: QtWidgets.QMessageBox.critical(dialog_window, "Translation Error", f"An error occurred during translation: {e}"), QtCore.Qt.ConnectionType.QueuedConnection)
-            QtCore.QMetaObject.invokeMethod(dialog_window, lambda: _show_temporary_status_message_func(f"❌ Translation failed: {e}"), QtCore.Qt.ConnectionType.QueuedConnection)
-        finally:
-            QtCore.QMetaObject.invokeMethod(dialog_window, dialog_window.accept, QtCore.Qt.ConnectionType.QueuedConnection) # Close dialog after translation attempt
-
-    threading.Thread(target=run_translation, daemon=True).start()
-
-class TranslateDialog(QtWidgets.QDialog):
-    def __init__(self, parent, editor_content, active_filepath, theme_getter, status_message_func):
-        super().__init__(parent)
-        self.setWindowTitle("Translate Document")
-        self.setModal(True)
-        self.setGeometry(100, 100, 450, 300)
-
-        self.editor_content = editor_content
-        self.active_filepath = active_filepath
-        self.theme_getter = theme_getter
-        self.status_message_func = status_message_func
-
-        main_layout = QtWidgets.QVBoxLayout(self)
-        main_layout.setContentsMargins(15, 15, 15, 15)
-
-        main_layout.addWidget(QtWidgets.QLabel("Select Translation Pair:"))
-
-        self.lang_combobox = QtWidgets.QComboBox()
-        self.translation_pairs_data = _get_available_translation_pairs()
-        display_options = [item[2] for item in self.translation_pairs_data]
-        
-        if not display_options:
-            QtWidgets.QMessageBox.critical(self, "Argos Translate Error", "No translation packages found. Please download language packages using 'argos-translate --gui' or ensure internet connection.")
-            self.close()
-            return
-
-        self.lang_combobox.addItems(display_options)
-        main_layout.addWidget(self.lang_combobox)
-
-        self.translate_button = QtWidgets.QPushButton("Translate")
-        self.translate_button.clicked.connect(self._on_translate_button_click)
-        main_layout.addWidget(self.translate_button)
-
-    def _on_translate_button_click(self):
-        selected_display_text = self.lang_combobox.currentText()
-        if not selected_display_text:
-            QtWidgets.QMessageBox.warning(self, "Selection Error", "Please select a translation pair.")
-            return
-
-        selected_pair = next((item for item in self.translation_pairs_data if item[2] == selected_display_text), None)
-        if not selected_pair:
-            QtWidgets.QMessageBox.critical(self, "Error", "Invalid selection.")
-            return
-
-        from_code, to_code, _ = selected_pair
-
-        is_installed = any(
-            p.from_code == from_code and p.to_code == to_code
-            for p in argostranslate.package.get_installed_packages()
+        latex_code = (
+            "\n\\begin{figure}[h!]\n"
+            "    \\centering\n"
+            f"    \\includegraphics[width=0.8\\textwidth]{{{latex_path}}}\n"
+            f"    \\caption{{Caption here}}\n"
+            f"    \\label{{fig:{section}_{subsection}_{index}}}\n"
+            "\\end{figure}\n"
         )
 
-        if not is_installed:
-            reply = QtWidgets.QMessageBox.question(
-                self,
-                "Install Language Package",
-                f"The language package for {from_code} to {to_code} is not installed. Do you want to install it now? This may take some time.",
-                QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No
-            )
-            if reply == QtWidgets.QMessageBox.StandardButton.Yes:
-                _install_language_package_threaded(from_code, to_code, self,
-                                                   lambda: _perform_translation_threaded(
-                                                       self.editor_content, from_code, to_code,
-                                                       self.active_filepath, self
-                                                   ))
-            else:
-                self.close()
-            return
+        editor.textCursor().insertText(latex_code)
 
-        _perform_translation_threaded(self.editor_content, from_code, to_code, self.active_filepath, self)
-
-def open_translate_dialog():
-    """
-    Opens a dialog for the user to select source and target languages for translation.
-    """
-    editor = _active_editor_getter_func()
-    if not editor or not _root or not _theme_setting_getter_func or not _show_temporary_status_message_func:
-        QtWidgets.QMessageBox.critical(_root, "Translator Error", "Translator service not fully initialized.")
-        return
-
-    if not _ARGOS_TRANSLATE_AVAILABLE:
-        QtWidgets.QMessageBox.critical(_root, "Argos Translate Error", "The 'argostranslate' Python module is not installed. Please install it using 'pip install argostranslate' to enable translation features.")
-        return
-    
-    source_text = editor.toPlainText()
-    if not source_text.strip():
-        QtWidgets.QMessageBox.warning(_root, "Translation", "The editor is empty. Nothing to translate.")
-        return
-
-    dialog = TranslateDialog(
-        _root,
-        source_text,
-        _active_filepath_getter_func(),
-        _theme_setting_getter_func,
-        _show_temporary_status_message_func
-    )
-    dialog.exec()
+    except Exception as e:
+        QtWidgets.QMessageBox.critical(None, "Error", f"Error pasting image:\n{str(e)}")

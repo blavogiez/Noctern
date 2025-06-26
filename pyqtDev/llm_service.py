@@ -16,7 +16,7 @@ import json
 import requests
 import threading
 
-# Import local modules (flat import)
+# Import local modules
 import llm_prompt_history
 import llm_utils
 import llm_api_client
@@ -226,15 +226,32 @@ def _execute_llm_generation(full_llm_prompt, user_prompt_for_history, model_name
     insert_start_cursor = editor.textCursor()
     insert_position = insert_start_cursor.position()
 
+    # Ensure the cursor is set at the insert position before generation
+    def set_cursor_to_insert_position():
+        cursor = editor.textCursor()
+        cursor.setPosition(insert_position)
+        editor.setTextCursor(cursor)
+
+    QtCore.QTimer.singleShot(0, set_cursor_to_insert_position)
+
     def run_generation_in_thread():
         got_any_chunk = False
         inserted_length = 0
+
+        # Use a signal to safely insert text into the editor from the main thread
+        class ChunkInserter(QtCore.QObject):
+            insert_chunk_signal = QtCore.pyqtSignal(str, int, int)
+        inserter = ChunkInserter()
 
         def insert_chunk_main_thread(chunk, pos, length):
             cursor = editor.textCursor()
             cursor.setPosition(pos + length)
             editor.setTextCursor(cursor)
             editor.insertPlainText(chunk)
+            cursor.setPosition(pos + length + len(chunk))
+            editor.setTextCursor(cursor)
+
+        inserter.insert_chunk_signal.connect(insert_chunk_main_thread)
 
         try:
             if _llm_progress_bar_widget:
@@ -247,11 +264,8 @@ def _execute_llm_generation(full_llm_prompt, user_prompt_for_history, model_name
             for chunk in llm_api_client.request_llm_generation(full_llm_prompt, model_name):
                 got_any_chunk = True
                 print(f"[LLM] Got chunk: {repr(chunk[:60])}...")
-                # Schedule each chunk for insertion in the main thread
-                QtCore.QTimer.singleShot(
-                    0,
-                    lambda chunk=chunk, pos=insert_position, length=inserted_length: insert_chunk_main_thread(chunk, pos, length)
-                )
+                # Use Qt signal to insert chunk in the main thread
+                inserter.insert_chunk_signal.emit(chunk, insert_position, inserted_length)
                 inserted_length += len(chunk)
 
             def postprocess_and_finalize():
@@ -280,6 +294,10 @@ def _execute_llm_generation(full_llm_prompt, user_prompt_for_history, model_name
                 print(f"[LLM] Final inserted text (first 200 chars): {final_generated_text[:200]!r}")
                 _show_temporary_status_message_func("✅ Generation complete.")
                 _update_history_response_and_save(user_prompt_for_history, final_generated_text)
+                # Move cursor to the end of the inserted text
+                cursor = editor.textCursor()
+                cursor.setPosition(insert_position + len(final_generated_text))
+                editor.setTextCursor(cursor)
 
             QtCore.QTimer.singleShot(0, postprocess_and_finalize)
 
