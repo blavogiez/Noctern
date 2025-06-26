@@ -57,9 +57,33 @@ def perform_heavy_updates():
         return
 
     # Perform all updates for the current tab
-    _editor_logic.apply_syntax_highlighting(current_tab.editor, full_document=False)
+    # --- PATCH: Do NOT apply syntax highlighting automatically after LLM insertion ---
+    # _editor_logic.apply_syntax_highlighting(current_tab.editor, full_document=False)
     _editor_logic.update_outline_tree(current_tab.editor)
     current_tab.line_numbers.redraw() # Explicitly redraw line numbers as part of the debounced update
+
+def highlight_lines(editor, start_index, end_index):
+    """Highlight only the lines from start_index to end_index (inclusive)."""
+    # Defensive: Only highlight if indices are valid
+    try:
+        from_index = editor.index(start_index)
+        to_index = editor.index(end_index)
+        # Remove previous highlights in this region
+        editor.tag_remove("latex_command", from_index, to_index)
+        editor.tag_remove("latex_brace", from_index, to_index)
+        editor.tag_remove("latex_comment", from_index, to_index)
+        # Apply highlighting only to the generated region
+        import editor_logic
+        editor_logic.highlight_range(editor, from_index, to_index)
+    except Exception:
+        pass
+
+def highlight_generated_lines(start_index, end_index):
+    """Public API to highlight only the generated lines after LLM generation."""
+    current_tab = _get_current_tab_callback()
+    if not current_tab:
+        return
+    highlight_lines(current_tab.editor, start_index, end_index)
 
 def schedule_heavy_updates(_=None):
     """Schedules heavy updates after a short delay."""

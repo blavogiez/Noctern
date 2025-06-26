@@ -271,6 +271,13 @@ def _execute_llm_generation(full_llm_prompt, user_prompt_for_history, model_name
                 editor.delete(start_index, end_index)
                 editor.insert(start_index, final_text)
 
+        # --- PATCH: Highlight only the generated lines after LLM generation ---
+        try:
+            import gui_editor_view
+            gui_editor_view.highlight_generated_lines(start_index, end_index)
+        except Exception:
+            pass
+
         # NEW: Print prompt and response to console for validation
         print("="*80)
         print(f"[LLM Generation Accepted]")
