@@ -43,7 +43,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         # --- Editor Notebook Frame ---
         self.notebook_frame = QtWidgets.QFrame()
-        notebook_layout = QtWidgets.QtWidgets.QVBoxLayout(self.notebook_frame)
+        notebook_layout = QtWidgets.QVBoxLayout(self.notebook_frame)
         notebook_layout.setContentsMargins(0, 0, 0, 0)
 
         # Welcome Screen, placed inside the notebook_frame
