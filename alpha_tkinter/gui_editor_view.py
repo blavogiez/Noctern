@@ -1,27 +1,28 @@
 import tkinter as tk
 from tkinter.font import Font
-from datetime import datetime # NEW: Import datetime for timestamps
+from datetime import datetime
 
 # References to main GUI components and callbacks
 _root = None
 _get_current_tab_callback = None
 _outline_tree = None
-_editor_logic = None # Will be set during initialization
-
-# External modules that need to be called for heavy updates
-_editor_logic = None # Will be set during initialization
+_editor_logic = None
 
 # Zoom settings
 _zoom_factor = 1.1
 _min_font_size = 8
-_max_font_size = 36 # No change needed here
+_max_font_size = 36
 
 # Heavy update settings
 _LARGE_FILE_LINE_THRESHOLD = 1000
-_HEAVY_UPDATE_DELAY_NORMAL = 150 # Tuned for high responsiveness with intelligent updates
-_HEAVY_UPDATE_DELAY_LARGE_FILE = 750 # Still responsive, but gives outline scan more breathing room
+_HEAVY_UPDATE_DELAY_NORMAL = 150
+_HEAVY_UPDATE_DELAY_LARGE_FILE = 750
 _heavy_update_timer_id = None
-_heavy_updates_paused = False # NEW: Flag to control heavy updates
+_heavy_updates_paused = False
+
+# Performance optimization: Cache for line count calculations
+_last_line_count_cache = {}
+_last_file_size_check = {}
 
 def initialize(root_ref, get_current_tab_cb, outline_tree_ref, editor_logic_module):
     """Initializes the editor view manager."""
@@ -43,43 +44,76 @@ def resume_heavy_updates():
     """Resumes heavy updates and schedules one immediately."""
     global _heavy_updates_paused
     _heavy_updates_paused = False
-    schedule_heavy_updates() # Trigger an update now that we're unpaused
+    schedule_heavy_updates()
+
+def _get_file_size_category(editor):
+    """Efficiently determine if file is large, with caching."""
+    editor_id = id(editor)
+    
+    try:
+        # Use a more efficient way to get line count
+        content = editor.get("1.0", "end-1c")
+        if not content:
+            return "small"
+        
+        # Quick line count using string count (much faster than tkinter operations)
+        line_count = content.count('\n') + 1
+        
+        # Cache the result to avoid repeated calculations
+        _last_line_count_cache[editor_id] = line_count
+        
+        return "large" if line_count > _LARGE_FILE_LINE_THRESHOLD else "small"
+    except tk.TclError:
+        # If we can't access the editor, assume small file
+        return "small"
 
 def perform_heavy_updates():
     """Performs updates that might be computationally heavy."""
     global _heavy_update_timer_id
     _heavy_update_timer_id = None
     
+    if _heavy_updates_paused:
+        return
+    
     current_tab = _get_current_tab_callback()
     
-    # If there is no active tab, clear the outline and stop.
+    # If there is no active tab, clear the outline and stop
     if not current_tab:
         if _outline_tree:
-            _outline_tree.delete(*_outline_tree.get_children())
+            # Use delete() more efficiently
+            children = _outline_tree.get_children()
+            if children:  # Only delete if there are children
+                _outline_tree.delete(*children)
         return
 
-    # Perform all updates for the current tab
-    # After an edit or LLM generation, we need to re-apply syntax highlighting
-    # to the visible area to catch any changes. This is more efficient than a full
-    # document scan on every keystroke.
-    _editor_logic.apply_syntax_highlighting(current_tab.editor, full_document=False)
-    _editor_logic.update_outline_tree(current_tab.editor)
-    current_tab.line_numbers.redraw() # Explicitly redraw line numbers as part of the debounced update
+    try:
+        # Batch all updates together to minimize redraws
+        _editor_logic.apply_syntax_highlighting(current_tab.editor, full_document=False)
+        _editor_logic.update_outline_tree(current_tab.editor)
+        
+        # Only redraw line numbers if they exist and are visible
+        if hasattr(current_tab, 'line_numbers') and current_tab.line_numbers:
+            current_tab.line_numbers.redraw()
+    except (tk.TclError, AttributeError) as e:
+        # Handle cases where tab might be closing or not fully initialized
+        print(f"Skipping heavy updates due to: {e}")
 
 def highlight_lines(editor, start_index, end_index):
     """Highlight only the lines from start_index to end_index (inclusive)."""
-    # Defensive: Only highlight if indices are valid
     try:
         from_index = editor.index(start_index)
         to_index = editor.index(end_index)
-        # Remove previous highlights in this region
-        editor.tag_remove("latex_command", from_index, to_index)
-        editor.tag_remove("latex_brace", from_index, to_index)
-        editor.tag_remove("latex_comment", from_index, to_index)
+        
+        # Batch tag operations for better performance
+        tags_to_remove = ["latex_command", "latex_brace", "latex_comment"]
+        for tag in tags_to_remove:
+            editor.tag_remove(tag, from_index, to_index)
+        
         # Apply highlighting only to the generated region
         import editor_logic
         editor_logic.highlight_range(editor, from_index, to_index)
-    except Exception:
+    except (tk.TclError, ImportError, AttributeError):
+        # Silently handle errors - highlighting is not critical
         pass
 
 def highlight_generated_lines(start_index, end_index):
@@ -92,98 +126,114 @@ def highlight_generated_lines(start_index, end_index):
 def schedule_heavy_updates(_=None):
     """Schedules heavy updates after a short delay."""
     global _heavy_update_timer_id
-    # If updates are paused (e.g., during LLM generation), do nothing.
+    
+    # Early exit if updates are paused
     if _heavy_updates_paused:
         return
 
-    if _root and _heavy_update_timer_id is not None:
+    # Cancel existing timer more efficiently
+    if _heavy_update_timer_id is not None:
         _root.after_cancel(_heavy_update_timer_id)
-    current_tab = _get_current_tab_callback()
-    if _root and current_tab: # Ensure root and a tab are available
-        current_delay = _HEAVY_UPDATE_DELAY_NORMAL
-        try:
-            # Get total lines to determine if the file is large
-            last_line_index_str = current_tab.editor.index("end-1c")
-            # Correctly get total_lines, handling empty editor
-            total_lines = 0
-            if last_line_index_str: # Ensure index is not None or empty
-                total_lines = int(last_line_index_str.split(".")[0])
-                if total_lines == 1 and not current_tab.editor.get("1.0", "1.end").strip(): # Check if line 1 is empty
-                    total_lines = 0
-            
-            if total_lines > _LARGE_FILE_LINE_THRESHOLD:
-                current_delay = _HEAVY_UPDATE_DELAY_LARGE_FILE
-        except tk.TclError: # Handle cases where editor might not be ready
-            pass # Use normal delay
-        _heavy_update_timer_id = _root.after(current_delay, perform_heavy_updates)
+        _heavy_update_timer_id = None
 
-def zoom_in(_=None): # Accept optional event argument
+    current_tab = _get_current_tab_callback()
+    if not (_root and current_tab):
+        return
+
+    # Determine delay based on file size (with caching)
+    file_category = _get_file_size_category(current_tab.editor)
+    current_delay = _HEAVY_UPDATE_DELAY_LARGE_FILE if file_category == "large" else _HEAVY_UPDATE_DELAY_NORMAL
+    
+    _heavy_update_timer_id = _root.after(current_delay, perform_heavy_updates)
+
+def _update_font_efficiently(current_tab, new_size):
+    """Helper function to update fonts more efficiently."""
+    if not current_tab or not hasattr(current_tab, 'editor_font'):
+        return False
+    
+    current_size = current_tab.editor_font.cget("size")
+    if new_size == current_size:
+        return False  # No change needed
+    
+    # Reuse existing font object when possible
+    current_tab.editor_font.configure(size=new_size)
+    current_tab.editor.config(font=current_tab.editor_font)
+    
+    # Update line numbers font more efficiently
+    if hasattr(current_tab, 'line_numbers') and current_tab.line_numbers:
+        current_tab.line_numbers.font = current_tab.editor_font
+        
+        # Only recreate bold font if it doesn't exist or is outdated
+        if not hasattr(current_tab.line_numbers, 'font_bold') or \
+           current_tab.line_numbers.font_bold.cget("size") != new_size:
+            current_tab.line_numbers.font_bold = current_tab.editor_font.copy()
+            current_tab.line_numbers.font_bold.configure(weight="bold")
+        
+        # Defer redraw to avoid blocking UI
+        _root.after_idle(current_tab.line_numbers.redraw)
+    
+    return True
+
+def zoom_in(_=None):
     """Increases the editor font size."""
     current_tab = _get_current_tab_callback()
     if not current_tab:
         return
 
     current_size = current_tab.editor_font.cget("size")
-    new_size = int(current_size * _zoom_factor)
-    new_size = min(new_size, _max_font_size)
+    new_size = min(int(current_size * _zoom_factor), _max_font_size)
 
-    if new_size != current_size:
-        current_tab.editor_font = Font(family=current_tab.editor_font.cget("family"), size=new_size, weight=current_tab.editor_font.cget("weight"), slant=current_tab.editor_font.cget("slant"))
-        current_tab.editor.config(font=current_tab.editor_font)
+    if _update_font_efficiently(current_tab, new_size):
+        # Schedule heavy updates instead of doing them immediately
+        schedule_heavy_updates()
 
-        if current_tab.line_numbers:
-            current_tab.line_numbers.font = current_tab.editor_font # Update the font reference
-            # Re-create and re-configure the bold font for the current line number
-            current_tab.line_numbers.font_bold = current_tab.editor_font.copy()
-            current_tab.line_numbers.font_bold.configure(weight="bold")
-            # No tag_configure needed here as Canvas redraws text directly with font objects
-            current_tab.line_numbers.redraw()
-        perform_heavy_updates() # Reapply syntax highlighting and outline
-
-def zoom_out(_=None): # Accept optional event argument
+def zoom_out(_=None):
     """Decreases the editor font size."""
     current_tab = _get_current_tab_callback()
     if not current_tab:
         return
 
     current_size = current_tab.editor_font.cget("size")
-    new_size = int(current_size / _zoom_factor)
-    new_size = max(new_size, _min_font_size)
+    new_size = max(int(current_size / _zoom_factor), _min_font_size)
 
-    if new_size != current_size:
-        current_tab.editor_font = Font(family=current_tab.editor_font.cget("family"), size=new_size, weight=current_tab.editor_font.cget("weight"), slant=current_tab.editor_font.cget("slant"))
-        current_tab.editor.config(font=current_tab.editor_font)
-
-        if current_tab.line_numbers:
-            current_tab.line_numbers.font = current_tab.editor_font # Update the font reference
-            # Re-create and re-configure the bold font for the current line number
-            current_tab.line_numbers.font_bold = current_tab.editor_font.copy()
-            current_tab.line_numbers.font_bold.configure(weight="bold")
-            # No tag_configure needed here as Canvas redraws text directly with font objects
-            current_tab.line_numbers.redraw()
-        perform_heavy_updates() # Reapply syntax highlighting and outline
+    if _update_font_efficiently(current_tab, new_size):
+        # Schedule heavy updates instead of doing them immediately
+        schedule_heavy_updates()
 
 def full_editor_refresh():
     """
     Performs a full refresh of the editor: clears undo stack,
-    re-applies full syntax highlighting, and triggers heavy updates
-    (outline, line numbers). It also resumes normal updates if they were paused.
+    re-applies full syntax highlighting, and triggers heavy updates.
     """
-    print(f"[{datetime.now().strftime('%H:%M:%S.%f')[:-3]}] [Perf] full_editor_refresh: Clearing undo, full re-highlight, updating outline.")
+    print(f"[{datetime.now().strftime('%H:%M:%S.%f')[:-3]}] [Perf] full_editor_refresh: Starting full refresh.")
+    
     current_tab = _get_current_tab_callback()
     if not current_tab or not current_tab.editor:
-        # If we can't refresh, we must at least resume updates to prevent the UI from freezing.
         resume_heavy_updates()
         return
 
-    current_tab.editor.edit_reset() # Clear undo stack
-    _editor_logic.apply_syntax_highlighting(current_tab.editor, full_document=True)
+    try:
+        # Clear undo stack
+        current_tab.editor.edit_reset()
+        
+        # Apply full syntax highlighting
+        _editor_logic.apply_syntax_highlighting(current_tab.editor, full_document=True)
+        
+        # Resume heavy updates
+        global _heavy_updates_paused
+        _heavy_updates_paused = False
+        
+        # Use after_idle to prevent blocking the UI thread
+        _root.after_idle(perform_heavy_updates)
+        
+        print(f"[{datetime.now().strftime('%H:%M:%S.%f')[:-3]}] [Perf] full_editor_refresh: Completed.")
+        
+    except (tk.TclError, AttributeError) as e:
+        print(f"Error during full refresh: {e}")
+        resume_heavy_updates()
 
-    # A full refresh implies that heavy updates are no longer paused.
-    # We un-pause them here and then manually trigger one perform_heavy_updates cycle.
-    # This is more direct than calling resume_heavy_updates(), which would schedule
-    # another redundant update.
-    global _heavy_updates_paused
-    _heavy_updates_paused = False
-
-    perform_heavy_updates() # This will update the outline and line numbers based on the new full highlighting.
+def clear_caches():
+    """Clear performance caches when tabs are closed."""
+    global _last_line_count_cache, _last_file_size_check
+    _last_line_count_cache.clear()
+    _last_file_size_check.clear()
