@@ -2,23 +2,20 @@
 from PyQt6 import QtWidgets, QtCore, QtGui
 from datetime import datetime
 
-# References to main GUI components and callbacks
 _root = None
 _get_current_tab_callback = None
 _outline_tree = None
-_editor_logic = None # Will be set during initialization
+_editor_logic = None
 
-# Zoom settings
 _zoom_factor = 1.1
 _min_font_size = 8
 _max_font_size = 36
 
-# Heavy update settings
 _LARGE_FILE_LINE_THRESHOLD = 1000
 _HEAVY_UPDATE_DELAY_NORMAL = 150
 _HEAVY_UPDATE_DELAY_LARGE_FILE = 750
-_heavy_update_timer = None # QTimer instance
-_heavy_updates_paused = False # Flag to control heavy updates
+_heavy_update_timer = None
+_heavy_updates_paused = False
 
 def initialize(root_ref, get_current_tab_cb, outline_tree_ref, editor_logic_module):
     """Initializes the editor view manager."""
@@ -55,16 +52,15 @@ def resume_heavy_updates():
 def perform_heavy_updates():
     """Performs updates that might be computationally heavy."""
     current_tab = _get_current_tab_callback()
-    
-    # If there is no active tab, clear the outline and stop.
     if not current_tab:
         if _outline_tree:
-            _outline_tree.clear() # Clear all items in QTreeWidget
+            _outline_tree.clear()
         return
-
+    if not hasattr(current_tab, "editor") or current_tab.editor is None:
+        return
     _editor_logic.apply_syntax_highlighting(current_tab.editor, full_document=False)
     _editor_logic.update_outline_tree(current_tab.editor)
-    current_tab.line_numbers.update() # Request repaint for line numbers
+    current_tab.line_numbers.update()
 
 def schedule_heavy_updates():
     """Schedules heavy updates after a short delay."""
@@ -137,4 +133,8 @@ def full_editor_refresh():
     global _heavy_updates_paused
     _heavy_updates_paused = False
 
+    perform_heavy_updates()
+    _heavy_updates_paused = False
+
+    perform_heavy_updates()
     perform_heavy_updates()

@@ -176,7 +176,6 @@ def _handle_llm_api_error(error_type, exception_obj, active_editor, user_prompt=
     # Ensure progress bar is hidden and updates are resumed
     if _llm_progress_bar_widget:
         _llm_progress_bar_widget.hide()
-        _llm_progress_bar_widget.stop()
     if _resume_heavy_updates_func:
         _resume_heavy_updates_func()
 
@@ -277,7 +276,6 @@ def _execute_llm_generation(full_llm_prompt, user_prompt_for_history, model_name
             # Hide progress bar
             if _llm_progress_bar_widget:
                 QtCore.QMetaObject.invokeMethod(_llm_progress_bar_widget, 'hide', QtCore.Qt.ConnectionType.QueuedConnection)
-                QtCore.QMetaObject.invokeMethod(_llm_progress_bar_widget, 'stop', QtCore.Qt.ConnectionType.QueuedConnection)
             
             # Resume heavy updates
             if _resume_heavy_updates_func:

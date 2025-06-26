@@ -127,7 +127,7 @@ def compile_latex():
             check=False
         )
 
-        log_output = result.stdout.decode("utf-8", errors="ignore")
+        log_output = result.stdout if isinstance(result.stdout, str) else result.stdout.decode("utf-8", errors="ignore")
 
         if result.returncode == 0:
             QtWidgets.QMessageBox.information(root, "✅ Success", "LaTeX compilation successful.")

@@ -93,8 +93,10 @@ def apply_syntax_highlighting(editor, full_document=False):
     scope = "full document" if full_document else "visible area"
     print(f"[{datetime.now().strftime('%H:%M:%S.%f')[:-3]}] [Perf] apply_syntax_highlighting: Highlighting {scope}.")
 
-    cursor = QtGui.QTextCursor(editor.document())
-    
+    doc = editor.document()
+    cursor = QtGui.QTextCursor(doc)
+    doc_length = doc.characterCount() - 1
+
     # Define formats (these should ideally come from theme_manager)
     comment_format = QtGui.QTextCharFormat()
     comment_format.setForeground(QtGui.QColor(theme_manager.get_theme_setting("comment_color", "#608b4e"))) # Use theme setting
@@ -111,7 +113,7 @@ def apply_syntax_highlighting(editor, full_document=False):
         cursor.select(QtGui.QTextCursor.SelectionType.Document)
         cursor.setCharFormat(QtGui.QTextCharFormat()) # Clear all formats
         start_pos = 0
-        end_pos = editor.document().characterCount() - 1
+        end_pos = doc_length
     else:
         # Get visible area
         viewport_rect = editor.viewport().rect()
@@ -124,26 +126,40 @@ def apply_syntax_highlighting(editor, full_document=False):
         start_block = start_cursor.blockNumber()
         end_block = end_cursor.blockNumber()
 
+        # Clamp block numbers
+        start_block = max(0, min(start_block, doc.blockCount() - 1))
+        end_block = max(0, min(end_block, doc.blockCount() - 1))
+
         # Expand to full lines and add buffer
-        start_pos = editor.document().findBlockByLineNumber(max(0, start_block - 2)).position()
-        end_pos = editor.document().findBlockByLineNumber(min(editor.document().blockCount() - 1, end_block + 2)).position() + editor.document().findBlockByLineNumber(min(editor.document().blockCount() - 1, end_block + 2)).length()
+        start_pos = doc.findBlockByLineNumber(max(0, start_block - 2)).position()
+        end_block_for_range = min(doc.blockCount() - 1, end_block + 2)
+        end_block_obj = doc.findBlockByLineNumber(end_block_for_range)
+        end_pos = end_block_obj.position() + end_block_obj.length()
+        # Clamp positions
+        start_pos = max(0, min(start_pos, doc_length))
+        end_pos = max(start_pos, min(end_pos, doc_length))
+
+        if end_pos < start_pos:
+            end_pos = start_pos
 
         # Clear formats in the visible range
-        temp_cursor = QtGui.QTextCursor(editor.document())
+        temp_cursor = QtGui.QTextCursor(doc)
         temp_cursor.setPosition(start_pos)
         temp_cursor.setPosition(end_pos, QtGui.QTextCursor.MoveMode.KeepAnchor)
         temp_cursor.setCharFormat(QtGui.QTextCharFormat())
 
     # Get text content for the range
-    text_in_range = editor.document().toPlainText()[start_pos:end_pos]
+    text_in_range = doc.toPlainText()[start_pos:end_pos]
 
     # Apply highlighting for each pattern
     def apply_format(pattern, format_obj):
         for match in re.finditer(pattern, text_in_range):
             start = start_pos + match.start()
             end = start_pos + match.end()
-            
-            temp_cursor = QtGui.QTextCursor(editor.document())
+            # Clamp positions
+            start = max(0, min(start, doc_length))
+            end = max(start, min(end, doc_length))
+            temp_cursor = QtGui.QTextCursor(doc)
             temp_cursor.setPosition(start)
             temp_cursor.setPosition(end, QtGui.QTextCursor.MoveMode.KeepAnchor)
             temp_cursor.mergeCharFormat(format_obj)

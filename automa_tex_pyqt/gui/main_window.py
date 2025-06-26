@@ -2,9 +2,6 @@
 import os
 from PyQt6 import QtWidgets, QtCore, QtGui
 
-# Global variables for main widgets and state (managed within this module)
-# In PyQt, these are typically members of the MainWindow class.
-
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
@@ -184,13 +181,10 @@ class MainWindow(QtWidgets.QMainWindow):
         # Intercept the window close ('X') button to check for unsaved changes
         # This is done by overriding the closeEvent method.
 
-        # Bind outline tree selection after gui_file_tab_manager is ready
-        # This will be connected in main.py
-        # self.outline_tree.itemClicked.connect(...) # For QTreeWidget
-        # self.outline_tree.clicked.connect(...) # For QTreeView
-
     def closeEvent(self, event):
         """Handles closing the main window, checking for unsaved changes."""
         # This method will be overridden in main.py after file_tab_manager is initialized
         # For now, just accept the close event.
         event.accept()
+        # self.outline_tree.itemClicked.connect(...) # For QTreeWidget
+        # self.outline_tree.clicked.connect(...) # For QTreeView

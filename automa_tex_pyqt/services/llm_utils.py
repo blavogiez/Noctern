@@ -35,7 +35,7 @@ def extract_editor_context(editor_widget, lines_before_cursor=5, lines_after_cur
 
         context_lines = []
         for i in range(start_block_num, end_block_num + 1):
-            block = document.findBlockByNumber(i)
+            block = document.findBlockByLineNumber(i)
             context_lines.append(block.text())
 
         return "\n".join(context_lines)
