@@ -39,6 +39,15 @@ _prompt_history_list = [] # Stores tuples: (user_prompt, llm_response)
 _completion_prompt_template = "" # Loaded per-file
 _generation_prompt_template = "" # Loaded per-file
 
+# NEW: State for interactive LLM generation
+_generated_text_range = None # Stores (start_index, end_index) of the currently highlighted text
+_is_generating = False # Flag to prevent new generations while one is active
+_last_llm_action_type = None # "completion" or "generation"
+_last_completion_phrase_start = None # For rephrasing completion
+_last_generation_user_prompt = None # For rephrasing generation
+_last_generation_lines_before = None # For rephrasing generation
+_last_generation_lines_after = None # For rephrasing generation
+
 def _load_global_default_prompts():
     """Loads the master default prompts from the default_prompts.json file."""
     global _global_default_prompts
@@ -69,6 +78,11 @@ def initialize_llm_service(root_window_ref, progress_bar_widget_ref,
     _theme_setting_getter_func = theme_setting_getter_func
     _active_editor_getter_func = active_editor_getter
     _active_filepath_getter_func = active_filepath_getter
+
+    # Bind global interaction keys
+    _root_window.bind_all("<Tab>", accept_generated_text)
+    _root_window.bind_all("r", rephrase_generated_text) # 'r' for rephrase
+    _root_window.bind_all("c", discard_generated_text) # 'c' for cancel/discard
 
     # Load initial prompt history and custom prompts
     load_prompt_history_for_current_file()
@@ -125,6 +139,65 @@ def load_prompts_for_current_file():
     _completion_prompt_template = loaded_prompts["completion"]
     _generation_prompt_template = loaded_prompts["generation"]
 
+# NEW: Helper to update the end index of the generated text range
+def _update_generated_text_end_index(editor):
+    """Updates the end index of the currently tracked generated text range."""
+    global _generated_text_range
+    if _generated_text_range:
+        _generated_text_range = (_generated_text_range[0], editor.index(tk.INSERT))
+
+# NEW: Functions for interactive LLM generation
+def _clear_generated_text_state():
+    """Clears the state related to the currently generated text."""
+    global _generated_text_range, _is_generating
+    active_editor = _active_editor_getter_func()
+    if active_editor and _generated_text_range:
+        # Remove the highlight tag
+        active_editor.tag_remove("llm_generated_text", _generated_text_range[0], _generated_text_range[1])
+    _generated_text_range = None
+    _is_generating = False # Generation is no longer active for user interaction
+
+def accept_generated_text(event=None):
+    """Accepts the currently generated text, removing its highlight."""
+    if _is_generating: # Don't accept if still generating
+        return "break" # Consume event
+    if _generated_text_range:
+        print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]} INFO: Accepted LLM generated text.")
+        _clear_generated_text_state()
+        return "break" # Consume event
+    return None # Let event propagate if no generated text
+
+def discard_generated_text(event=None):
+    """Discards the currently generated text, deleting it from the editor."""
+    if _is_generating: # Don't discard if still generating
+        return "break" # Consume event
+    if _generated_text_range:
+        print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]} INFO: Discarded LLM generated text.")
+        active_editor = _active_editor_getter_func()
+        if active_editor:
+            active_editor.delete(_generated_text_range[0], _generated_text_range[1])
+        _clear_generated_text_state()
+        return "break" # Consume event
+    return None # Let event propagate
+
+def rephrase_generated_text(event=None):
+    """Discards the current generated text and attempts to rephrase/regenerate."""
+    if _is_generating: # Don't rephrase if still generating
+        return "break" # Consume event
+    if _generated_text_range:
+        print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]} INFO: Rephrasing LLM generated text.")
+        discard_generated_text() # Discard current text first
+
+        if _last_llm_action_type == "completion" and _last_completion_phrase_start is not None:
+            request_llm_to_complete_text()
+        elif _last_llm_action_type == "generation" and _last_generation_user_prompt is not None:
+            open_generate_text_dialog(initial_prompt_text=_last_generation_user_prompt)
+        else:
+            interface.show_temporary_status_message("No previous LLM action to rephrase.")
+            print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]} WARNING: No previous LLM action to rephrase.")
+        return "break" # Consume event
+    return None # Let event propagate
+
 # --- Call the loader at module import time to ensure defaults are always available ---
 _load_global_default_prompts()
 
@@ -132,15 +205,34 @@ _load_global_default_prompts()
 # --- LLM Text Completion ---
 def request_llm_to_complete_text():
     """Requests sentence completion from the LLM based on preceding text."""
+    global _is_generating, _last_llm_action_type, _last_completion_phrase_start
     editor = _active_editor_getter_func()
     if not editor or not _root_window or not _llm_progress_bar_widget:
         messagebox.showerror("LLM Service Error", "LLM Service not fully initialized.")
         return
 
+    if _is_generating:
+        interface.show_temporary_status_message("LLM is already generating. Please wait or interact with current generation.")
+        return
+
+    # Clear any previous generated text state before starting a new one
+    _clear_generated_text_state()
+    _is_generating = True
+    _last_llm_action_type = "completion"
+
     def run_completion_thread_target():
         """Target function for the LLM completion thread."""
         active_editor = _active_editor_getter_func() # Get it again inside thread
+        if not active_editor: # Editor might have been closed
+            _clear_generated_text_state()
+            return
+
         try:
+            # Record the starting point for generated text
+            start_index = active_editor.index(tk.INSERT)
+            global _generated_text_range
+            _generated_text_range = (start_index, start_index) # Initialize range
+
             # Get context: 30 lines backwards, 0 forwards
             context = llm_utils.extract_editor_context(active_editor, lines_before_cursor=30, lines_after_cursor=0)
 
@@ -152,6 +244,8 @@ def request_llm_to_complete_text():
             else:
                 current_phrase_start = context[last_dot_index + 1:].strip()
                 previous_context = context[:last_dot_index + 1].strip()
+            
+            _last_completion_phrase_start = current_phrase_start # Store for rephrase
 
             # Construct the prompt for the LLM API
             full_llm_prompt = _completion_prompt_template.format(
@@ -171,7 +265,9 @@ def request_llm_to_complete_text():
                         chunk = api_response_chunk["chunk"]
                         full_generated_text += chunk
                         # Insert chunk into editor on the main thread
-                        active_editor.after(0, lambda c=chunk: active_editor.insert(tk.INSERT, c))
+                        active_editor.after(0, lambda c=chunk: active_editor.insert(tk.INSERT, c, "llm_generated_text"))
+                        # Update the end index of the generated text range
+                        active_editor.after(0, lambda: _update_generated_text_end_index(active_editor))
                     if api_response_chunk.get("done"):
                         final_api_response_status = api_response_chunk # Store the final status
                         break # Exit loop, generation is done
@@ -180,22 +276,41 @@ def request_llm_to_complete_text():
                     final_api_response_status = api_response_chunk # Store the error status
                     error_msg = api_response_chunk["error"]
                     active_editor.after(0, lambda: messagebox.showerror("LLM Completion Error", error_msg))
-                    print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]} ERROR: LLM Completion Response - Failed: {error_msg}")
+                    print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]} ERROR: LLM Completion Response - Failed: {final_api_response_status['error']}")
+                    _clear_generated_text_state() # Clear state on error
                     return # Stop processing on error
 
             # After the loop, process the full generated text for history and final cleaning
             if final_api_response_status["success"]:
                 completion_raw = full_generated_text.strip('"')
                 cleaned_completion = llm_utils.remove_prefix_overlap_from_completion(current_phrase_start, completion_raw)
+
+                def _replace_with_cleaned_text(start_idx, end_idx, cleaned_text):
+                    editor = _active_editor_getter_func()
+                    if editor and editor.winfo_exists():
+                        editor.delete(start_idx, end_idx)
+                        editor.insert(start_idx, cleaned_text, "llm_generated_text")
+                        global _generated_text_range
+                        new_end_idx = editor.index(f"{start_idx} + {len(cleaned_text)} chars")
+                        _generated_text_range = (start_idx, new_end_idx)
+
+                if _generated_text_range:
+                    active_editor.after(0, lambda: _replace_with_cleaned_text(
+                        _generated_text_range[0], _generated_text_range[1], cleaned_completion
+                    ))
                 print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]} INFO: LLM Completion Response - Success. Generated: '{cleaned_completion[:200]}...'")
             else:
                 # Error already handled and printed inside the loop, but ensure final log if no chunks were received
                 if not full_generated_text:
                     print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]} ERROR: LLM Completion Response - No text generated due to error: {final_api_response_status.get('error', 'Unknown error')}")
+            
         except Exception as e:
             active_editor.after(0, lambda: messagebox.showerror("LLM Completion Error", f"An unexpected error occurred: {str(e)}"))
             print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]} CRITICAL ERROR: LLM Completion Exception: {str(e)}")
         finally:
+            # Generation finished, allow interaction
+            global _is_generating
+            _is_generating = False
             if _llm_progress_bar_widget and active_editor: # Check if widgets still exist
                 active_editor.after(0, lambda: _llm_progress_bar_widget.pack_forget())
                 active_editor.after(0, lambda: _llm_progress_bar_widget.stop())
@@ -217,11 +332,33 @@ def open_generate_text_dialog(initial_prompt_text=None):
 
     def _handle_generation_request_from_dialog(user_prompt, lines_before, lines_after):
         """Callback for when the dialog requests generation. Runs in main thread initially."""
+        global _is_generating, _last_llm_action_type, _last_generation_user_prompt, _last_generation_lines_before, _last_generation_lines_after
+
+        if _is_generating:
+            interface.show_temporary_status_message("LLM is already generating. Please wait or interact with current generation.")
+            return
+
+        # Clear any previous generated text state before starting a new one
+        _clear_generated_text_state()
+        _is_generating = True
+        _last_llm_action_type = "generation"
+        _last_generation_user_prompt = user_prompt
+        _last_generation_lines_before = lines_before
+        _last_generation_lines_after = lines_after
 
         def run_generation_thread_target(local_user_prompt, local_lines_before, local_lines_after):
             """Target function for the LLM generation thread."""
             active_editor = _active_editor_getter_func() # Get it again inside thread
+            if not active_editor: # Editor might have been closed
+                _clear_generated_text_state()
+                return
+
             try:
+                # Record the starting point for generated text
+                start_index = active_editor.index(tk.INSERT)
+                global _generated_text_range
+                _generated_text_range = (start_index, start_index) # Initialize range
+
                 context = llm_utils.extract_editor_context(active_editor, local_lines_before, local_lines_after)
                 full_llm_prompt = _generation_prompt_template.format(
                     user_prompt=local_user_prompt,
@@ -240,7 +377,9 @@ def open_generate_text_dialog(initial_prompt_text=None):
                             chunk = api_response_chunk["chunk"]
                             full_generated_text += chunk
                             # Insert chunk into editor on the main thread
-                            active_editor.after(0, lambda c=chunk: active_editor.insert(tk.INSERT, c))
+                            active_editor.after(0, lambda c=chunk: active_editor.insert(tk.INSERT, c, "llm_generated_text"))
+                            # Update the end index of the generated text range
+                            active_editor.after(0, lambda: _update_generated_text_end_index(active_editor))
                         if api_response_chunk.get("done"):
                             final_api_response_status = api_response_chunk # Store the final status
                             break # Exit loop, generation is done
@@ -251,6 +390,7 @@ def open_generate_text_dialog(initial_prompt_text=None):
                         active_editor.after(0, lambda: messagebox.showerror("LLM Generation Error", error_msg))
                         active_editor.after(0, lambda: _update_history_response_and_save(local_user_prompt, f"❌ Error: {error_msg[:100]}..."))
                         print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]} ERROR: LLM Generation Response - Failed: {error_msg}")
+                        _clear_generated_text_state() # Clear state on error
                         return # Stop processing on error
 
                 # After the loop, update history with the full generated text
@@ -264,12 +404,17 @@ def open_generate_text_dialog(initial_prompt_text=None):
                 else:
                     # Error already handled and printed inside the loop
                     pass
+                
             except Exception as e:
                 error_str = str(e)
                 active_editor.after(0, lambda: messagebox.showerror("LLM Generation Error", f"An unexpected error occurred: {error_str}"))
                 active_editor.after(0, lambda: _update_history_response_and_save(local_user_prompt, f"❌ Exception: {error_str[:100]}..."))
                 print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]} CRITICAL ERROR: LLM Generation Exception: {error_str}")
+                _clear_generated_text_state() # Clear state on exception
             finally:
+                # Generation finished, allow interaction
+                global _is_generating
+                _is_generating = False
                 if _llm_progress_bar_widget and active_editor: # Check if widgets still exist
                     active_editor.after(0, lambda: _llm_progress_bar_widget.pack_forget())
                     active_editor.after(0, lambda: _llm_progress_bar_widget.stop())

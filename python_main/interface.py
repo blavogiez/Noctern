@@ -466,6 +466,9 @@ def apply_theme(theme_name):
             "comment_color": "#008000", "command_color": "#0000ff", "brace_color": "#ff007f",
             "ln_text_color": "#888888", "ln_bg_color": "#f7f7f7",
             "panedwindow_sash": "#e6e6e6", # Light sash for PanedWindow if sv_ttk doesn't fully style it
+            # NEW: LLM generated text colors
+            "llm_generated_bg": "#e0e0e0", # Light grey for generated text background
+            "llm_generated_fg": "#000000", # Black text on light background
             # Status bar will now be styled by sv_ttk. If specific colors are needed, they should be harmonious.
             # "status_bar_bg": "#f0f0f0", "status_bar_fg": "#000000", # Example: neutral status bar
         }
@@ -479,6 +482,9 @@ def apply_theme(theme_name):
             "comment_color": "#608b4e", "command_color": "#569cd6", "brace_color": "#c586c0",
             "ln_text_color": "#6a6a6a", "ln_bg_color": "#252526",
             "panedwindow_sash": "#333333", # Dark sash for PanedWindow
+            # NEW: LLM generated text colors
+            "llm_generated_bg": "#3a3a3a", # Dark grey for generated text background
+            "llm_generated_fg": "#d4d4d4", # Light text on dark background
             # "status_bar_bg": "#2b2b2b", "status_bar_fg": "#d0d0d0", # Example: neutral status bar
         }
     else:
@@ -518,6 +524,11 @@ def apply_theme(theme_name):
             comment_font = tab.editor_font.copy()
             comment_font.configure(slant="italic")
             tab.editor.tag_configure("latex_comment", foreground=_theme_settings["comment_color"], font=comment_font)
+            
+            # NEW: Tag for LLM generated text
+            llm_generated_font = tab.editor_font.copy()
+            llm_generated_font.configure(slant="italic")
+            tab.editor.tag_configure("llm_generated_text", background=_theme_settings.get("llm_generated_bg", "#e0e0e0" if theme_name == "light" else "#3a3a3a"), foreground=_theme_settings.get("llm_generated_fg", _theme_settings["editor_fg"]), font=llm_generated_font)
         
         # Update the theme of the line numbers canvas for each tab
         if tab.line_numbers:
