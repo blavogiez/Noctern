@@ -63,7 +63,7 @@ def _get_file_size_category(editor):
         _last_line_count_cache[editor_id] = line_count
         
         return "large" if line_count > _LARGE_FILE_LINE_THRESHOLD else "small"
-    except tk.TclError:
+    except Exception:
         # If we can't access the editor, assume small file
         return "small"
 
@@ -88,40 +88,10 @@ def perform_heavy_updates():
 
     try:
         # Batch all updates together to minimize redraws
-        _editor_logic.apply_syntax_highlighting(current_tab.editor, full_document=False)
         _editor_logic.update_outline_tree(current_tab.editor)
-        
-        # Only redraw line numbers if they exist and are visible
-        if hasattr(current_tab, 'line_numbers') and current_tab.line_numbers:
-            current_tab.line_numbers.redraw()
-    except (tk.TclError, AttributeError) as e:
+    except Exception as e:
         # Handle cases where tab might be closing or not fully initialized
         print(f"Skipping heavy updates due to: {e}")
-
-def highlight_lines(editor, start_index, end_index):
-    """Highlight only the lines from start_index to end_index (inclusive)."""
-    try:
-        from_index = editor.index(start_index)
-        to_index = editor.index(end_index)
-        
-        # Batch tag operations for better performance
-        tags_to_remove = ["latex_command", "latex_brace", "latex_comment"]
-        for tag in tags_to_remove:
-            editor.tag_remove(tag, from_index, to_index)
-        
-        # Apply highlighting only to the generated region
-        import editor_logic
-        editor_logic.highlight_range(editor, from_index, to_index)
-    except (tk.TclError, ImportError, AttributeError):
-        # Silently handle errors - highlighting is not critical
-        pass
-
-def highlight_generated_lines(start_index, end_index):
-    """Public API to highlight only the generated lines after LLM generation."""
-    current_tab = _get_current_tab_callback()
-    if not current_tab:
-        return
-    highlight_lines(current_tab.editor, start_index, end_index)
 
 def schedule_heavy_updates(_=None):
     """Schedules heavy updates after a short delay."""
@@ -158,19 +128,6 @@ def _update_font_efficiently(current_tab, new_size):
     # Reuse existing font object when possible
     current_tab.editor_font.configure(size=new_size)
     current_tab.editor.config(font=current_tab.editor_font)
-    
-    # Update line numbers font more efficiently
-    if hasattr(current_tab, 'line_numbers') and current_tab.line_numbers:
-        current_tab.line_numbers.font = current_tab.editor_font
-        
-        # Only recreate bold font if it doesn't exist or is outdated
-        if not hasattr(current_tab.line_numbers, 'font_bold') or \
-           current_tab.line_numbers.font_bold.cget("size") != new_size:
-            current_tab.line_numbers.font_bold = current_tab.editor_font.copy()
-            current_tab.line_numbers.font_bold.configure(weight="bold")
-        
-        # Defer redraw to avoid blocking UI
-        _root.after_idle(current_tab.line_numbers.redraw)
     
     return True
 
@@ -216,9 +173,6 @@ def full_editor_refresh():
         # Clear undo stack
         current_tab.editor.edit_reset()
         
-        # Apply full syntax highlighting
-        _editor_logic.apply_syntax_highlighting(current_tab.editor, full_document=True)
-        
         # Resume heavy updates
         global _heavy_updates_paused
         _heavy_updates_paused = False
@@ -228,7 +182,7 @@ def full_editor_refresh():
         
         print(f"[{datetime.now().strftime('%H:%M:%S.%f')[:-3]}] [Perf] full_editor_refresh: Completed.")
         
-    except (tk.TclError, AttributeError) as e:
+    except Exception as e:
         print(f"Error during full refresh: {e}")
         resume_heavy_updates()
 
