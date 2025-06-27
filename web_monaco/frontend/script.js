@@ -8,9 +8,7 @@ require(['vs/editor/editor.main'], function () {
     fontSize: 18,
   });
 
-  // Supprime la complétion automatique à la frappe (enlève l'écouteur onDidChangeModelContent)
-  // Et ne complète que sur Ctrl+Shift+C
-
+  // Commande de complétion
   editor.addCommand(
     monaco.KeyMod.CtrlCmd | monaco.KeyMod.Shift | monaco.KeyCode.KeyC,
     () => {
@@ -45,4 +43,10 @@ require(['vs/editor/editor.main'], function () {
         .catch((err) => console.error("Erreur complétion :", err));
     }
   );
+
+  // Bouton de compilation
+  document.getElementById("compile-btn").onclick = function () {
+    const latex = editor.getValue();
+    document.getElementById("latex-content").value = latex;
+  };
 });

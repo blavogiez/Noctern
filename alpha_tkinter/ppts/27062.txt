@@ -1,5 +1,0 @@
-change completement l'editeur pour integrer l'editeur ace. Tu suis l'exemple suivant : import webview
-
-Tu ne modifies absolument que les fichiers python et tu peux creer de nouveaux fichiers JS. Tout doit marcher comme avant il s'agit d'une adaptation
-
-Mais tu vas tout adapter à l'appli pour que le nouvel éditeur soit ace et que tout soit adapté et fonctionne comme avant. Vas y !!
