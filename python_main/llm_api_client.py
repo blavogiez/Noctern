@@ -5,6 +5,7 @@ Client for interacting with the LLM (Large Language Model) API.
 This module handles sending requests to the LLM backend and processing
 the basic response structure.
 """
+import json # Added: Import the json module
 import requests
 
 # Configuration for the LLM API endpoint.
@@ -23,20 +24,50 @@ def request_llm_generation(prompt_text, model_name=DEFAULT_LLM_MODEL):
         dict: A dictionary with:
               {"success": True, "data": "LLM response text"} if successful.
               {"success": False, "error": "Error message"} if an error occurred.
+        dict: A dictionary containing:
+              - "success": bool indicating if the operation is successful so far.
+              - "chunk": str, a piece of the generated text (only if success is True and not done).
+              - "data": str, the full accumulated response (only if done is True and success is True).
+              - "error": str, an error message (only if success is False).
+              - "done": bool, indicating if the generation is complete.
     """
     try:
-        response = requests.post(LLM_API_URL, json={
-            "model": model_name,
-            "prompt": prompt_text,
-            "stream": False  # Assuming non-streaming responses for simplicity here
-        })
+        response = requests.post(
+            LLM_API_URL,
+            json={
+                "model": model_name,
+                "prompt": prompt_text,
+                "stream": True,  # Changed to True for streaming
+                "options": {
+                    "num_predict": 1024 # A reasonable default for max tokens
+                }
+            },
+            stream=True # Important for requests to stream the response
+        )
+        response.raise_for_status() # Raise an exception for HTTP errors (e.g., 404, 500)
 
-        if response.status_code == 200:
-            llm_response_data = response.json()
-            return {"success": True, "data": llm_response_data.get("response", "").strip()}
-        else:
-            return {"success": False, "error": f"API Error Status {response.status_code}: {response.text[:200]}..."}
+        full_response_content = ""
+        for line in response.iter_lines():
+            if line:
+                try:
+                    json_data = json.loads(line.decode('utf-8'))
+                    if "response" in json_data:
+                        chunk = json_data["response"]
+                        full_response_content += chunk
+                        yield {"success": True, "chunk": chunk, "done": False}
+                    
+                    if json_data.get("done"):
+                        # This is the final message from the stream.
+                        yield {"success": True, "data": full_response_content, "done": True}
+                        return # Exit the generator
+                except json.JSONDecodeError:
+                    print(f"Warning: Could not decode JSON line from LLM stream: {line}")
+                    continue
+        # If the loop finishes without a "done": true message (e.g., connection dropped prematurely)
+        yield {"success": False, "error": "LLM stream ended unexpectedly without 'done' signal.", "done": True}
     except requests.exceptions.ConnectionError:
-        return {"success": False, "error": "Connection Error: Could not connect to LLM API. Is the backend running?"}
+        yield {"success": False, "error": "Connection Error: Could not connect to LLM API. Is the backend running?", "done": True}
+    except requests.exceptions.RequestException as e:
+        yield {"success": False, "error": f"Request Error: {str(e)}", "done": True}
     except Exception as e:
-        return {"success": False, "error": f"An unexpected error occurred: {str(e)}"}
+        yield {"success": False, "error": f"An unexpected error occurred: {str(e)}", "done": True}

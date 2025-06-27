@@ -13,6 +13,7 @@ import os
 import interface # NEW: Import interface for status messages
 import json
 import threading
+import datetime # NEW: Import datetime for timestamps
 
 # Import newly created local modules
 import llm_prompt_history
@@ -44,6 +45,7 @@ def _load_global_default_prompts():
     try:
         with open(DEFAULT_PROMPTS_FILE, 'r', encoding='utf-8') as f:
             _global_default_prompts = json.load(f)
+        print(f"INFO: Successfully loaded global default prompts from {DEFAULT_PROMPTS_FILE}.")
     except (FileNotFoundError, json.JSONDecodeError) as e:
         print(f"CRITICAL ERROR: Could not load {DEFAULT_PROMPTS_FILE}. {e}")
         _global_default_prompts = {
@@ -116,6 +118,10 @@ def load_prompts_for_current_file():
     active_filepath = _get_active_tex_filepath()
     # The logic to load or create is handled by the prompt manager, using the globally loaded defaults.
     loaded_prompts = llm_prompt_manager.load_prompts_from_file(active_filepath, _global_default_prompts)
+    if active_filepath:
+        print(f"INFO: Loaded prompts for '{os.path.basename(active_filepath)}'.")
+    else:
+        print("INFO: Loaded prompts for current session (no file open).")
     _completion_prompt_template = loaded_prompts["completion"]
     _generation_prompt_template = loaded_prompts["generation"]
 
@@ -154,16 +160,41 @@ def request_llm_to_complete_text():
                 keywords=', '.join(_llm_keywords_list)
             )
 
-            api_response = llm_api_client.request_llm_generation(full_llm_prompt)
+            print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]} INFO: LLM Completion Request - Prompt: '{full_llm_prompt[:200]}...'")
 
-            if api_response["success"]:
-                completion_raw = api_response["data"].strip('"')
+            final_api_response_status = {"success": False, "error": "No response received."}
+            full_generated_text = "" # Initialize to empty string
+            # Iterate over the streamed response
+            for api_response_chunk in llm_api_client.request_llm_generation(full_llm_prompt):
+                if api_response_chunk["success"]:
+                    if "chunk" in api_response_chunk:
+                        chunk = api_response_chunk["chunk"]
+                        full_generated_text += chunk
+                        # Insert chunk into editor on the main thread
+                        active_editor.after(0, lambda c=chunk: active_editor.insert(tk.INSERT, c))
+                    if api_response_chunk.get("done"):
+                        final_api_response_status = api_response_chunk # Store the final status
+                        break # Exit loop, generation is done
+                else:
+                    # Handle error during streaming
+                    final_api_response_status = api_response_chunk # Store the error status
+                    error_msg = api_response_chunk["error"]
+                    active_editor.after(0, lambda: messagebox.showerror("LLM Completion Error", error_msg))
+                    print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]} ERROR: LLM Completion Response - Failed: {error_msg}")
+                    return # Stop processing on error
+
+            # After the loop, process the full generated text for history and final cleaning
+            if final_api_response_status["success"]:
+                completion_raw = full_generated_text.strip('"')
                 cleaned_completion = llm_utils.remove_prefix_overlap_from_completion(current_phrase_start, completion_raw)
-                active_editor.after(0, lambda: active_editor.insert(tk.INSERT, cleaned_completion))
+                print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]} INFO: LLM Completion Response - Success. Generated: '{cleaned_completion[:200]}...'")
             else:
-                active_editor.after(0, lambda: messagebox.showerror("LLM Completion Error", api_response["error"]))
+                # Error already handled and printed inside the loop, but ensure final log if no chunks were received
+                if not full_generated_text:
+                    print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]} ERROR: LLM Completion Response - No text generated due to error: {final_api_response_status.get('error', 'Unknown error')}")
         except Exception as e:
             active_editor.after(0, lambda: messagebox.showerror("LLM Completion Error", f"An unexpected error occurred: {str(e)}"))
+            print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]} CRITICAL ERROR: LLM Completion Exception: {str(e)}")
         finally:
             if _llm_progress_bar_widget and active_editor: # Check if widgets still exist
                 active_editor.after(0, lambda: _llm_progress_bar_widget.pack_forget())
@@ -197,20 +228,47 @@ def open_generate_text_dialog(initial_prompt_text=None):
                     keywords=', '.join(_llm_keywords_list),
                     context=context
                 )
-                api_response = llm_api_client.request_llm_generation(full_llm_prompt)
 
-                if api_response["success"]:
-                    generated_text = api_response["data"]
-                    active_editor.after(0, lambda: active_editor.insert(tk.INSERT, generated_text))
-                    active_editor.after(0, lambda: _update_history_response_and_save(local_user_prompt, generated_text))
+                print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]} INFO: LLM Generation Request - Prompt: '{full_llm_prompt[:200]}...'")
+
+                final_api_response_status = {"success": False, "error": "No response received."}
+                full_generated_text = "" # Initialize to empty string
+                # Iterate over the streamed response
+                for api_response_chunk in llm_api_client.request_llm_generation(full_llm_prompt):
+                    if api_response_chunk["success"]:
+                        if "chunk" in api_response_chunk:
+                            chunk = api_response_chunk["chunk"]
+                            full_generated_text += chunk
+                            # Insert chunk into editor on the main thread
+                            active_editor.after(0, lambda c=chunk: active_editor.insert(tk.INSERT, c))
+                        if api_response_chunk.get("done"):
+                            final_api_response_status = api_response_chunk # Store the final status
+                            break # Exit loop, generation is done
+                    else:
+                        # Handle error during streaming
+                        final_api_response_status = api_response_chunk # Store the error status
+                        error_msg = api_response_chunk["error"]
+                        active_editor.after(0, lambda: messagebox.showerror("LLM Generation Error", error_msg))
+                        active_editor.after(0, lambda: _update_history_response_and_save(local_user_prompt, f"❌ Error: {error_msg[:100]}..."))
+                        print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]} ERROR: LLM Generation Response - Failed: {error_msg}")
+                        return # Stop processing on error
+
+                # After the loop, update history with the full generated text
+                if final_api_response_status["success"]:
+                    if full_generated_text:
+                        active_editor.after(0, lambda: _update_history_response_and_save(local_user_prompt, full_generated_text))
+                        print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]} INFO: LLM Generation Response - Success. Generated: '{full_generated_text[:200]}...'")
+                    else:
+                        active_editor.after(0, lambda: _update_history_response_and_save(local_user_prompt, "No text generated."))
+                        print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]} INFO: LLM Generation Response - No text generated.")
                 else:
-                    error_msg = api_response["error"]
-                    active_editor.after(0, lambda: messagebox.showerror("LLM Generation Error", error_msg))
-                    active_editor.after(0, lambda: _update_history_response_and_save(local_user_prompt, f"❌ Error: {error_msg[:100]}..."))
+                    # Error already handled and printed inside the loop
+                    pass
             except Exception as e:
                 error_str = str(e)
                 active_editor.after(0, lambda: messagebox.showerror("LLM Generation Error", f"An unexpected error occurred: {error_str}"))
                 active_editor.after(0, lambda: _update_history_response_and_save(local_user_prompt, f"❌ Exception: {error_str[:100]}..."))
+                print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]} CRITICAL ERROR: LLM Generation Exception: {error_str}")
             finally:
                 if _llm_progress_bar_widget and active_editor: # Check if widgets still exist
                     active_editor.after(0, lambda: _llm_progress_bar_widget.pack_forget())
@@ -282,8 +340,10 @@ def update_prompts(completion_template, generation_template):
         llm_prompt_manager.save_prompts_to_file(prompts_to_save, active_filepath)
         prompts_filename = os.path.basename(llm_prompt_manager.get_prompts_filepath(active_filepath))
         interface.show_temporary_status_message(f"✅ Prompts saved: {prompts_filename}")
+        print(f"INFO: Prompts saved to '{prompts_filename}'.")
     else:
         interface.show_temporary_status_message("⚠️ Prompts updated for this session only (no file open).") # Use temporary status
+        print("INFO: Prompts updated for this session only (no file open).")
 
 def open_edit_prompts_dialog():
     """Opens a dialog to edit the LLM prompt templates."""

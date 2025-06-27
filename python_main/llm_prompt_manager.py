@@ -24,6 +24,7 @@ def save_prompts_to_file(prompts_dict, tex_document_filepath):
     try:
         with open(prompts_filepath, 'w', encoding='utf-8') as f:
             json.dump(prompts_dict, f, ensure_ascii=False, indent=4)
+        print(f"INFO: Successfully saved custom prompts to {os.path.basename(prompts_filepath)}.")
     except Exception as e:
         print(f"Error saving custom prompts to {prompts_filepath}: {e}")
 
@@ -33,12 +34,14 @@ def load_prompts_from_file(tex_document_filepath, default_prompts):
 
     # If no file is open, just return the in-memory defaults
     if not prompts_filepath:
+        print("INFO: No active file, returning global default prompts.")
         return default_prompts
 
     if os.path.exists(prompts_filepath):
         try:
             with open(prompts_filepath, 'r', encoding='utf-8') as f:
                 loaded_data = json.load(f)
+                print(f"INFO: Successfully loaded custom prompts from {os.path.basename(prompts_filepath)}.")
                 # Validate and merge with defaults to ensure all keys are present
                 return {
                     "completion": loaded_data.get("completion", default_prompts["completion"]),
@@ -49,6 +52,6 @@ def load_prompts_from_file(tex_document_filepath, default_prompts):
             return default_prompts # Fallback to defaults on error
     else:
         # File doesn't exist, so create it with default values
-        print(f"Debug: Prompts file not found for {tex_document_filepath}. Creating with defaults.")
+        print(f"INFO: Prompts file not found for {os.path.basename(tex_document_filepath)}. Creating with defaults.")
         save_prompts_to_file(default_prompts, tex_document_filepath)
         return default_prompts

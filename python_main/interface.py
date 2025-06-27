@@ -4,6 +4,7 @@ from tkinter.font import Font
 import os
 import subprocess
 import platform
+import datetime # NEW: Import datetime for timestamps
 import sv_ttk # Import sv_ttk
 
 # Import functions from other modules
@@ -52,6 +53,7 @@ def perform_heavy_updates():
     if not current_tab:
         if outline_tree:
             outline_tree.delete(*outline_tree.get_children())
+        print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]} INFO: Heavy updates skipped (no active tab).")
         return
 
     # Perform all updates for the current tab
@@ -59,6 +61,7 @@ def perform_heavy_updates():
     editor_logic.update_outline_tree(current_tab.editor)
     if current_tab.line_numbers:
         current_tab.line_numbers.redraw()
+    print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]} INFO: Performed heavy updates (syntax highlighting, outline, line numbers) for '{os.path.basename(current_tab.file_path) if current_tab.file_path else 'Untitled'}'.")
 def schedule_heavy_updates(_=None):
     """Schedules heavy updates after a short delay."""
     global heavy_update_timer_id
