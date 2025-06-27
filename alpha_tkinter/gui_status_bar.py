@@ -2,6 +2,12 @@ import tkinter as tk
 import subprocess
 import platform
 
+try:
+    import psutil
+    _PSUTIL_AVAILABLE = True
+except ImportError:
+    _PSUTIL_AVAILABLE = False
+
 # References to main GUI components
 _root = None
 _status_bar = None
@@ -56,19 +62,30 @@ def update_gpu_status():
         ).strip()
 
         name, temp, usage = output.split(", ")
-        status_text = f"🎮 GPU: {name}   🌡 {temp}°C   📊 {usage}% used"
+        gpu_status = f"🎮 GPU: {name}   🌡 {temp}°C   📊 {usage}% used"
     except Exception as e:
-        # If GPU status fails or temporary message was just cleared,
-        # ensure status_bar is not None before configuring.
         if _status_bar:
             if isinstance(e, (FileNotFoundError, subprocess.CalledProcessError)):
-                _status_bar.config(text="⚠️ GPU status not available (nvidia-smi error)")
+                gpu_status = "⚠️ GPU status not available (nvidia-smi error)"
             else:
-                _status_bar.config(text=f"⚠️ Error getting GPU status")
-        # Still schedule next update even if this one failed
-        _root.after(300, update_gpu_status)
-        return
-    if _status_bar and not _temporary_status_active: # Check again before setting
+                gpu_status = f"⚠️ Error getting GPU status"
+        else:
+            gpu_status = ""
+    # --- Memory and CPU usage ---
+    mem_cpu_status = ""
+    if _PSUTIL_AVAILABLE:
+        try:
+            process = psutil.Process()
+            mem_mb = process.memory_info().rss / (1024 * 1024)
+            cpu_percent = process.cpu_percent(interval=0.1)
+            mem_cpu_status = f"   🧠 RAM: {mem_mb:.1f} MB   🖥 CPU: {cpu_percent:.1f}%"
+        except Exception:
+            mem_cpu_status = "   🧠 RAM: N/A   🖥 CPU: N/A"
+    else:
+        mem_cpu_status = "   🧠 RAM: N/A   🖥 CPU: N/A"
+
+    status_text = gpu_status + mem_cpu_status
+    if _status_bar and not _temporary_status_active:
         _status_bar.config(text=status_text)
     # Schedule the next update
     _root.after(300, update_gpu_status) # Update every 0.3 seconds
