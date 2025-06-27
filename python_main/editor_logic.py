@@ -1,46 +1,28 @@
 import tkinter as tk
 import re
 import os
-from datetime import datetime # NEW: Import datetime for timestamps
 from tkinter import messagebox
 from PIL import ImageGrab
 
-outline_tree = None
-get_current_tab_func = None # Callback to get the current tab from the GUI manager
+# Import the interface module to get access to the current tab
+import interface
 
-def initialize_editor_logic(tree_widget, get_current_tab_callback):
+outline_tree = None
+
+def initialize_editor_logic(tree_widget):
     """Sets the global reference to the outline tree."""
     global outline_tree
-    global get_current_tab_func
     outline_tree = tree_widget
-    get_current_tab_func = get_current_tab_callback
 
 def update_outline_tree(editor):
-    """
-    Updates the Treeview widget with LaTeX section structure.
-    To improve performance, it uses a per-tab cache to avoid re-parsing the
-    entire document unless the content has actually changed.
-    """
+    """Updates the Treeview widget with LaTeX section structure."""
     if not outline_tree or not editor:
         return
 
-    current_tab = get_current_tab_func()
-    if not current_tab or current_tab.editor != editor:
-        # This can happen if a tab is being closed or is not the active one during a refresh.
-        return
-
+    outline_tree.delete(*outline_tree.get_children())
     content = editor.get("1.0", tk.END)
-    # Use the tab-specific cache to check if a re-parse is needed.
-    if content == current_tab.last_content_for_outline_parsing:
-        return # Content hasn't changed, no need to re-parse outline
-
-    print(f"[{datetime.now().strftime('%H:%M:%S.%f')[:-3]}] [Perf] update_outline_tree: Re-parsing document structure.")
-
-    # The content has changed, so we must re-parse it.
     lines = content.split("\n")
-    
-    current_outline_structure = []
-    # parents = {0: ""} # Map level to parent node ID for building the structure list (not needed for comparison)
+    parents = {0: ""} # Map level to parent node ID
 
     for i, line in enumerate(lines):
         stripped_line = line.strip()
@@ -48,33 +30,19 @@ def update_outline_tree(editor):
             # Improved regex to handle:
             # - Starred versions (e.g., \section*{...})
             # - Optional arguments (e.g., \section[short]{long})
-            # Note: This regex does not support nested braces {} in the title. (This comment is from original code)
+            # Note: This regex does not support nested braces {} in the title.
             match = re.match(rf"\\{cmd}\*?(?:\[[^\]]*\])?{{([^}}]*)}}", stripped_line)
             if match:
                 title = match.group(1).strip() # Get the title from the first capture group
-                # Store (level, title, line_number)
-                current_outline_structure.append((level, title, i + 1))
+                # Ensure parent exists for the current level
+                parent_id = parents.get(level - 1, "")
+                node_id = outline_tree.insert(parent_id, "end", text=title, values=(i + 1,))
+                parents[level] = node_id
+                # Remove descendants from parent map if we move up the hierarchy
+                for deeper in range(level + 1, 4):
+                    if deeper in parents:
+                        del parents[deeper]
                 break # Found a section command, move to next line
-
-    # Compare current structure with this tab's last known structure
-    if current_outline_structure != current_tab.last_parsed_outline_structure:
-        # Structure has changed, so update the Treeview
-        outline_tree.delete(*outline_tree.get_children()) # Clear existing tree
-
-        # Rebuild the Treeview
-        parents_for_tree = {0: ""} # Map level to parent node ID for Treeview insertion
-        for level, title, line_num in current_outline_structure:
-            parent_id = parents_for_tree.get(level - 1, "")
-            node_id = outline_tree.insert(parent_id, "end", text=title, values=(line_num,))
-            parents_for_tree[level] = node_id
-            # Remove descendants from parent map if we move up the hierarchy
-            for deeper in range(level + 1, 4):
-                if deeper in parents_for_tree:
-                    del parents_for_tree[deeper]
-
-        current_tab.last_parsed_outline_structure = current_outline_structure # Update tab's outline cache
-
-    current_tab.last_content_for_outline_parsing = content # Always update tab's content cache after a parse
 
 def go_to_section(editor, event):
     """Scrolls the editor to the selected section in the outline tree."""
@@ -95,63 +63,35 @@ def go_to_section(editor, event):
                 # Handle cases where line number might be invalid (e.g., empty file)
                 pass
 
-def highlight_range(editor, start_index, end_index):
-    """
-    Applies syntax highlighting to a specific range within the text widget.
-    This is the core, reusable highlighting function.
-    """
-    if not editor or not editor.winfo_exists():
+def apply_syntax_highlighting(editor):
+    """Applies syntax highlighting to LaTeX commands, braces, and comments."""
+    if not editor:
         return
 
-    # Remove existing tags from the target range to prevent tag buildup
-    editor.tag_remove("latex_command", start_index, end_index)
-    editor.tag_remove("latex_brace", start_index, end_index)
-    editor.tag_remove("latex_comment", start_index, end_index)
+    # Remove existing tags first
+    editor.tag_remove("latex_command", "1.0", tk.END)
+    editor.tag_remove("latex_brace", "1.0", tk.END)
+    editor.tag_remove("latex_comment", "1.0", tk.END)
 
-    # Get only the content of the target range
-    content = editor.get(start_index, end_index)
+    content = editor.get("1.0", tk.END)
 
-    # Helper function to apply tags based on regex matches within the content
-    def apply_tags_for_pattern(pattern, tag_name):
-        for match in re.finditer(pattern, content):
-            # Calculate the absolute start and end indices in the editor from the relative match
-            match_start = editor.index(f"{start_index} + {match.start()} chars")
-            match_end = editor.index(f"{start_index} + {match.end()} chars")
-            editor.tag_add(tag_name, match_start, match_end)
+    # Highlight LaTeX commands (e.g., \section, \textbf)
+    for match in re.finditer(r"\\[a-zA-Z@]+", content):
+        start = f"1.0 + {match.start()} chars"
+        end = f"1.0 + {match.end()} chars"
+        editor.tag_add("latex_command", start, end)
 
-    # Apply highlighting for each pattern on the content
-    apply_tags_for_pattern(r"\\[a-zA-Z@]+", "latex_command")
-    apply_tags_for_pattern(r"[{}]", "latex_brace")
-    apply_tags_for_pattern(r"%[^\n]*", "latex_comment")
+    # Highlight braces {}
+    for match in re.finditer(r"[{}]", content):
+        start = f"1.0 + {match.start()} chars"
+        end = f"1.0 + {match.end()} chars"
+        editor.tag_add("latex_brace", start, end)
 
-def apply_syntax_highlighting(editor, full_document=False):
-    """
-    Applies syntax highlighting to the text widget.
-    If full_document is True, applies to the entire document.
-    Otherwise, applies only to the visible portion.
-    """
-    scope = "full document" if full_document else "visible area"
-    print(f"[{datetime.now().strftime('%H:%M:%S.%f')[:-3]}] [Perf] apply_syntax_highlighting: Highlighting {scope}.")
-    if full_document:
-        highlight_range(editor, "1.0", tk.END)
-    else:
-        # Define the visible range, with a small buffer for partially visible lines
-        visible_start_index = editor.index("@0,0")
-        visible_end_index = editor.index(f"@0,{editor.winfo_height()}")
-        
-        start_line = int(visible_start_index.split('.')[0])
-        # Add a buffer of a few lines to handle smooth scrolling and partial lines
-        end_line = int(visible_end_index.split('.')[0]) + 2
-        
-        start_index = f"{start_line}.0"
-        end_index = f"{end_line}.end"
-        highlight_range(editor, start_index, end_index)
-
-def highlight_current_line_syntax(editor):
-    """A highly efficient function to re-highlight only the line the cursor is on."""
-    start_of_line = "insert linestart"
-    end_of_line = "insert lineend"
-    highlight_range(editor, start_of_line, end_of_line)
+    # Highlight comments %
+    for match in re.finditer(r"%[^\n]*", content):
+        start = f"1.0 + {match.start()} chars"
+        end = f"1.0 + {match.end()} chars"
+        editor.tag_add("latex_comment", start, end)
 
 def extract_section_structure(content, position_index):
     """
@@ -190,7 +130,7 @@ def extract_section_structure(content, position_index):
 
 def paste_image():
     """Pastes an image from the clipboard into the editor as a LaTeX figure."""
-    current_tab = get_current_tab_func()
+    current_tab = interface.get_current_tab()
     if not current_tab: return
     editor = current_tab.editor
     if not editor:
@@ -247,6 +187,3 @@ def paste_image():
 
     except Exception as e:
         messagebox.showerror("Error", f"Error pasting image:\n{str(e)}")
-    finally:
-        if 'image' in locals() and image is not None:
-            del image # Explicitly delete the PIL Image object

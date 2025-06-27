@@ -1,5 +1,0 @@
-Traduis toute ma logique de coloration syntaxique en utilisant py tree sitter.
-
-Ce sera beaucoup plus performant.
-
-Sois intelligent.
