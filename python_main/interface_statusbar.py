@@ -14,4 +14,3 @@ def clear_temporary_status_message(status_bar, apply_theme, current_theme):
     _temporary_status_timer_id = None
     if status_bar:
         apply_theme(current_theme)
-        apply_theme(current_theme)

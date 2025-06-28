@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 import interface_zoom
 import interface_statusbar
 import interface_fileops
@@ -225,6 +225,14 @@ def setup_gui():
     return root
 
 def apply_theme(theme_name):
-    return interface_theme.apply_theme(
-        theme_name, current_theme, _theme_settings, root, outline_tree, status_bar, main_pane, tabs, perform_heavy_updates
+    """Applies the theme and updates the application's global state."""
+    global current_theme, _theme_settings
+    
+    # The theme function now returns the new state
+    new_theme, new_settings = interface_theme.apply_theme(
+        theme_name, root, main_pane, tabs, perform_heavy_updates
     )
+    
+    # Update the global state in this module
+    current_theme = new_theme
+    _theme_settings = new_settings
