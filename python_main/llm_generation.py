@@ -10,9 +10,17 @@ from llm_history import _add_entry_to_history_and_save, _update_history_response
 from llm_interactive import clear_generated_text_state
 
 def open_generate_text_dialog(initial_prompt_text=None):
+    if not callable(llm_state._active_editor_getter_func):
+        messagebox.showerror("LLM Service Error", "LLM Service not initialized (no editor getter).")
+        return
+
     editor = llm_state._active_editor_getter_func()
     if not editor or not llm_state._root_window or not llm_state._llm_progress_bar_widget or not llm_state._theme_setting_getter_func:
         messagebox.showerror("LLM Service Error", "LLM Service not fully initialized.")
+        return
+
+    if not (llm_state._generation_prompt_template or (llm_state._global_default_prompts and llm_state._global_default_prompts.get("generation"))):
+        messagebox.showerror("LLM Service Error", "LLM prompt templates are not initialized. Please reload your file or restart the application.")
         return
 
     def _handle_generation_request_from_dialog(user_prompt, lines_before, lines_after):

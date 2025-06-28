@@ -35,35 +35,23 @@ def load_prompts_from_file(tex_document_filepath, default_prompts):
     # If no file is open, just return the in-memory defaults
     if not prompts_filepath:
         print("INFO: No active file, returning global default prompts.")
-        # Always return a dict with both keys
-        return {
-            "completion": default_prompts.get("completion", ""),
-            "generation": default_prompts.get("generation", "")
-        }
+        return default_prompts
 
     if os.path.exists(prompts_filepath):
         try:
             with open(prompts_filepath, 'r', encoding='utf-8') as f:
                 loaded_data = json.load(f)
                 print(f"INFO: Successfully loaded custom prompts from {os.path.basename(prompts_filepath)}.")
-                # Always return both keys, fallback to defaults if missing
+                # Validate and merge with defaults to ensure all keys are present
                 return {
-                    "completion": loaded_data.get("completion", default_prompts.get("completion", "")),
-                    "generation": loaded_data.get("generation", default_prompts.get("generation", ""))
+                    "completion": loaded_data.get("completion", default_prompts["completion"]),
+                    "generation": loaded_data.get("generation", default_prompts["generation"])
                 }
         except Exception as e:
             print(f"Error loading custom prompts from {prompts_filepath}, using defaults. Error: {e}")
-            # Always return both keys
-            return {
-                "completion": default_prompts.get("completion", ""),
-                "generation": default_prompts.get("generation", "")
-            }
+            return default_prompts # Fallback to defaults on error
     else:
         # File doesn't exist, so create it with default values
         print(f"INFO: Prompts file not found for {os.path.basename(tex_document_filepath)}. Creating with defaults.")
         save_prompts_to_file(default_prompts, tex_document_filepath)
-        # Always return both keys
-        return {
-            "completion": default_prompts.get("completion", ""),
-            "generation": default_prompts.get("generation", "")
-        }
+        return default_prompts

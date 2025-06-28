@@ -8,19 +8,20 @@ import datetime
 from llm_interactive import clear_generated_text_state
 
 def request_llm_to_complete_text():
-    if not llm_state._active_editor_getter_func:
-        from tkinter import messagebox
-        messagebox.showerror("LLM Service Error", "LLM Service not fully initialized.")
+    if not callable(llm_state._active_editor_getter_func):
+        messagebox.showerror("LLM Service Error", "LLM Service not initialized (no editor getter).")
         return
 
     editor = llm_state._active_editor_getter_func()
-    if not editor or not llm_state._root_window or not llm_state._llm_progress_bar_widget:
-        from tkinter import messagebox
+    if not editor or not llm_state._root_window or not llm_state._llm_progress_bar_widget or not llm_state._theme_setting_getter_func:
         messagebox.showerror("LLM Service Error", "LLM Service not fully initialized.")
         return
 
+    if not (llm_state._completion_prompt_template or (llm_state._global_default_prompts and llm_state._global_default_prompts.get("completion"))):
+        messagebox.showerror("LLM Service Error", "LLM prompt templates are not initialized. Please reload your file or restart the application.")
+        return
+
     if llm_state._is_generating:
-        import interface
         interface.show_temporary_status_message("LLM is already generating. Please wait or interact with current generation.")
         return
 

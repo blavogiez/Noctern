@@ -11,6 +11,11 @@ def _get_active_tex_filepath():
         return llm_state._active_filepath_getter_func()
     return None
 
+def load_prompt_history_for_current_file():
+    """Load prompt history for the current file."""
+    active_filepath = _get_active_tex_filepath()
+    llm_state._prompt_history_list = llm_prompt_history.load_prompt_history_from_file(active_filepath)
+
 def _add_entry_to_history_and_save(user_prompt, response_placeholder="⏳ Generating..."):
     """Internal helper to add a new entry and save the history."""
     # Remove existing entry for this user_prompt to move it to the top or update status

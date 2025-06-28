@@ -10,7 +10,7 @@ import ctypes
 # Import modules for different functionalities
 import interface
 import editor_logic
-import latex_compiler
+import latex_compiler  # MODIFIED: Import new llm_service
 import latex_translator # NEW: Import latex_translator
 import llm_service # MODIFIED: Import new llm_service
 
@@ -35,22 +35,22 @@ if __name__ == "__main__":
 
     # Setup the main GUI window and widgets
     root = interface.setup_gui()
+    if root:  # Check if root is successfully initialized
+        # --- Initialize Services ---
+        # The services are initialized with getter functions to dynamically access
+        # the state of the currently active tab from the interface.
 
-    # --- Initialize Services ---
-    # The services are initialized with getter functions to dynamically access
-    # the state of the currently active tab from the interface.
+        editor_logic.initialize_editor_logic(interface.outline_tree)
+        latex_compiler.initialize_compiler(root)
 
-    editor_logic.initialize_editor_logic(interface.outline_tree)
-    latex_compiler.initialize_compiler(root)
-
-    llm_service.initialize_llm_service(
-        root_window_ref=root,
-        progress_bar_widget_ref=interface.llm_progress_bar,
-        theme_setting_getter_func=interface.get_theme_setting,
-        # Provide functions to get the active editor and its file path
-        active_editor_getter=lambda: interface.get_current_tab().editor if interface.get_current_tab() else None,
-        active_filepath_getter=lambda: interface.get_current_tab().file_path if interface.get_current_tab() else None
-    )
+        llm_service.initialize_llm_service(
+            root=root,
+            progress_bar=interface.llm_progress_bar,
+            theme_getter=interface.get_theme_setting,
+            # Provide functions to get the active editor and its file path
+            editor_getter=lambda: interface.get_current_tab().editor if interface.get_current_tab() else None,
+            filepath_getter=lambda: interface.get_current_tab().file_path if interface.get_current_tab() else None
+        )
 
     latex_translator.initialize_translator(
         root_ref=root,
