@@ -30,7 +30,8 @@ _active_editor_getter_func = None # Function to get the active tk.Text widget
 _active_filepath_getter_func = None # Function to get current .tex file path
 
 # --- Prompt Configuration ---
-DEFAULT_PROMPTS_FILE = "default_prompts.json"
+_SERVICE_DIR = os.path.dirname(os.path.abspath(__file__))
+DEFAULT_PROMPTS_FILE = os.path.join(_SERVICE_DIR, "default_prompts.json")
 _global_default_prompts = {} # Loaded once at startup
 
 # --- State managed by this service ---
