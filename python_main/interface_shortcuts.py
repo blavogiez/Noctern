@@ -3,6 +3,7 @@ import llm_service
 import latex_translator
 import editor_logic
 import interface
+import llm_rephrase
 
 def bind_shortcuts(root):
     root.bind_all("<Control-Shift-G>", lambda event: llm_service.open_generate_text_dialog())
@@ -17,3 +18,4 @@ def bind_shortcuts(root):
     root.bind_all("<Control-t>", lambda event: latex_translator.open_translate_dialog())
     root.bind_all("<Control-equal>", interface.zoom_in)
     root.bind_all("<Control-minus>", interface.zoom_out)
+    root.bind_all("<Control-r>", lambda event: llm_rephrase.open_rephrase_dialog())
