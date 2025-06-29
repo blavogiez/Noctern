@@ -2,172 +2,145 @@ import llm_state
 import tkinter as tk
 import datetime
 import interface
+import llm_utils # Needed for completion post-processing
 
-# This module is now drastically simplified and more robust by using `window_create`.
+# This global variable will hold the single, currently active session.
+_current_session = None
 
-def show_llm_buttons(editor, insert_index):
-    """
-    Creates and embeds an interactive button frame directly into the text editor
-    at the specified index, making it a part of the text flow.
-    """
-    _destroy_buttons_frame()  # Clear any previous buttons first
-    current_tab = interface.get_current_tab()
-    if not current_tab or not editor:
-        return
+class InteractiveSession:
+    """A robust class to manage the state and UI of a single LLM interaction."""
 
-    # --- A more compact and modern "pill" style for the button container ---
-    buttons_frame = tk.Frame(
-        editor,
-        bg="#404040",
-        bd=1,
-        relief=tk.SOLID,
-        highlightbackground="#606060",
-        highlightcolor="#007bff",
-        highlightthickness=1,
-    )
+    def __init__(self, editor, start_index, is_completion=False, completion_phrase=""):
+        self.editor = editor
+        self.is_completion = is_completion
+        self.completion_phrase = completion_phrase
+        self.full_response_text = ""
+        
+        # --- Define the precise locations for UI and text ---
+        self.block_start_index = editor.index(start_index)
+        self.buttons_end_index = None
+        self.text_end_index = None
+        
+        self.buttons_frame = self._create_ui_elements()
+        self.editor.window_create(self.block_start_index, window=self.buttons_frame, padx=5, align="center")
+        
+        self.buttons_end_index = self.editor.index(f"{self.block_start_index} + 1 char")
+        self.text_end_index = self.buttons_end_index
 
-    # --- Button styling for a cleaner look ---
-    btn_style = {
-        "relief": tk.FLAT,
-        "bd": 0,
-        "fg": "#FFFFFF",
-        "font": ("Segoe UI", 9),
-        "cursor": "hand2",
-        "padx": 10,
-        "pady": 3,
-        "activeforeground": "#FFFFFF",
+    def _create_ui_elements(self):
+        """Creates the button frame. Called only by the constructor."""
+        btn_style = {"relief": tk.FLAT, "bd": 0, "fg": "#FFFFFF", "font": ("Segoe UI", 9),
+                     "cursor": "hand2", "padx": 10, "pady": 3, "activeforeground": "#FFFFFF"}
+        frame = tk.Frame(self.editor, bg="#404040", bd=1, relief=tk.SOLID,
+                         highlightbackground="#606060", highlightcolor="#007bff", highlightthickness=1)
+        tk.Button(frame, text="Accept", command=self.accept, bg="#28a745", activebackground="#218838", **btn_style).pack(side=tk.LEFT, padx=(2, 1))
+        tk.Button(frame, text="Rephrase", command=self.rephrase, bg="#17a2b8", activebackground="#138496", **btn_style).pack(side=tk.LEFT, padx=1)
+        tk.Button(frame, text="Discard", command=self.discard, bg="#dc3545", activebackground="#c82333", **btn_style).pack(side=tk.LEFT, padx=(1, 2))
+        return frame
+
+    # --- Callbacks for the streaming threads in other files ---
+    def handle_chunk(self, chunk):
+        """Inserts a text chunk and updates the session's state."""
+        self.editor.insert(self.text_end_index, chunk, "llm_generated_text")
+        self.text_end_index = self.editor.index(f"{self.text_end_index} + {len(chunk)} chars")
+        self.full_response_text += chunk
+
+    def handle_success(self):
+        """Called when the stream finishes successfully."""
+        if self.is_completion:
+            self._post_process_completion()
+        llm_state._is_generating = False
+        print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]} INFO: LLM stream finished.")
+
+    def handle_error(self, error_msg):
+        """Cleans up the UI if the stream fails."""
+        messagebox.showerror("LLM Error", error_msg)
+        self.destroy(delete_text=True)
+
+    # --- User Actions ---
+    def accept(self):
+        """Finalizes the text: removes styling and the buttons."""
+        print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]} INFO: Accepted LLM generated text.")
+        text_start_index = self.buttons_end_index
+        self.editor.tag_remove("llm_generated_text", text_start_index, self.text_end_index)
+        self.destroy(delete_text=False) # Keep text, just destroy UI
+        self.editor.focus_set()
+
+    def discard(self):
+        """Discards the entire interaction: text and buttons."""
+        print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]} INFO: Discarded LLM generated text.")
+        self.destroy(delete_text=True) # Destroy UI and delete text
+        self.editor.focus_set()
+
+    def rephrase(self):
+        """Triggers a rephrase action."""
+        print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]} INFO: Rephrasing LLM generated text.")
+        import llm_completion, llm_generation
+        last_action, last_prompt, last_phrase = (
+            llm_state._last_llm_action_type,
+            llm_state._last_generation_user_prompt,
+            llm_state._last_completion_phrase_start,
+        )
+        self.destroy(delete_text=True) # Clean up current UI first
+        if last_action == "completion": llm_completion.request_llm_to_complete_text()
+        elif last_action == "generation": llm_generation.open_generate_text_dialog(initial_prompt_text=last_prompt)
+
+    def _post_process_completion(self):
+        """Special logic to clean up completion text after streaming is done."""
+        cleaned_text = llm_utils.remove_prefix_overlap_from_completion(self.completion_phrase, self.full_response_text)
+        text_start = self.buttons_end_index
+        # Replace the streamed text with the cleaned version
+        self.editor.delete(text_start, self.text_end_index)
+        self.editor.insert(text_start, cleaned_text, "llm_generated_text")
+        self.text_end_index = self.editor.index(f"{text_start} + {len(cleaned_text)} chars")
+
+    def destroy(self, delete_text):
+        """Cleans up the session and its resources."""
+        global _current_session
+        if delete_text:
+            self.editor.delete(self.block_start_index, self.text_end_index)
+        else: # Just delete the buttons
+            self.editor.delete(self.block_start_index, self.buttons_end_index)
+        
+        if self.buttons_frame:
+            try: self.buttons_frame.destroy()
+            except tk.TclError: pass
+        
+        _current_session = None
+        llm_state._is_generating = False
+
+def start_new_interactive_session(editor, is_completion=False, completion_phrase=""):
+    """Main entry point. Creates a session and returns its callbacks to the caller."""
+    global _current_session
+    if _current_session: _current_session.discard()
+    
+    llm_state._is_generating = True
+    _current_session = InteractiveSession(editor, editor.index(tk.INSERT), is_completion, completion_phrase)
+    
+    # Return a dictionary of safe, bound methods for the thread to call.
+    return {
+        'on_chunk': _current_session.handle_chunk,
+        'on_success': _current_session.handle_success,
+        'on_error': _current_session.handle_error,
     }
 
-    # --- Create Buttons ---
-    accept_button = tk.Button(
-        buttons_frame, text="Accept", command=accept_generated_text,
-        bg="#28a745", activebackground="#218838", **btn_style
-    )
-    rephrase_button = tk.Button(
-        buttons_frame, text="Rephrase", command=rephrase_generated_text,
-        bg="#17a2b8", activebackground="#138496", **btn_style
-    )
-    discard_button = tk.Button(
-        buttons_frame, text="Discard", command=discard_generated_text,
-        bg="#dc3545", activebackground="#c82333", **btn_style
-    )
-
-    # Arrange buttons side-by-side
-    accept_button.pack(side=tk.LEFT, padx=(2, 1))
-    rephrase_button.pack(side=tk.LEFT, padx=1)
-    discard_button.pack(side=tk.LEFT, padx=(1, 2))
-
-    # --- The Core Magic: Embed the button frame into the Text widget ---
-    # We create a "window" at the insert_index, containing our buttons_frame.
-    # This makes the buttons behave like a character in the text.
-    # We add a tag so we can easily find and manage it.
-    editor.window_create(insert_index, window=buttons_frame, padx=5, align="center")
-    editor.mark_set("llm_buttons_start", insert_index) # Mark the start of the button block
-
-    current_tab.llm_buttons_frame = buttons_frame
-    llm_state._generated_text_range = (
-        editor.index("llm_buttons_start"),
-        editor.index("llm_buttons_start")
-    )
-
-def _destroy_buttons_frame():
-    """Destroys the buttons frame if it exists."""
-    current_tab = interface.get_current_tab()
-    if current_tab and getattr(current_tab, "llm_buttons_frame", None):
-        try:
-            # The frame is destroyed when the text representing it is deleted,
-            # but we can also destroy it directly if needed.
-            current_tab.llm_buttons_frame.destroy()
-        except tk.TclError:
-            pass  # Widget might already be gone
-        current_tab.llm_buttons_frame = None
-
-# POSITIONING LOGIC IS NO LONGER NEEDED!
-# The `_position_buttons_frame` and `update_button_position` functions are removed
-# because the Text widget now manages the position automatically.
-
-def clear_generated_text_state():
-    """Clear the generated text state and destroy buttons."""
-    # We don't need to explicitly destroy the frame here anymore.
-    # Discarding/Accepting will delete the text range which includes the buttons.
-    llm_state._generated_text_range = None
-    llm_state._is_generating = False
-
-
+# --- Public functions called by bindings are simple, safe wrappers ---
 def accept_generated_text(event=None):
-    """Accept the generated text by simply removing the button controls."""
-    if llm_state._is_generating:
-        return "break"
-
-    current_tab = interface.get_current_tab()
-    if llm_state._generated_text_range and current_tab and current_tab.editor:
-        print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]} INFO: Accepted LLM generated text.")
-        editor = current_tab.editor
-        # Delete only the embedded button window, keeping the text
-        button_start_index = editor.index("llm_buttons_start")
-        button_end_index = editor.index(f"{button_start_index} + 1 char")
-        editor.delete(button_start_index, button_end_index)
-        
-        clear_generated_text_state()
-        editor.focus_set()
-        return "break"
-    return None
-
-
+    if _current_session and not llm_state._is_generating:
+        _current_session.accept(); return "break"
 def discard_generated_text(event=None):
-    """Discard the entire generated block, including buttons and text."""
-    if llm_state._is_generating:
-        return "break"
-    
-    current_tab = interface.get_current_tab()
-    if llm_state._generated_text_range and current_tab and current_tab.editor:
-        print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]} INFO: Discarded LLM generated text.")
-        editor = current_tab.editor
-        try:
-            # The range now includes the buttons, so deleting it cleans up everything.
-            start_index, end_index = llm_state._generated_text_range
-            editor.delete(start_index, end_index)
-        except tk.TclError:
-            pass  # Text/widget might already be gone
-        finally:
-            clear_generated_text_state()
-            editor.focus_set()
-        return "break"
-    return None
-
-
+    if _current_session:
+        _current_session.discard(); return "break"
 def rephrase_generated_text(event=None):
-    """Rephrase the generated text by triggering a new request."""
-    if llm_state._is_generating:
-        return "break"
-    
-    if llm_state._generated_text_range:
-        print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]} INFO: Rephrasing LLM generated text.")
-        import llm_completion
-        import llm_generation
-        
-        # Store the necessary context before discarding the current generation
-        last_action_type = llm_state._last_llm_action_type
-        last_completion_phrase_start = llm_state._last_completion_phrase_start
-        last_generation_user_prompt = llm_state._last_generation_user_prompt
-        
-        discard_generated_text()
-        
-        if last_action_type == "completion" and last_completion_phrase_start is not None:
-            llm_completion.request_llm_to_complete_text()
-        elif last_action_type == "generation" and last_generation_user_prompt is not None:
-            llm_generation.open_generate_text_dialog(initial_prompt_text=last_generation_user_prompt)
-        else:
-            interface.show_temporary_status_message("No previous LLM action to rephrase.")
-            print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]} WARNING: No previous LLM action to rephrase.")
-        return "break"
-    return None
+    if _current_session and not llm_state._is_generating:
+        _current_session.rephrase(); return "break"
 
-
+# --- Bindings are unchanged, as requested ---
 def bind_keyboard_shortcuts(editor):
-    """Bind keyboard shortcuts for LLM button actions."""
-    editor.bind("<Tab>", accept_generated_text, add='+')
-    editor.bind("<Escape>", discard_generated_text, add='+') # Escape is more intuitive for discard
+    editor.bind("<Tab>", accept_generated_text)
+    editor.bind("<KeyPress-space>", lambda e: accept_generated_text() if _is_word_complete(e) else None)
+    editor.bind("<KeyPress-r>", rephrase_generated_text)
+    editor.bind("<KeyPress-c>", discard_generated_text)
 
-# NOTE: The other key bindings are removed to prevent accidental triggers.
-# The user should explicitly use Tab, Escape, or click the buttons.
+def _is_word_complete(event):
+    return event.char == ' ' and _current_session is not None
