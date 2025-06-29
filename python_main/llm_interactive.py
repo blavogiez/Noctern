@@ -4,6 +4,8 @@ from tkinter import messagebox
 import datetime
 import interface
 import llm_utils
+# NOTE: Pas d'import global de llm_rephrase ici pour éviter une dépendance circulaire
+# au chargement du module. L'import sera fait localement dans la fonction.
 
 # Cette variable globale contiendra la seule session active.
 _current_session = None
@@ -138,12 +140,29 @@ class InteractiveSession:
         self.editor.focus_set()
 
     def rephrase(self):
+        """
+        Action de reformulation: prend le texte généré actuel, détruit cette
+        session et lance le processus de reformulation interactive.
+        """
         if llm_state._is_generating: return
-        import llm_completion, llm_generation
-        last_action, last_prompt, last_phrase = (llm_state._last_llm_action_type, llm_state._last_generation_user_prompt, llm_state._last_completion_phrase_start)
+        
+        # --- CONNEXION LOGIQUE ---
+        # 1. Importer localement pour éviter la dépendance circulaire
+        import llm_rephrase
+        
+        # 2. Capturer l'état actuel
+        text_to_rephrase = self.full_response_text
+        start_pos = self.block_start_index
+        
+        if not text_to_rephrase.strip():
+            messagebox.showinfo("Rephrase", "Nothing to rephrase yet. Please wait for text to be generated.")
+            return
+
+        # 3. Détruire la session actuelle (nettoyage)
         self.destroy(delete_text=True)
-        if last_action == "completion": llm_completion.request_llm_to_complete_text()
-        elif last_action == "generation": llm_generation.open_generate_text_dialog(initial_prompt_text=last_prompt)
+        
+        # 4. Lancer la nouvelle logique de reformulation sur le texte généré
+        self.editor.after(10, lambda: llm_rephrase.request_rephrase_for_text(self.editor, text_to_rephrase, start_pos))
 
     def _post_process_completion(self):
         cleaned_text = llm_utils.remove_prefix_overlap_from_completion(self.completion_phrase, self.full_response_text)
@@ -170,10 +189,16 @@ class InteractiveSession:
         llm_state._is_generating = False
 
 def start_new_interactive_session(editor, is_completion=False, completion_phrase=""):
+    """
+    Démarre une nouvelle session et retourne un dictionnaire de callbacks.
+    Modifié pour ne plus prendre start_index, car il est calculé à l'intérieur.
+    """
     global _current_session
     if _current_session: _current_session.discard()
     llm_state._is_generating = True
-    _current_session = InteractiveSession(editor, editor.index(tk.INSERT), is_completion, completion_phrase)
+    # Le start_index est toujours la position actuelle du curseur
+    start_index = editor.index(tk.INSERT)
+    _current_session = InteractiveSession(editor, start_index, is_completion, completion_phrase)
     return {'on_chunk': _current_session.handle_chunk, 'on_success': _current_session.handle_success, 'on_error': _current_session.handle_error}
 
 # --- The old, fragile global key handler has been REMOVED ---
