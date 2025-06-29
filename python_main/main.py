@@ -7,6 +7,7 @@ import tkinter as tk
 import platform
 import ctypes
 
+
 # Import modules for different functionalities
 import interface
 import editor_logic

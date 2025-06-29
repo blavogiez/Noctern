@@ -7,7 +7,8 @@ from tkinter import messagebox
 import interface
 import datetime
 from llm_history import _add_entry_to_history_and_save, _update_history_response_and_save
-from llm_interactive import clear_generated_text_state
+from llm_interactive import clear_generated_text_state, show_llm_buttons
+
 
 def open_generate_text_dialog(initial_prompt_text=None):
     if not callable(llm_state._active_editor_getter_func):
@@ -62,8 +63,14 @@ def open_generate_text_dialog(initial_prompt_text=None):
                         if "chunk" in api_response_chunk:
                             chunk = api_response_chunk["chunk"]
                             full_generated_text += chunk
-                            active_editor.after(0, lambda c=chunk: active_editor.insert(tk.INSERT, c, "llm_generated_text"))
-                            active_editor.after(0, lambda: _update_generated_text_end_index(active_editor))
+                            def insert_and_show_buttons(c=chunk):
+                                active_editor.insert(tk.INSERT, c, "llm_generated_text")
+                                # Always update the end index
+                                _update_generated_text_end_index(active_editor)
+                                # Show buttons at the end of generated text
+                                if llm_state._generated_text_range:
+                                    show_llm_buttons(active_editor, llm_state._generated_text_range[1])
+                            active_editor.after(0, insert_and_show_buttons)
                         if api_response_chunk.get("done"):
                             final_api_response_status = api_response_chunk
                             break

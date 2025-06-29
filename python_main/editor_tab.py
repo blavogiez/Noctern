@@ -58,6 +58,7 @@ class EditorTab(ttk.Frame):
         self.file_path = file_path
         self._schedule_heavy_updates_callback = schedule_heavy_updates_callback # Store the callback
         self.last_saved_content = "" if file_path else "\n"
+        self.llm_buttons_frame = None  # For LLM interaction buttons
 
         # Each tab has its own font object to manage zoom level independently
         self.editor_font = Font(family="Consolas", size=12)
