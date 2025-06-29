@@ -39,6 +39,8 @@ def request_llm_to_complete_text():
         try:
             start_index = active_editor.index(tk.INSERT)
             llm_state._generated_text_range = (start_index, start_index)
+            # Show buttons above the generated text
+            active_editor.after(0, lambda: show_llm_buttons(active_editor, start_index))
 
             context = llm_utils.extract_editor_context(active_editor, lines_before_cursor=30, lines_after_cursor=0)
             last_dot_index = max(context.rfind("."), context.rfind("!"), context.rfind("?"))
@@ -68,12 +70,10 @@ def request_llm_to_complete_text():
                     if "chunk" in api_response_chunk:
                         chunk = api_response_chunk["chunk"]
                         full_generated_text += chunk
-                        def insert_and_show_buttons(c=chunk):
+                        def insert_and_update_buttons(c=chunk):
                             active_editor.insert(tk.INSERT, c, "llm_generated_text")
                             _update_generated_text_end_index(active_editor)
-                            if llm_state._generated_text_range:
-                                show_llm_buttons(active_editor, llm_state._generated_text_range[1])
-                        active_editor.after(0, insert_and_show_buttons)
+                        active_editor.after(0, insert_and_update_buttons)
                     if api_response_chunk.get("done"):
                         final_api_response_status = api_response_chunk
                         break
@@ -117,7 +117,9 @@ def request_llm_to_complete_text():
 
     def _update_generated_text_end_index(editor):
         if llm_state._generated_text_range:
-            llm_state._generated_text_range = (llm_state._generated_text_range[0], editor.index(tk.INSERT))
+            start = llm_state._generated_text_range[0]
+            end = editor.index(tk.INSERT)
+            llm_state._generated_text_range = (start, end)
 
     llm_state._llm_progress_bar_widget.pack(pady=2)
     llm_state._llm_progress_bar_widget.start(10)
