@@ -65,11 +65,6 @@ def initialize_llm_service(root, progress_bar, theme_getter, editor_getter, file
 
     llm_init.initialize_llm_service(root, progress_bar, theme_getter, editor_getter, filepath_getter)
 
-    root.bind_all("<Tab>", llm_interactive.accept_generated_text)
-    root.bind_all("<Control-r>", llm_interactive.rephrase_generated_text)  # Use Ctrl+r to avoid conflict
-    root.bind_all("<Control-c>", llm_interactive.discard_generated_text)  # Use Ctrl+c to avoid conflict
-
-
 # --- Prompts management ---
 def load_prompts_for_current_file():
     filepath = _active_filepath_getter_func() if callable(_active_filepath_getter_func) else None

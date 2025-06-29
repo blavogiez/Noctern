@@ -27,6 +27,9 @@ class InteractiveSession:
         self.text_end_index = self.buttons_end_index
         
         self._start_generating_animation()
+        # --- ROBUST BINDING: Bind shortcuts when the session is created ---
+        self._bind_keyboard_shortcuts()
+
 
     def _create_ui_elements(self):
         """Crée la frame des boutons avec un style compact et fonctionnel."""
@@ -36,26 +39,53 @@ class InteractiveSession:
         TEXT_COLOR = "#F0F0F0"
 
         frame_style = {"bg": MODERN_BLACK, "bd": 0}
-        # --- STYLE CORRIGÉ : Taille de police et padding réduits ---
-        btn_style = {"relief": tk.FLAT, "bd": 0, "fg": TEXT_COLOR, "font": ("Segoe UI", 9), # Police plus petite, non grasse
-                     "cursor": "hand2", "padx": 8, "pady": 2, "activeforeground": "#FFFFFF"} # Padding réduit
+        btn_style = {"relief": tk.FLAT, "bd": 0, "fg": TEXT_COLOR, "font": ("Segoe UI", 9),
+                     "cursor": "hand2", "padx": 8, "pady": 2, "activeforeground": "#FFFFFF"}
         
         frame = tk.Frame(self.editor, **frame_style)
         
-        accept_btn = tk.Button(frame, text="Accept", bg=NAVY_BLUE, activebackground="#005A9E", **btn_style)
-        rephrase_btn = tk.Button(frame, text="Rephrase", bg=MODERN_BLACK, activebackground=HOVER_BLACK, **btn_style)
-        discard_btn = tk.Button(frame, text="Discard", bg=MODERN_BLACK, activebackground=HOVER_BLACK, **btn_style)
-
-        # --- FIX : On bind l'événement de clic explicitement pour forcer l'action ---
-        accept_btn.bind("<Button-1>", lambda event: self.accept())
-        rephrase_btn.bind("<Button-1>", lambda event: self.rephrase())
-        discard_btn.bind("<Button-1>", lambda event: self.discard())
+        accept_btn = tk.Button(frame, text="Accept (Tab)", bg=NAVY_BLUE, activebackground="#005A9E", **btn_style, command=self.accept)
+        rephrase_btn = tk.Button(frame, text="Rephrase (Ctrl+R)", bg=MODERN_BLACK, activebackground=HOVER_BLACK, **btn_style, command=self.rephrase)
+        discard_btn = tk.Button(frame, text="Discard (Esc)", bg=MODERN_BLACK, activebackground=HOVER_BLACK, **btn_style, command=self.discard)
         
         accept_btn.pack(side=tk.LEFT)
         rephrase_btn.pack(side=tk.LEFT)
         discard_btn.pack(side=tk.LEFT)
         
         return frame
+
+    # --- START: ROBUST SHORTCUT HANDLING ---
+    def _bind_keyboard_shortcuts(self):
+        """Binds keys specifically for this session's lifetime."""
+        self.editor.bind("<Tab>", self._handle_accept_key)
+        self.editor.bind("<Escape>", self._handle_discard_key)
+        self.editor.bind("<Control-r>", self._handle_rephrase_key)
+        self.editor.bind("<Control-R>", self._handle_rephrase_key) # For consistency
+
+    def _unbind_keyboard_shortcuts(self):
+        """Unbinds all session-specific keys to restore normal editor behavior."""
+        self.editor.unbind("<Tab>")
+        self.editor.unbind("<Escape>")
+        self.editor.unbind("<Control-r>")
+        self.editor.unbind("<Control-R>")
+        
+    def _handle_accept_key(self, event=None):
+        """Handles the Tab key to accept the suggestion."""
+        if not llm_state._is_generating:
+            self.accept()
+        return "break"  # This is CRITICAL: it prevents the default Tab behavior.
+
+    def _handle_discard_key(self, event=None):
+        """Handles the Escape key to discard the suggestion."""
+        self.discard()
+        return "break"  # Prevents any other Escape behavior.
+        
+    def _handle_rephrase_key(self, event=None):
+        """Handles Ctrl+R to rephrase the suggestion."""
+        if not llm_state._is_generating:
+            self.rephrase()
+        return "break"  # Prevents any other default behavior.
+    # --- END: ROBUST SHORTCUT HANDLING ---
 
     def _start_generating_animation(self):
         self.is_animating = True
@@ -89,6 +119,7 @@ class InteractiveSession:
         self._stop_generating_animation()
         if self.is_completion: self._post_process_completion()
         llm_state._is_generating = False
+        self.editor.focus_set() # Ensure focus is on the editor for shortcuts to work
         print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]} INFO: LLM stream finished.")
 
     def handle_error(self, error_msg):
@@ -97,6 +128,7 @@ class InteractiveSession:
 
     # --- Actions utilisateur ---
     def accept(self):
+        if llm_state._is_generating: return
         self.editor.tag_remove("llm_generated_text", self.buttons_end_index, self.text_end_index)
         self.destroy(delete_text=False)
         self.editor.focus_set()
@@ -106,6 +138,7 @@ class InteractiveSession:
         self.editor.focus_set()
 
     def rephrase(self):
+        if llm_state._is_generating: return
         import llm_completion, llm_generation
         last_action, last_prompt, last_phrase = (llm_state._last_llm_action_type, llm_state._last_generation_user_prompt, llm_state._last_completion_phrase_start)
         self.destroy(delete_text=True)
@@ -122,11 +155,17 @@ class InteractiveSession:
     def destroy(self, delete_text):
         global _current_session
         self._stop_generating_animation()
+        
+        # --- ROBUST CLEANUP: Always unbind the keys ---
+        self._unbind_keyboard_shortcuts()
+
         try:
             if delete_text: self.editor.delete(self.block_start_index, self.text_end_index)
             else: self.editor.delete(self.block_start_index, self.buttons_end_index)
             if self.buttons_frame: self.buttons_frame.destroy()
-        except tk.TclError: pass
+        except tk.TclError: 
+            # This can happen if the parent widget is already destroyed. Safe to ignore.
+            pass
         _current_session = None
         llm_state._is_generating = False
 
@@ -137,26 +176,6 @@ def start_new_interactive_session(editor, is_completion=False, completion_phrase
     _current_session = InteractiveSession(editor, editor.index(tk.INSERT), is_completion, completion_phrase)
     return {'on_chunk': _current_session.handle_chunk, 'on_success': _current_session.handle_success, 'on_error': _current_session.handle_error}
 
-# --- Gestionnaire de Raccourcis Centralisé et Robuste ---
-def _handle_keypress(event):
-    if not _current_session: return
-    if llm_state._is_generating: return "break"
-    key = event.keysym.lower()
-    if key == 'tab': accept_generated_text()
-    elif key == 'r': rephrase_generated_text()
-    elif key == 'c': discard_generated_text()
-    return "break"
-
-def accept_generated_text():
-    if _current_session and not llm_state._is_generating: _current_session.accept()
-def discard_generated_text():
-    if _current_session: _current_session.discard()
-def rephrase_generated_text():
-    if _current_session and not llm_state._is_generating: _current_session.rephrase()
-
-def bind_keyboard_shortcuts(editor):
-    editor.unbind("<Tab>")
-    editor.unbind("<KeyPress-space>")
-    editor.unbind("<KeyPress-r>")
-    editor.unbind("<KeyPress-c>")
-    editor.bind("<KeyPress>", _handle_keypress)
+# --- The old, fragile global key handler has been REMOVED ---
+# --- All logic is now self-contained in the InteractiveSession class ---
+# --- No need for bind_keyboard_shortcuts() or any global handlers anymore. ---
