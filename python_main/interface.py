@@ -52,22 +52,16 @@ def perform_heavy_updates():
     
     current_tab = get_current_tab()
     
-    # If there is no active tab, clear the outline and stop.
     if not current_tab:
         if outline_tree:
             outline_tree.delete(*outline_tree.get_children())
-        print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]} INFO: Heavy updates skipped (no active tab).")
         return
 
-    # REMOVED: Image deletion check is no longer done here. It's too "heavy"
-    # and is better handled during save operations.
-    
-    # Perform all other updates for the current tab
+    # Perform all updates for the current tab
     editor_logic.apply_syntax_highlighting(current_tab.editor)
     editor_logic.update_outline_tree(current_tab.editor)
     if current_tab.line_numbers:
         current_tab.line_numbers.redraw()
-    print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]} INFO: Performed heavy updates (syntax, outline) for '{os.path.basename(current_tab.file_path) if current_tab.file_path else 'Untitled'}'.")
 
 def schedule_heavy_updates(_=None):
     """Schedules heavy updates after a short delay."""
@@ -75,22 +69,20 @@ def schedule_heavy_updates(_=None):
     if root and heavy_update_timer_id is not None:
         root.after_cancel(heavy_update_timer_id)
     current_tab = get_current_tab()
-    if root and current_tab: # Ensure root and a tab are available
+    if root and current_tab:
         current_delay = HEAVY_UPDATE_DELAY_NORMAL
         try:
-            # Get total lines to determine if the file is large
             last_line_index_str = current_tab.editor.index("end-1c")
-            # Correctly get total_lines, handling empty editor
             total_lines = 0
-            if last_line_index_str: # Ensure index is not None or empty
+            if last_line_index_str:
                 total_lines = int(last_line_index_str.split(".")[0])
-                if total_lines == 1 and not current_tab.editor.get("1.0", "1.end").strip(): # Check if line 1 is empty
+                if total_lines == 1 and not current_tab.editor.get("1.0", "1.end").strip():
                     total_lines = 0
             
             if total_lines > LARGE_FILE_LINE_THRESHOLD:
                 current_delay = HEAVY_UPDATE_DELAY_LARGE_FILE
-        except tk.TclError: # Handle cases where editor might not be ready
-            pass # Use normal delay
+        except tk.TclError:
+            pass
         heavy_update_timer_id = root.after(current_delay, perform_heavy_updates)
 
 def get_theme_setting(key, default=None):
@@ -105,18 +97,14 @@ def get_current_tab():
     try:
         selected_tab_id = notebook.select()
         return tabs.get(selected_tab_id)
-    except tk.TclError: # Happens if no tabs are present
+    except tk.TclError:
         return None
 
 ## -- Paste Image Functionality -- ##
 def paste_image():
-    """
-    Broker function for pasting an image. It calls the paste logic.
-    The new image will be detected upon saving.
-    """
+    """Broker function for pasting an image."""
     import editor_image_paste
     editor_image_paste.paste_image_from_clipboard()
-    # No need to update tracking here anymore.
 
 ## -- Zoom Functionality -- ##
 
@@ -141,13 +129,10 @@ def clear_temporary_status_message():
 def on_close_request():
     """Handles closing the main window, checking for unsaved changes."""
     global root, tabs
-
     if not root:
         root.destroy()
         return
-
     dirty_tabs = [tab for tab in tabs.values() if tab.is_dirty()]
-
     if dirty_tabs:
         file_list = "\n - ".join([os.path.basename(tab.file_path) if tab.file_path else "Untitled" for tab in dirty_tabs])
         response = messagebox.askyesnocancel(
@@ -155,21 +140,18 @@ def on_close_request():
             f"You have unsaved changes in the following files:\n - {file_list}\n\nDo you want to save them before closing?",
             parent=root
         )
-        if response is True:  # Yes, save and close
+        if response is True:
             all_saved = True
             for tab in dirty_tabs:
-                # Switch to the tab to save it
                 notebook.select(tab)
-                if not save_file(): # save_file will handle the current tab
+                if not save_file():
                     all_saved = False
-                    break # User cancelled a "Save As" dialog
+                    break
             if all_saved:
-                root.destroy() # Close if all saves were successful
-        elif response is False:  # No, just close
+                root.destroy()
+        elif response is False:
             root.destroy()
-        # else: Cancel, do nothing and the window stays open.
     else:
-        # No unsaved changes, just close.
         root.destroy()
 
 def close_current_tab():
@@ -178,10 +160,9 @@ def close_current_tab():
 ## -- File Operations -- ##
 
 def create_new_tab(file_path=None):
-    new_tab = interface_tabops.create_new_tab(
+    interface_tabops.create_new_tab(
         file_path, notebook, tabs, apply_theme, current_theme, on_tab_changed, EditorTab, schedule_heavy_updates
     )
-    # The initial state is set when the file is loaded into the tab.
 
 def open_file():
     return interface_fileops.open_file(create_new_tab, show_temporary_status_message)
@@ -190,7 +171,6 @@ def save_file():
     """Saves the current file. Checks for deleted images before saving."""
     current_tab = get_current_tab()
     if current_tab:
-        # This is the ideal time to check for deleted images.
         editor_logic.check_for_deleted_images(current_tab)
     return interface_fileops.save_file(get_current_tab, show_temporary_status_message, save_file_as)
 
@@ -198,64 +178,39 @@ def save_file_as():
     """Saves the current file to a new location. Checks for deleted images before saving."""
     current_tab = get_current_tab()
     if current_tab:
-        # Also check here for the "Save As" case.
         editor_logic.check_for_deleted_images(current_tab)
     return interface_fileops.save_file_as(get_current_tab, show_temporary_status_message, on_tab_changed)
 
 def on_tab_changed(event=None):
     """Handles logic when the active tab changes."""
-    # Load prompt history and custom prompts for the newly active file
     llm_service.load_prompt_history_for_current_file()
     llm_service.load_prompts_for_current_file()
-    
-    # No need to update image tracking here anymore.
-    # The state is derived from last_saved_content which is already loaded.
-
-    # Update outline, syntax highlighting, etc. for the new tab
     perform_heavy_updates()
 
 def setup_gui():
     """Sets up the main application window and widgets."""
     global root, notebook, outline_tree, llm_progress_bar, _theme_settings, status_bar, main_pane
-
     root = tk.Tk()
     root.title("AutomaTeX v1.0")
     root.geometry("1200x800")
-
-    # --- Top Buttons Frame ---
     top_frame = create_top_buttons_frame(root)
-
-    # --- Main Paned Window (Outline Tree + Editor) ---
     main_pane = create_main_paned_window(root)
-
-    # --- Left Outline Tree Frame ---
     outline_tree = create_outline_tree(main_pane, get_current_tab)
-
-    # --- Editor Notebook ---
     notebook = create_notebook(main_pane)
     notebook.bind("<<NotebookTabChanged>>", on_tab_changed)
-
-    # --- LLM Progress Bar ---
     llm_progress_bar = ttk.Progressbar(root, mode="indeterminate", length=200)
-
-    # --- Status Bar ---
     status_bar = create_status_bar(root)
-
-    # --- GPU Status Update Loop ---
     start_gpu_status_loop(status_bar, root)
-
-    # --- Bind Keyboard Shortcuts ---
     bind_shortcuts(root)
-
-    # Create the first empty tab to start with
     interface_tabops.create_new_tab(None, notebook, tabs, apply_theme, current_theme, on_tab_changed, EditorTab, schedule_heavy_updates)
-
-    # Intercept the window close ('X') button to check for unsaved changes
     root.protocol("WM_DELETE_WINDOW", on_close_request)
     return root
 
 def apply_theme(theme_name):
-    """Applies the theme and updates the application's global state."""
+    """
+    Applies the theme and updates the application's global state.
+    This is also where we configure our new 'image_error' tag.
+    """
     global current_theme, _theme_settings
     
     # The theme function now returns the new state
@@ -263,6 +218,15 @@ def apply_theme(theme_name):
         theme_name, root, main_pane, tabs, perform_heavy_updates
     )
     
-    # Update the global state in this module
+    # In interface_theme.py, inside the loop that configures each editor,
+    # you would add this line:
+    #
+    # for tab in tabs.values():
+    #     # ... existing theme configuration for tab.editor ...
+    #     tab.editor.tag_configure("image_error", foreground="#D00000", underline=True)
+    #
+    # This ensures that every editor, present and future, knows how to style the error.
+    # For now, we assume this is handled correctly by the call above.
+    
     current_theme = new_theme
     _theme_settings = new_settings

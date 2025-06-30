@@ -6,6 +6,7 @@ from PIL import ImageGrab
 
 # Import the interface module to get access to the current tab
 import interface
+from editor_tab import EditorTab # Import EditorTab to use type hinting and access master
 
 outline_tree = None
 
@@ -27,31 +28,23 @@ def update_outline_tree(editor):
     for i, line in enumerate(lines):
         stripped_line = line.strip()
         for level, cmd in enumerate(["section", "subsection", "subsubsection"], 1):
-            # Improved regex to handle:
-            # - Starred versions (e.g., \section*{...})
-            # - Optional arguments (e.g., \section[short]{long})
-            # Note: This regex does not support nested braces {} in the title.
             match = re.match(rf"\\{cmd}\*?(?:\[[^\]]*\])?{{([^}}]*)}}", stripped_line)
             if match:
-                title = match.group(1).strip() # Get the title from the first capture group
-                # Ensure parent exists for the current level
+                title = match.group(1).strip()
                 parent_id = parents.get(level - 1, "")
                 node_id = outline_tree.insert(parent_id, "end", text=title, values=(i + 1,))
                 parents[level] = node_id
-                # Remove descendants from parent map if we move up the hierarchy
                 for deeper in range(level + 1, 4):
                     if deeper in parents:
                         del parents[deeper]
-                break # Found a section command, move to next line
+                break
 
 def go_to_section(editor, event):
     """Scrolls the editor to the selected section in the outline tree."""
     if not editor:
         return
-
     selected = outline_tree.selection()
     if selected:
-        # Get the line number from the item's values
         values = outline_tree.item(selected[0], "values")
         if values:
             line_num = values[0]
@@ -60,38 +53,74 @@ def go_to_section(editor, event):
                 editor.see(f"{line_num}.0")
                 editor.focus()
             except tk.TclError:
-                # Handle cases where line number might be invalid (e.g., empty file)
                 pass
 
 def apply_syntax_highlighting(editor):
-    """Applies syntax highlighting to LaTeX commands, braces, and comments."""
+    """
+    Applies syntax highlighting and checks for missing image files.
+    """
     if not editor:
         return
 
-    # Remove existing tags first
+    # --- 1. Cleanup old tags and error widgets ---
+    current_tab = editor.master
+    if isinstance(current_tab, EditorTab):
+        # Destroy and clear any previous error labels
+        for label in current_tab.error_labels:
+            label.destroy()
+        current_tab.error_labels.clear()
+
     editor.tag_remove("latex_command", "1.0", tk.END)
     editor.tag_remove("latex_brace", "1.0", tk.END)
     editor.tag_remove("latex_comment", "1.0", tk.END)
+    editor.tag_remove("image_error", "1.0", tk.END) # Remove old error tags
 
     content = editor.get("1.0", tk.END)
 
-    # Highlight LaTeX commands (e.g., \section, \textbf)
+    # --- 2. Standard Syntax Highlighting ---
     for match in re.finditer(r"\\[a-zA-Z@]+", content):
-        start = f"1.0 + {match.start()} chars"
-        end = f"1.0 + {match.end()} chars"
+        start, end = f"1.0 + {match.start()} chars", f"1.0 + {match.end()} chars"
         editor.tag_add("latex_command", start, end)
 
-    # Highlight braces {}
     for match in re.finditer(r"[{}]", content):
-        start = f"1.0 + {match.start()} chars"
-        end = f"1.0 + {match.end()} chars"
+        start, end = f"1.0 + {match.start()} chars", f"1.0 + {match.end()} chars"
         editor.tag_add("latex_brace", start, end)
 
-    # Highlight comments %
     for match in re.finditer(r"%[^\n]*", content):
-        start = f"1.0 + {match.start()} chars"
-        end = f"1.0 + {match.end()} chars"
+        start, end = f"1.0 + {match.start()} chars", f"1.0 + {match.end()} chars"
         editor.tag_add("latex_comment", start, end)
+
+    # --- 3. Check for missing \includegraphics files ---
+    if isinstance(current_tab, EditorTab):
+        image_pattern = re.compile(r"\\includegraphics(?:\[.*?\])?\{(.*?)\}")
+        for match in image_pattern.finditer(content):
+            relative_path = match.group(1)
+            # Use the helper function to resolve the absolute path
+            absolute_path = _resolve_image_path(current_tab.file_path, relative_path)
+
+            if not os.path.exists(absolute_path):
+                # File does not exist, apply error highlighting
+                
+                # Highlight the path in red
+                path_start = f"1.0 + {match.start(1)} chars"
+                path_end = f"1.0 + {match.end(1)} chars"
+                editor.tag_add("image_error", path_start, path_end)
+
+                # Create and embed an error label at the end of the line
+                line_index = editor.index(path_start).split('.')[0]
+                error_label = tk.Label(
+                    editor,
+                    text=" ⚠ Fichier introuvable",
+                    font=("Segoe UI", 8),
+                    bg="#FFF0F0", # Light red background
+                    fg="#D00000", # Dark red text
+                    padx=2
+                )
+                # Add to the tab's list for later cleanup
+                current_tab.error_labels.append(error_label)
+                # Embed the widget in the text editor
+                editor.window_create(f"{line_index}.end", window=error_label, align="top")
+
 
 def extract_section_structure(content, position_index):
     """
@@ -99,30 +128,23 @@ def extract_section_structure(content, position_index):
     based on the cursor position. Used for creating image directories.
     """
     lines = content[:position_index].split("\n")
-
-    section = "default"
-    subsection = "default"
-    subsubsection = "default"
-
+    section, subsection, subsubsection = "default", "default", "default"
     for line in lines:
         if r"\section{" in line:
             match = re.search(r"\\section\{(.+?)\}", line)
             if match:
-                section = match.group(1).strip()
-                subsection = "default"
-                subsubsection = "default"
+                section, subsection, subsubsection = match.group(1).strip(), "default", "default"
         elif r"\subsection{" in line:
             match = re.search(r"\\subsection\{(.+?)\}", line)
             if match:
-                subsection = match.group(1).strip()
-                subsubsection = "default"
+                subsection, subsubsection = match.group(1).strip(), "default"
         elif r"\subsubsection{" in line:
             match = re.search(r"\\subsubsection\{(.+?)\}", line)
             if match:
                 subsubsection = match.group(1).strip()
     return section, subsection, subsubsection
 
-# --- NEW: Intelligent Image Deletion Logic ---
+# --- Intelligent Image Deletion Logic ---
 
 def _parse_for_images(content):
     """Parses document content to find all \includegraphics paths."""
@@ -132,7 +154,7 @@ def _parse_for_images(content):
 
 def _resolve_image_path(tex_file_path, image_path_in_tex):
     """Resolves the image path from the .tex file to an absolute path."""
-    if not tex_file_path: # Handle unsaved files
+    if not tex_file_path:
         base_dir = os.getcwd()
     else:
         base_dir = os.path.dirname(tex_file_path)
@@ -142,41 +164,33 @@ def _resolve_image_path(tex_file_path, image_path_in_tex):
 def _cleanup_empty_dirs(path):
     """Recursively deletes empty directories upwards from the given path."""
     try:
-        # Find the 'figures' root to avoid deleting parent directories outside our scope
         figures_root_parts = path.split("figures")
         if len(figures_root_parts) < 2: return
         figures_root = os.path.join(figures_root_parts[0], "figures")
-
-        # Traverse up and delete empty directories
         while path.startswith(figures_root) and os.path.isdir(path) and path != figures_root:
             if not os.listdir(path):
                 try:
                     os.rmdir(path)
-                    print(f"Removed empty directory: {path}")
                     path = os.path.dirname(path)
-                except OSError: break # Stop if we can't delete (e.g., permissions)
-            else: break # Stop if directory is not empty
+                except OSError: break
+            else: break
     except (IndexError, AttributeError):
-        print(f"Warning: Could not determine figures root for cleanup of '{path}'")
+        pass
 
 def _prompt_for_image_deletion(image_path_to_delete, tex_file_path):
     """Shows the confirmation dialog and deletes the file if confirmed."""
     if not os.path.exists(image_path_to_delete):
         return
-
     base_dir = os.path.dirname(tex_file_path) if tex_file_path else os.getcwd()
     display_path = os.path.relpath(image_path_to_delete, base_dir)
-
     response = messagebox.askyesno(
         "Delete Associated Image File?",
         f"The reference to the following image file has been removed from your document:\n\n'{display_path}'\n\nDo you want to permanently delete the file itself?",
         icon='warning'
     )
-    
     if response:
         try:
             os.remove(image_path_to_delete)
-            print(f"Image file deleted: {image_path_to_delete}")
             _cleanup_empty_dirs(os.path.dirname(image_path_to_delete))
         except OSError as e:
             messagebox.showerror("Deletion Error", f"Could not delete the file:\n{e}")
@@ -185,27 +199,16 @@ def check_for_deleted_images(current_tab):
     """
     Compares the current editor content with the last saved content to find
     deleted image references and prompts the user to delete the associated files.
-    This is the robust, session-independent method.
     """
     if not current_tab or not current_tab.is_dirty():
-        # If the tab doesn't exist or hasn't changed, there's nothing to do.
         return
-
-    # Get the state of images at the last save
     last_saved_content = current_tab.last_saved_content
-    # For new, unsaved files, last_saved_content is a placeholder. Don't check.
     if last_saved_content == "\n":
         return
-        
     old_image_set = _parse_for_images(last_saved_content)
-
-    # Get the current state of images in the editor
     current_content = current_tab.get_content()
     new_image_set = _parse_for_images(current_content)
-
-    # Find which images were in the last saved version but are not in the current version
     deleted_image_paths_relative = old_image_set - new_image_set
-
     if deleted_image_paths_relative:
         for rel_path in deleted_image_paths_relative:
             abs_path = _resolve_image_path(current_tab.file_path, rel_path)
