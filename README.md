@@ -1,19 +1,3 @@
-Excellent point. Humility and transparency are very effective in a README. It makes the project more approachable and the developer more relatable. I will revise the README to reflect this, toning down any language that might seem overly confident and adding a dedicated section that frames the project as a personal learning journey.
-
-Here are the key changes:
-1.  **New "Project Scope & Philosophy" Section:** This new section explicitly states that AutomaTeX is a personal project built to solve your own problems and serve as a portfolio piece.
-2.  **Toning Down Language:** I've adjusted phrases throughout the document. For example, instead of "What AutomaTeX Gets Right," I'll use "Guiding Principles." Instead of "Key Features," I'll use "What It Can Do." This shifts the focus from a "product" to a "project."
-3.  **Rewriting the Intro:** The introduction is now more grounded in the "personal tool" narrative.
-
-Here is the fully revised `README.md`.
-
----
-
-# AutomaTeX
-A modern LaTeX editor designed to augment your workflow with private, locally-run AI tools.
-
----
-
 ## The Story Behind AutomaTeX
 
 I discovered LaTeX a few months ago. My experience has been a mix of fascination and frustration: it's a powerful language for creating beautiful documents, but its verbosity and steep learning curve can be daunting. I found myself spending more time searching for syntax and structuring my files than actually writing.
