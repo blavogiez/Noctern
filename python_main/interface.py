@@ -59,15 +59,16 @@ def perform_heavy_updates():
         print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]} INFO: Heavy updates skipped (no active tab).")
         return
 
-    # NEW: Check for deleted images using the new robust logic.
-    editor_logic.check_for_deleted_images(current_tab)
+    # REMOVED: Image deletion check is no longer done here. It's too "heavy"
+    # and is better handled during save operations.
     
     # Perform all other updates for the current tab
     editor_logic.apply_syntax_highlighting(current_tab.editor)
     editor_logic.update_outline_tree(current_tab.editor)
     if current_tab.line_numbers:
         current_tab.line_numbers.redraw()
-    print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]} INFO: Performed heavy updates (image check, syntax, outline) for '{os.path.basename(current_tab.file_path) if current_tab.file_path else 'Untitled'}'.")
+    print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]} INFO: Performed heavy updates (syntax, outline) for '{os.path.basename(current_tab.file_path) if current_tab.file_path else 'Untitled'}'.")
+
 def schedule_heavy_updates(_=None):
     """Schedules heavy updates after a short delay."""
     global heavy_update_timer_id
@@ -110,15 +111,12 @@ def get_current_tab():
 ## -- Paste Image Functionality -- ##
 def paste_image():
     """
-    Broker function for pasting an image. It calls the paste logic and then
-    immediately updates the tracked image list for the current tab.
+    Broker function for pasting an image. It calls the paste logic.
+    The new image will be detected upon saving.
     """
     import editor_image_paste
     editor_image_paste.paste_image_from_clipboard()
-    
-    current_tab = get_current_tab()
-    if current_tab:
-        editor_logic.update_tracked_images(current_tab)
+    # No need to update tracking here anymore.
 
 ## -- Zoom Functionality -- ##
 
@@ -183,22 +181,24 @@ def create_new_tab(file_path=None):
     new_tab = interface_tabops.create_new_tab(
         file_path, notebook, tabs, apply_theme, current_theme, on_tab_changed, EditorTab, schedule_heavy_updates
     )
-    # The on_tab_changed call inside create_new_tab already handles the initial scan.
+    # The initial state is set when the file is loaded into the tab.
 
 def open_file():
     return interface_fileops.open_file(create_new_tab, show_temporary_status_message)
 
 def save_file():
-    # Before saving, update the tracked images to prevent false positives if the user saves and quits quickly.
+    """Saves the current file. Checks for deleted images before saving."""
     current_tab = get_current_tab()
     if current_tab:
+        # This is the ideal time to check for deleted images.
         editor_logic.check_for_deleted_images(current_tab)
     return interface_fileops.save_file(get_current_tab, show_temporary_status_message, save_file_as)
 
 def save_file_as():
-    # Before saving, update the tracked images.
+    """Saves the current file to a new location. Checks for deleted images before saving."""
     current_tab = get_current_tab()
     if current_tab:
+        # Also check here for the "Save As" case.
         editor_logic.check_for_deleted_images(current_tab)
     return interface_fileops.save_file_as(get_current_tab, show_temporary_status_message, on_tab_changed)
 
@@ -208,12 +208,10 @@ def on_tab_changed(event=None):
     llm_service.load_prompt_history_for_current_file()
     llm_service.load_prompts_for_current_file()
     
-    # Update the image tracking for the newly focused tab.
-    current_tab = get_current_tab()
-    if current_tab:
-        editor_logic.update_tracked_images(current_tab)
+    # No need to update image tracking here anymore.
+    # The state is derived from last_saved_content which is already loaded.
 
-    # Update outline, syntax highlighting, etc.
+    # Update outline, syntax highlighting, etc. for the new tab
     perform_heavy_updates()
 
 def setup_gui():

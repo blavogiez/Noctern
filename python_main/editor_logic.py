@@ -122,7 +122,7 @@ def extract_section_structure(content, position_index):
                 subsubsection = match.group(1).strip()
     return section, subsection, subsubsection
 
-# --- NEW: Image Deletion Tracking Logic ---
+# --- NEW: Intelligent Image Deletion Logic ---
 
 def _parse_for_images(content):
     """Parses document content to find all \includegraphics paths."""
@@ -132,25 +132,30 @@ def _parse_for_images(content):
 
 def _resolve_image_path(tex_file_path, image_path_in_tex):
     """Resolves the image path from the .tex file to an absolute path."""
-    base_dir = os.path.dirname(tex_file_path) if tex_file_path else os.getcwd()
+    if not tex_file_path: # Handle unsaved files
+        base_dir = os.getcwd()
+    else:
+        base_dir = os.path.dirname(tex_file_path)
     absolute_path = os.path.normpath(os.path.join(base_dir, image_path_in_tex))
     return absolute_path
 
 def _cleanup_empty_dirs(path):
     """Recursively deletes empty directories upwards from the given path."""
     try:
+        # Find the 'figures' root to avoid deleting parent directories outside our scope
         figures_root_parts = path.split("figures")
         if len(figures_root_parts) < 2: return
         figures_root = os.path.join(figures_root_parts[0], "figures")
 
+        # Traverse up and delete empty directories
         while path.startswith(figures_root) and os.path.isdir(path) and path != figures_root:
             if not os.listdir(path):
                 try:
                     os.rmdir(path)
                     print(f"Removed empty directory: {path}")
                     path = os.path.dirname(path)
-                except OSError: break
-            else: break
+                except OSError: break # Stop if we can't delete (e.g., permissions)
+            else: break # Stop if directory is not empty
     except (IndexError, AttributeError):
         print(f"Warning: Could not determine figures root for cleanup of '{path}'")
 
@@ -176,25 +181,32 @@ def _prompt_for_image_deletion(image_path_to_delete, tex_file_path):
         except OSError as e:
             messagebox.showerror("Deletion Error", f"Could not delete the file:\n{e}")
 
-def update_tracked_images(current_tab):
-    """Parses the current tab's content and sets the initial list of tracked images."""
-    if not current_tab: return
-    content = current_tab.get_content()
-    current_tab.tracked_image_paths = _parse_for_images(content)
-
 def check_for_deleted_images(current_tab):
-    """Compares current images with tracked ones and prompts for deletion if any are missing."""
-    if not current_tab or not hasattr(current_tab, 'tracked_image_paths'):
+    """
+    Compares the current editor content with the last saved content to find
+    deleted image references and prompts the user to delete the associated files.
+    This is the robust, session-independent method.
+    """
+    if not current_tab or not current_tab.is_dirty():
+        # If the tab doesn't exist or hasn't changed, there's nothing to do.
         return
 
-    content = current_tab.get_content()
-    new_image_set = _parse_for_images(content)
+    # Get the state of images at the last save
+    last_saved_content = current_tab.last_saved_content
+    # For new, unsaved files, last_saved_content is a placeholder. Don't check.
+    if last_saved_content == "\n":
+        return
+        
+    old_image_set = _parse_for_images(last_saved_content)
 
-    deleted_image_paths_relative = current_tab.tracked_image_paths - new_image_set
+    # Get the current state of images in the editor
+    current_content = current_tab.get_content()
+    new_image_set = _parse_for_images(current_content)
+
+    # Find which images were in the last saved version but are not in the current version
+    deleted_image_paths_relative = old_image_set - new_image_set
 
     if deleted_image_paths_relative:
         for rel_path in deleted_image_paths_relative:
             abs_path = _resolve_image_path(current_tab.file_path, rel_path)
             _prompt_for_image_deletion(abs_path, current_tab.file_path)
-
-    current_tab.tracked_image_paths = new_image_set

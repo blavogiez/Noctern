@@ -59,8 +59,7 @@ class EditorTab(ttk.Frame):
         self._schedule_heavy_updates_callback = schedule_heavy_updates_callback # Store the callback
         self.last_saved_content = "" if file_path else "\n"
         self.llm_buttons_frame = None  # For LLM interaction buttons
-        # NEW: A set to hold all \includegraphics paths found in the document for this tab.
-        self.tracked_image_paths = set()
+        # REMOVED: self.tracked_image_paths is no longer needed.
 
         # Each tab has its own font object to manage zoom level independently
         self.editor_font = Font(family="Consolas", size=12)
