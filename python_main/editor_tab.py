@@ -4,7 +4,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from tkinter.font import Font
 import os
-import editor_enhancements # NEW: For snippet handling
+# REMOVED: No longer need to import editor_enhancements here.
 
 # This class was moved from interface.py to avoid circular imports
 class LineNumbers(tk.Canvas):
@@ -31,14 +31,12 @@ class LineNumbers(tk.Canvas):
         first_visible_line_index = self.editor.index("@0,0")
         last_doc_line_index = self.editor.index("end-1c")
         
-        # Handle empty editor case correctly
         try:
             last_doc_line_num = int(last_doc_line_index.split('.')[0])
             if last_doc_line_index == "1.0" and not self.editor.get("1.0", "1.end"):
                  last_doc_line_num = 0
         except (ValueError, tk.TclError):
             last_doc_line_num = 0
-
 
         max_digits = len(str(last_doc_line_num)) if last_doc_line_num > 0 else 1
         required_width = self.font.measure("0" * max_digits) + 10
@@ -56,7 +54,6 @@ class LineNumbers(tk.Canvas):
             next_line_index = self.editor.index(f"{current_line_index}+1line")
             if next_line_index == current_line_index: break
             current_line_index = next_line_index
-            # Add a safety break for very large files to prevent infinite loops on weird states
             if int(current_line_index.split('.')[0]) > last_doc_line_num + 100: break
 
 class EditorTab(ttk.Frame):
@@ -65,16 +62,13 @@ class EditorTab(ttk.Frame):
         super().__init__(parent_notebook)
         self.notebook = parent_notebook
         self.file_path = file_path
-        self._schedule_heavy_updates_callback = schedule_heavy_updates_callback # Store the callback
+        self._schedule_heavy_updates_callback = schedule_heavy_updates_callback
         self.last_saved_content = "" if file_path else "\n"
-        self.llm_buttons_frame = None  # For LLM interaction buttons
-        # A list to hold references to the embedded error label widgets.
+        self.llm_buttons_frame = None
         self.error_labels = []
 
-        # Each tab has its own font object to manage zoom level independently
         self.editor_font = Font(family="Consolas", size=12)
 
-        # --- Editor Widgets for this tab ---
         self.editor = tk.Text(self, wrap="word", font=self.editor_font, undo=True,
                               relief=tk.FLAT, borderwidth=0, highlightthickness=0)
         
@@ -85,53 +79,39 @@ class EditorTab(ttk.Frame):
         self.scrollbar.pack(side="right", fill="y")
         self.editor.pack(side="left", fill="both", expand=True)
 
-        # --- Configure scroll and events ---
         def sync_scroll_and_redraw(*args):
-            # This function is called by the editor's yscrollcommand
-            # It synchronizes the scrollbar and redraws the line numbers
             self.scrollbar.set(*args)
             self.line_numbers.yview_moveto(self.editor.yview()[0])
             self.line_numbers.redraw()
 
         self.editor.config(yscrollcommand=sync_scroll_and_redraw)
         
-        # Bind events to the editor instance of this tab
         self.editor.bind("<KeyRelease>", self.on_key_release)
         self.editor.bind("<Configure>", self.schedule_heavy_updates)
-        # NEW: Bind Tab key to the snippet handler
-        self.editor.bind("<Tab>", editor_enhancements.handle_tab_key)
-
+        
+        # REMOVED: All previous Tab key bindings have been removed from this file.
+        # The functionality is now handled globally and robustly in interface_shortcuts.py.
 
     def on_key_release(self, event=None):
-        """Handle key release events to check for dirtiness and schedule updates."""
         self.update_tab_title()
-        # Don't schedule heavy updates for every single key.
-        # Let the scheduler handle debouncing.
         self.schedule_heavy_updates(event)
 
     def schedule_heavy_updates(self, event=None):
-        """Schedules heavy updates for this specific tab by calling the main interface scheduler callback."""
         if self._schedule_heavy_updates_callback:
-            # The callback is a debounced function in interface.py
             self._schedule_heavy_updates_callback(event)
 
     def get_content(self):
-        """Returns the full content of the editor widget."""
         return self.editor.get("1.0", tk.END)
 
     def is_dirty(self):
-        """Checks if the editor content has changed since the last save."""
-        # Comparing with the content at the moment of the last save operation
         return self.get_content() != self.last_saved_content
 
     def update_tab_title(self):
-        """Updates the notebook tab text to show a '*' if the file is dirty."""
         base_name = os.path.basename(self.file_path) if self.file_path else "Untitled"
         title = f"{base_name}{'*' if self.is_dirty() else ''}"
         self.notebook.tab(self, text=title)
 
     def load_file(self):
-        """Loads content from self.file_path into the editor."""
         if self.file_path and os.path.exists(self.file_path):
             try:
                 with open(self.file_path, "r", encoding="utf-8") as f:
@@ -140,25 +120,18 @@ class EditorTab(ttk.Frame):
                     self.editor.insert("1.0", content)
                     self.last_saved_content = self.get_content()
                     self.update_tab_title()
-                    self.editor.edit_reset() # Clear undo stack for the new content
+                    self.editor.edit_reset()
             except Exception as e:
                 messagebox.showerror("Error", f"Could not open file:\n{e}")
         else:
-            # This is a new, unsaved file
             self.update_tab_title()
 
     def save_file(self, new_path=None):
-        """
-        Saves the editor content. If new_path is provided, it's a 'Save As' operation.
-        Returns True on success, False on failure (e.g., user cancelled Save As).
-        """
         if new_path:
             self.file_path = new_path
         
         if not self.file_path:
-            # This should be handled by a 'save as' dialog before calling this
-            # It's a safeguard.
-            return False 
+            return False
 
         try:
             content = self.get_content()
