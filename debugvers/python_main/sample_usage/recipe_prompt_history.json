@@ -1,0 +1,10 @@
+[
+    [
+        "Tell me about wonderful things concerning apples",
+        " En ce qui concerne les pommes, elles sont remarquables pour plusieurs raisons. Elles font partie intégrante de la santé humaine depuis des siècles, étant à la source de fibres, vitamines C et flavonoïdes précieuses pour notre bien-être. De plus, les pommes peuvent être consommées dans une grande variété de façons, allant des apporteurs de goût doux aux apporteurs de saveur acide, ce qui offre une multitude d'options pour nos repas quotidiens.\n\nEn outre, il existe une grande diversité de pommes à travers le monde, chacune ayant ses propres caractéristiques et saveurs. Ainsi, les pommes peuvent être considérées comme un exemple remarquable de biodiversité naturelle. Enfin, leur utilisation dans la fabrication d'articles quotidiens tels que le papier ou l'alcool fait également partie des choses admirables concernant les pommes."
+    ],
+    [
+        "Genere moi un document ultra stylé en latex qui utilise des modules compliqués. Je veux des listes à puces avec image personnalisée ça doit etre trop bien ! Aussi une codebox java.",
+        "\\documentclass{article}\n  \\usepackage[utf8]{inputenc}\n  \\usepackage[T1]{fontenc}\n  \\usepackage{graphicx} % pour insérer des images\n  \\usepackage{listings} % pour créer des boîtes de code\n\n  \\lstset{language=Java,%\n    basicstyle=\\ttfamily\\small,%\n    keywordstyle=\\color{blue!70!black},%\n    stringstyle=\\color{red!60!black},%\n    frame=single,%\n    rulesepcolor=\\color{red!10!green!10!black},%\n  }\n\n  \\begin{document}\n\n  \\section*{Liste à puces avec image personnalisée}\n  \\begin{itemize}\n    \\item[\\includegraphics[scale=0.3]{dff}] Item 1 avec une image de dff\n    \\item[\\includegraphics[scale=0.3]{lilili}] Item 2 avec une image de lilili\n  \\end{itemize}\n\n  \\section*{Codebox Java}\n  % Insertion du code Java ici\n  \\begin{lstlisting}[frame]\n    public class Main {\n      public static void main(String[] args) {\n        System.out.println(\"Hello, World!\");\n      }\n    }\n  \\end{lstlisting}\n\\end{document}"
+    ]
+]

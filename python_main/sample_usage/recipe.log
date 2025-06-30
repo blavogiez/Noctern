@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.25 (MiKTeX 24.1) (preloaded format=pdflatex 2025.5.18)  30 JUN 2025 16:46
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (MiKTeX 24.1) (preloaded format=pdflatex 2025.5.18)  30 JUN 2025 17:20
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -219,56 +219,51 @@ LaTeX Info: Redefining \up on input line 49.
 \c@lstlisting=\count287
 Package caption Info: Begin \AtBeginDocument code.
 Package caption Info: End \AtBeginDocument code.
-<figures/code_java/default/default/fig_1.png, id=1, 460.72125pt x 94.3525pt>
-File: figures/code_java/default/default/fig_1.png Graphic file (type png)
-<use figures/code_java/default/default/fig_1.png>
-Package pdftex.def Info: figures/code_java/default/default/fig_1.png  used on i
-nput line 58.
-(pdftex.def)             Requested size: 276.00105pt x 56.52266pt.
-File: figures/code_java/default/default/fig_1.png Graphic file (type png)
-<use figures/code_java/default/default/fig_1.png>
-Package pdftex.def Info: figures/code_java/default/default/fig_1.png  used on i
-nput line 66.
-(pdftex.def)             Requested size: 276.00105pt x 56.52266pt.
  (C:\Users\lab\AppData\Local\Programs\MiKTeX\tex/latex/listings\lstlang1.sty
 File: lstlang1.sty 2023/02/27 1.9 listings language file
 )
-LaTeX Font Info:    Trying to load font information for T1+cmtt on input line 8
-2.
+LaTeX Font Info:    Trying to load font information for T1+cmtt on input line 9
+3.
 (C:\Users\lab\AppData\Local\Programs\MiKTeX\tex/latex/base\t1cmtt.fd
 File: t1cmtt.fd 2023/04/13 v2.5m Standard LaTeX font definitions
-) [1
+)
 
-{C:/Users/lab/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map} <./figures/code
-_java/default/default/fig_1.png>] (recipe.aux)
+LaTeX Warning: Reference `lst:hello_java' on page 1 undefined on input line 103
+.
+
+[1
+
+{C:/Users/lab/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map}] (recipe.aux)
  ***********
 LaTeX2e <2023-11-01> patch level 1
 L3 programming layer <2024-01-04>
  ***********
+
+LaTeX Warning: There were undefined references.
 
 
 LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
 
  ) 
 Here is how much of TeX's memory you used:
- 7048 strings out of 474485
- 117638 string characters out of 5744678
- 1974542 words of memory out of 5000000
- 29312 multiletter control sequences out of 15000+600000
- 565434 words of font info for 47 fonts, out of 8000000 for 9000
+ 7031 strings out of 474485
+ 117124 string characters out of 5744678
+ 1976542 words of memory out of 5000000
+ 29296 multiletter control sequences out of 15000+600000
+ 564848 words of font info for 46 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 57i,6n,65p,484b,1256s stack positions out of 10000i,1000n,20000p,200000b,200000s
- <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\ectt08
+ 57i,5n,65p,484b,1256s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\ecbx10
 00.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\ec
-rm0500.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi60
-0\ecrm0900.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/d
-pi600\ecbx0900.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/
-ec/dpi600\ecxc0900.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknap
+rm0900.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi60
+0\ecbx0900.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/d
+pi600\ectt0800.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/
+ec/dpi600\ecrm0500.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknap
 pen/ec/dpi600\ecrm1000.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/j
 knappen/ec/dpi600\ecbx1440.pk>
-Output written on recipe.pdf (1 page, 47244 bytes).
+Output written on recipe.pdf (1 page, 47603 bytes).
 PDF statistics:
- 170 PDF objects out of 1000 (max. 8388607)
+ 169 PDF objects out of 1000 (max. 8388607)
  0 named destinations out of 1000 (max. 500000)
- 6 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 1 words of extra memory for PDF output out of 10000 (max. 10000000)
 

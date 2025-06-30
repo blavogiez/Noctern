@@ -1,0 +1,93 @@
+\documentclass{article}
+
+% --- PAQUETS DE BASE ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}       % Pour insérer des images
+\usepackage[french]{babel}  % Pour les conventions typographiques françaises
+
+% --- PAQUETS POUR LE CODE ET LES LÉGENDES ---
+\usepackage{listings}       % Pour insérer des blocs de code
+\usepackage{caption}        % Pour personnaliser les légendes
+\usepackage{xcolor}         % Pour utiliser des couleurs personnalisées
+
+% --- CONFIGURATION ---
+
+% 1. Configuration du style des légendes (votre demande initiale, corrigée)
+\captionsetup{
+    justification=centering,  % Centrer la légende
+    singlelinecheck=false,    % Appliquer la justification même si la légende tient sur une ligne
+    font=small,               % Police plus petite pour la légende
+    labelfont=bf              % "Figure 1", "Listing 1" en gras
+}
+
+% 2. Configuration de l'apparence des blocs de code (avec `listings`)
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{black!5},   % Fond gris très clair
+    commentstyle=\color{green!50!black},
+    keywordstyle=\color{blue},
+    numberstyle=\tiny\color{gray},
+    stringstyle=\color{purple},
+    basicstyle=\ttfamily\footnotesize, % Police à chasse fixe (monospace) et petite
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    % Position de la légende en bas
+    keepspaces=true,                 
+    numbers=left,                    % Numéros de ligne à gauche
+    numbersep=5pt,                   
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2,
+    frame=single,                    % Encadrer le code
+    rulecolor=\color{black}          % Couleur du cadre
+}
+
+\lstset{style=mystyle} % Appliquer ce style par défaut à tous les listings
+
+% --- DOCUMENT ---
+\begin{document}
+
+\section{Code Java}
+
+La pomme est un super fruit !
+
+Ce fruit permet de "prevenir certaines maladies graves."
+
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.8\textwidth]{figures/code_java/default/default/fig_1.png}
+    \caption{Caption here}
+    \label{fig:code_java_default_1}
+\end{figure}
+
+
+Ceci est un exemple de code Java affiché correctement dans un document LaTeX.
+
+% Utilisation de l'environnement lstlisting
+\begin{lstlisting}[language=Java, caption={Exemple "Hello, World!" en Java.}, label={lst:hello_java}]
+/* Code en Java */
+public class Main {
+  public static void main(String[] args) {
+    System.out.println("Hello, World!");
+  }
+}
+/* Fin du code */
+\end{lstlisting}
+
+Nous pouvons faire référence à ce code plus loin dans le texte en utilisant son étiquette, comme ceci : voir le listing \ref{lst:hello_java}.
+
+\end{document}
+
+
+
+
+
+
+
+
+
+
+
+
