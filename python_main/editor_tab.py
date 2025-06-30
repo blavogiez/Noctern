@@ -1,8 +1,10 @@
-# c:\Users\lab\Documents\BUT1\AutomaTeX\alpha_tkinter\editor_tab.py
+# editor_tab.py
+
 import tkinter as tk
 from tkinter import ttk, messagebox
 from tkinter.font import Font
 import os
+import editor_enhancements # NEW: For snippet handling
 
 # This class was moved from interface.py to avoid circular imports
 class LineNumbers(tk.Canvas):
@@ -28,9 +30,15 @@ class LineNumbers(tk.Canvas):
         
         first_visible_line_index = self.editor.index("@0,0")
         last_doc_line_index = self.editor.index("end-1c")
-        last_doc_line_num = int(last_doc_line_index.split('.')[0])
-        if last_doc_line_index == "1.0" and not self.editor.get("1.0", "1.end"):
-             last_doc_line_num = 0
+        
+        # Handle empty editor case correctly
+        try:
+            last_doc_line_num = int(last_doc_line_index.split('.')[0])
+            if last_doc_line_index == "1.0" and not self.editor.get("1.0", "1.end"):
+                 last_doc_line_num = 0
+        except (ValueError, tk.TclError):
+            last_doc_line_num = 0
+
 
         max_digits = len(str(last_doc_line_num)) if last_doc_line_num > 0 else 1
         required_width = self.font.measure("0" * max_digits) + 10
@@ -48,6 +56,7 @@ class LineNumbers(tk.Canvas):
             next_line_index = self.editor.index(f"{current_line_index}+1line")
             if next_line_index == current_line_index: break
             current_line_index = next_line_index
+            # Add a safety break for very large files to prevent infinite loops on weird states
             if int(current_line_index.split('.')[0]) > last_doc_line_num + 100: break
 
 class EditorTab(ttk.Frame):
@@ -59,7 +68,7 @@ class EditorTab(ttk.Frame):
         self._schedule_heavy_updates_callback = schedule_heavy_updates_callback # Store the callback
         self.last_saved_content = "" if file_path else "\n"
         self.llm_buttons_frame = None  # For LLM interaction buttons
-        # NEW: A list to hold references to the embedded error label widgets.
+        # A list to hold references to the embedded error label widgets.
         self.error_labels = []
 
         # Each tab has its own font object to manage zoom level independently
@@ -78,6 +87,8 @@ class EditorTab(ttk.Frame):
 
         # --- Configure scroll and events ---
         def sync_scroll_and_redraw(*args):
+            # This function is called by the editor's yscrollcommand
+            # It synchronizes the scrollbar and redraws the line numbers
             self.scrollbar.set(*args)
             self.line_numbers.yview_moveto(self.editor.yview()[0])
             self.line_numbers.redraw()
@@ -87,16 +98,22 @@ class EditorTab(ttk.Frame):
         # Bind events to the editor instance of this tab
         self.editor.bind("<KeyRelease>", self.on_key_release)
         self.editor.bind("<Configure>", self.schedule_heavy_updates)
+        # NEW: Bind Tab key to the snippet handler
+        self.editor.bind("<Tab>", editor_enhancements.handle_tab_key)
+
 
     def on_key_release(self, event=None):
         """Handle key release events to check for dirtiness and schedule updates."""
         self.update_tab_title()
+        # Don't schedule heavy updates for every single key.
+        # Let the scheduler handle debouncing.
         self.schedule_heavy_updates(event)
 
     def schedule_heavy_updates(self, event=None):
         """Schedules heavy updates for this specific tab by calling the main interface scheduler callback."""
         if self._schedule_heavy_updates_callback:
-            self._schedule_heavy_updates_callback(event) # Call the passed callback
+            # The callback is a debounced function in interface.py
+            self._schedule_heavy_updates_callback(event)
 
     def get_content(self):
         """Returns the full content of the editor widget."""
@@ -104,6 +121,7 @@ class EditorTab(ttk.Frame):
 
     def is_dirty(self):
         """Checks if the editor content has changed since the last save."""
+        # Comparing with the content at the moment of the last save operation
         return self.get_content() != self.last_saved_content
 
     def update_tab_title(self):
@@ -122,7 +140,7 @@ class EditorTab(ttk.Frame):
                     self.editor.insert("1.0", content)
                     self.last_saved_content = self.get_content()
                     self.update_tab_title()
-                    self.editor.edit_reset() # Clear undo stack
+                    self.editor.edit_reset() # Clear undo stack for the new content
             except Exception as e:
                 messagebox.showerror("Error", f"Could not open file:\n{e}")
         else:
@@ -138,7 +156,9 @@ class EditorTab(ttk.Frame):
             self.file_path = new_path
         
         if not self.file_path:
-            return False # Should have been handled by a 'save as' dialog before calling this
+            # This should be handled by a 'save as' dialog before calling this
+            # It's a safeguard.
+            return False 
 
         try:
             content = self.get_content()

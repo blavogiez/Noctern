@@ -1,3 +1,5 @@
+# llm_prompts.py
+
 import llm_state
 import llm_prompt_manager
 import os
@@ -6,6 +8,7 @@ import llm_dialogs
 import debug_console
 
 def load_prompts_for_current_file():
+    """Loads the custom or default prompts for the currently active file."""
     active_filepath = llm_state._active_filepath_getter_func() if llm_state._active_filepath_getter_func else None
     debug_console.log(f"Loading prompts for: {active_filepath or 'new file'}.", level='INFO')
     loaded_prompts = llm_prompt_manager.load_prompts_from_file(active_filepath, llm_state._global_default_prompts)
@@ -13,12 +16,14 @@ def load_prompts_for_current_file():
     llm_state._generation_prompt_template = loaded_prompts.get("generation", "")
 
 def get_current_prompts():
+    """Returns a dictionary of the currently active prompt templates."""
     return {
         "completion": llm_state._completion_prompt_template,
         "generation": llm_state._generation_prompt_template
     }
 
 def update_prompts(completion_template, generation_template):
+    """Updates and saves the prompt templates for the current document."""
     debug_console.log("Updating prompt templates.", level='CONFIG')
     llm_state._completion_prompt_template = completion_template
     llm_state._generation_prompt_template = generation_template
@@ -31,6 +36,7 @@ def update_prompts(completion_template, generation_template):
         llm_prompt_manager.save_prompts_to_file(prompts_to_save, active_filepath)
 
 def open_edit_prompts_dialog():
+    """Opens the dialog for editing prompt templates."""
     debug_console.log("Edit Prompts dialog opened.", level='ACTION')
     if not llm_state._root_window or not llm_state._theme_setting_getter_func:
         messagebox.showerror("LLM Service Error", "UI components not fully initialized for prompts dialog.")

@@ -1,3 +1,5 @@
+# main.py
+
 import tkinter as tk
 import platform
 import ctypes
@@ -8,6 +10,7 @@ import latex_compiler
 import latex_translator
 import llm_service
 import debug_console
+import editor_enhancements # NEW: Import for new features
 
 def main():
     """Main application entry point."""
@@ -33,6 +36,7 @@ def main():
 
     editor_logic.initialize_editor_logic(interface.outline_tree)
     latex_compiler.initialize_compiler(root)
+    editor_enhancements.initialize_snippets() # NEW: Load snippets on startup
 
     llm_service.initialize_llm_service(
         root=root,

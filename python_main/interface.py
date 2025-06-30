@@ -1,3 +1,5 @@
+# interface.py
+
 import tkinter as tk
 from tkinter import ttk, messagebox
 import interface_zoom
@@ -14,41 +16,38 @@ import llm_service
 import editor_logic
 import latex_compiler
 import latex_translator
+import editor_enhancements
 import os
-import debug_console # Import the new console
+import debug_console
 
-# Global variables for main widgets and state
+# ... (le reste des variables globales reste inchangé) ...
 root = None
 notebook = None
 tabs = {}
 outline_tree = None
 llm_progress_bar = None
-status_bar = None
+status_bar_frame = None
+status_label = None
+gpu_status_label = None
 main_pane = None
 _theme_settings = {}
 current_theme = "light"
-
-# NEW: State for settings menu
 settings_menu = None
-_advanced_mode_enabled = None # Will be a tk.BooleanVar
-
-# Zoom settings
+_advanced_mode_enabled = None
 zoom_factor = 1.1
 min_font_size = 8
 max_font_size = 36
-
-# Configuration for Heavy Updates
 LARGE_FILE_LINE_THRESHOLD = 1000
 HEAVY_UPDATE_DELAY_NORMAL = 200
 HEAVY_UPDATE_DELAY_LARGE_FILE = 2000
 heavy_update_timer_id = None
-
-# Status bar temporary message state
 _temporary_status_active = False
 _temporary_status_timer_id = None
 
 def perform_heavy_updates():
-    """Performs updates that might be computationally heavy."""
+    """
+    Performs updates that might be computationally heavy. This function is debounced.
+    """
     global heavy_update_timer_id
     heavy_update_timer_id = None
     
@@ -62,17 +61,24 @@ def perform_heavy_updates():
 
     tab_name = os.path.basename(current_tab.file_path) if current_tab.file_path else "Untitled"
     debug_console.log(f"Performing heavy updates for tab '{tab_name}'.", level='INFO')
-    # Perform all updates for the current tab
+    
     editor_logic.apply_syntax_highlighting(current_tab.editor)
     editor_logic.update_outline_tree(current_tab.editor)
+
+    if not _temporary_status_active:
+        editor_enhancements.update_word_count(current_tab.editor, status_label)
+
     if current_tab.line_numbers:
         current_tab.line_numbers.redraw()
 
 def schedule_heavy_updates(_=None):
-    """Schedules heavy updates after a short delay."""
+    """
+    Schedules heavy updates after a short delay. This acts as a debouncer.
+    """
     global heavy_update_timer_id
     if root and heavy_update_timer_id is not None:
         root.after_cancel(heavy_update_timer_id)
+    
     current_tab = get_current_tab()
     if root and current_tab:
         current_delay = HEAVY_UPDATE_DELAY_NORMAL
@@ -88,7 +94,7 @@ def schedule_heavy_updates(_=None):
                 current_delay = HEAVY_UPDATE_DELAY_LARGE_FILE
         except tk.TclError:
             pass
-        debug_console.log(f"Scheduling heavy update with delay: {current_delay}ms.", level='DEBUG')
+        
         heavy_update_timer_id = root.after(current_delay, perform_heavy_updates)
 
 def get_theme_setting(key, default=None):
@@ -104,7 +110,8 @@ def get_current_tab():
     except tk.TclError:
         return None
 
-def paste_image():
+# FIXED: Added event=None to match the new unified shortcut system.
+def paste_image(event=None):
     import editor_image_paste
     editor_image_paste.paste_image_from_clipboard()
 
@@ -117,24 +124,34 @@ def zoom_out(_=None):
     return interface_zoom.zoom_out(get_current_tab, perform_heavy_updates, min_font_size, max_font_size, zoom_factor)
 
 def show_temporary_status_message(message, duration_ms=2500):
+    global _temporary_status_active, _temporary_status_timer_id
+    _temporary_status_active = True
     return interface_statusbar.show_temporary_status_message(
-        message, duration_ms, status_bar, root, clear_temporary_status_message
+        message, duration_ms, status_label, root, clear_temporary_status_message
     )
 
 def clear_temporary_status_message():
-    return interface_statusbar.clear_temporary_status_message(
-        status_bar, apply_theme, current_theme
-    )
+    global _temporary_status_active
+    _temporary_status_active = False
+    current_tab = get_current_tab()
+    if current_tab:
+        editor_enhancements.update_word_count(current_tab.editor, status_label)
+    else:
+        status_label.config(text="...")
+    return interface_statusbar.clear_temporary_status_message()
+
 
 def on_close_request():
     global root, tabs
     debug_console.log("Application close request received.", level='INFO')
     if not root:
         return
+    
     dirty_tabs = [tab for tab in tabs.values() if tab.is_dirty()]
     if dirty_tabs:
         file_list = "\n - ".join([os.path.basename(tab.file_path) if tab.file_path else "Untitled" for tab in dirty_tabs])
         response = messagebox.askyesnocancel("Unsaved Changes", f"You have unsaved changes in the following files:\n - {file_list}\n\nDo you want to save them before closing?", parent=root)
+        
         if response is True:
             debug_console.log("User chose to SAVE files before closing.", level='ACTION')
             all_saved = True
@@ -148,13 +165,14 @@ def on_close_request():
         elif response is False:
             debug_console.log("User chose NOT to save files. Closing.", level='ACTION')
             root.destroy()
-        else: # Cancel
+        else:
             debug_console.log("User CANCELLED the close request.", level='ACTION')
     else:
         debug_console.log("No dirty tabs. Closing application.", level='INFO')
         root.destroy()
 
-def close_current_tab():
+# FIXED: Added event=None to match the new unified shortcut system.
+def close_current_tab(event=None):
     return interface_tabops.close_current_tab(get_current_tab, root, notebook, save_file, create_new_tab, tabs)
 
 def create_new_tab(file_path=None):
@@ -162,20 +180,21 @@ def create_new_tab(file_path=None):
         file_path, notebook, tabs, apply_theme, current_theme, on_tab_changed, EditorTab, schedule_heavy_updates
     )
 
-def open_file():
+# FIXED: Added event=None to match the new unified shortcut system.
+def open_file(event=None):
     return interface_fileops.open_file(create_new_tab, show_temporary_status_message)
 
-def save_file():
+# FIXED: Added event=None to match the new unified shortcut system.
+def save_file(event=None):
     current_tab = get_current_tab()
     if current_tab:
-        # This check is performed before the file operation itself.
         editor_logic.check_for_deleted_images(current_tab)
     return interface_fileops.save_file(get_current_tab, show_temporary_status_message, save_file_as)
 
-def save_file_as():
+# FIXED: Added event=None to match the new unified shortcut system.
+def save_file_as(event=None):
     current_tab = get_current_tab()
     if current_tab:
-        # Also check on Save As
         editor_logic.check_for_deleted_images(current_tab)
     return interface_fileops.save_file_as(get_current_tab, show_temporary_status_message, on_tab_changed)
 
@@ -183,12 +202,13 @@ def on_tab_changed(event=None):
     current_tab = get_current_tab()
     tab_name = os.path.basename(current_tab.file_path) if current_tab and current_tab.file_path else "Untitled"
     debug_console.log(f"Tab changed to '{tab_name}'.", level='ACTION')
+    
     llm_service.load_prompt_history_for_current_file()
     llm_service.load_prompts_for_current_file()
+    
     perform_heavy_updates()
 
 def toggle_advanced_mode():
-    """Callback to show/hide advanced UI elements."""
     global settings_menu
     if not settings_menu:
         return
@@ -198,24 +218,21 @@ def toggle_advanced_mode():
         debug_console.log("Advanced mode ENABLED.", level='CONFIG')
     else:
         settings_menu.entryconfig("Show Debug Console", state="disabled")
-        debug_console.hide_console() # Hide console if advanced mode is turned off
+        debug_console.hide_console()
         debug_console.log("Advanced mode DISABLED.", level='CONFIG')
 
 def setup_gui():
-    """Sets up the main application window and widgets."""
-    global root, notebook, outline_tree, llm_progress_bar, _theme_settings, status_bar, main_pane
-    global settings_menu, _advanced_mode_enabled
+    global root, notebook, outline_tree, llm_progress_bar, _theme_settings, status_bar_frame
+    global status_label, gpu_status_label, main_pane, settings_menu, _advanced_mode_enabled
 
     root = tk.Tk()
     root.title("AutomaTeX v1.0")
     root.geometry("1200x800")
     debug_console.log("GUI setup started.", level='INFO')
 
-    # NEW: Initialize state variables
     _advanced_mode_enabled = tk.BooleanVar(value=False)
     debug_console.initialize(root)
 
-    # --- Top Buttons Frame (now returns the settings menu) ---
     top_frame, settings_menu = create_top_buttons_frame(root)
 
     main_pane = create_main_paned_window(root)
@@ -223,21 +240,23 @@ def setup_gui():
     notebook = create_notebook(main_pane)
     notebook.bind("<<NotebookTabChanged>>", on_tab_changed)
     llm_progress_bar = ttk.Progressbar(root, mode="indeterminate", length=200)
-    status_bar = create_status_bar(root)
-    start_gpu_status_loop(status_bar, root)
+    
+    status_bar_frame, status_label, gpu_status_label = create_status_bar(root)
+    start_gpu_status_loop(gpu_status_label, root)
+    
     bind_shortcuts(root)
     
-    interface_tabops.create_new_tab(None, notebook, tabs, apply_theme, current_theme, on_tab_changed, EditorTab, schedule_heavy_updates)
+    create_new_tab(None)
     
     root.protocol("WM_DELETE_WINDOW", on_close_request)
     
-    # Set initial state of advanced features
     toggle_advanced_mode()
     debug_console.log("GUI setup complete.", level='SUCCESS')
     
     return root
 
-def apply_theme(theme_name):
+# FIXED: Added event=None to match the new unified shortcut system.
+def apply_theme(theme_name, event=None):
     global current_theme, _theme_settings
     debug_console.log(f"Applying theme '{theme_name}'.", level='ACTION')
     new_theme, new_settings = interface_theme.apply_theme(

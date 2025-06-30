@@ -1,3 +1,5 @@
+# interface_topbar.py
+
 from tkinter import ttk, Menu
 import latex_compiler
 import llm_service
@@ -7,10 +9,11 @@ import debug_console
 import llm_rephrase
 
 def _log_action(action_name):
-    """Helper function to log user actions."""
+    """Helper function to log user actions from the UI."""
     debug_console.log(f"UI: User triggered '{action_name}'.", level='ACTION')
 
 def create_top_buttons_frame(root):
+    """Creates the top bar with all buttons and menus."""
     top_frame = ttk.Frame(root, padding=10)
     top_frame.pack(fill="x", pady=(0, 5))
 
@@ -50,6 +53,10 @@ def create_top_buttons_frame(root):
     tools_menu.add_command(label="Check Document (chktex)", command=lambda: [_log_action("Tools: chktex"), latex_compiler.run_chktex_check()])
     tools_menu.add_command(label="Rephrase Selected Text (Ctrl+R)", command=lambda: [_log_action("Tools: Rephrase"), llm_rephrase.open_rephrase_dialog()])
     tools_menu.add_command(label="Paste Image from Clipboard (Ctrl+Shift+V)", command=lambda: [_log_action("Tools: Paste Image"), interface.paste_image()])
+    tools_menu.add_separator()
+    # NEW: Add "Clean Project" command
+    tools_menu.add_command(label="Clean Project Directory", command=lambda: [_log_action("Tools: Clean Project"), latex_compiler.clean_project_directory()])
+
 
     # --- Populate Settings Menu (Now more logical) ---
     settings_menu.add_command(label="Set LLM Keywords...", command=lambda: [_log_action("Settings: Set Keywords"), llm_service.open_set_keywords_dialog()])
@@ -63,7 +70,7 @@ def create_top_buttons_frame(root):
     settings_menu.add_command(
         label="Show Debug Console",
         command=lambda: [_log_action("Settings: Show Debug Console"), debug_console.show_console()],
-        state="disabled"
+        state="disabled" # State is managed by toggle_advanced_mode
     )
     
     return top_frame, settings_menu

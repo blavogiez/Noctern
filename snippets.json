@@ -1,0 +1,5 @@
+{
+    "table2x2": "\\begin{table}[h!]\n    \\centering\n    \\begin{tabular}{|c|c|}\n        \\hline\n        col1 & col2 \\\\\n        \\hline\n        cell1 & cell2 \\\\\n        \\hline\n    \\end{tabular}\n    \\caption{Caption}\n    \\label{tab:my_label}\n\\end{table}",
+    "enum": "\\begin{enumerate}\n    \\item \n    \\item \n\\end{enumerate}",
+    "item": "\\item "
+}
