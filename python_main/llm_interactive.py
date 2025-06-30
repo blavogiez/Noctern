@@ -141,16 +141,13 @@ class InteractiveSession:
 
     def rephrase(self):
         """
-        Action de reformulation: prend le texte généré actuel, détruit cette
-        session et lance le processus de reformulation interactive.
+        Action de reformulation non-destructive : demande une instruction, et ne
+        remplace cette session que si l'utilisateur valide la nouvelle requête.
         """
         if llm_state._is_generating: return
-        
-        # --- CONNEXION LOGIQUE ---
-        # 1. Importer localement pour éviter la dépendance circulaire
+
         import llm_rephrase
-        
-        # 2. Capturer l'état actuel
+
         text_to_rephrase = self.full_response_text
         start_pos = self.block_start_index
         
@@ -158,12 +155,22 @@ class InteractiveSession:
             messagebox.showinfo("Rephrase", "Nothing to rephrase yet. Please wait for text to be generated.")
             return
 
-        # 3. Détruire la session actuelle (nettoyage)
-        self.destroy(delete_text=True)
-        
-        # 4. Lancer la nouvelle logique de reformulation sur le texte généré
-        self.editor.after(10, lambda: llm_rephrase.request_rephrase_for_text(self.editor, text_to_rephrase, start_pos))
+        # Le callback `on_validate` ne sera appelé que si l'utilisateur
+        # confirme la reformulation dans la boîte de dialogue.
+        def on_validate_rephrase_request():
+            # C'est seulement maintenant qu'on détruit l'ancienne session.
+            self.destroy(delete_text=True)
 
+        # On appelle la nouvelle fonction logique en lui passant un callback
+        # qui s'occupera de détruire l'ancienne session au bon moment.
+        self.editor.after(10, lambda: llm_rephrase.request_rephrase_for_text(
+            self.editor, 
+            text_to_rephrase, 
+            start_pos, 
+            self.text_end_index, # On passe end_index pour la cohérence
+            on_validate_callback=on_validate_rephrase_request
+        ))
+        
     def _post_process_completion(self):
         cleaned_text = llm_utils.remove_prefix_overlap_from_completion(self.completion_phrase, self.full_response_text)
         text_start = self.buttons_end_index

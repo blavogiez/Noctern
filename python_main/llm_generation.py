@@ -16,28 +16,38 @@ def open_generate_text_dialog(initial_prompt_text=None):
     if not editor or not llm_state._root_window or not llm_state._llm_progress_bar_widget or not llm_state._theme_setting_getter_func: messagebox.showerror("LLM Service Error", "LLM Service not fully initialized."); return
     if not (llm_state._generation_prompt_template or (llm_state._global_default_prompts and llm_state._global_default_prompts.get("generation"))): messagebox.showerror("LLM Service Error", "LLM prompt templates are not initialized. Please reload your file or restart the application."); return
 
-    def _handle_generation_request_from_dialog(user_prompt, lines_before, lines_after):
+    # --- MODIFICATION : Le callback accepte maintenant le mode LaTeX ---
+    def _handle_generation_request_from_dialog(user_prompt, lines_before, lines_after, is_latex_mode):
         if llm_state._is_generating:
             interface.show_temporary_status_message("LLM is already generating. Please wait.")
             return
 
-        # --- LOGIC IS NOW CLEAN: Build prompt, then hand off to the session manager ---
+        # --- MODIFICATION : Sélection du prompt et du modèle en fonction du mode ---
+        model_name = llm_api_client.DEFAULT_LLM_MODEL
+        if is_latex_mode:
+            prompt_template = llm_state._global_default_prompts.get("generation_latex")
+            model_name = llm_state._global_default_prompts.get("model_for_latex_generation", "codellama") # Fallback to "codellama"
+            if not prompt_template:
+                messagebox.showerror("Configuration Error", "The 'generation_latex' prompt is missing from default_prompts.json.")
+                return
+            print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]} INFO: Using LaTeX generation mode with model '{model_name}'.")
+        else:
+            prompt_template = llm_state._generation_prompt_template or llm_state._global_default_prompts.get("generation", "")
+        
         llm_state._last_llm_action_type = "generation"
         llm_state._last_generation_user_prompt = user_prompt
         
         context = llm_utils.extract_editor_context(editor, lines_before, lines_after)
-        prompt_template = llm_state._generation_prompt_template or llm_state._global_default_prompts.get("generation", "")
         full_llm_prompt = prompt_template.format(user_prompt=user_prompt, keywords=', '.join(llm_state._llm_keywords_list), context=context)
         print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]} INFO: LLM Generation Request - Prompt: '{full_llm_prompt[:200]}...'")
         
-        # Get the safe callback functions from our new service
         callbacks = start_new_interactive_session(editor)
 
         def run_generation_thread_target():
-            # This thread no longer knows about the UI. It just calls callbacks.
             try:
                 full_generated_text = ""
-                for api_response_chunk in llm_api_client.request_llm_generation(full_llm_prompt):
+                # --- MODIFICATION : Passer le nom du modèle à l'appel API ---
+                for api_response_chunk in llm_api_client.request_llm_generation(full_llm_prompt, model_name=model_name):
                     if api_response_chunk["success"]:
                         if "chunk" in api_response_chunk:
                             chunk = api_response_chunk["chunk"]
@@ -59,12 +69,12 @@ def open_generate_text_dialog(initial_prompt_text=None):
                 if llm_state._llm_progress_bar_widget:
                     editor.after(0, llm_state._llm_progress_bar_widget.stop)
                     editor.after(0, llm_state._llm_progress_bar_widget.pack_forget)
-
+        
+        # Le code de démarrage du thread n'est pas changé, mais il utilisera le bon model_name
         llm_state._llm_progress_bar_widget.pack(pady=2)
         llm_state._llm_progress_bar_widget.start(10)
         import threading
         threading.Thread(target=run_generation_thread_target, daemon=True).start()
 
-    # ... (Dialog creation logic is unchanged) ...
     def _handle_history_entry_addition_from_dialog(user_prompt): _add_entry_to_history_and_save(user_prompt, "⏳ Generating...")
     llm_dialogs.show_generate_text_dialog(root_window=llm_state._root_window, theme_setting_getter_func=llm_state._theme_setting_getter_func, current_prompt_history_list=llm_state._prompt_history_list, on_generate_request_callback=_handle_generation_request_from_dialog, on_history_entry_add_callback=_handle_history_entry_addition_from_dialog, initial_prompt_text=initial_prompt_text)

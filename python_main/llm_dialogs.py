@@ -26,7 +26,7 @@ def show_generate_text_dialog(root_window, theme_setting_getter_func,
         current_prompt_history_list (list): The current list of prompt-response tuples for display.
         on_generate_request_callback (function): Callback function to be invoked when the
                                                  user confirms the prompt.
-                                                 Expected signature: func(user_prompt, lines_before, lines_after)
+                                                 Expected signature: func(user_prompt, lines_before, lines_after, is_latex_mode)
         on_history_entry_add_callback (function): Callback to add the new prompt (with a
                                                   placeholder response) to the main history list.
                                                   Expected signature: func(user_prompt)
@@ -46,7 +46,6 @@ def show_generate_text_dialog(root_window, theme_setting_getter_func,
     sel_bg = theme_setting_getter_func("sel_bg", "#0078d4")
     sel_fg = theme_setting_getter_func("sel_fg", "#ffffff")
     insert_bg = theme_setting_getter_func("editor_insert_bg", "#000000")
-    # ... and so on for other theme elements
     prompt_window.configure(bg=dialog_bg)
 
     # --- Main Paned Window for History and Input ---
@@ -109,7 +108,7 @@ def show_generate_text_dialog(root_window, theme_setting_getter_func,
 
     # --- LLM Response Display Area (shown on history selection) ---
     llm_response_label = ttk.Label(input_controls_frame, text="LLM Response:")
-    response_text_frame = ttk.Frame(input_controls_frame) # Frame for Text and Scrollbar
+    response_text_frame = ttk.Frame(input_controls_frame)
     response_text_frame.grid_rowconfigure(0, weight=1)
     response_text_frame.grid_columnconfigure(0, weight=1)
     text_response = tk.Text(
@@ -118,8 +117,6 @@ def show_generate_text_dialog(root_window, theme_setting_getter_func,
     )
 
     def on_history_item_selected(event):
-        # When a history item is clicked, show its prompt in text_prompt
-        # and its response in text_response.
         widget = event.widget
         selection = widget.curselection()
         if selection:
@@ -128,24 +125,21 @@ def show_generate_text_dialog(root_window, theme_setting_getter_func,
                 selected_user_prompt, selected_llm_response = current_prompt_history_list[index]
                 text_prompt.delete("1.0", tk.END)
                 text_prompt.insert("1.0", selected_user_prompt)
-
                 llm_response_label.grid(row=5, column=0, columnspan=2, sticky="nw", padx=5, pady=(10,5))
                 response_text_frame.grid(row=6, column=0, columnspan=2, padx=5, pady=(0,5), sticky="nsew")
                 input_controls_frame.grid_rowconfigure(6, weight=1)
-                text_response.grid(row=0, column=0, sticky="nsew") # Inside response_text_frame
+                text_response.grid(row=0, column=0, sticky="nsew")
                 response_scrollbar = ttk.Scrollbar(response_text_frame, orient="vertical", command=text_response.yview)
                 response_scrollbar.grid(row=0, column=1, sticky="ns")
                 text_response.config(yscrollcommand=response_scrollbar.set)
-
                 text_response.config(state="normal")
                 text_response.delete("1.0", tk.END)
                 text_response.insert("1.0", selected_llm_response)
                 text_response.config(state="disabled")
-            else: # "No history yet." or invalid
+            else:
                 llm_response_label.grid_remove()
                 response_text_frame.grid_remove()
                 input_controls_frame.grid_rowconfigure(6, weight=0)
-        # ... (handle deselection: clear response area)
 
     history_listbox.bind("<<ListboxSelect>>", on_history_item_selected)
 
@@ -160,6 +154,18 @@ def show_generate_text_dialog(root_window, theme_setting_getter_func,
     entry_forward.insert(0, "0")
     entry_forward.grid(row=3, column=1, sticky="w", padx=5, pady=5)
 
+    # --- AJOUT : Case à cocher pour le mode LaTeX ---
+    is_latex_mode = tk.BooleanVar()
+    options_frame = ttk.Frame(input_controls_frame)
+    options_frame.grid(row=4, column=0, columnspan=2, sticky="w", padx=5, pady=(10, 0))
+    
+    latex_checkbutton = ttk.Checkbutton(
+        options_frame,
+        text="LaTeX oriented generation (uses code model)",
+        variable=is_latex_mode
+    )
+    latex_checkbutton.pack(side=tk.LEFT)
+
     # --- Generate Button ---
     def handle_send_prompt_action():
         user_prompt = text_prompt.get("1.0", tk.END).strip()
@@ -173,19 +179,22 @@ def show_generate_text_dialog(root_window, theme_setting_getter_func,
         if not user_prompt:
             messagebox.showwarning("Warning", "The prompt is empty.", parent=prompt_window)
             return
+        
+        # --- MODIFICATION : Récupérer la valeur de la case à cocher ---
+        latex_enabled = is_latex_mode.get()
 
-        # 1. Call back to add "Generating..." to history immediately
         if on_history_entry_add_callback:
             on_history_entry_add_callback(user_prompt)
 
-        # 2. Call back to trigger the actual LLM generation process
+        # --- MODIFICATION : Passer la nouvelle valeur au callback ---
         if on_generate_request_callback:
-            on_generate_request_callback(user_prompt, num_back, num_forward)
+            on_generate_request_callback(user_prompt, num_back, num_forward, latex_enabled)
 
         prompt_window.destroy()
 
     button_frame = ttk.Frame(input_controls_frame)
-    button_frame.grid(row=4, column=0, columnspan=3, pady=(10,0), sticky="ew")
+    # On déplace le bouton vers le bas pour faire de la place à l'option LaTeX
+    button_frame.grid(row=7, column=0, columnspan=3, pady=(20,0), sticky="ew") 
     ttk.Button(button_frame, text="Generate", command=handle_send_prompt_action).pack()
 
     main_pane.add(input_controls_frame, stretch="always")
@@ -195,6 +204,9 @@ def show_generate_text_dialog(root_window, theme_setting_getter_func,
     text_prompt.focus()
     prompt_window.wait_window()
 
+
+# --- Les autres fonctions (show_set_llm_keywords_dialog, show_edit_prompts_dialog) sont inchangées ---
+# ... (le reste du fichier reste identique) ...
 
 def show_set_llm_keywords_dialog(root_window, theme_setting_getter_func,
                                  current_llm_keywords_list, # For pre-filling

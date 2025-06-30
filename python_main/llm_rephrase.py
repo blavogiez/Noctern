@@ -20,40 +20,44 @@ def open_rephrase_dialog():
 
     try:
         start_index = editor.index(tk.SEL_FIRST)
-        selected_text = editor.get(start_index, tk.SEL_LAST)
-        # On supprime le texte sélectionné pour le remplacer par la session interactive
-        editor.delete(start_index, tk.SEL_LAST)
-        editor.mark_set(tk.INSERT, start_index)
+        end_index = editor.index(tk.SEL_LAST)
+        selected_text = editor.get(start_index, end_index)
     except tk.TclError:
         messagebox.showwarning("Rephrase", "Please select text to rephrase.")
         return
 
-    # On appelle la nouvelle fonction logique avec le texte récupéré
-    request_rephrase_for_text(editor, selected_text, start_index)
+    # --- CORRECTION ---
+    # On appelle la nouvelle fonction logique en respectant la signature complète.
+    # Pour une sélection, il n'y a pas de callback, donc on passe None.
+    request_rephrase_for_text(editor, selected_text, start_index, end_index, on_validate_callback=None)
 
 
-def request_rephrase_for_text(editor, text_to_rephrase, start_index):
+def request_rephrase_for_text(editor, text_to_rephrase, start_index, end_index, on_validate_callback=None):
     """
-    Demande à l'utilisateur une instruction et lance une session interactive
-    pour reformuler le texte fourni. C'est le nouveau cœur logique.
+    Demande à l'utilisateur une instruction et lance une session interactive.
+    - Pour une sélection de texte : supprime le texte si validé.
+    - Pour une suggestion : appelle un callback pour détruire l'ancienne session si validé.
     """
     if llm_state._is_generating:
         interface.show_temporary_status_message("LLM is already generating. Please wait.")
         return
 
+    prompt_validated = False
+
     def _show_prompt_dialog():
-        """Affiche la fenêtre modale pour obtenir l'instruction de l'utilisateur."""
-        # --- Utilisation d'une fonction interne pour éviter la pollution de l'espace de noms ---
+        nonlocal prompt_validated
+
         def on_validate(entry_widget, window):
+            nonlocal prompt_validated
             user_instruction = entry_widget.get().strip()
             if not user_instruction:
                 messagebox.showwarning("Instruction manquante", "Veuillez saisir une instruction.", parent=window)
                 return
+            
+            prompt_validated = True
             window.destroy()
-            # On lance la requête LLM après avoir eu l'instruction
             _handle_rephrase_request(user_instruction)
 
-        # La logique de la fenêtre reste la même
         prompt_window = tk.Toplevel(llm_state._root_window)
         prompt_window.title("Reformuler le texte")
         prompt_window.transient(llm_state._root_window)
@@ -70,7 +74,6 @@ def request_rephrase_for_text(editor, text_to_rephrase, start_index):
         validate_btn.pack(pady=10)
         prompt_window.bind("<Return>", lambda e: on_validate(entry, prompt_window))
         
-        # Centrer la fenêtre
         prompt_window.update_idletasks()
         x = llm_state._root_window.winfo_x() + (llm_state._root_window.winfo_width() // 2) - (prompt_window.winfo_width() // 2)
         y = llm_state._root_window.winfo_y() + (llm_state._root_window.winfo_height() // 2) - (prompt_window.winfo_height() // 2)
@@ -80,10 +83,15 @@ def request_rephrase_for_text(editor, text_to_rephrase, start_index):
 
     def _handle_rephrase_request(user_instruction):
         """Construit le prompt et lance la génération via un thread."""
+        
+        if on_validate_callback:
+            on_validate_callback()
+        else:
+            editor.delete(start_index, end_index)
+
         llm_state._last_llm_action_type = "rephrase"
-        # On stocke l'instruction et le texte pour d'éventuelles futures reformulations
         llm_state._last_generation_user_prompt = user_instruction
-        llm_state._last_completion_phrase_start = text_to_rephrase # Réutilisation créative du state
+        llm_state._last_completion_phrase_start = text_to_rephrase
 
         prompt = (
             f"Reformule le texte suivant selon l'instruction utilisateur, sans changer le sens, "
@@ -94,16 +102,11 @@ def request_rephrase_for_text(editor, text_to_rephrase, start_index):
         )
         print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]} INFO: LLM Rephrase Request - Instruction: '{user_instruction}'")
 
-        # --- INTÉGRATION CLÉ : On lance une session interactive ---
-        # On s'assure que le curseur est au bon endroit avant de créer la session
         editor.mark_set(tk.INSERT, start_index)
         callbacks = llm_interactive.start_new_interactive_session(editor)
 
         def run_rephrase_thread():
             try:
-                # --- CORRECTION ICI ---
-                # On utilise la fonction qui existe vraiment : request_llm_generation
-                # Elle gère déjà le streaming. J'ai aussi retiré l'argument "rephrase" qui était incorrect.
                 for api_response_chunk in llm_api_client.request_llm_generation(prompt):
                     if api_response_chunk.get("success"):
                         if "chunk" in api_response_chunk:
@@ -122,5 +125,7 @@ def request_rephrase_for_text(editor, text_to_rephrase, start_index):
         import threading
         threading.Thread(target=run_rephrase_thread, daemon=True).start()
 
-    # Démarre le processus en affichant la boîte de dialogue
     _show_prompt_dialog()
+    
+    if not prompt_validated:
+        print("Rephrase operation was cancelled by the user.")
