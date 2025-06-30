@@ -18,6 +18,7 @@ import latex_compiler
 import latex_translator
 import editor_wordcount
 import os
+import sys
 import debug_console
 
 # ... (global variables remain unchanged) ...
@@ -43,6 +44,8 @@ HEAVY_UPDATE_DELAY_LARGE_FILE = 2000
 heavy_update_timer_id = None
 _temporary_status_active = False
 _temporary_status_timer_id = None
+_closed_tabs_stack = []
+_close_button_pressed_on_tab = None
 
 def perform_heavy_updates():
     """
@@ -175,13 +178,29 @@ def on_close_request():
         debug_console.log("No dirty tabs. Closing application.", level='INFO')
         root.destroy()
 
-def close_current_tab(event=None):
-    return interface_tabops.close_current_tab(get_current_tab, root, notebook, save_file, create_new_tab, tabs)
+def close_tab_by_id(tab_id):
+    """Closes a specific tab by its ID, selecting it first."""
+    if tab_id in notebook.tabs():
+        notebook.select(tab_id)
+        close_current_tab()
 
-def create_new_tab(file_path=None):
+def close_current_tab(event=None):
+    return interface_tabops.close_current_tab(get_current_tab, root, notebook, save_file, create_new_tab, tabs, _closed_tabs_stack)
+
+def create_new_tab(file_path=None, event=None):
     interface_tabops.create_new_tab(
         file_path, notebook, tabs, apply_theme, current_theme, on_tab_changed, EditorTab, schedule_heavy_updates
     )
+
+def restore_last_closed_tab(event=None):
+    """Reopens the most recently closed tab."""
+    if _closed_tabs_stack:
+        file_path_to_restore = _closed_tabs_stack.pop()
+        debug_console.log(f"Restoring closed tab: {file_path_to_restore or 'Untitled'}", level='ACTION')
+        create_new_tab(file_path=file_path_to_restore)
+    else:
+        debug_console.log("No tabs in restore stack.", level='INFO')
+        show_temporary_status_message("ℹ️ No recently closed tabs to restore.")
 
 def open_file(event=None):
     return interface_fileops.open_file(create_new_tab, show_temporary_status_message)
@@ -213,13 +232,108 @@ def toggle_advanced_mode():
     if not settings_menu:
         return
     
-    if _advanced_mode_enabled.get():
-        settings_menu.entryconfig("Show Debug Console", state="normal")
+    is_advanced = _advanced_mode_enabled.get()
+    settings_menu.entryconfig("Show Debug Console", state="normal" if is_advanced else "disabled")
+    settings_menu.entryconfig("Restart Application", state="normal" if is_advanced else "disabled")
+    
+    if is_advanced:
         debug_console.log("Advanced mode ENABLED.", level='CONFIG')
     else:
-        settings_menu.entryconfig("Show Debug Console", state="disabled")
         debug_console.hide_console()
         debug_console.log("Advanced mode DISABLED.", level='CONFIG')
+
+def restart_application():
+    """Restarts the current program, losing all unsaved changes."""
+    debug_console.log("Restart application triggered.", level='ACTION')
+    if messagebox.askyesno("Restart Application", "Are you sure you want to restart?\nUnsaved changes will be lost.", icon='warning'):
+        debug_console.log("User confirmed restart. Restarting...", level='INFO')
+        try:
+            # Clean up before restart if needed (e.g., closing files, sockets)
+            pass
+        finally:
+            python = sys.executable
+            os.execl(python, python, *sys.argv)
+    else:
+        debug_console.log("User cancelled restart.", level='ACTION')
+
+def _configure_notebook_style_and_events():
+    """Sets up a custom ttk style for notebook tabs to include a close button."""
+    try:
+        style = ttk.Style()
+        
+        # Define a new element 'TNotebook.close' as a label with a close character.
+        # This only needs to be done once.
+        if "TNotebook.close" not in style.element_names():
+            style.element_create("TNotebook.close", "label", text=' ✕ ') # Padded for better clicking
+            debug_console.log("Created TNotebook.close style element.", level='DEBUG')
+
+        # Configure the element's appearance.
+        style.configure("TNotebook.close", padding=0, anchor='center')
+        
+        # Map mouse-over (active) and pressed states to colors to simulate a button.
+        # This is safe to call multiple times, so we do it in apply_theme.
+        style.map("TNotebook.close",
+            foreground=[('active', '#e81123'), ('!active', 'grey')],
+            background=[('active', get_theme_setting("llm_generated_bg"))]
+        )
+        
+        # Get the current layout of a tab and insert our new 'close' element.
+        # This is the most fragile part, so we check if we've already done it.
+        current_layout = style.layout("TNotebook.Tab")
+        if "TNotebook.close" not in str(current_layout):
+            style.layout("TNotebook.Tab", [
+                ('TNotebook.tab', {'sticky': 'nswe', 'children':
+                    [('TNotebook.padding', {'side': 'top', 'sticky': 'nswe', 'children':
+                        [('TNotebook.focus', {'side': 'top', 'sticky': 'nswe', 'children':
+                            [('TNotebook.label', {'side': 'left', 'sticky': ''}),
+                             ('TNotebook.close', {'side': 'left', 'sticky': ''})
+                            ]
+                        })
+                        ]
+                    })
+                    ]
+                })
+            ])
+            debug_console.log("Applied custom notebook tab layout with close button.", level='DEBUG')
+    except tk.TclError as e:
+        debug_console.log(f"Could not create custom notebook style. Error: {e}", level='WARNING')
+        return
+
+    # Bind mouse events to the notebook to detect clicks on our custom 'close' element.
+    def on_close_press(event):
+        global _close_button_pressed_on_tab
+        try:
+            element = notebook.identify(event.x, event.y)
+        except tk.TclError:
+            return # Notebook is likely empty
+            
+        if "close" in element:
+            index = notebook.index(f"@{event.x},{event.y}")
+            notebook.state(['pressed'])
+            _close_button_pressed_on_tab = index
+            return "break"
+
+    def on_close_release(event):
+        global _close_button_pressed_on_tab
+        if _close_button_pressed_on_tab is None:
+            return
+
+        try:
+            # Check if release is still over the close button of the same tab
+            element = notebook.identify(event.x, event.y)
+            index = notebook.index(f"@{event.x},{event.y}")
+            if "close" in element and _close_button_pressed_on_tab == index:
+                tab_id_to_close = notebook.tabs()[index]
+                # Use a short delay to allow visual feedback to register before the tab disappears
+                notebook.after(50, lambda: close_tab_by_id(tab_id_to_close))
+        except tk.TclError:
+            pass # Click was released outside any tab
+        finally:
+            notebook.state(["!pressed"])
+            _close_button_pressed_on_tab = None
+
+    notebook.bind("<ButtonPress-1>", on_close_press, True)
+    notebook.bind("<ButtonRelease-1>", on_close_release)
 
 def setup_gui():
     global root, notebook, outline_tree, llm_progress_bar, _theme_settings, status_bar_frame
@@ -258,8 +372,12 @@ def setup_gui():
 def apply_theme(theme_name, event=None):
     global current_theme, _theme_settings
     debug_console.log(f"Applying theme '{theme_name}'.", level='ACTION')
+    # Apply the base theme from sv_ttk and our custom colors
     new_theme, new_settings = interface_theme.apply_theme(
         theme_name, root, main_pane, tabs, perform_heavy_updates
     )
     current_theme = new_theme
     _theme_settings = new_settings
+    
+    # Re-apply our custom notebook style modifications on top of the new theme
+    _configure_notebook_style_and_events()

@@ -4,6 +4,9 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter.font import Font
 import os
+from tkinter import messagebox
+import llm_state
+import debug_console
 
 # This class was moved from interface.py to avoid circular imports.
 # It handles the visual display of line numbers for a given Text widget.
@@ -72,7 +75,7 @@ class EditorTab(ttk.Frame):
         self.notebook = parent_notebook
         self.file_path = file_path
         self._schedule_heavy_updates_callback = schedule_heavy_updates_callback
-        self.last_saved_content = "" if file_path else "\n"
+        self.last_saved_content = ""
         self.error_labels = [] # To hold widgets for missing image warnings.
 
         self.editor_font = Font(family="Consolas", size=12)
@@ -98,6 +101,49 @@ class EditorTab(ttk.Frame):
         
         self.editor.bind("<KeyRelease>", self.on_key_release)
         self.editor.bind("<Configure>", self.schedule_heavy_updates)
+        self.editor.bind("<Tab>", self._on_tab_key)
+        self.editor.bind("<Shift-Tab>", self._on_shift_tab_key)
+
+    def _on_tab_key(self, event=None):
+        """Handles Tab key press for multi-line indentation."""
+        if llm_state._is_generating: return # Let interactive session handle it
+
+        if self.editor.tag_ranges("sel"):
+            start, end = self.editor.index("sel.first"), self.editor.index("sel.last")
+            start_line = int(start.split('.')[0])
+            end_line = int(end.split('.')[0])
+            if end.split('.')[1] == '0': end_line -= 1
+            
+            for i in range(start_line, end_line + 1):
+                self.editor.insert(f"{i}.0", "\t")
+            
+            self.editor.tag_add("sel", f"{start_line}.0", f"{end_line+1}.0")
+            return "break"
+        else:
+            self.editor.insert(tk.INSERT, "\t")
+            return "break"
+
+    def _on_shift_tab_key(self, event=None):
+        """Handles Shift+Tab key press for multi-line outdentation."""
+        if llm_state._is_generating: return
+
+        if self.editor.tag_ranges("sel"):
+            start, end = self.editor.index("sel.first"), self.editor.index("sel.last")
+            start_line = int(start.split('.')[0])
+            end_line = int(end.split('.')[0])
+            if end.split('.')[1] == '0': end_line -= 1
+            
+            for i in range(start_line, end_line + 1):
+                line_start = f"{i}.0"
+                line_content = self.editor.get(line_start, f"{i}.end")
+                if line_content.startswith('\t'):
+                    self.editor.delete(line_start, f"{line_start}+1c")
+                elif line_content.startswith('    '):
+                    self.editor.delete(line_start, f"{line_start}+4c")
+            
+            self.editor.tag_add("sel", f"{start_line}.0", f"{end_line+1}.0")
+            return "break"
+        return "break" # Prevent focus change even with no selection
 
     def on_key_release(self, event=None):
         """Called on any key release to update tab state and schedule updates."""
@@ -124,7 +170,7 @@ class EditorTab(ttk.Frame):
         self.notebook.tab(self, text=title)
 
     def load_file(self):
-        """Loads content from self.file_path into the editor."""
+        """Loads content from self.file_path or a template for new files."""
         if self.file_path and os.path.exists(self.file_path):
             try:
                 with open(self.file_path, "r", encoding="utf-8") as f:
@@ -132,12 +178,26 @@ class EditorTab(ttk.Frame):
                     self.editor.delete("1.0", tk.END)
                     self.editor.insert("1.0", content)
                     self.last_saved_content = self.get_content()
-                    self.update_tab_title()
-                    self.editor.edit_reset() # Clear the undo/redo stack
             except Exception as e:
                 messagebox.showerror("Error", f"Could not open file:\n{e}")
         else:
-            self.update_tab_title()
+            # This is a new, unsaved file. Try to load template.
+            try:
+                with open("new_file_template.tex", "r", encoding="utf-8") as f:
+                    content = f.read()
+                    self.editor.delete("1.0", tk.END)
+                    self.editor.insert("1.0", content)
+                # A new file with template content is considered dirty
+                self.last_saved_content = "\n"
+                debug_console.log("Loaded content from new_file_template.tex", level='INFO')
+            except Exception as e:
+                # Fallback to a completely empty file if template is missing/unreadable
+                self.editor.delete("1.0", tk.END)
+                self.last_saved_content = self.get_content() # Should be "\n"
+                debug_console.log(f"Could not load template (Reason: {e}). Creating empty file.", level='WARNING')
+        
+        self.update_tab_title()
+        self.editor.edit_reset() # Clear the undo/redo stack
 
     def save_file(self, new_path=None):
         """Saves the editor content to a file."""
@@ -145,6 +205,8 @@ class EditorTab(ttk.Frame):
             self.file_path = new_path
         
         if not self.file_path:
+            # This case is handled by save_file_as, but as a safeguard:
+            debug_console.log("Save operation aborted in EditorTab: no file path.", level='WARNING')
             return False
 
         try:
@@ -156,4 +218,5 @@ class EditorTab(ttk.Frame):
             return True
         except Exception as e:
             messagebox.showerror("Error", f"Error saving file:\n{e}")
+            debug_console.log(f"Failed to save file '{self.file_path}': {e}", level='ERROR')
             return False

@@ -2,7 +2,7 @@ from tkinter import messagebox
 import os
 import debug_console
 
-def close_current_tab(get_current_tab, root, notebook, save_file, create_new_tab, tabs):
+def close_current_tab(get_current_tab, root, notebook, save_file, create_new_tab, tabs, closed_tabs_stack):
     current_tab = get_current_tab()
     if not current_tab:
         return
@@ -28,6 +28,13 @@ def close_current_tab(get_current_tab, root, notebook, save_file, create_new_tab
         else: # False
             debug_console.log("User chose NOT to save before closing tab.", level='ACTION')
 
+    # Add to restore stack before forgetting the tab
+    if closed_tabs_stack is not None:
+        closed_tabs_stack.append(current_tab.file_path)
+        if len(closed_tabs_stack) > 10: # Keep stack size reasonable
+            closed_tabs_stack.pop(0)
+        debug_console.log(f"Added '{current_tab.file_path}' to closed tab stack.", level='DEBUG')
+
     tab_id = notebook.select()
     notebook.forget(tab_id)
     del tabs[tab_id]
@@ -49,10 +56,15 @@ def create_new_tab(file_path, notebook, tabs, apply_theme, current_theme, on_tab
     tab_name = os.path.basename(file_path) if file_path else "Untitled"
     debug_console.log(f"Creating new tab for: '{tab_name}'", level='INFO')
     new_tab = EditorTab(notebook, file_path=file_path, schedule_heavy_updates_callback=schedule_heavy_updates)
+    
+    # CORRECTED: Add the tab to the notebook first, so it is "managed".
     notebook.add(new_tab, text=tab_name)
+    
+    # Now, load the content. The call to update_tab_title() inside load_file() will work correctly.
+    new_tab.load_file() 
+    
     notebook.select(new_tab)
     tabs[str(new_tab)] = new_tab
     apply_theme(current_theme) # Apply theme to the new tab's widgets
     on_tab_changed()
-    new_tab.load_file()
     debug_console.log(f"Tab for '{tab_name}' created and loaded successfully.", level='SUCCESS')
