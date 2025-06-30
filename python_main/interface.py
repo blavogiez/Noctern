@@ -16,11 +16,11 @@ import llm_service
 import editor_logic
 import latex_compiler
 import latex_translator
-import editor_enhancements
+import editor_wordcount
 import os
 import debug_console
 
-# ... (le reste des variables globales reste inchangé) ...
+# ... (global variables remain unchanged) ...
 root = None
 notebook = None
 tabs = {}
@@ -66,7 +66,7 @@ def perform_heavy_updates():
     editor_logic.update_outline_tree(current_tab.editor)
 
     if not _temporary_status_active:
-        editor_enhancements.update_word_count(current_tab.editor, status_label)
+        editor_wordcount.update_word_count(current_tab.editor, status_label)
 
     if current_tab.line_numbers:
         current_tab.line_numbers.redraw()
@@ -98,7 +98,12 @@ def schedule_heavy_updates(_=None):
         heavy_update_timer_id = root.after(current_delay, perform_heavy_updates)
 
 def get_theme_setting(key, default=None):
+    """Returns a single value for a given theme key."""
     return _theme_settings.get(key, default)
+
+def get_theme_settings():
+    """Returns the entire dictionary of current theme settings."""
+    return _theme_settings
 
 def get_current_tab():
     global notebook, tabs
@@ -110,7 +115,6 @@ def get_current_tab():
     except tk.TclError:
         return None
 
-# FIXED: Added event=None to match the new unified shortcut system.
 def paste_image(event=None):
     import editor_image_paste
     editor_image_paste.paste_image_from_clipboard()
@@ -135,7 +139,7 @@ def clear_temporary_status_message():
     _temporary_status_active = False
     current_tab = get_current_tab()
     if current_tab:
-        editor_enhancements.update_word_count(current_tab.editor, status_label)
+        editor_wordcount.update_word_count(current_tab.editor, status_label)
     else:
         status_label.config(text="...")
     return interface_statusbar.clear_temporary_status_message()
@@ -171,7 +175,6 @@ def on_close_request():
         debug_console.log("No dirty tabs. Closing application.", level='INFO')
         root.destroy()
 
-# FIXED: Added event=None to match the new unified shortcut system.
 def close_current_tab(event=None):
     return interface_tabops.close_current_tab(get_current_tab, root, notebook, save_file, create_new_tab, tabs)
 
@@ -180,18 +183,15 @@ def create_new_tab(file_path=None):
         file_path, notebook, tabs, apply_theme, current_theme, on_tab_changed, EditorTab, schedule_heavy_updates
     )
 
-# FIXED: Added event=None to match the new unified shortcut system.
 def open_file(event=None):
     return interface_fileops.open_file(create_new_tab, show_temporary_status_message)
 
-# FIXED: Added event=None to match the new unified shortcut system.
 def save_file(event=None):
     current_tab = get_current_tab()
     if current_tab:
         editor_logic.check_for_deleted_images(current_tab)
     return interface_fileops.save_file(get_current_tab, show_temporary_status_message, save_file_as)
 
-# FIXED: Added event=None to match the new unified shortcut system.
 def save_file_as(event=None):
     current_tab = get_current_tab()
     if current_tab:
@@ -255,7 +255,6 @@ def setup_gui():
     
     return root
 
-# FIXED: Added event=None to match the new unified shortcut system.
 def apply_theme(theme_name, event=None):
     global current_theme, _theme_settings
     debug_console.log(f"Applying theme '{theme_name}'.", level='ACTION')

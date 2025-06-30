@@ -7,7 +7,7 @@ import latex_translator
 import interface
 import debug_console
 import llm_rephrase
-import editor_enhancements # NEW: Import to access the editor function
+import editor_snippets # MODIFIED: Import the new snippets feature module
 
 def _log_action(action_name):
     """Helper function to log user actions from the UI."""
@@ -51,8 +51,7 @@ def create_top_buttons_frame(root):
     settings_menu.add_command(label="Set LLM Keywords...", command=lambda: [_log_action("Settings: Set Keywords"), llm_service.open_set_keywords_dialog()])
     settings_menu.add_command(label="Edit LLM Prompts...", command=lambda: [_log_action("Settings: Edit Prompts"), llm_service.open_edit_prompts_dialog()])
     
-    # NEW: Add the command to open the snippet editor.
-    settings_menu.add_command(label="Edit Snippets...", command=lambda: [_log_action("Settings: Edit Snippets"), editor_enhancements.open_snippet_editor()])
+    settings_menu.add_command(label="Edit Snippets...", command=lambda: [_log_action("Settings: Edit Snippets"), editor_snippets.open_snippet_editor()]) # MODIFIED
 
     settings_menu.add_separator()
     settings_menu.add_checkbutton(

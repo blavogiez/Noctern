@@ -7,7 +7,7 @@ import editor_logic
 import interface
 import llm_rephrase
 import debug_console
-import editor_enhancements
+import editor_snippets # MODIFIED: Import the new snippets feature module
 
 def bind_shortcuts(root):
     """Binds all global keyboard shortcuts for the application."""
@@ -45,10 +45,8 @@ def bind_shortcuts(root):
     for key, (func, name) in simple_shortcuts.items():
         root.bind_all(key, log_and_run(func, name, pass_event=False))
 
-    # FIXED: A dedicated binding for the snippet feature using a standard shortcut (Ctrl+Space).
-    # This binding explicitly passes the event object to the handler, which is required
-    # for the handler to know which widget to act upon.
-    root.bind_all("<Control-space>", log_and_run(editor_enhancements.handle_snippet_expansion, "Expand Snippet", pass_event=True))
+    # Binding for snippet expansion, which requires the event object.
+    root.bind_all("<Control-space>", log_and_run(editor_snippets.handle_snippet_expansion, "Expand Snippet", pass_event=True)) # MODIFIED
         
     # Zoom shortcuts are kept separate as they don't need the 'break' return value.
     root.bind_all("<Control-equal>", interface.zoom_in)
