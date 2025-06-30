@@ -96,7 +96,7 @@ def apply_syntax_highlighting(editor):
 def extract_section_structure(content, position_index):
     """
     Extracts the current section, subsection, subsubsection titles
-    based on the cursor position.
+    based on the cursor position. Used for creating image directories.
     """
     lines = content[:position_index].split("\n")
 
@@ -108,82 +108,93 @@ def extract_section_structure(content, position_index):
         if r"\section{" in line:
             match = re.search(r"\\section\{(.+?)\}", line)
             if match:
-                section = match.group(1).strip().replace(" ", "_").replace("{", "").replace("}", "")
+                section = match.group(1).strip()
                 subsection = "default"
                 subsubsection = "default"
         elif r"\subsection{" in line:
             match = re.search(r"\\subsection\{(.+?)\}", line)
             if match:
-                subsection = match.group(1).strip().replace(" ", "_").replace("{", "").replace("}", "")
+                subsection = match.group(1).strip()
                 subsubsection = "default"
         elif r"\subsubsection{" in line:
             match = re.search(r"\\subsubsection\{(.+?)\}", line)
             if match:
-                subsubsection = match.group(1).strip().replace(" ", "_").replace("{", "").replace("}", "")
-
-    # Basic sanitization for path safety
-    section = re.sub(r'[^\w\-_\.]', '', section)
-    subsection = re.sub(r'[^\w\-_\.]', '', subsection)
-    subsubsection = re.sub(r'[^\w\-_\.]', '', subsubsection)
-
+                subsubsection = match.group(1).strip()
     return section, subsection, subsubsection
 
-def paste_image():
-    """Pastes an image from the clipboard into the editor as a LaTeX figure."""
-    current_tab = interface.get_current_tab()
-    if not current_tab: return
-    editor = current_tab.editor
-    if not editor:
+# --- NEW: Image Deletion Tracking Logic ---
+
+def _parse_for_images(content):
+    """Parses document content to find all \includegraphics paths."""
+    image_pattern = re.compile(r"\\includegraphics(?:\[.*?\])?\{(.*?)\}")
+    found_paths = image_pattern.findall(content)
+    return set(found_paths)
+
+def _resolve_image_path(tex_file_path, image_path_in_tex):
+    """Resolves the image path from the .tex file to an absolute path."""
+    base_dir = os.path.dirname(tex_file_path) if tex_file_path else os.getcwd()
+    absolute_path = os.path.normpath(os.path.join(base_dir, image_path_in_tex))
+    return absolute_path
+
+def _cleanup_empty_dirs(path):
+    """Recursively deletes empty directories upwards from the given path."""
+    try:
+        figures_root_parts = path.split("figures")
+        if len(figures_root_parts) < 2: return
+        figures_root = os.path.join(figures_root_parts[0], "figures")
+
+        while path.startswith(figures_root) and os.path.isdir(path) and path != figures_root:
+            if not os.listdir(path):
+                try:
+                    os.rmdir(path)
+                    print(f"Removed empty directory: {path}")
+                    path = os.path.dirname(path)
+                except OSError: break
+            else: break
+    except (IndexError, AttributeError):
+        print(f"Warning: Could not determine figures root for cleanup of '{path}'")
+
+def _prompt_for_image_deletion(image_path_to_delete, tex_file_path):
+    """Shows the confirmation dialog and deletes the file if confirmed."""
+    if not os.path.exists(image_path_to_delete):
         return
 
-    try:
-        image = ImageGrab.grabclipboard()
-        if image is None:
-            messagebox.showwarning("Warning", "No image found in clipboard.")
-            return
+    base_dir = os.path.dirname(tex_file_path) if tex_file_path else os.getcwd()
+    display_path = os.path.relpath(image_path_to_delete, base_dir)
 
-        # Determine the base directory for saving figures
-        # Use the directory of the current file, or the current working directory if no file is open
-        base_dir = os.path.dirname(current_tab.file_path) if current_tab.file_path else "."
+    response = messagebox.askyesno(
+        "Delete Associated Image File?",
+        f"The reference to the following image file has been removed from your document:\n\n'{display_path}'\n\nDo you want to permanently delete the file itself?",
+        icon='warning'
+    )
+    
+    if response:
+        try:
+            os.remove(image_path_to_delete)
+            print(f"Image file deleted: {image_path_to_delete}")
+            _cleanup_empty_dirs(os.path.dirname(image_path_to_delete))
+        except OSError as e:
+            messagebox.showerror("Deletion Error", f"Could not delete the file:\n{e}")
 
-        # Get section titles based on cursor position
-        content = editor.get("1.0", tk.END)
-        cursor_index = editor.index(tk.INSERT)
-        # Convert Tkinter index to character index for string slicing
-        char_index = int(editor.count("1.0", cursor_index)[0])
+def update_tracked_images(current_tab):
+    """Parses the current tab's content and sets the initial list of tracked images."""
+    if not current_tab: return
+    content = current_tab.get_content()
+    current_tab.tracked_image_paths = _parse_for_images(content)
 
-        section, subsection, subsubsection = extract_section_structure(content, char_index)
+def check_for_deleted_images(current_tab):
+    """Compares current images with tracked ones and prompts for deletion if any are missing."""
+    if not current_tab or not hasattr(current_tab, 'tracked_image_paths'):
+        return
 
-        # Construct the directory path for the figure
-        fig_dir_path = os.path.join(base_dir, "figures", section, subsection, subsubsection)
-        os.makedirs(fig_dir_path, exist_ok=True)
+    content = current_tab.get_content()
+    new_image_set = _parse_for_images(content)
 
-        # Find a unique filename
-        index = 1
-        while True:
-            file_name = f"fig{index}.png"
-            full_file_path = os.path.join(fig_dir_path, file_name)
-            if not os.path.exists(full_file_path):
-                break
-            index += 1
+    deleted_image_paths_relative = current_tab.tracked_image_paths - new_image_set
 
-        # Save the image
-        image.save(full_file_path, "PNG")
+    if deleted_image_paths_relative:
+        for rel_path in deleted_image_paths_relative:
+            abs_path = _resolve_image_path(current_tab.file_path, rel_path)
+            _prompt_for_image_deletion(abs_path, current_tab.file_path)
 
-        # Get the relative path for LaTeX \includegraphics
-        latex_path = os.path.relpath(full_file_path, base_dir).replace("\\", "/")
-
-        # Insert the LaTeX code for the figure
-        latex_code = (
-            "\n\\begin{figure}[h!]\n"
-            "    \\centering\n"
-            f"    \\includegraphics[width=0.8\\textwidth]{{{latex_path}}}\n"
-            f"    \\caption{{Caption here}}\n"
-            f"    \\label{{fig:{section}_{subsection}_{index}}}\n"
-            "\\end{figure}\n"
-        )
-
-        editor.insert(tk.INSERT, latex_code)
-
-    except Exception as e:
-        messagebox.showerror("Error", f"Error pasting image:\n{str(e)}")
+    current_tab.tracked_image_paths = new_image_set

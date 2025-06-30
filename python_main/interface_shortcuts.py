@@ -9,7 +9,9 @@ def bind_shortcuts(root):
     root.bind_all("<Control-Shift-G>", lambda event: llm_service.open_generate_text_dialog())
     root.bind_all("<Control-Shift-C>", lambda event: llm_service.request_llm_to_complete_text())
     root.bind_all("<Control-Shift-D>", lambda event: latex_compiler.run_chktex_check())
-    root.bind_all("<Control-Shift-V>", lambda event: editor_logic.paste_image())
+    # The shortcut now calls the new paste_image function in the main interface module.
+    # This avoids a circular import while using the new, more advanced paste logic.
+    root.bind_all("<Control-Shift-V>", lambda event: interface.paste_image())
     root.bind_all("<Control-Shift-K>", lambda event: llm_service.open_set_keywords_dialog())
     root.bind_all("<Control-Shift-P>", lambda event: llm_service.open_edit_prompts_dialog())
     root.bind_all("<Control-o>", lambda event: interface.open_file())

@@ -59,12 +59,15 @@ def perform_heavy_updates():
         print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]} INFO: Heavy updates skipped (no active tab).")
         return
 
-    # Perform all updates for the current tab
+    # NEW: Check for deleted images using the new robust logic.
+    editor_logic.check_for_deleted_images(current_tab)
+    
+    # Perform all other updates for the current tab
     editor_logic.apply_syntax_highlighting(current_tab.editor)
     editor_logic.update_outline_tree(current_tab.editor)
     if current_tab.line_numbers:
         current_tab.line_numbers.redraw()
-    print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]} INFO: Performed heavy updates (syntax highlighting, outline, line numbers) for '{os.path.basename(current_tab.file_path) if current_tab.file_path else 'Untitled'}'.")
+    print(f"{datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]} INFO: Performed heavy updates (image check, syntax, outline) for '{os.path.basename(current_tab.file_path) if current_tab.file_path else 'Untitled'}'.")
 def schedule_heavy_updates(_=None):
     """Schedules heavy updates after a short delay."""
     global heavy_update_timer_id
@@ -103,6 +106,19 @@ def get_current_tab():
         return tabs.get(selected_tab_id)
     except tk.TclError: # Happens if no tabs are present
         return None
+
+## -- Paste Image Functionality -- ##
+def paste_image():
+    """
+    Broker function for pasting an image. It calls the paste logic and then
+    immediately updates the tracked image list for the current tab.
+    """
+    import editor_image_paste
+    editor_image_paste.paste_image_from_clipboard()
+    
+    current_tab = get_current_tab()
+    if current_tab:
+        editor_logic.update_tracked_images(current_tab)
 
 ## -- Zoom Functionality -- ##
 
@@ -164,17 +180,26 @@ def close_current_tab():
 ## -- File Operations -- ##
 
 def create_new_tab(file_path=None):
-    return interface_tabops.create_new_tab(
+    new_tab = interface_tabops.create_new_tab(
         file_path, notebook, tabs, apply_theme, current_theme, on_tab_changed, EditorTab, schedule_heavy_updates
     )
+    # The on_tab_changed call inside create_new_tab already handles the initial scan.
 
 def open_file():
     return interface_fileops.open_file(create_new_tab, show_temporary_status_message)
 
 def save_file():
+    # Before saving, update the tracked images to prevent false positives if the user saves and quits quickly.
+    current_tab = get_current_tab()
+    if current_tab:
+        editor_logic.check_for_deleted_images(current_tab)
     return interface_fileops.save_file(get_current_tab, show_temporary_status_message, save_file_as)
 
 def save_file_as():
+    # Before saving, update the tracked images.
+    current_tab = get_current_tab()
+    if current_tab:
+        editor_logic.check_for_deleted_images(current_tab)
     return interface_fileops.save_file_as(get_current_tab, show_temporary_status_message, on_tab_changed)
 
 def on_tab_changed(event=None):
@@ -182,6 +207,12 @@ def on_tab_changed(event=None):
     # Load prompt history and custom prompts for the newly active file
     llm_service.load_prompt_history_for_current_file()
     llm_service.load_prompts_for_current_file()
+    
+    # Update the image tracking for the newly focused tab.
+    current_tab = get_current_tab()
+    if current_tab:
+        editor_logic.update_tracked_images(current_tab)
+
     # Update outline, syntax highlighting, etc.
     perform_heavy_updates()
 
@@ -204,6 +235,7 @@ def setup_gui():
 
     # --- Editor Notebook ---
     notebook = create_notebook(main_pane)
+    notebook.bind("<<NotebookTabChanged>>", on_tab_changed)
 
     # --- LLM Progress Bar ---
     llm_progress_bar = ttk.Progressbar(root, mode="indeterminate", length=200)
@@ -218,7 +250,7 @@ def setup_gui():
     bind_shortcuts(root)
 
     # Create the first empty tab to start with
-    create_new_tab()
+    interface_tabops.create_new_tab(None, notebook, tabs, apply_theme, current_theme, on_tab_changed, EditorTab, schedule_heavy_updates)
 
     # Intercept the window close ('X') button to check for unsaved changes
     root.protocol("WM_DELETE_WINDOW", on_close_request)
