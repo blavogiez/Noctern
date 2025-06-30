@@ -1,3 +1,14 @@
+Excellent point. Humility and transparency are very effective in a README. It makes the project more approachable and the developer more relatable. I will revise the README to reflect this, toning down any language that might seem overly confident and adding a dedicated section that frames the project as a personal learning journey.
+
+Here are the key changes:
+1.  **New "Project Scope & Philosophy" Section:** This new section explicitly states that AutomaTeX is a personal project built to solve your own problems and serve as a portfolio piece.
+2.  **Toning Down Language:** I've adjusted phrases throughout the document. For example, instead of "What AutomaTeX Gets Right," I'll use "Guiding Principles." Instead of "Key Features," I'll use "What It Can Do." This shifts the focus from a "product" to a "project."
+3.  **Rewriting the Intro:** The introduction is now more grounded in the "personal tool" narrative.
+
+Here is the fully revised `README.md`.
+
+---
+
 # AutomaTeX
 A modern LaTeX editor designed to augment your workflow with private, locally-run AI tools.
 
@@ -9,7 +20,15 @@ I discovered LaTeX a few months ago. My experience has been a mix of fascination
 
 AutomaTeX was born from this duality. It is a modern LaTeX editor designed to preserve the power of the language while sanding down its rough edges. It achieves this through a suite of intelligent tools that run entirely on your local machine, ensuring your work remains private and free of charge. It's not here to replace your knowledge of LaTeX, but to augment it, letting you focus on your content, not the boilerplate.
 
-## Core Features
+## Project Scope & Philosophy
+
+First and foremost, AutomaTeX is a personal project. I built it to solve the problems I was facing myself, and I'm sharing it publicly primarily as a portfolio piece to showcase my skills in software development.
+
+This means the project is shaped by my own needs and learning process. It is not intended to compete with mature, feature-complete editors like VS Code with the LaTeX Workshop extension. I don't think this project is very amazing ; I am a first year student and no big developer ; just a local LLMs and automation enjoyer !
+
+Instead, it's an exploration of how a lightweight, dedicated tool can simplify a specific workflow. I hope that by sharing it, others might find it useful or learn something from the code. 
+
+## What It Can Do
 
 -   **AI-Powered Writing Tools**: Seamlessly complete your sentences or generate entire paragraphs from a simple prompt. Specialized modes are available for both prose and raw LaTeX code.
 -   **Smart Image Pasting**: Copy an image to your clipboard and paste it directly into the editor. AutomaTeX automatically saves it to a logical `figures/section/subsection/` directory and inserts the corresponding LaTeX code for you.
@@ -105,7 +124,7 @@ As the application grew, I learned the importance of separating concerns. Initia
 
 ## Future Roadmap
 
-AutomaTeX is an active project. Here are some of the directions I'm exploring for the future:
+Given that this is a personal portfolio project, development will continue as I learn new things and have new ideas. Some areas I'm interested in exploring next include:
 
 -   **Advanced Project Management**: A proper file tree and better support for multi-file projects (`\input{}` and `\include{}`).
 -   **Language Server Protocol (LSP) Integration**: For more robust, real-time syntax and error checking without sacrificing performance.
