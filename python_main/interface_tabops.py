@@ -1,70 +1,122 @@
+"""
+This module provides core functionalities for managing editor tabs within the application's notebook,
+including closing existing tabs and creating new ones. It handles saving unsaved changes
+and managing a stack of recently closed tabs for restoration.
+"""
+
 from tkinter import messagebox
 import os
 import debug_console
 
-def close_current_tab(get_current_tab, root, notebook, save_file, create_new_tab, tabs, closed_tabs_stack):
-    current_tab = get_current_tab()
+def close_current_tab(get_current_tab_callback, root_window, notebook_widget, save_file_callback, create_new_tab_callback, open_tabs_dict, closed_tabs_stack):
+    """
+    Closes the currently active editor tab.
+
+    If the tab has unsaved changes, it prompts the user to save, discard, or cancel.
+    Successfully closed tabs (with their file paths) are added to a stack for potential restoration.
+
+    Args:
+        get_current_tab_callback (callable): Function to get the current active tab.
+        root_window (tk.Tk): The main application root window.
+        notebook_widget (ttk.Notebook): The notebook widget managing the tabs.
+        save_file_callback (callable): Function to save the current file.
+        create_new_tab_callback (callable): Function to create a new tab.
+        open_tabs_dict (dict): Dictionary mapping tab IDs to EditorTab instances.
+        closed_tabs_stack (list): List acting as a stack for recently closed tab file paths.
+    """
+    current_tab = get_current_tab_callback()
     if not current_tab:
+        debug_console.log("No active tab to close.", level='INFO')
         return
         
-    tab_name = os.path.basename(current_tab.file_path) if current_tab.file_path else "Untitled"
-    debug_console.log(f"Close tab requested for: '{tab_name}'", level='ACTION')
+    tab_display_name = os.path.basename(current_tab.file_path) if current_tab.file_path else "Untitled"
+    debug_console.log(f"Close tab requested for: '{tab_display_name}'", level='ACTION')
 
+    # Check if the current tab has unsaved changes.
     if current_tab.is_dirty():
-        debug_console.log(f"Tab '{tab_name}' is dirty. Prompting user to save.", level='INFO')
+        debug_console.log(f"Tab '{tab_display_name}' has unsaved changes. Prompting user.", level='INFO')
         response = messagebox.askyesnocancel(
             "Unsaved Changes",
-            f"The file '{tab_name}' has unsaved changes. Do you want to save before closing it?",
-            parent=root
+            f"The file '{tab_display_name}' has unsaved changes. Do you want to save before closing it?",
+            parent=root_window
         )
         if response is True:
             debug_console.log("User chose to SAVE before closing tab.", level='ACTION')
-            if not save_file():
-                debug_console.log("Save was cancelled. Aborting tab close.", level='INFO')
-                return # Abort close if save fails/is cancelled
-        elif response is None:
+            if not save_file_callback(): # Attempt to save the file.
+                debug_console.log("Save operation was cancelled or failed. Aborting tab close.", level='INFO')
+                return # Abort closing the tab if saving fails or is cancelled.
+        elif response is None: # User clicked 'Cancel'.
             debug_console.log("User CANCELLED the tab close operation.", level='ACTION')
             return
-        else: # False
+        else: # response is False (User chose 'No' to save).
             debug_console.log("User chose NOT to save before closing tab.", level='ACTION')
 
-    # Add to restore stack before forgetting the tab
+    # Add the file path to the closed tabs stack for potential restoration.
     if closed_tabs_stack is not None:
         closed_tabs_stack.append(current_tab.file_path)
-        if len(closed_tabs_stack) > 10: # Keep stack size reasonable
-            closed_tabs_stack.pop(0)
-        debug_console.log(f"Added '{current_tab.file_path}' to closed tab stack.", level='DEBUG')
+        # Keep the stack size reasonable to prevent excessive memory usage.
+        if len(closed_tabs_stack) > 10: 
+            closed_tabs_stack.pop(0) # Remove the oldest entry if stack exceeds limit.
+        debug_console.log(f"Added '{current_tab.file_path}' to closed tab stack for restoration.", level='DEBUG')
 
-    tab_id = notebook.select()
-    notebook.forget(tab_id)
-    del tabs[tab_id]
-    debug_console.log(f"Tab '{tab_name}' closed and removed.", level='INFO')
+    # Get the ID of the tab to be closed and remove it from the notebook.
+    tab_id_to_close = notebook_widget.select()
+    notebook_widget.forget(tab_id_to_close)
+    # Remove the tab instance from the global dictionary of open tabs.
+    del open_tabs_dict[tab_id_to_close]
+    debug_console.log(f"Tab '{tab_display_name}' successfully closed and removed from notebook.", level='INFO')
     
-    if not tabs:
-        debug_console.log("No tabs remaining, creating a new 'Untitled' tab.", level='INFO')
-        create_new_tab()
+    # If no tabs remain open, create a new default 'Untitled' tab.
+    if not open_tabs_dict:
+        debug_console.log("No tabs remaining. Creating a new 'Untitled' tab automatically.", level='INFO')
+        create_new_tab_callback()
 
-def create_new_tab(file_path, notebook, tabs, apply_theme, current_theme, on_tab_changed, EditorTab, schedule_heavy_updates):
-    # Check if file is already open
+def create_new_tab(file_path, notebook_widget, open_tabs_dict, apply_theme_callback, current_theme_name, on_tab_changed_callback, EditorTab_class, schedule_heavy_updates_callback):
+    """
+    Creates and adds a new editor tab to the notebook.
+
+    If the specified file is already open in another tab, it switches to that tab.
+    Otherwise, a new `EditorTab` instance is created, loaded with content (either
+    from the specified file or a template), and added to the notebook.
+
+    Args:
+        file_path (str): The absolute path to the file to open in the new tab. Can be None for a new untitled file.
+        notebook_widget (ttk.Notebook): The notebook widget to add the new tab to.
+        open_tabs_dict (dict): Dictionary mapping tab IDs to EditorTab instances.
+        apply_theme_callback (callable): Function to apply the current theme to new widgets.
+        current_theme_name (str): The name of the currently active theme.
+        on_tab_changed_callback (callable): Function to call when the tab selection changes.
+        EditorTab_class (class): The EditorTab class to instantiate for new tabs.
+        schedule_heavy_updates_callback (callable): Function to schedule heavy updates for the editor.
+    """
+    # Check if the file is already open in an existing tab.
     if file_path:
-        for tab in tabs.values():
+        for tab in open_tabs_dict.values():
             if tab.file_path == file_path:
-                debug_console.log(f"File '{file_path}' is already open. Switching to its tab.", level='INFO')
-                notebook.select(tab)
+                debug_console.log(f"File '{file_path}' is already open. Switching to existing tab.", level='INFO')
+                notebook_widget.select(tab) # Select the existing tab.
                 return
     
-    tab_name = os.path.basename(file_path) if file_path else "Untitled"
-    debug_console.log(f"Creating new tab for: '{tab_name}'", level='INFO')
-    new_tab = EditorTab(notebook, file_path=file_path, schedule_heavy_updates_callback=schedule_heavy_updates)
+    tab_display_name = os.path.basename(file_path) if file_path else "Untitled"
+    debug_console.log(f"Creating new editor tab for: '{tab_display_name}'", level='INFO')
     
-    # CORRECTED: Add the tab to the notebook first, so it is "managed".
-    notebook.add(new_tab, text=tab_name)
+    # Create a new EditorTab instance.
+    new_tab = EditorTab_class(notebook_widget, file_path=file_path, schedule_heavy_updates_callback=schedule_heavy_updates_callback)
     
-    # Now, load the content. The call to update_tab_title() inside load_file() will work correctly.
+    # Add the new tab to the notebook. It's crucial to add it before loading content
+    # so that `new_tab.update_tab_title()` can correctly interact with the notebook.
+    notebook_widget.add(new_tab, text=tab_display_name)
+    
+    # Load content into the new tab (from file or template).
     new_tab.load_file() 
     
-    notebook.select(new_tab)
-    tabs[str(new_tab)] = new_tab
-    apply_theme(current_theme) # Apply theme to the new tab's widgets
-    on_tab_changed()
-    debug_console.log(f"Tab for '{tab_name}' created and loaded successfully.", level='SUCCESS')
+    # Select the newly created tab to make it active.
+    notebook_widget.select(new_tab)
+    # Store the new tab instance in the global dictionary, using its string representation as key.
+    open_tabs_dict[str(new_tab)] = new_tab
+    
+    # Apply the current theme to the new tab's widgets to ensure visual consistency.
+    apply_theme_callback(current_theme_name) 
+    # Trigger the tab changed callback to update UI elements dependent on the active tab.
+    on_tab_changed_callback()
+    debug_console.log(f"Tab for '{tab_display_name}' created and loaded successfully.", level='SUCCESS')

@@ -1,9 +1,28 @@
+"""
+This module manages the application's visual themes, providing functions to retrieve
+color settings for different themes and to apply a chosen theme to all relevant
+GUI components, including editor elements and custom widgets.
+"""
+
 import sv_ttk
 import tkinter as tk
 from tkinter.font import Font
 
 def get_theme_colors(theme_name):
-    """Returns a dictionary of colors for a given theme name."""
+    """
+    Returns a dictionary of color settings for a specified theme.
+
+    This function defines the color palette for 'light' and 'dark' themes,
+    including colors for background, foreground, selections, editor elements,
+    syntax highlighting, line numbers, and LLM-generated text.
+
+    Args:
+        theme_name (str): The name of the theme to retrieve colors for (e.g., "light", "dark").
+
+    Returns:
+        dict: A dictionary where keys are color roles (e.g., "root_bg", "editor_fg")
+              and values are hexadecimal color codes. Defaults to 'light' theme colors.
+    """
     if theme_name == "light":
         return {
             "root_bg": "#fdfdfd", "fg_color": "#000000",
@@ -24,46 +43,74 @@ def get_theme_colors(theme_name):
             "panedwindow_sash": "#333333",
             "llm_generated_bg": "#3a3a3a", "llm_generated_fg": "#d4d4d4",
         }
-    return get_theme_colors("light") # Default fallback
+    # Fallback to light theme if an unknown theme name is provided.
+    return get_theme_colors("light") 
 
-def apply_theme(theme_name, root, main_pane, tabs, perform_heavy_updates):
-    """Applies the specified theme and returns the new theme name and settings."""
-    # Set the theme using sv_ttk
+def apply_theme(theme_name, root_window, main_paned_window, open_tabs_dict, perform_heavy_updates_callback):
+    """
+    Applies the specified theme to the entire application's GUI.
+
+    This function sets the base theme using `sv_ttk`, retrieves the corresponding
+    color settings, and then iteratively applies these colors to various Tkinter
+    widgets, including the root window, paned window, and all active editor tabs.
+    It also reconfigures syntax highlighting tags with the new theme colors.
+
+    Args:
+        theme_name (str): The name of the theme to apply (e.g., "light", "dark").
+        root_window (tk.Tk): The main Tkinter application window.
+        main_paned_window (tk.PanedWindow): The main paned window widget.
+        open_tabs_dict (dict): A dictionary mapping tab IDs to EditorTab instances.
+        perform_heavy_updates_callback (callable): A callback function to trigger
+                                                  a re-render of editor content (e.g., syntax highlighting).
+
+    Returns:
+        tuple: A tuple containing the applied theme name (str) and its settings (dict).
+    """
+    # Apply the base theme using the sv_ttk library.
     sv_ttk.set_theme(theme_name)
 
-    # Get the color settings for the chosen theme
+    # Retrieve the detailed color settings for the chosen theme.
     theme_settings = get_theme_colors(theme_name)
 
-    # --- Apply colors to non-ttk widgets ---
-    root.configure(bg=theme_settings["root_bg"])
-    if main_pane:
-        main_pane.configure(sashrelief=tk.FLAT, sashwidth=6, bg=theme_settings["panedwindow_sash"])
+    # --- Apply colors to non-ttk widgets and specific components ---
+    # Configure the background color of the root window.
+    root_window.configure(bg=theme_settings["root_bg"])
+    # Configure the main paned window's sash appearance.
+    if main_paned_window:
+        main_paned_window.configure(sashrelief=tk.FLAT, sashwidth=6, bg=theme_settings["panedwindow_sash"])
 
-    # Iterate through all open tabs and apply the theme to each editor and line number canvas
-    for tab in tabs.values():
+    # Iterate through all currently open editor tabs to apply theme settings.
+    for tab in open_tabs_dict.values():
         if tab.editor:
+            # Configure the editor's background, foreground, selection colors, and insert cursor color.
             tab.editor.configure(
                 background=theme_settings["editor_bg"], foreground=theme_settings["editor_fg"],
                 selectbackground=theme_settings["sel_bg"], selectforeground=theme_settings["sel_fg"],
                 insertbackground=theme_settings["editor_insert_bg"],
-                relief=tk.FLAT, borderwidth=0
+                relief=tk.FLAT, borderwidth=0 # Ensure flat relief and no border for consistent look.
             )
+            # Reconfigure syntax highlighting tags with the new theme colors.
             tab.editor.tag_configure("latex_command", foreground=theme_settings["command_color"], font=tab.editor_font)
             tab.editor.tag_configure("latex_brace", foreground=theme_settings["brace_color"], font=tab.editor_font)
+            
+            # Configure comment tag with italic font style.
             comment_font = tab.editor_font.copy()
             comment_font.configure(slant="italic")
             tab.editor.tag_configure("latex_comment", foreground=theme_settings["comment_color"], font=comment_font)
 
+            # Configure LLM generated text tag with italic font style and specific background/foreground.
             llm_generated_font = tab.editor_font.copy()
             llm_generated_font.configure(slant="italic")
             tab.editor.tag_configure("llm_generated_text", background=theme_settings["llm_generated_bg"], foreground=theme_settings["llm_generated_fg"], font=llm_generated_font)
 
+        # Update the line numbers canvas with the new theme colors.
         if tab.line_numbers:
             tab.line_numbers.update_theme(text_color=theme_settings["ln_text_color"], bg_color=theme_settings["ln_bg_color"])
 
-    # Trigger a heavy update to redraw syntax highlighting, etc., with new colors
-    perform_heavy_updates()
-    root.update_idletasks()
+    # Trigger a heavy update to force a redraw of editor content, ensuring all new colors are applied.
+    perform_heavy_updates_callback()
+    # Update idle tasks to ensure all pending GUI updates are processed immediately.
+    root_window.update_idletasks()
     
-    # Return the new theme name and settings to the caller
+    # Return the applied theme name and its settings for external use (e.g., by `interface.py`).
     return theme_name, theme_settings
