@@ -11,9 +11,8 @@ from tkinter.font import Font
 import os
 from tkinter import messagebox
 import llm_state
+import re
 import debug_console
-import interface_shortcuts
-
 
 class LineNumbers(tk.Canvas):
     """
@@ -141,12 +140,8 @@ class EditorTab(ttk.Frame):
         self._schedule_heavy_updates_callback = schedule_heavy_updates_callback
         self.last_saved_content = "" # Stores content of the last saved version for dirty checking.
         self.error_labels = []       # List to hold references to embedded error widgets (e.g., for missing images).
-        self.auto_pairs = {'(': ')', '{': '}', '[': ']', '"': '"', "'": "'"}
 
         self.editor_font = Font(family="Consolas", size=12) # Define the font for the editor.
-
-        # Configure tags for bracket highlighting
-        self.editor.tag_configure("matching_bracket", background="#D0E0F0") # Light blue background
 
         # Create the main text editing area.
         self.editor = tk.Text(self, wrap="word", font=self.editor_font, undo=True,
@@ -180,19 +175,15 @@ class EditorTab(ttk.Frame):
         self.editor.bind("<Configure>", self.schedule_heavy_updates) # For window resizing.
         self.editor.bind("<Tab>", self._on_tab_key) # Custom Tab key handling.
         self.editor.bind("<Shift-Tab>", self._on_shift_tab_key) # Custom Shift+Tab handling.
-        self.editor.bind("<Return>", self._on_return_key)
-        self.editor.bind("<KeyPress>", self._on_key_press)
-        self.editor.bind("<ButtonRelease-1>", self._on_mouse_release) # For mouse clicks
-        self.editor.bind("<<Selection>>", self._on_selection_change) # For selection changes
-
-        interface_shortcuts.bind_editor_specific_shortcuts(self.editor)
+        self.editor.bind("<Double-Button-1>", self._on_double_click) # Custom double-click handling.
 
     def _on_tab_key(self, event=None):
         """
         Handles the Tab key press for indentation.
 
         If text is selected, it indents all selected lines. Otherwise, it inserts
-        4 spaces at the cursor position. Prevents default Tkinter tab behavior.
+        a single tab character at the cursor position. Prevents default Tkinter
+        tab behavior.
 
         Args:
             event (tk.Event, optional): The Tkinter event object. Defaults to None.
@@ -212,18 +203,16 @@ class EditorTab(ttk.Frame):
             if end_index.split('.')[1] == '0': 
                 end_line -= 1
             
-            # Insert 4 spaces at the beginning of each selected line.
+            # Insert a tab character at the beginning of each selected line.
             for line_num in range(start_line, end_line + 1):
-                self.editor.insert(f"{line_num}.0", "    ")
+                self.editor.insert(f"{line_num}.0", "\t")
             
             # Re-select the indented block.
             self.editor.tag_add("sel", f"{start_line}.0", f"{end_line+1}.0")
-            self.on_key_release()
             return "break"
         else:
-            # If no selection, just insert 4 spaces at the current cursor position.
-            self.editor.insert(tk.INSERT, "    ")
-            self.on_key_release()
+            # If no selection, just insert a tab at the current cursor position.
+            self.editor.insert(tk.INSERT, "\t")
             return "break"
 
     def _on_shift_tab_key(self, event=None):
@@ -257,149 +246,48 @@ class EditorTab(ttk.Frame):
                 line_start_index = f"{line_num}.0"
                 line_content = self.editor.get(line_start_index, f"{line_num}.end")
                 
-                if line_content.startswith('    '):
-                    self.editor.delete(line_start_index, f"{line_start_index}+4c")
-                elif line_content.startswith('\t'):
+                if line_content.startswith('\t'):
                     self.editor.delete(line_start_index, f"{line_start_index}+1c")
-
+                elif line_content.startswith('    '):
+                    self.editor.delete(line_start_index, f"{line_start_index}+4c")
+            
             # Re-select the outdented block.
             self.editor.tag_add("sel", f"{start_line}.0", f"{end_line+1}.0")
-            self.on_key_release()
             return "break"
         return "break" # Prevent focus change even with no selection.
 
-    def _on_return_key(self, event=None):
+    def _on_double_click(self, event):
         """
-        Handles the Enter key press for auto-indentation.
-
-        Inserts a newline and then adds the same indentation as the previous line.
-
-        Returns:
-            str: "break" to stop further event propagation.
+        Handles double-click events to place the cursor inside LaTeX command braces.
         """
-        # Get the current line and its indentation
-        cursor_index = self.editor.index(tk.INSERT)
-        current_line_number = int(cursor_index.split('.')[0])
-        current_line_content = self.editor.get(f"{current_line_number}.0", f"{current_line_number}.end")
+        # Get the index of the character under the mouse click.
+        index = self.editor.index(f"@{event.x},{event.y}")
+        line_content = self.editor.get(f"{index.split('.')[0]}.0", f"{index.split('.')[0]}.end")
+        char_index_in_line = int(index.split('.')[1])
+
+        # Regex to find LaTeX commands with curly braces, e.g., \\command{content}
+        # It captures the content inside the braces.
+        # We need to find the match that contains the double-clicked character.
         
-        indentation = ""
-        for char in current_line_content:
-            if char in " \t":
-                indentation += char
-            else:
-                break
+        # Find all matches on the current line
+        matches = list(re.finditer(r"\w+\*?(?:\\[[^\]]*\\])?{([^}]*)}", line_content))
 
-        # Get the text after the cursor
-        text_after_cursor = self.editor.get(cursor_index, f"{current_line_number}.end")
-        
-        # Delete the text after the cursor
-        self.editor.delete(cursor_index, f"{current_line_number}.end")
-
-        # Insert a newline, the indentation and the text after the cursor
-        self.editor.insert(tk.INSERT, f"\n{indentation}{text_after_cursor}")
-        
-        self.on_key_release()
-        return "break"
-
-    def _on_key_press(self, event=None):
-        """
-        Handles key presses for auto-pairing of brackets and quotes.
-        """
-        if not event.char or not event.char.isprintable():
-            return
-
-        char = event.char
-        if char in self.auto_pairs:
-            # If text is selected, wrap it
-            if self.editor.tag_ranges("sel"):
-                start, end = self.editor.index("sel.first"), self.editor.index("sel.last")
-                selected_text = self.editor.get(start, end)
+        for match in matches:
+            # Check if the double-clicked character is within the bounds of the command's braces.
+            # We want to place the cursor at the start of the content inside the braces.
+            if match.start(1) <= char_index_in_line <= match.end(1):
+                # Calculate the absolute indices in the editor for the start and end of the content.
+                content_start_abs_index = f"{index.split('.')[0]}.{match.start(1)}"
+                content_end_abs_index = f"{index.split('.')[0]}.{match.end(1)}"
                 
-                # Special case for quotes: if text is already quoted, unwrap it
-                if char in "'\"" and selected_text.startswith(char) and selected_text.endswith(char):
-                    self.editor.delete(start, end)
-                    self.editor.insert(start, selected_text[1:-1])
-                    return "break"
-
-                self.editor.delete(start, end)
-                self.editor.insert(start, char + selected_text + self.auto_pairs[char])
-                return "break"
-            else:
-                # Otherwise, insert the pair and move the cursor between them
-                cursor_pos = self.editor.index(tk.INSERT)
-                self.editor.insert(cursor_pos, char + self.auto_pairs[char])
-                self.editor.mark_set(tk.INSERT, f"{cursor_pos}+{len(char)}c")
-                return "break"
+                self.editor.tag_remove("sel", "1.0", tk.END) # Clear any existing selection
+                self.editor.tag_add("sel", content_start_abs_index, content_end_abs_index)
+                self.editor.mark_set("insert", content_start_abs_index) # Place cursor at the start of selection
+                self.editor.see(content_start_abs_index)
+                return "break" # Stop default double-click behavior (word selection).
         
-        # Handle typing a closing character when one is already present
-        if char in self.auto_pairs.values():
-            cursor_pos = self.editor.index(tk.INSERT)
-            next_char = self.editor.get(cursor_pos, f"{cursor_pos}+1c")
-            if char == next_char:
-                self.editor.mark_set(tk.INSERT, f"{cursor_pos}+1c")
-                return "break"
-        
-        self.on_key_release()
-
-    def _on_mouse_release(self, event=None):
-        self._highlight_matching_bracket()
-
-    def _on_selection_change(self, event=None):
-        self._highlight_matching_bracket()
-
-    def _highlight_matching_bracket(self):
-        self.editor.tag_remove("matching_bracket", "1.0", tk.END)
-        
-        cursor_pos = self.editor.index(tk.INSERT)
-        char_before = self.editor.get(f"{cursor_pos}-1c", cursor_pos)
-        char_after = self.editor.get(cursor_pos, f"{cursor_pos}+1c")
-
-        brackets = {'(': ')', '{': '}', '[': ']', ')': '(', '}': '{', ']': '['}
-
-        if char_before in brackets:
-            target_char = char_before
-            start_index = f"{cursor_pos}-1c"
-            direction = tk.BACKWARD
-        elif char_after in brackets:
-            target_char = char_after
-            start_index = cursor_pos
-            direction = tk.FORWARD
-        else:
-            return
-
-        # Find the matching bracket
-        count = 0
-        found_match = False
-        search_index = start_index
-
-        while True:
-            search_index = self.editor.search(target_char, search_index, stopindex=tk.END if direction == tk.FORWARD else "1.0", backwards=(direction == tk.BACKWARD), regexp=False)
-            if not search_index:
-                break
-
-            current_char = self.editor.get(search_index)
-            if current_char == target_char:
-                count += 1
-            elif current_char == brackets[target_char]:
-                count -= 1
-            
-            if count == 0:
-                self.editor.tag_add("matching_bracket", start_index, f"{start_index}+1c")
-                self.editor.tag_add("matching_bracket", search_index, f"{search_index}+1c")
-                found_match = True
-                break
-            
-            if direction == tk.FORWARD:
-                search_index = f"{search_index}+1c"
-            else:
-                search_index = f"{search_index}-1c"
-        
-        if not found_match:
-            # If no match found, highlight only the single bracket under or next to cursor
-            if char_before in brackets:
-                self.editor.tag_add("matching_bracket", f"{cursor_pos}-1c", cursor_pos)
-            elif char_after in brackets:
-                self.editor.tag_add("matching_bracket", cursor_pos, f"{cursor_pos}+1c")
+        # If no LaTeX command with braces was double-clicked, allow default behavior.
+        return None
 
     def on_key_release(self, event=None):
         """
@@ -413,7 +301,6 @@ class EditorTab(ttk.Frame):
         """
         self.update_tab_title() # Update the tab title to show if the file is modified.
         self.schedule_heavy_updates(event) # Trigger a debounced update for heavy operations.
-        self._highlight_matching_bracket() # Update bracket highlighting on key release.
 
     def schedule_heavy_updates(self, event=None):
         """
