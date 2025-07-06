@@ -60,7 +60,7 @@ def update_outline_tree(editor):
         for level, cmd in enumerate(["section", "subsection", "subsubsection"], 1):
             # Regular expression to match LaTeX section commands and capture their titles.
             # It handles starred versions (e.g., \section*) and optional arguments (e.g., \[title\]).
-            match = re.match(rf"\\{cmd}\*?(?:\\[[^\]]*\])?{{([^}}]*)}}", stripped_line)
+            match = re.match(rf"\\{cmd}\*?(?:\\[[^\]]*\])?{{([^}}]*)}} Tusen", stripped_line)
             if match:
                 title = match.group(1).strip() # Extract the section title.
                 # Determine the parent node for the current section level.
@@ -165,7 +165,7 @@ def apply_syntax_highlighting(editor):
     # --- 2. Check for Missing \includegraphics Files ---
     if isinstance(current_tab, EditorTab):
         # Regex to find \includegraphics commands and capture the image path.
-        image_inclusion_pattern = re.compile(r"\\includegraphics(?:\\[.*?\\])?{{(.*?)}}")
+        image_inclusion_pattern = re.compile(r"\\includegraphics(?:\[.*?\])?\{(.*?)\"")
         missing_image_count = 0
         for match in image_inclusion_pattern.finditer(content):
             relative_image_path = match.group(1) # Extract the path as written in the LaTeX document.
@@ -205,7 +205,7 @@ def extract_section_structure(content, position_index):
 
     This function is used to determine the logical location within a LaTeX document
     (e.g., which section an image is being pasted into). It scans backwards from the
-    specified position to find the most recent sectioning commands.
+    specified position to find the most recent sectioning commands in a hierarchical manner.
 
     Args:
         content (str): The full text content of the LaTeX document.
@@ -215,27 +215,70 @@ def extract_section_structure(content, position_index):
         tuple: A tuple containing the current section, subsection, and subsubsection titles.
                Defaults to "default" if no specific section is found.
     """
-    # Split the content up to the cursor position into lines.
-    lines_before_cursor = content[:position_index].split("\n")
-    # Initialize section titles to default values.
-    current_section, current_subsection, current_subsubsection = "default", "default", "default"
+    # Get the content up to the cursor and split into lines
+    content_before_cursor = content[:position_index]
+    lines = content_before_cursor.split('\n')
     
-    # Iterate through lines in reverse order to find the most recent section definitions.
-    for line in lines_before_cursor:
-        if r"\\section{" in line:
-            match = re.search(r"\\section{{(.+?)}}", line)
+    # Initialize titles to "default"
+    current_section = "default"
+    current_subsection = "default"
+    current_subsubsection = "default"
+
+    # Regex to capture titles, handling optional arguments and stars
+    section_regex = re.compile(r"\\section\*?(?:\\[[^\]]*\])?{([^}]+)}")
+    subsection_regex = re.compile(r"\\subsection\*?(?:\\[[^\]]*\])?{([^}]+)}")
+    subsubsection_regex = re.compile(r"\\subsubsection\*?(?:\\[[^\]]*\])?{([^}]+)}")
+
+    # Iterate backwards through the lines to find the most recent section commands
+    for line in reversed(lines):
+        # Once a section is found, we don't need to look for sections in earlier lines
+        if current_section == "default":
+            match = section_regex.search(line)
             if match:
-                # When a new section is found, reset subsection and subsubsection.
-                current_section, current_subsection, current_subsubsection = match.group(1).strip(), "default", "default"
-        elif r"\\subsection{" in line:
-            match = re.search(r"\\subsection{{(.+?)}}", line)
+                current_section = match.group(1).strip()
+
+        # Once a subsection is found, we don't need to look for subsections in earlier lines
+        if current_subsection == "default":
+            match = subsection_regex.search(line)
             if match:
-                # When a new subsection is found, reset subsubsection.
-                current_subsection, current_subsubsection = match.group(1).strip(), "default"
-        elif r"\\subsubsection{" in line:
-            match = re.search(r"\\subsubsection{{(.+?)}}", line)
+                current_subsection = match.group(1).strip()
+
+        # Once a subsubsection is found, we don't need to look for them in earlier lines
+        if current_subsubsection == "default":
+            match = subsubsection_regex.search(line)
             if match:
                 current_subsubsection = match.group(1).strip()
+
+    # Hierarchical reset: if a \section is found, reset deeper levels found *before* it.
+    # This logic is complex when iterating backwards. A forward pass is more reliable.
+    # Let's re-do this with a forward pass for reliability.
+
+    # Reset titles
+    current_section, current_subsection, current_subsubsection = "default", "default", "default"
+
+    for line in lines:
+        # Match \section
+        match = section_regex.search(line)
+        if match:
+            current_section = match.group(1).strip()
+            # When a new section starts, reset subsection and subsubsection
+            current_subsection = "default"
+            current_subsubsection = "default"
+            continue # Continue to next line
+
+        # Match \subsection
+        match = subsection_regex.search(line)
+        if match:
+            current_subsection = match.group(1).strip()
+            # When a new subsection starts, reset subsubsection
+            current_subsubsection = "default"
+            continue # Continue to next line
+            
+        # Match \subsubsection
+        match = subsubsection_regex.search(line)
+        if match:
+            current_subsubsection = match.group(1).strip()
+
     return current_section, current_subsection, current_subsubsection
 
 # --- Intelligent Image Deletion Logic ---
@@ -254,7 +297,7 @@ def _parse_for_images(content):
         set: A set of unique image file paths found in the content.
     """
     # Regular expression to find \includegraphics commands and capture the path within braces.
-    image_pattern = re.compile(r"\\includegraphics(?:\\[.*?\\])?{{(.*?)}}")
+    image_pattern = re.compile(r"\\includegraphics(?:\[.*?\])?\{(.*?)\}")
     found_paths = image_pattern.findall(content)
     return set(found_paths) # Return a set to ensure uniqueness of paths.
 
@@ -280,46 +323,38 @@ def _resolve_image_path(tex_file_path, image_path_in_tex):
         # Otherwise, the base directory is where the .tex file is located.
         base_directory = os.path.dirname(tex_file_path)
     # Normalize the path to handle '..' and resolve to an absolute path.
-    absolute_path = os.path.normpath(os.path.join(base_directory, image_path_in_tex))
+    # Also, replace forward slashes with backslashes for OS compatibility if needed.
+    normalized_path = os.path.normpath(image_path_in_tex.replace("/", os.sep))
+    absolute_path = os.path.join(base_directory, normalized_path)
     return absolute_path
 
-def _cleanup_empty_dirs(path):
+def _cleanup_empty_dirs(path, base_figures_dir):
     """
-    Recursively deletes empty directories upwards from the given path, specifically within the 'figures' structure.
+    Recursively deletes empty directories upwards from the given path, stopping at the base 'figures' directory.
 
     This function is called after an image file has been deleted. It checks if the parent
-    directories within the 'figures' structure have become empty and, if so, deletes them
-    recursively until a non-empty directory or the 'figures' root is reached.
+    directories have become empty and, if so, deletes them recursively until a non-empty
+    directory or the specified base 'figures' directory is reached.
 
     Args:
         path (str): The starting path (typically the directory of the deleted image).
+        base_figures_dir (str): The root 'figures' directory, beyond which cleanup should not proceed.
     """
-    try:
-        # Attempt to find the 'figures' root in the path to limit cleanup scope.
-        figures_root_parts = path.split("figures")
-        if len(figures_root_parts) < 2: 
-            debug_console.log(f"Path '{path}' does not contain 'figures' directory for cleanup.", level='DEBUG')
-            return
-        # Reconstruct the absolute path to the 'figures' root.
-        figures_root = os.path.join(figures_root_parts[0], "figures")
-        
-        current_path = path
-        # Loop upwards as long as the current path is within the figures root and is a directory.
-        while current_path.startswith(figures_root) and os.path.isdir(current_path) and current_path != figures_root:
-            # Check if the directory is empty.
-            if not os.listdir(current_path):
-                try:
-                    os.rmdir(current_path) # Delete the empty directory.
-                    debug_console.log(f"Removed empty directory: {current_path}", level='INFO')
-                    current_path = os.path.dirname(current_path) # Move up to the parent directory.
-                except OSError as e:
-                    debug_console.log(f"Failed to remove directory '{current_path}': {e}", level='ERROR')
-                    break # Stop if an error occurs during deletion.
-            else:
-                break # Stop if the directory is not empty.
-    except (IndexError, AttributeError) as e:
-        debug_console.log(f"Error during empty directory cleanup for '{path}': {e}", level='ERROR')
+    current_path = os.path.normpath(path)
+    base_figures_dir = os.path.normpath(base_figures_dir)
 
+    # Loop upwards as long as the current path is within the base_figures_dir and is a directory.
+    while current_path.startswith(base_figures_dir) and os.path.isdir(current_path) and current_path != base_figures_dir:
+        if not os.listdir(current_path):
+            try:
+                os.rmdir(current_path)
+                debug_console.log(f"Removed empty directory: {current_path}", level='INFO')
+                current_path = os.path.dirname(current_path)
+            except OSError as e:
+                debug_console.log(f"Failed to remove directory '{current_path}': {e}", level='ERROR')
+                break # Stop if an error occurs.
+        else:
+            break # Stop if the directory is not empty.
 
 def _prompt_for_image_deletion(image_path_to_delete, tex_file_path):
     """
@@ -337,12 +372,10 @@ def _prompt_for_image_deletion(image_path_to_delete, tex_file_path):
         debug_console.log(f"Image file '{image_path_to_delete}' does not exist, skipping deletion prompt.", level='INFO')
         return
     
-    # Determine the base directory for displaying a relative path to the user.
     base_directory = os.path.dirname(tex_file_path) if tex_file_path else os.getcwd()
     display_path = os.path.relpath(image_path_to_delete, base_directory)
     debug_console.log(f"Prompting user for deletion of image file: {display_path}", level='ACTION')
     
-    # Show a confirmation dialog to the user.
     response = messagebox.askyesno(
         "Delete Associated Image File?",
         f"The reference to the following image file has been removed from your document:\n\n'{display_path}'\n\nDo you want to permanently delete the file itself?",
@@ -351,12 +384,15 @@ def _prompt_for_image_deletion(image_path_to_delete, tex_file_path):
     if response:
         debug_console.log(f"User confirmed deletion of file: {image_path_to_delete}", level='ACTION')
         try:
-            os.remove(image_path_to_delete) # Perform the file deletion.
+            image_dir = os.path.dirname(image_path_to_delete)
+            os.remove(image_path_to_delete)
             debug_console.log(f"Image file successfully deleted: {image_path_to_delete}", level='SUCCESS')
-            # Attempt to clean up any empty parent directories.
-            _cleanup_empty_dirs(os.path.dirname(image_path_to_delete))
+            
+            # Define the base 'figures' directory to stop cleanup
+            base_figures_dir = os.path.join(base_directory, 'figures')
+            _cleanup_empty_dirs(image_dir, base_figures_dir)
         except OSError as e:
-            message_box.showerror("Deletion Error", f"Could not delete the file:\n{e}")
+            messagebox.showerror("Deletion Error", f"Could not delete the file:\n{e}")
             debug_console.log(f"Error deleting file '{image_path_to_delete}': {e}", level='ERROR')
     else:
         debug_console.log(f"User chose not to delete file: {image_path_to_delete}", level='INFO')
@@ -374,31 +410,23 @@ def check_for_deleted_images(current_tab):
         current_tab (EditorTab): The current active editor tab containing the document.
     """
     debug_console.log("Initiating check for deleted image references on document save.", level='INFO')
-    # Only proceed if there's an active tab and the document has been modified.
     if not current_tab or not current_tab.is_dirty():
         debug_console.log("Skipping image deletion check: No active tab or document is not dirty.", level='DEBUG')
         return
     
     last_saved_content = current_tab.last_saved_content
-    # If the last saved content was empty, there are no images to compare against.
     if not last_saved_content or last_saved_content.strip() == "":
         debug_console.log("Skipping image deletion check: Last saved content is empty.", level='DEBUG')
         return
     
-    # Parse image paths from the last saved version of the document.
     old_image_paths = _parse_for_images(last_saved_content)
-    # Get the current content of the editor.
     current_document_content = current_tab.get_content()
-    # Parse image paths from the current version of the document.
     new_image_paths = _parse_for_images(current_document_content)
     
-    # Identify image paths that were present in the old content but are missing in the new content.
     deleted_image_paths_relative = old_image_paths - new_image_paths
     
     if deleted_image_paths_relative:
         debug_console.log(f"Found {len(deleted_image_paths_relative)} deleted image reference(s). Prompting user for file deletion.", level='DEBUG')
         for relative_path in deleted_image_paths_relative:
-            # Resolve the relative path to an absolute path for file system operations.
             absolute_path_to_delete = _resolve_image_path(current_tab.file_path, relative_path)
-            # Prompt the user for confirmation before deleting the actual file.
             _prompt_for_image_deletion(absolute_path_to_delete, current_tab.file_path)
