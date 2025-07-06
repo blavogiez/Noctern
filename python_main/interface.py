@@ -26,6 +26,7 @@ import latex_translator
 import editor_wordcount
 import os
 import sys
+import json
 import debug_console
 
 # --- Global UI Component References ---
@@ -61,6 +62,7 @@ _temporary_status_active = False  # Flag indicating if a temporary status messag
 _temporary_status_timer_id = None  # ID for the temporary status message timer.
 _closed_tabs_stack = []  # Stack to store file paths of recently closed tabs for restoration.
 _close_button_pressed_on_tab = None  # Tracks which tab's close button was pressed.
+SESSION_STATE_FILE = ".session_state.json" # File to store session state
 
 def perform_heavy_updates():
     """
@@ -240,6 +242,43 @@ def clear_temporary_status_message():
         status_label.config(text="...") # Default status if no tab is active.
     interface_statusbar.clear_temporary_status_message()
 
+def save_session():
+    """
+    Saves the current session state, specifically the paths of open files.
+    """
+    open_files = [tab.file_path for tab in tabs.values() if tab.file_path and os.path.exists(tab.file_path)]
+    try:
+        with open(SESSION_STATE_FILE, "w") as f:
+            json.dump({"open_files": open_files}, f)
+        debug_console.log(f"Session state saved to {SESSION_STATE_FILE}", level='INFO')
+    except Exception as e:
+        debug_console.log(f"Error saving session state: {e}", level='ERROR')
+
+def load_session():
+    """
+    Loads the last session state, reopening previously opened files.
+    """
+    try:
+        if os.path.exists(SESSION_STATE_FILE):
+            with open(SESSION_STATE_FILE, "r") as f:
+                state = json.load(f)
+                open_files = state.get("open_files", [])
+                if open_files:
+                    for file_path in open_files:
+                        if os.path.exists(file_path):
+                            create_new_tab(file_path)
+                        else:
+                            debug_console.log(f"File not found, not reopening: {file_path}", level='WARNING')
+                    if not notebook.tabs(): # If all files were not found
+                        create_new_tab(None)
+                else:
+                    create_new_tab(None) # No files in session, open an empty tab
+        else:
+            create_new_tab(None) # No session file, open an empty tab
+    except Exception as e:
+        debug_console.log(f"Error loading session state: {e}", level='ERROR')
+        create_new_tab(None) # Fallback to an empty tab on error
+
 def on_close_request():
     """
     Handles the application close request, prompting the user to save unsaved changes.
@@ -269,15 +308,18 @@ def on_close_request():
                     all_saved = False
                     break # Stop if any save operation fails.
             if all_saved:
+                save_session()
                 root.destroy() # Close the application if all files were saved.
         elif response is False:
             debug_console.log("User chose NOT to save files. Closing application.", level='ACTION')
+            save_session()
             root.destroy() # Close the application without saving.
         else:
             debug_console.log("User CANCELLED the close request.", level='ACTION')
             # Do nothing, application remains open.
     else:
         debug_console.log("No unsaved changes. Closing application.", level='INFO')
+        save_session()
         root.destroy() # Close the application directly if no unsaved changes.
 
 def close_tab_by_id(tab_id):
@@ -479,7 +521,7 @@ def _configure_notebook_style_and_events():
         # These colors are dynamically set based on the current theme.
         style.map("TNotebook.close",
             foreground=[('active', '#e81123'), ('!active', 'grey')], # Red on hover, grey otherwise.
-            background=[('active', get_theme_setting("llm_generated_bg"))] # Background color on hover.
+            background=[('active', get_theme_setting("llm_generated_bg"))]
         )
         
         # Modify the default layout of a notebook tab to include our new 'close' element.
@@ -594,7 +636,7 @@ def setup_gui():
     
     bind_shortcuts(root) # Bind global keyboard shortcuts.
     
-    create_new_tab(None) # Create an initial empty tab on startup.
+    load_session() # Load the previous session or create a new tab.
     
     # Set the protocol for handling the window close button.
     root.protocol("WM_DELETE_WINDOW", on_close_request)
