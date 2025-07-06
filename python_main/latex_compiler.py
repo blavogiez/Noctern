@@ -1,4 +1,3 @@
-
 """
 This module provides functionalities for compiling LaTeX documents, running static analysis
 with `chktex`, cleaning auxiliary files, and displaying the generated PDF.
@@ -13,6 +12,7 @@ import tkinter as tk
 from tkinter import messagebox
 import interface
 import debug_console
+import latex_parser
 
 # Global reference to the root Tkinter window, initialized during application setup.
 root = None
@@ -174,6 +174,12 @@ def compile_latex(event=None):
     current_tab = interface.get_current_tab()
     if not current_tab:
         debug_console.log("LaTeX compilation aborted: No active editor tab.", level='WARNING')
+        return
+
+    # Check for bracket mismatches before compiling
+    if not latex_parser.check_and_fix_brackets(current_tab.editor):
+        debug_console.log("Compilation aborted due to bracket mismatch or user rejection.", level='INFO')
+        messagebox.showinfo("Compilation Cancelled", "Compilation was cancelled because of unresolved bracket errors.")
         return
     
     editor_content = current_tab.editor.get("1.0", tk.END)

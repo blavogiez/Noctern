@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.25 (MiKTeX 24.1) (preloaded format=pdflatex 2025.5.18)  6 JUL 2025 12:31
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (MiKTeX 24.1) (preloaded format=pdflatex 2025.5.18)  6 JUL 2025 17:18
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -173,8 +173,11 @@ x.def
 File: l3backend-pdftex.def 2024-01-04 L3 backend support: PDF output (pdfTeX)
 \l__color_backend_stack_int=\count280
 \l__pdf_internal_box=\box53
+) (recipe.aux
+
+LaTeX Warning: Label `tab:my_label' multiply defined.
+
 )
-No file recipe.aux.
 \openout1 = `recipe.aux'.
 
 LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 49.
@@ -220,65 +223,49 @@ LaTeX Info: Redefining \up on input line 49.
 \c@lstlisting=\count287
 Package caption Info: Begin \AtBeginDocument code.
 Package caption Info: End \AtBeginDocument code.
-<figures/code_java/default/default/fig_1.png, id=1, 567.11874pt x 536.0025pt>
-File: figures/code_java/default/default/fig_1.png Graphic file (type png)
-<use figures/code_java/default/default/fig_1.png>
-Package pdftex.def Info: figures/code_java/default/default/fig_1.png  used on i
-nput line 80.
-(pdftex.def)             Requested size: 276.00105pt x 260.86055pt.
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <7> on input line 90.
+(Font)              <7> on input line 91.
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <5> on input line 90.
+(Font)              <5> on input line 91.
  (C:\Users\lab\AppData\Local\Programs\MiKTeX\tex/latex/listings\lstlang1.sty
 File: lstlang1.sty 2023/02/27 1.9 listings language file
 )
 LaTeX Font Info:    Trying to load font information for T1+cmtt on input line 9
-4.
+5.
 (C:\Users\lab\AppData\Local\Programs\MiKTeX\tex/latex/base\t1cmtt.fd
 File: t1cmtt.fd 2023/04/13 v2.5m Standard LaTeX font definitions
 ) [1
 
-{C:/Users/lab/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map} <./figures/code
-_java/default/default/fig_1.png>]
-
-LaTeX Warning: Reference `lst:hello_java' on page 2 undefined on input line 117
-.
-
-[2] (recipe.aux)
+{C:/Users/lab/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map}] (recipe.aux)
  ***********
 LaTeX2e <2023-11-01> patch level 1
 L3 programming layer <2024-01-04>
  ***********
 
 
-LaTeX Warning: There were undefined references.
-
-
-LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
+LaTeX Warning: There were multiply-defined labels.
 
  ) 
 Here is how much of TeX's memory you used:
- 7056 strings out of 474485
- 117743 string characters out of 5744678
- 1963542 words of memory out of 5000000
- 29321 multiletter control sequences out of 15000+600000
- 566210 words of font info for 48 fonts, out of 8000000 for 9000
+ 7045 strings out of 474485
+ 117360 string characters out of 5744678
+ 1977542 words of memory out of 5000000
+ 29309 multiletter control sequences out of 15000+600000
+ 565434 words of font info for 47 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 57i,8n,65p,484b,1743s stack positions out of 10000i,1000n,20000p,200000b,200000s
- <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\ecbx10
+ 57i,9n,65p,484b,1254s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\ecxc09
 00.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\ec
-tt0800.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi60
-0\ecrm0500.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/d
-pi600\ecrm0900.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/
-ec/dpi600\ecbx0900.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknap
-pen/ec/dpi600\ecxc0900.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/j
-knappen/ec/dpi600\ecrm1000.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfo
-ur/jknappen/ec/dpi600\ecbx1440.pk><C:/Users/lab/AppData/Local/Programs/MiKTeX/f
-onts/type1/public/amsfonts/cm/cmmi10.pfb>
-Output written on recipe.pdf (2 pages, 66339 bytes).
+rm0900.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi60
+0\ecbx0900.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/d
+pi600\ectt0800.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/
+ec/dpi600\ecrm0500.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/jknap
+pen/ec/dpi600\ecrm1000.pk> <C:\Users\lab\AppData\Local\MiKTeX\fonts/pk/ljfour/j
+knappen/ec/dpi600\ecbx1440.pk><C:/Users/lab/AppData/Local/Programs/MiKTeX/fonts
+/type1/public/amsfonts/cm/cmmi10.pfb>
+Output written on recipe.pdf (1 page, 60798 bytes).
 PDF statistics:
- 203 PDF objects out of 1000 (max. 8388607)
+ 187 PDF objects out of 1000 (max. 8388607)
  0 named destinations out of 1000 (max. 500000)
- 6 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 1 words of extra memory for PDF output out of 10000 (max. 10000000)
 
