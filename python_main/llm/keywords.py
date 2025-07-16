@@ -5,6 +5,7 @@ It allows users to set and update a list of keywords that can be incorporated in
 thereby influencing the LLM's generation or completion behavior.
 """
 
+from tkinter import messagebox
 from llm import state as llm_state
 from llm import dialogs as llm_dialogs
 from utils import debug_console

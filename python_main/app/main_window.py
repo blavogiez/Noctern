@@ -8,6 +8,9 @@ user interactions and global application state.
 """
 
 import tkinter as tk
+import os
+import json
+import sys
 from tkinter import ttk, messagebox
 from app import zoom as interface_zoom
 from app import statusbar as interface_statusbar

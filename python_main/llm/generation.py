@@ -9,7 +9,6 @@ from llm import state as llm_state
 from llm import dialogs as llm_dialogs
 from llm import utils as llm_utils
 from llm import api_client as llm_api_client
-from app import main_window as interface
 from utils import debug_console
 from llm.history import _add_entry_to_history_and_save, _update_history_response_and_save
 from llm.interactive import start_new_interactive_session

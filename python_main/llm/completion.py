@@ -9,7 +9,6 @@ from llm import utils as llm_utils
 from llm import api_client as llm_api_client
 import tkinter as tk
 from tkinter import messagebox
-from app import main_window as interface
 from utils import debug_console
 from llm.interactive import start_new_interactive_session
 import threading

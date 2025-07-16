@@ -11,7 +11,6 @@ import platform
 import webbrowser
 import tkinter as tk
 from tkinter import messagebox
-from app import main_window as interface
 from utils import debug_console
 
 # Global reference to the root Tkinter window, initialized during application setup.

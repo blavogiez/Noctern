@@ -3,7 +3,6 @@ from tkinter import ttk, messagebox
 import os
 import re
 from PIL import ImageGrab, Image
-from app import main_window as interface
 from editor import logic as editor_logic
 from utils import debug_console
 

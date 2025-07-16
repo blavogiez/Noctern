@@ -3,9 +3,6 @@ import re
 import os
 from tkinter import messagebox
 from PIL import ImageGrab
-
-# Import the interface module to get access to the current tab
-from app import main_window as interface
 from editor.tab import EditorTab
 from utils import debug_console
 

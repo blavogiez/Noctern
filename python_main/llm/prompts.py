@@ -4,6 +4,7 @@ It handles loading prompts specific to the current document, providing access to
 updating them, and saving them back to file. It also integrates with the prompt editing dialog.
 """
 
+from tkinter import messagebox
 from llm import state as llm_state
 from llm import prompt_manager as llm_prompt_manager
 from llm import dialogs as llm_dialogs

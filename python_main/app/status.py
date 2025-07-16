@@ -8,7 +8,6 @@ from tkinter import ttk
 import tkinter as tk
 import subprocess
 from utils import debug_console
-from app import statusbar as interface_statusbar
 
 def create_status_bar(root):
     """

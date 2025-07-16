@@ -5,10 +5,11 @@ It allows users to provide an instruction for rephrasing, sends the request to t
 and displays the rephrased text interactively in the editor.
 """
 
+import tkinter as tk
+from tkinter import messagebox
 from llm import state as llm_state
 from llm import utils as llm_utils
 from llm import api_client as llm_api_client
-from app import main_window as interface
 from llm import interactive as llm_interactive
 from utils import debug_console
 import threading

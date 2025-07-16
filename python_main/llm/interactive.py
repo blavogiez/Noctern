@@ -1,5 +1,6 @@
+import tkinter as tk
+from tkinter import messagebox
 from llm import state as llm_state
-from app import main_window as interface
 from llm import utils as llm_utils
 from utils import debug_console
 # NOTE: llm_rephrase is imported locally within functions to avoid circular dependencies

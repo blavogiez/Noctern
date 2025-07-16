@@ -6,7 +6,6 @@ It acts as a controller, orchestrating interactions between the UI (dialogs) and
 import tkinter as tk
 import re
 from utils import debug_console
-from app import main_window as interface
 from snippets import manager as snippet_manager
 from snippets.editor_dialog import SnippetEditorDialog
 
