@@ -1,0 +1,5 @@
+		SELECT sport, b1.avg_weight - b2.avg_weight AS weight_diff
+		FROM BodyMedalStats b1
+		JOIN BodyNoMedalStats b2 USING(sport)
+		WHERE b1.avg_weight - b2.avg_weight < 0
+		ORDER BY weight_diff DESC;

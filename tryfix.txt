@@ -1,1 +1,0 @@
-If the compilation failed, I want the app to try to automatically fix using the logs and using the same logic "Autofix proposition : ..."

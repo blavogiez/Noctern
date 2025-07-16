@@ -86,16 +86,16 @@ CustomScreenDPI = 0
 
 FileStates [
 	[
-		FilePath = C:\Users\lab\Documents\BUT1\AutomaTeX\python_main\sample_usage\recipe.pdf
+		FilePath = C:\Users\lab\Documents\BUT1\AutomaTeX\python_main\sample_usage\rapport\test.pdf
 		Favorites [
 		]
 		IsPinned = false
 		IsMissing = false
-		OpenCount = 9
+		OpenCount = 1
 		UseDefaultState = false
 		DisplayMode = continuous
 		ScrollPos = -1 -1
-		PageNo = 1
+		PageNo = 3
 		Zoom = fit page
 		Rotation = 0
 		WindowState = 1
@@ -106,12 +106,32 @@ FileStates [
 		ReparseIdx = 0
 	]
 	[
+		FilePath = C:\Users\lab\Documents\BUT1\AutomaTeX\python_main\sample_usage\rapport\S2-C_SAE2.04_LAVOGIEZ_Rapport-Stats.pdf
+		Favorites [
+		]
+		IsPinned = false
+		IsMissing = false
+		OpenCount = 2
+		UseDefaultState = false
+		DisplayMode = continuous
+		ScrollPos = -1 -1
+		PageNo = 31
+		Zoom = fit page
+		Rotation = 0
+		WindowState = 1
+		WindowPos = 950 0 980 1030
+		ShowToc = true
+		SidebarDx = 194
+		DisplayR2L = false
+		ReparseIdx = 0
+	]
+	[
 		FilePath = C:\Users\lab\Documents\BUT1\Semestre 2\SAé\SAE201-202\poo\rapportTools\S2-C_ZHENG_ZAVADSKIYI_LAVOGIEZ_POO-v4-rapport.pdf
 		Favorites [
 		]
 		IsPinned = false
 		IsMissing = false
-		OpenCount = 10
+		OpenCount = 3
 		UseDefaultState = false
 		DisplayMode = continuous
 		ScrollPos = -1 -1
@@ -132,10 +152,10 @@ FileStates [
 		]
 		IsPinned = false
 		IsMissing = false
-		OpenCount = 12
+		OpenCount = 4
 		UseDefaultState = false
 		DisplayMode = continuous
-		ScrollPos = -1 228.14
+		ScrollPos = -1 232.114
 		PageNo = 26
 		Zoom = 66.67
 		Rotation = 0
@@ -226,6 +246,26 @@ FileStates [
 		DisplayR2L = false
 		ReparseIdx = 0
 	]
+	[
+		FilePath = C:\Users\lab\Documents\BUT1\AutomaTeX\python_main\sample_usage\recipe.pdf
+		Favorites [
+		]
+		IsPinned = false
+		IsMissing = false
+		OpenCount = 0
+		UseDefaultState = false
+		DisplayMode = continuous
+		ScrollPos = -1 -1
+		PageNo = 1
+		Zoom = fit page
+		Rotation = 0
+		WindowState = 1
+		WindowPos = 950 0 980 1030
+		ShowToc = false
+		SidebarDx = 194
+		DisplayR2L = false
+		ReparseIdx = 0
+	]
 ]
 SessionData [
 	[
@@ -236,7 +276,7 @@ SessionData [
 				PageNo = 26
 				Zoom = 66.67
 				Rotation = 0
-				ScrollPos = -1 228.14
+				ScrollPos = -1 232.114
 				ShowToc = false
 			]
 			[
@@ -250,22 +290,31 @@ SessionData [
 				TocState = 14 26
 			]
 			[
-				FilePath = C:\Users\lab\Documents\BUT1\AutomaTeX\python_main\sample_usage\recipe.pdf
+				FilePath = C:\Users\lab\Documents\BUT1\AutomaTeX\python_main\sample_usage\rapport\S2-C_SAE2.04_LAVOGIEZ_Rapport-Stats.pdf
 				DisplayMode = continuous
-				PageNo = 1
+				PageNo = 31
+				Zoom = fit page
+				Rotation = 0
+				ScrollPos = -1 -1
+				ShowToc = true
+			]
+			[
+				FilePath = C:\Users\lab\Documents\BUT1\AutomaTeX\python_main\sample_usage\rapport\test.pdf
+				DisplayMode = continuous
+				PageNo = 3
 				Zoom = fit page
 				Rotation = 0
 				ScrollPos = -1 -1
 				ShowToc = false
 			]
 		]
-		TabIndex = 4
+		TabIndex = 5
 		WindowState = 1
 		WindowPos = 950 0 980 1030
 		SidebarDx = 194
 	]
 ]
 TimeOfLastUpdateCheck = 0 0
-OpenCountWeek = 757
+OpenCountWeek = 758
 
 # Settings below are not recognized by the current version
