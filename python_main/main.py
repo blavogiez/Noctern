@@ -8,13 +8,13 @@ import tkinter as tk
 import platform
 import ctypes
 
-import interface
-import editor_logic
-import latex_compiler
-import latex_translator
-import llm_service
-import debug_console
-import snippet_manager 
+from app import main_window as interface
+from editor import logic as editor_logic
+from latex import compiler as latex_compiler
+from latex import translator as latex_translator
+from llm import service as llm_service
+from utils import debug_console
+from snippets import manager as snippet_manager 
 
 def main():
     """
