@@ -29,6 +29,7 @@ def _load_global_default_prompts():
             "completion": "Complete this: {current_phrase_start}",
             "generation": "Generate text for this prompt: {user_prompt}",
             "generation_latex": "You are a LaTeX expert. Generate only the raw LaTeX code for the following request. Do not add any explanation or markdown. Request: {user_prompt}",
+            "rephrase": "Rephrase the following text according to the user instruction, without changing the meaning, and respecting the original language and tone.\nText to rephrase:\n\"\"\"{text}\"\"\"\nUser instruction: {instruction}\nRespond only with the rephrased text, without explanation or markdown.",
             "model_for_latex_generation": "codellama" # Default model for LaTeX-oriented generation.
         }
 

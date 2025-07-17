@@ -1,70 +1,41 @@
 """
-This module defines and manages the global state for the Large Language Model (LLM) service.
-It holds references to key UI components, configuration settings, LLM-related data (like prompts and history),
-and flags indicating the current status of LLM operations.
+This module manages the global state of the Large Language Model (LLM) service.
+It centralizes variables and references that need to be accessed by different
+parts of the LLM functionality, such as UI components, API clients, and prompt managers.
 """
 
-import os
-
-# --- UI Component References ---
-# These variables hold references to Tkinter widgets and functions from the main application
-# that the LLM service needs to interact with.
-_root_window = None  # Reference to the main Tkinter root window.
-_llm_progress_bar_widget = None  # Reference to the progress bar used during LLM generation.
-_theme_setting_getter_func = None  # Function to retrieve current theme settings (e.g., colors).
-_active_editor_getter_func = None  # Function to get the currently active Tkinter Text editor widget.
+# --- Core UI and Application References ---
+_root_window = None                  # Reference to the main Tkinter root window.
+_llm_progress_bar_widget = None      # Reference to the LLM progress bar widget.
+_theme_setting_getter_func = None    # Function to get current theme settings (e.g., colors, fonts).
+_active_editor_getter_func = None    # Function to get the currently active editor widget.
 _active_filepath_getter_func = None  # Function to get the file path of the active editor.
 
-# --- Configuration and Defaults ---
-# Determines the directory of this service module.
-_SERVICE_DIR = os.path.dirname(os.path.abspath(__file__))
-# Path to the JSON file containing default LLM prompt templates.
-DEFAULT_PROMPTS_FILE = os.path.join(_SERVICE_DIR, "default_prompts.json")
-# Dictionary to store global default prompt templates loaded from `DEFAULT_PROMPTS_FILE`.
+# --- LLM Generation State ---
+_is_generating = False  # Flag to indicate if an LLM generation is currently in progress.
+_is_generation_cancelled = False # Flag to indicate if the user has cancelled the current generation.
+
+# --- Prompt Templates and History ---
+# Holds the global default prompts loaded from the JSON file.
 _global_default_prompts = {}
+# File path for the default prompts configuration.
+DEFAULT_PROMPTS_FILE = "data/default_prompts.json"
 
-# --- LLM Data and State ---
+# Per-document state (managed by llm.history and llm.prompts modules)
+# These are loaded/saved based on the active file.
+_prompt_history_for_current_file = [] # List of (user_prompt, llm_response) tuples.
+_completion_prompt_template = ""      # Custom completion prompt for the current file.
+_generation_prompt_template = ""      # Custom generation prompt for the current file.
 
-# List of (user_prompt, llm_response) tuples, representing the history of LLM interactions.
-_prompt_history_list = []
-# The current prompt template string used for LLM text completion.
-_completion_prompt_template = ""
-# The current prompt template string used for general LLM text generation.
-_generation_prompt_template = ""
-
-# --- Interactive Session State ---
-# Stores the Tkinter Text widget range (start, end) of the currently generated LLM text.
-_generated_text_range = None
-# Boolean flag indicating whether an LLM generation process is currently active.
-_is_generating = False
-# Stores the type of the last LLM action performed (e.g., "completion", "generation", "rephrase").
+# --- Last Action State (for re-generation) ---
+# Stores the type of the last LLM action ('completion' or 'generation') to enable re-doing.
 _last_llm_action_type = None
-# Stores the starting phrase used for the last LLM completion request.
-_last_completion_phrase_start = None
-# Stores the user's prompt for the last LLM generation request.
-_last_generation_user_prompt = None
-# Stores the number of lines before the cursor used for context in the last generation request.
-_last_generation_lines_before = None
-# Stores the number of lines after the cursor used for context in the last generation request.
-_last_generation_lines_after = None
-
-def is_llm_service_initialized():
-    """
-    Checks if the essential components of the LLM service have been initialized.
-
-    This function verifies that all critical UI references and prompt templates
-    are set, indicating that the LLM service is ready to operate.
-
-    Returns:
-        bool: True if the LLM service is fully initialized, False otherwise.
-    """
-    return (
-        _root_window is not None and
-        _llm_progress_bar_widget is not None and
-        _theme_setting_getter_func is not None and
-        _active_editor_getter_func is not None and
-        _active_filepath_getter_func is not None and
-        # Ensure at least one of the prompt templates (custom or default) is available.
-        (_completion_prompt_template or (_global_default_prompts and _global_default_prompts.get("completion"))) and
-        (_generation_prompt_template or (_global_default_prompts and _global_default_prompts.get("generation")))
-    )
+# Stores the context of the last completion request.
+_last_completion_phrase_start = ""
+# Stores the context of the last generation request.
+_last_generation_context = {
+    "user_prompt": "",
+    "lines_before": 0,
+    "lines_after": 0,
+    "is_latex_mode": False
+}
