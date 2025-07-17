@@ -56,8 +56,9 @@ def update_outline_tree(editor):
         # Iterate through possible section levels (section, subsection, subsubsection).
         for level, cmd in enumerate(["section", "subsection", "subsubsection"], 1):
             # Regular expression to match LaTeX section commands and capture their titles.
-            # It handles starred versions (e.g., \section*) and optional arguments (e.g., \[title\]).
-            match = re.match(rf"\\{cmd}\*?(?:\\[[^\]]*\])?{{([^}}]*)}} Tusen", stripped_line)
+            # It handles starred versions (e.g., \section*) and optional arguments (e.g., [title]).
+            # The braces inside the character set are escaped by doubling them (e.g., [^}}]).
+            match = re.match(rf"\\{cmd}\*?(?:\\[[^\]]*\])?{{([^{{}}]*)}}", stripped_line)
             if match:
                 title = match.group(1).strip() # Extract the section title.
                 # Determine the parent node for the current section level.
