@@ -7,6 +7,7 @@ response from the LLM, integrating the generated text back into the editor.
 from llm import state as llm_state
 from llm import utils as llm_utils
 from llm import api_client as llm_api_client
+from llm import keyword_history # Import the keyword history module
 import tkinter as tk
 from tkinter import messagebox
 from utils import debug_console
@@ -23,12 +24,14 @@ def request_llm_to_complete_text():
     debug_console.log("LLM Text Completion request initiated.", level='ACTION')
     
     # Validate that essential LLM service components are initialized.
-    if not callable(llm_state._active_editor_getter_func):
-        messagebox.showerror("LLM Service Error", "LLM Service not fully initialized: Active editor getter is missing.")
-        debug_console.log("LLM Completion failed: Active editor getter function is not callable.", level='ERROR')
+    if not callable(llm_state._active_editor_getter_func) or not callable(llm_state._active_filepath_getter_func):
+        messagebox.showerror("LLM Service Error", "LLM Service not fully initialized: Active editor or filepath getter is missing.")
+        debug_console.log("LLM Completion failed: Active editor or filepath getter function is not callable.", level='ERROR')
         return
         
     editor_widget = llm_state._active_editor_getter_func()
+    active_file_path = llm_state._active_filepath_getter_func()
+
     if not editor_widget or not llm_state._root_window or not llm_state._llm_progress_bar_widget or not llm_state._theme_setting_getter_func:
         messagebox.showerror("LLM Service Error", "LLM Service not fully initialized: Missing core UI components.")
         debug_console.log("LLM Completion failed: One or more core UI components are missing.", level='ERROR')
@@ -64,11 +67,15 @@ def request_llm_to_complete_text():
     # Select the appropriate prompt template (user-defined or global default).
     prompt_template = llm_state._completion_prompt_template or llm_state._global_default_prompts.get("completion", "")
     
+    # Get keywords for the current file
+    keywords_list = keyword_history.get_keywords_for_file(active_file_path)
+    keywords_str = ", ".join(keywords_list)
+
     # Format the full LLM prompt with the extracted context and keywords.
     full_llm_prompt = prompt_template.format(
         previous_context=previous_context,
         current_phrase_start=current_phrase_start,
-        keywords=', '.join(llm_state._llm_keywords_list)
+        keywords=keywords_str
     )
     debug_console.log(f"LLM Completion Request - Formatted Prompt (first 200 chars): '{full_llm_prompt[:200]}...'", level='INFO')
 

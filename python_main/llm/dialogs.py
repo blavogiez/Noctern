@@ -221,7 +221,7 @@ def show_set_llm_keywords_dialog(root_window, theme_setting_getter_func, file_pa
     keyword_window.title(f"Keywords for {os.path.basename(file_path)}")
     keyword_window.transient(root_window)
     keyword_window.grab_set()
-    keyword_window.geometry("450x350") # Increased size for better visibility
+    keyword_window.geometry("450x400") # Increased size for better visibility
 
     # Apply theme settings.
     keyword_window.configure(bg=theme_setting_getter_func("root_bg", "#f0f0f0"))
