@@ -9,7 +9,7 @@ import threading
 from llm import state as llm_state
 from llm import api_client as llm_api_client
 from llm import interactive as llm_interactive
-from llm import dialogs as llm_dialogs
+from llm.dialogs import show_rephrase_dialog
 from utils import debug_console
 
 def open_rephrase_dialog():
@@ -46,7 +46,7 @@ def open_rephrase_dialog():
         
         request_rephrase_for_text(editor_widget, selected_text, start_index, end_index, instruction, on_discard_generation)
 
-    llm_dialogs.show_rephrase_dialog(
+    show_rephrase_dialog(
         root_window=llm_state._root_window,
         theme_setting_getter_func=llm_state._theme_setting_getter_func,
         original_text=selected_text,

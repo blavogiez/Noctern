@@ -82,10 +82,11 @@ def load_prompt_history_from_file(tex_document_filepath):
             with open(history_filepath, 'r', encoding='utf-8') as file_handle:
                 loaded_data = json.load(file_handle)
                 # Validate that each item in the loaded data is a list/tuple of two elements.
-                loaded_history_list = [
-                    (item[0], item[1]) for item in loaded_data 
-                    if isinstance(item, (list, tuple)) and len(item) == 2
-                ]
+                validated_data = []
+                for item in loaded_data:
+                    if isinstance(item, (list, tuple)) and len(item) == 2:
+                        validated_data.append((item[0], item[1]))
+                loaded_history_list = validated_data
             debug_console.log(f"Loaded {len(loaded_history_list)} entries from prompt history file {os.path.basename(history_filepath)}.", level='INFO')
         except json.JSONDecodeError as e:
             debug_console.log(f"Error decoding JSON from prompt history file '{history_filepath}': {e}. File might be corrupted.", level='ERROR')

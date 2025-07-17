@@ -23,9 +23,10 @@ DEFAULT_PROMPTS_FILE = "data/default_prompts.json"
 
 # Per-document state (managed by llm.history and llm.prompts modules)
 # These are loaded/saved based on the active file.
-_prompt_history_for_current_file = [] # List of (user_prompt, llm_response) tuples.
+_prompt_history_list = [] # List of (user_prompt, llm_response) tuples.
 _completion_prompt_template = ""      # Custom completion prompt for the current file.
 _generation_prompt_template = ""      # Custom generation prompt for the current file.
+_llm_keywords_list = []               # List of keywords for the current file.
 
 # --- Last Action State (for re-generation) ---
 # Stores the type of the last LLM action ('completion' or 'generation') to enable re-doing.

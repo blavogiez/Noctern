@@ -7,7 +7,7 @@ thereby influencing the LLM's generation or completion behavior.
 
 from tkinter import messagebox
 from llm import state as llm_state
-from llm import dialogs as llm_dialogs
+from llm.dialogs import show_set_llm_keywords_dialog
 from utils import debug_console
 
 def open_set_keywords_dialog():
@@ -33,7 +33,7 @@ def open_set_keywords_dialog():
         return
 
     # Open the dialog, passing the file path.
-    llm_dialogs.show_set_llm_keywords_dialog(
+    show_set_llm_keywords_dialog(
         root_window=llm_state._root_window,
         theme_setting_getter_func=llm_state._theme_setting_getter_func,
         file_path=active_file_path

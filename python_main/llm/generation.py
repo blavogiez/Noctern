@@ -6,13 +6,15 @@ response from the LLM, integrating the generated text back into the editor.
 """
 
 from llm import state as llm_state
-from llm import dialogs as llm_dialogs
+from llm.dialogs import show_generate_text_dialog
 from llm import utils as llm_utils
 from llm import api_client as llm_api_client
+from llm import keyword_history
 from utils import debug_console
 from llm.history import _add_entry_to_history_and_save, _update_history_response_and_save
 from llm.interactive import start_new_interactive_session
 import threading
+from tkinter import messagebox
 
 def open_generate_text_dialog(initial_prompt_text=None):
     """
@@ -87,10 +89,15 @@ def open_generate_text_dialog(initial_prompt_text=None):
         # Extract relevant context from the editor based on user-defined line counts.
         editor_context = llm_utils.extract_editor_context(editor_widget, lines_before_cursor, lines_after_cursor)
         
+        # Get keywords for the current file
+        active_file_path = llm_state._active_filepath_getter_func()
+        keywords_list = keyword_history.get_keywords_for_file(active_file_path)
+        keywords_str = ", ".join(keywords_list)
+
         # Format the full LLM prompt using the selected template, user prompt, keywords, and editor context.
         full_llm_prompt = prompt_template_to_use.format(
             user_prompt=user_prompt,
-            keywords=', '.join(llm_state._llm_keywords_list),
+            keywords=keywords_str,
             context=editor_context
         )
         debug_console.log(f"LLM Generation Request - Formatted Prompt (first 200 chars): '{full_llm_prompt[:200]}...'", level='INFO')
@@ -158,7 +165,7 @@ def open_generate_text_dialog(initial_prompt_text=None):
         _add_entry_to_history_and_save(user_prompt_text, "⏳ Generating...")
 
     # Display the generation dialog, passing all necessary callbacks and initial data.
-    llm_dialogs.show_generate_text_dialog(
+    show_generate_text_dialog(
         root_window=llm_state._root_window,
         theme_setting_getter_func=llm_state._theme_setting_getter_func,
         current_prompt_history_list=llm_state._prompt_history_list,

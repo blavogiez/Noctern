@@ -7,7 +7,7 @@ updating them, and saving them back to file. It also integrates with the prompt 
 from tkinter import messagebox
 from llm import state as llm_state
 from llm import prompt_manager as llm_prompt_manager
-from llm import dialogs as llm_dialogs
+from llm.dialogs import show_edit_prompts_dialog
 from utils import debug_console
 
 def load_prompts_for_current_file():
@@ -97,7 +97,7 @@ def open_edit_prompts_dialog():
 
     # Display the prompt editing dialog, passing necessary UI references, current prompts,
     # default prompts, and the callback function for saving changes.
-    llm_dialogs.show_edit_prompts_dialog(
+    show_edit_prompts_dialog(
         root_window=llm_state._root_window,
         theme_setting_getter_func=llm_state._theme_setting_getter_func,
         current_prompts=get_current_prompts(), # Pass the currently active prompts.

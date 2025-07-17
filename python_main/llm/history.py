@@ -52,7 +52,11 @@ def _add_entry_to_history_and_save(user_prompt_text, response_placeholder="⏳ G
     debug_console.log(f"Adding new entry to prompt history: '{user_prompt_text[:50]}...'", level='DEBUG')
     
     # Remove any existing entry with the same user prompt to ensure uniqueness and freshness.
-    llm_state._prompt_history_list = [item for item in llm_state._prompt_history_list if item[0] != user_prompt_text]
+    new_history_list = []
+    for item in llm_state._prompt_history_list:
+        if item[0] != user_prompt_text:
+            new_history_list.append(item)
+    llm_state._prompt_history_list = new_history_list
     
     # Insert the new entry at the beginning of the list (most recent first).
     llm_state._prompt_history_list.insert(0, (user_prompt_text, response_placeholder))
