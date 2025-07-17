@@ -162,9 +162,9 @@ def show_generate_text_dialog(root_window, theme_setting_getter_func,
     ttk.Checkbutton(options_frame, text="LaTeX oriented generation (uses code model)", variable=is_latex_mode).pack(side=tk.LEFT)
 
     # Generate Button and its handler.
-    def handle_send_prompt_action():
+    def handle_send_prompt_action(event=None):
         """
-        Handles the action when the 'Generate' button is clicked.
+        Handles the action when the 'Generate' button is clicked or Ctrl+Enter is pressed.
         Validates input, logs the request, and calls the generation callback.
         """
         user_prompt_text = text_prompt.get("1.0", tk.END).strip()
@@ -191,37 +191,37 @@ def show_generate_text_dialog(root_window, theme_setting_getter_func,
             on_generate_request_callback(user_prompt_text, num_lines_before, num_lines_after, latex_generation_enabled)
         
         prompt_window.destroy() # Close the dialog after initiating generation.
+        return "break" # Prevent default event handling
 
     button_frame = ttk.Frame(input_controls_frame)
     button_frame.grid(row=7, column=0, columnspan=3, pady=(20,0), sticky="ew") 
-    ttk.Button(button_frame, text="Generate", command=handle_send_prompt_action).pack()
+    ttk.Button(button_frame, text="Generate (Ctrl+Enter)", command=handle_send_prompt_action).pack()
     main_pane.add(input_controls_frame, stretch="always")
+    
+    # Bind Ctrl+Enter to the send action
+    prompt_window.bind("<Control-Return>", handle_send_prompt_action)
     
     text_prompt.focus_set() # Set initial focus to the prompt input area.
     prompt_window.wait_window() # Block until the dialog is closed.
 
 
-def show_set_llm_keywords_dialog(root_window, theme_setting_getter_func,
-                                 current_llm_keywords_list, on_save_keywords_callback):
+import os
+from llm import keyword_history
+
+def show_set_llm_keywords_dialog(root_window, theme_setting_getter_func, file_path):
     """
-    Displays a dialog for users to set or update keywords used by the LLM.
-
-    Keywords can be entered one per line or comma-separated. These keywords are
-    typically used to provide additional context to LLM prompts.
-
+    Displays a dialog for users to set or update keywords for a specific file.
     Args:
         root_window (tk.Tk): The main Tkinter root window.
         theme_setting_getter_func (callable): Function to get theme settings.
-        current_llm_keywords_list (list): A list of strings representing the currently set keywords.
-        on_save_keywords_callback (callable): Callback function triggered when the user clicks "Save Keywords".
-                                              Signature: `(new_keywords_list)`.
+        file_path (str): The absolute path to the file being edited.
     """
-    debug_console.log("Opening LLM keywords setting dialog.", level='ACTION')
+    debug_console.log(f"Opening LLM keywords dialog for: {os.path.basename(file_path)}", level='ACTION')
     keyword_window = tk.Toplevel(root_window)
-    keyword_window.title("Set LLM Keywords")
+    keyword_window.title(f"Keywords for {os.path.basename(file_path)}")
     keyword_window.transient(root_window)
     keyword_window.grab_set()
-    keyword_window.geometry("400x300")
+    keyword_window.geometry("450x350") # Increased size for better visibility
 
     # Apply theme settings.
     keyword_window.configure(bg=theme_setting_getter_func("root_bg", "#f0f0f0"))
@@ -231,7 +231,11 @@ def show_set_llm_keywords_dialog(root_window, theme_setting_getter_func,
     sel_fg = theme_setting_getter_func("sel_fg", "#ffffff")
     insert_bg = theme_setting_getter_func("editor_insert_bg", "#000000")
 
-    ttk.Label(keyword_window, text="Enter keywords (one per line or comma-separated):").pack(pady=(10,5))
+    # Add a label to explicitly state which file is being edited
+    file_label = ttk.Label(keyword_window, text=f"Editing keywords for: {os.path.basename(file_path)}", font=("Segoe UI", 10, "bold"))
+    file_label.pack(pady=(10, 0))
+
+    ttk.Label(keyword_window, text="Enter keywords (one per line or comma-separated):").pack(pady=(10, 5))
     keyword_text_frame = ttk.Frame(keyword_window)
     keyword_text_frame.pack(pady=5, padx=10, fill="both", expand=True)
     keyword_text_frame.grid_rowconfigure(0, weight=1); keyword_text_frame.grid_columnconfigure(0, weight=1)
@@ -246,25 +250,35 @@ def show_set_llm_keywords_dialog(root_window, theme_setting_getter_func,
     keyword_scrollbar.grid(row=0, column=1, sticky="ns")
     keyword_text_widget.config(yscrollcommand=keyword_scrollbar.set)
     
-    # Pre-fill with current keywords.
-    if current_llm_keywords_list: 
-        keyword_text_widget.insert(tk.END, "\n".join(current_llm_keywords_list))
+    # Pre-fill with current keywords for the given file.
+    current_keywords = keyword_history.get_keywords_for_file(file_path)
+    if current_keywords:
+        keyword_text_widget.insert(tk.END, "\n".join(current_keywords))
 
-    def save_keywords_action_internal():
+    def save_keywords_action_internal(event=None):
         """
-        Internal function to process and save the entered keywords.
+        Internal function to process and save the entered keywords for the file.
+        Triggered by button click or Ctrl+Enter.
         """
         input_text = keyword_text_widget.get("1.0", tk.END).strip()
         # Split by newlines, then by commas, strip whitespace, and filter empty strings.
         new_keywords = [kw.strip() for line in input_text.split('\n') for kw in line.split(',') if kw.strip()]
-        debug_console.log(f"Attempting to save new keywords: {new_keywords}", level='ACTION')
-        if on_save_keywords_callback: 
-            on_save_keywords_callback(new_keywords)
+        
+        # Set the keywords for the specific file.
+        keyword_history.set_keywords_for_file(file_path, new_keywords)
+        
+        debug_console.log(f"Saved keywords for {os.path.basename(file_path)}: {new_keywords}", level='SUCCESS')
         keyword_window.destroy() # Close the dialog.
+        return "break" # Prevent default event handling
 
-    ttk.Button(keyword_window, text="Save Keywords", command=save_keywords_action_internal).pack(pady=10)
+    ttk.Button(keyword_window, text="Save Keywords (Ctrl+Enter)", command=save_keywords_action_internal).pack(pady=10)
+    
+    # Bind Ctrl+Enter to the save action
+    keyword_window.bind("<Control-Return>", save_keywords_action_internal)
+    
     keyword_text_widget.focus_set() # Set initial focus.
     keyword_window.wait_window() # Block until dialog is closed.
+
 
 
 def show_edit_prompts_dialog(root_window, theme_setting_getter_func,

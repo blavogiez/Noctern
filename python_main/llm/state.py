@@ -24,8 +24,7 @@ DEFAULT_PROMPTS_FILE = os.path.join(_SERVICE_DIR, "default_prompts.json")
 _global_default_prompts = {}
 
 # --- LLM Data and State ---
-# List of keywords provided by the user, used to influence LLM generation.
-_llm_keywords_list = []
+
 # List of (user_prompt, llm_response) tuples, representing the history of LLM interactions.
 _prompt_history_list = []
 # The current prompt template string used for LLM text completion.
