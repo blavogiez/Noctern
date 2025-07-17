@@ -190,8 +190,8 @@ def paste_image(event=None):
     Args:
         event (tk.Event, optional): The Tkinter event object. Defaults to None.
     """
-    from ..editor import image_paste as editor_image_paste # Import locally to avoid circular dependencies if not already imported.
-    editor_image_paste.paste_image_from_clipboard()
+    from editor import image_paste as editor_image_paste # Import locally to avoid circular dependencies if not already imported.
+    editor_image_paste.paste_image_from_clipboard(root, get_current_tab, get_theme_setting)
 
 def zoom_in(_=None):
     """

@@ -14,7 +14,7 @@ class ImageDetailsDialog(tk.Toplevel):
     the user to provide a descriptive caption and a unique LaTeX label for the image.
     It is a modal window that blocks interaction with the main application until it is closed.
     """
-    def __init__(self, parent, suggested_label):
+    def __init__(self, parent, suggested_label, get_theme_setting):
         """
         Initializes the ImageDetailsDialog.
 
@@ -31,6 +31,7 @@ class ImageDetailsDialog(tk.Toplevel):
         self.caption = ""
         self.label = ""
         self.cancelled = True # Assume cancellation until OK is pressed
+        self.get_theme_setting = get_theme_setting
 
         self._configure_styles()
         self._create_widgets(suggested_label)
@@ -41,7 +42,7 @@ class ImageDetailsDialog(tk.Toplevel):
     def _configure_styles(self):
         """Configures the dialog's appearance based on the application's theme."""
         try:
-            bg_color = interface.get_theme_setting("root_bg", "#f0f0f0")
+            bg_color = self.get_theme_setting("root_bg", "#f0f0f0")
             self.configure(bg=bg_color)
         except Exception:
             self.configure(bg="#f0f0f0")
@@ -87,7 +88,7 @@ class ImageDetailsDialog(tk.Toplevel):
         self.cancelled = True
         self.destroy()
 
-def paste_image_from_clipboard():
+def paste_image_from_clipboard(root, get_current_tab, get_theme_setting):
     """
     Handles pasting an image from the clipboard into the editor.
 
@@ -97,11 +98,13 @@ def paste_image_from_clipboard():
     """
     debug_console.log("Attempting to paste image from clipboard.", level='ACTION')
 
-    current_tab = interface.get_current_tab()
+    
+    current_tab = get_current_tab()
     if not current_tab:
         debug_console.log("Image paste aborted: No active editor tab.", level='WARNING')
         messagebox.showwarning("No Active Tab", "Please open a document before pasting an image.")
         return
+
     editor = current_tab.editor
 
     try:
@@ -137,7 +140,7 @@ def paste_image_from_clipboard():
             image_index += 1
 
         suggested_label = f"fig:{sanitize_for_path(section)}_{sanitize_for_path(subsection)}_{image_index}"
-        details_dialog = ImageDetailsDialog(interface.root, suggested_label)
+        details_dialog = ImageDetailsDialog(root, suggested_label, get_theme_setting)
         
         if details_dialog.cancelled:
             debug_console.log("Image paste cancelled by user via details dialog.", level='INFO')

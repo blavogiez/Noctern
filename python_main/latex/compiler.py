@@ -15,8 +15,9 @@ from utils import debug_console
 
 # Global reference to the root Tkinter window, initialized during application setup.
 root = None
+get_current_tab = None
 
-def initialize_compiler(root_widget):
+def initialize_compiler(root_widget, get_current_tab_func):
     """
     Initializes the LaTeX compiler module by setting the root Tkinter window.
 
@@ -25,8 +26,9 @@ def initialize_compiler(root_widget):
     Args:
         root_widget (tk.Tk): The main Tkinter application window.
     """
-    global root
+    global root, get_current_tab
     root = root_widget
+    get_current_tab = get_current_tab_func
     debug_console.log("LaTeX Compiler module initialized.", level='INFO')
 
 def clean_project_directory(event=None):
@@ -40,7 +42,7 @@ def clean_project_directory(event=None):
         event (tk.Event, optional): The Tkinter event object, if called from a binding. Defaults to None.
     """
     debug_console.log("Clean Project Directory command initiated.", level='ACTION')
-    current_tab = interface.get_current_tab()
+    current_tab = get_current_tab()
     if not current_tab or not current_tab.file_path:
         messagebox.showwarning("Action Failed", "Please save your current file first to define a project directory for cleaning.")
         debug_console.log("Clean project failed: No active file path available.", level='WARNING')
@@ -89,7 +91,7 @@ def run_chktex_check(event=None):
         event (tk.Event, optional): The Tkinter event object, if called from a binding. Defaults to None.
     """
     debug_console.log("Initiating chktex static analysis check.", level='ACTION')
-    current_tab = interface.get_current_tab()
+    current_tab = get_current_tab()
     if not current_tab:
         debug_console.log("chktex check aborted: No active editor tab.", level='WARNING')
         return
@@ -170,7 +172,7 @@ def compile_latex(event=None):
         event (tk.Event, optional): The Tkinter event object, if called from a binding. Defaults to None.
     """
     debug_console.log("LaTeX compilation process started.", level='ACTION')
-    current_tab = interface.get_current_tab()
+    current_tab = get_current_tab()
     if not current_tab:
         debug_console.log("LaTeX compilation aborted: No active editor tab.", level='WARNING')
         return
