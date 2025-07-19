@@ -37,8 +37,8 @@ class InteractiveSession:
         self.buttons_frame = self._create_ui_elements()
         self.editor.window_create(self.block_start_index, window=self.buttons_frame, padx=5, align="center")
         
-        self.buttons_end_index = self.editor.index(f"{self.block_start_index} + 1 char")
-        self.text_end_index = self.buttons_end_index
+        self.text_start_index = self.editor.index(f"{self.block_start_index} + 1 char")
+        self.text_end_index = self.text_start_index
         
         self._start_generating_animation()
         self._bind_keyboard_shortcuts()
@@ -52,9 +52,13 @@ class InteractiveSession:
         rephrase_btn = tk.Button(frame, text="Rephrase (Ctrl+R)", bg="#2D2D2D", activebackground="#404040", **btn_style, command=self.rephrase)
         discard_btn = tk.Button(frame, text="Discard (Esc)", bg="#2D2D2D", activebackground="#404040", **btn_style, command=self.discard)
         
+        # Create a dedicated label for the animation
+        self.animation_label = tk.Label(frame, text="", bg="#2D2D2D", fg="#aaa", font=("Segoe UI", 9, "italic"), padx=5)
+
         accept_btn.pack(side=tk.LEFT)
         rephrase_btn.pack(side=tk.LEFT)
         discard_btn.pack(side=tk.LEFT)
+        self.animation_label.pack(side=tk.LEFT)
         return frame
 
     def _bind_keyboard_shortcuts(self):
@@ -83,24 +87,19 @@ class InteractiveSession:
 
     def _start_generating_animation(self):
         self.is_animating = True
-        self.editor.tag_config('llm_placeholder', foreground="#aaa", font=("Segoe UI", 9, "italic"))
         self._animate_dots()
 
     def _animate_dots(self):
         if not self.is_animating: return
         dots = '.' * (self.animation_dot_count % 3 + 1)
-        text = f" Generating{dots}"
-        self.editor.delete(self.buttons_end_index, self.text_end_index)
-        self.editor.insert(self.buttons_end_index, text, "llm_placeholder")
-        self.text_end_index = self.editor.index(f"{self.buttons_end_index} + {len(text)} chars")
+        self.animation_label.config(text=f" Generating{dots}")
         self.animation_dot_count += 1
         self.editor.after(400, self._animate_dots)
 
     def _stop_generating_animation(self):
         if self.is_animating:
             self.is_animating = False
-            self.editor.delete(self.buttons_end_index, self.text_end_index)
-            self.text_end_index = self.buttons_end_index
+            self.animation_label.config(text="")
 
     def handle_chunk(self, chunk):
         if llm_state._is_generation_cancelled: return
@@ -109,9 +108,18 @@ class InteractiveSession:
         self.text_end_index = self.editor.index(f"{self.text_end_index} + {len(chunk)} chars")
         self.full_response_text += chunk
 
-    def handle_success(self):
+    def handle_success(self, final_cleaned_text):
         if llm_state._is_generation_cancelled: return
         self._stop_generating_animation()
+
+        # Replace the streamed-in text with the final cleaned text
+        self.editor.delete(self.text_start_index, self.text_end_index)
+        self.editor.insert(self.text_start_index, final_cleaned_text, "llm_generated_text")
+        
+        # Update the end index and the internal full response text
+        self.text_end_index = self.editor.index(f"{self.text_start_index} + {len(final_cleaned_text)} chars")
+        self.full_response_text = final_cleaned_text
+
         if self.is_completion: self._post_process_completion()
         llm_state._is_generating = False
         self.editor.focus_set()
@@ -125,7 +133,7 @@ class InteractiveSession:
     def accept(self):
         if llm_state._is_generating: return
         debug_console.log("User ACCEPTED LLM suggestion.", level='ACTION')
-        self.editor.tag_remove("llm_generated_text", self.buttons_end_index, self.text_end_index)
+        self.editor.tag_remove("llm_generated_text", self.text_start_index, self.text_end_index)
         self.destroy(delete_text=False)
         self.editor.focus_set()
 
@@ -161,23 +169,25 @@ class InteractiveSession:
 
     def _post_process_completion(self):
         cleaned_text = llm_utils.remove_prefix_overlap_from_completion(self.completion_phrase, self.full_response_text)
-        text_start_index = self.buttons_end_index
-        self.editor.delete(text_start_index, self.text_end_index)
-        self.editor.insert(text_start_index, cleaned_text, "llm_generated_text")
-        self.text_end_index = self.editor.index(f"{text_start_index} + {len(cleaned_text)} chars")
+        self.editor.delete(self.text_start_index, self.text_end_index)
+        self.editor.insert(self.text_start_index, cleaned_text, "llm_generated_text")
+        self.text_end_index = self.editor.index(f"{self.text_start_index} + {len(cleaned_text)} chars")
 
     def destroy(self, delete_text):
         global _current_session
         self._stop_generating_animation()
         self._unbind_keyboard_shortcuts()
         try:
+            # If we need to delete the generated text, we delete from the start of the text to the end.
             if delete_text and self.editor.winfo_exists():
-                start = self.editor.index(self.block_start_index)
-                end = self.editor.index(self.text_end_index)
-                if self.editor.compare(start, "<", end):
-                    self.editor.delete(start, end)
-            elif self.editor.winfo_exists():
-                self.editor.delete(self.block_start_index, self.buttons_end_index)
+                start_text = self.editor.index(self.text_start_index)
+                end_text = self.editor.index(self.text_end_index)
+                if self.editor.compare(start_text, "<", end_text):
+                    self.editor.delete(start_text, end_text)
+
+            # Always delete the UI frame (which is 1 character wide in the text widget)
+            if self.editor.winfo_exists():
+                self.editor.delete(self.block_start_index)
             
             if self.buttons_frame and self.buttons_frame.winfo_exists():
                 self.buttons_frame.destroy()
@@ -186,8 +196,6 @@ class InteractiveSession:
         
         _current_session = None
         llm_state._is_generating = False
-        # The cancellation flag is intentionally NOT reset here.
-        # It will be reset only when a new session starts.
 
 def start_new_interactive_session(editor, is_completion=False, completion_phrase="", on_discard_callback=None):
     global _current_session
@@ -197,6 +205,9 @@ def start_new_interactive_session(editor, is_completion=False, completion_phrase
     llm_state._is_generating = True
     llm_state._is_generation_cancelled = False
     start_index = editor.index(tk.INSERT)
+    
+    # Add a separator to group the entire generation as a single undo action.
+    editor.edit_separator()
     
     _current_session = InteractiveSession(editor, start_index, is_completion, completion_phrase, on_discard_callback)
     

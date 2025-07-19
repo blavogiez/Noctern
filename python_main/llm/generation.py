@@ -120,13 +120,23 @@ def open_generate_text_dialog(initial_prompt_text=None):
                     if api_response_chunk["success"]:
                         if "chunk" in api_response_chunk: # If a text chunk is received.
                             chunk = api_response_chunk["chunk"]
-                            accumulated_generated_text += chunk
+                            
+                            # Perform basic, real-time cleaning on the chunk.
+                            cleaned_chunk = llm_utils.clean_llm_output(chunk)
+                            
+                            accumulated_generated_text += cleaned_chunk
                             # Schedule UI update on the main thread.
-                            editor_widget.after(0, lambda c=chunk: interactive_session_callbacks['on_chunk'](c))
+                            editor_widget.after(0, lambda c=cleaned_chunk: interactive_session_callbacks['on_chunk'](c))
+                        
                         if api_response_chunk.get("done"): # If the generation is complete.
-                            editor_widget.after(0, interactive_session_callbacks['on_success'])
-                            # Update history with the full generated response.
-                            editor_widget.after(0, lambda: _update_history_response_and_save(user_prompt, accumulated_generated_text))
+                            # Perform a final, more thorough cleaning on the entire response.
+                            final_cleaned_text = llm_utils.clean_full_llm_response(accumulated_generated_text)
+                            
+                            # Pass the final, cleaned text to the success handler.
+                            editor_widget.after(0, lambda text=final_cleaned_text: interactive_session_callbacks['on_success'](text))
+                            
+                            # Update history with the same final, cleaned response.
+                            editor_widget.after(0, lambda: _update_history_response_and_save(user_prompt, final_cleaned_text))
                             return # Exit the thread.
                     else:
                         # If an error occurred during generation.
