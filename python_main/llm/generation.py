@@ -117,6 +117,8 @@ def open_generate_text_dialog(initial_prompt_text=None):
             try:
                 # Request LLM generation from the API client.
                 for api_response_chunk in llm_api_client.request_llm_generation(full_llm_prompt, model_name=llm_model_to_use):
+                    if llm_state._is_generation_cancelled:
+                        break
                     if api_response_chunk["success"]:
                         if "chunk" in api_response_chunk: # If a text chunk is received.
                             chunk = api_response_chunk["chunk"]
@@ -129,28 +131,31 @@ def open_generate_text_dialog(initial_prompt_text=None):
                             editor_widget.after(0, lambda c=cleaned_chunk: interactive_session_callbacks['on_chunk'](c))
                         
                         if api_response_chunk.get("done"): # If the generation is complete.
-                            # Perform a final, more thorough cleaning on the entire response.
-                            final_cleaned_text = llm_utils.clean_full_llm_response(accumulated_generated_text)
-                            
-                            # Pass the final, cleaned text to the success handler.
-                            editor_widget.after(0, lambda text=final_cleaned_text: interactive_session_callbacks['on_success'](text))
-                            
-                            # Update history with the same final, cleaned response.
-                            editor_widget.after(0, lambda: _update_history_response_and_save(user_prompt, final_cleaned_text))
+                            if not llm_state._is_generation_cancelled:
+                                # Perform a final, more thorough cleaning on the entire response.
+                                final_cleaned_text = llm_utils.clean_full_llm_response(accumulated_generated_text)
+                                
+                                # Pass the final, cleaned text to the success handler.
+                                editor_widget.after(0, lambda text=final_cleaned_text: interactive_session_callbacks['on_success'](text))
+                                
+                                # Update history with the same final, cleaned response.
+                                editor_widget.after(0, lambda: _update_history_response_and_save(user_prompt, final_cleaned_text))
                             return # Exit the thread.
                     else:
-                        # If an error occurred during generation.
-                        error_message = api_response_chunk["error"]
-                        editor_widget.after(0, lambda e=error_message: interactive_session_callbacks['on_error'](e))
-                        # Update history with an error message.
-                        editor_widget.after(0, lambda: _update_history_response_and_save(user_prompt, f"❌ Error: {error_message[:100]}..."))
+                        if not llm_state._is_generation_cancelled:
+                            # If an error occurred during generation.
+                            error_message = api_response_chunk["error"]
+                            editor_widget.after(0, lambda e=error_message: interactive_session_callbacks['on_error'](e))
+                            # Update history with an error message.
+                            editor_widget.after(0, lambda: _update_history_response_and_save(user_prompt, f"❌ Error: {error_message[:100]}..."))
                         return # Exit the thread.
             except Exception as e:
-                # Catch any unexpected exceptions during the thread execution.
-                error_message = f"An unexpected error occurred in the LLM generation thread: {e}"
-                debug_console.log(error_message, level='ERROR')
-                editor_widget.after(0, lambda e_msg=error_message: interactive_session_callbacks['on_error'](e_msg))
-                editor_widget.after(0, lambda: _update_history_response_and_save(user_prompt, f"❌ Exception: {str(e)[:100]}..."))
+                if not llm_state._is_generation_cancelled:
+                    # Catch any unexpected exceptions during the thread execution.
+                    error_message = f"An unexpected error occurred in the LLM generation thread: {e}"
+                    debug_console.log(error_message, level='ERROR')
+                    editor_widget.after(0, lambda e_msg=error_message: interactive_session_callbacks['on_error'](e_msg))
+                    editor_widget.after(0, lambda: _update_history_response_and_save(user_prompt, f"❌ Exception: {str(e)[:100]}..."))
             finally:
                 # Ensure the progress bar is stopped and hidden regardless of success or failure.
                 if llm_state._llm_progress_bar_widget:

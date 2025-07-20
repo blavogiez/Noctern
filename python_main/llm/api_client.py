@@ -7,6 +7,7 @@ providing real-time output as the LLM generates text.
 import json
 import requests
 from utils import debug_console
+from llm import state as llm_state
 
 # Configuration for the LLM API endpoint.
 LLM_API_URL = "http://localhost:11434/api/generate" # Default URL for the LLM API.
@@ -35,55 +36,68 @@ def request_llm_generation(prompt_text, model_name=DEFAULT_LLM_MODEL, stream=Tru
     """
     debug_console.log(f"Initiating LLM generation request for model '{model_name}'. Stream: {stream}. Prompt (first 100 chars): '{prompt_text[:100]}...'", level='INFO')
     try:
-        # Send a POST request to the LLM API with the prompt and streaming enabled.
+        # Send a POST request to the LLM API with a very short timeout for the initial connection.
         response = requests.post(
             LLM_API_URL,
             json={
                 "model": model_name,
                 "prompt": prompt_text,
-                "stream": stream, # Enable streaming to receive real-time output.
+                "stream": stream,
                 "options": {
-                    "num_predict": 1024 # Maximum number of tokens to predict.
+                    "num_predict": 1024
                 }
             },
-            stream=stream # Keep the connection open for streaming.
+            stream=stream,
+            timeout=(3.1, 27)  # (connect_timeout, read_timeout)
         )
-        response.raise_for_status() # Raise an HTTPError for bad responses (4xx or 5xx).
+        response.raise_for_status()  # Raise an HTTPError for bad responses (4xx or 5xx).
 
         if not stream:
+            # Handling for non-streaming responses remains the same.
             json_data = response.json()
             if "response" in json_data:
                 debug_console.log("LLM non-stream request successful.", level='SUCCESS')
                 yield {"success": True, "data": json_data["response"], "done": True}
-                return
             else:
                 debug_console.log(f"LLM non-stream response did not contain 'response' field: {json_data}", level='ERROR')
                 yield {"success": False, "error": "LLM non-stream response did not contain 'response' field.", "done": True}
-                return
+            return
 
         full_generated_content = "" # Accumulator for the complete generated text.
-        # Iterate over the response lines, decoding and parsing each as a JSON object.
-        for line in response.iter_lines():
-            if line:
-                try:
-                    json_data = json.loads(line.decode('utf-8'))
-                    if "response" in json_data: # Check if the current chunk contains a 'response' field.
-                        chunk = json_data["response"]
-                        full_generated_content += chunk
-                        yield {"success": True, "chunk": chunk, "done": False} # Yield the current text chunk.
-                    
-                    # Check if the 'done' flag is set, indicating the end of generation.
-                    if json_data.get("done"):
-                        debug_console.log("LLM stream finished successfully with 'done' signal.", level='SUCCESS')
-                        yield {"success": True, "data": full_generated_content, "done": True} # Yield final data.
-                        return
-                except json.JSONDecodeError:
-                    debug_console.log(f"Failed to decode JSON line from LLM stream: {line}", level='WARNING')
-                    continue # Continue to the next line if JSON decoding fails.
-        
-        # This part is reached if the stream ends without a 'done' signal.
-        debug_console.log("LLM stream ended unexpectedly without a 'done' signal.", level='ERROR')
-        yield {"success": False, "error": "LLM stream ended unexpectedly without 'done' signal.", "done": True}
+        buffer = b""
+        try:
+            for chunk in response.iter_content(chunk_size=1):
+                if llm_state._is_generation_cancelled:
+                    debug_console.log("LLM generation cancelled by user. Closing connection.", level='INFO')
+                    response.close()
+                    return
+
+                buffer += chunk
+                while b'\n' in buffer:
+                    line, buffer = buffer.split(b'\n', 1)
+                    if line:
+                        try:
+                            json_data = json.loads(line.decode('utf-8'))
+                            if "response" in json_data:
+                                chunk_text = json_data["response"]
+                                full_generated_content += chunk_text
+                                yield {"success": True, "chunk": chunk_text, "done": False}
+                            
+                            if json_data.get("done"):
+                                debug_console.log("LLM stream finished successfully with 'done' signal.", level='SUCCESS')
+                                yield {"success": True, "data": full_generated_content, "done": True}
+                                return
+                        except json.JSONDecodeError:
+                            debug_console.log(f"Failed to decode JSON line from LLM stream: {line}", level='WARNING')
+                            continue
+        except requests.exceptions.RequestException as e:
+            # This can happen if the connection is closed abruptly.
+            if not llm_state._is_generation_cancelled:
+                debug_console.log(f"RequestException during LLM stream: {e}", level='ERROR')
+                yield {"success": False, "error": f"Request Error: {e}", "done": True}
+            else:
+                debug_console.log("RequestException caught after cancellation, which is expected.", level='INFO')
+            return
 
     except requests.exceptions.ConnectionError:
         error_message = "Connection Error: Could not connect to the LLM API. Please ensure the backend server is running at " + LLM_API_URL

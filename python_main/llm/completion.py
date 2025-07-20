@@ -94,6 +94,8 @@ def request_llm_to_complete_text():
         try:
             # Iterate over chunks received from the LLM API client.
             for api_response_chunk in llm_api_client.request_llm_generation(full_llm_prompt):
+                if llm_state._is_generation_cancelled:
+                    break
                 if api_response_chunk["success"]:
                     if "chunk" in api_response_chunk: # If a text chunk is received.
                         chunk_text = api_response_chunk["chunk"]
@@ -103,18 +105,21 @@ def request_llm_to_complete_text():
                     
                     if api_response_chunk.get("done"): # If the generation is complete.
                         # Use the accumulated text as the final text.
-                        editor_widget.after(0, interactive_session_callbacks['on_success'], accumulated_text)
+                        if not llm_state._is_generation_cancelled:
+                            editor_widget.after(0, interactive_session_callbacks['on_success'], accumulated_text)
                         return # Exit the thread.
                 else:
                     # If an error occurred during generation.
                     error_message = api_response_chunk["error"]
-                    editor_widget.after(0, lambda e=error_message: interactive_session_callbacks['on_error'](e))
+                    if not llm_state._is_generation_cancelled:
+                        editor_widget.after(0, lambda e=error_message: interactive_session_callbacks['on_error'](e))
                     return # Exit the thread.
         except Exception as e:
             # Catch any unexpected exceptions during the thread execution.
             error_message = f"An unexpected error occurred in the LLM completion thread: {e}"
             debug_console.log(error_message, level='ERROR')
-            editor_widget.after(0, lambda e_msg=error_message: interactive_session_callbacks['on_error'](e_msg))
+            if not llm_state._is_generation_cancelled:
+                editor_widget.after(0, lambda e_msg=error_message: interactive_session_callbacks['on_error'](e_msg))
         finally:
             # Ensure the progress bar is stopped and hidden regardless of success or failure.
             if llm_state._llm_progress_bar_widget:

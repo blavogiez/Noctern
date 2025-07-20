@@ -3,6 +3,8 @@ from tkinter import messagebox
 from llm import state as llm_state
 from llm import utils as llm_utils
 from utils import debug_console
+import uuid # Import uuid for unique session IDs
+
 # NOTE: llm_rephrase is imported locally within functions to avoid circular dependencies
 # during module loading.
 
@@ -15,17 +17,8 @@ class InteractiveSession:
     """
 
     def __init__(self, editor, start_index, is_completion=False, is_rephrase=False, completion_phrase="", on_discard_callback=None):
-        """
-        Initializes a new interactive LLM session.
-        Args:
-            editor (tk.Text): The Tkinter Text widget.
-            start_index (str): The Tkinter index where the output should begin.
-            is_completion (bool): True if this is a completion session.
-            is_rephrase (bool): True if this is a rephrase session.
-            completion_phrase (str): The phrase being completed.
-            on_discard_callback (callable, optional): A function to call when the session is discarded.
-        """
-        debug_console.log(f"Creating new interactive LLM session. Completion: {is_completion}, Rephrase: {is_rephrase}", level='INFO')
+        self.session_id = uuid.uuid4()
+        debug_console.log(f"Creating new interactive LLM session: {self.session_id}", level='INFO')
         self.editor = editor
         self.is_completion = is_completion
         self.is_rephrase = is_rephrase
@@ -34,6 +27,7 @@ class InteractiveSession:
         self.is_animating = False
         self.animation_dot_count = 0
         self.on_discard_callback = on_discard_callback
+        self.is_discarded = False # Flag to poison this instance if discarded
 
         self.block_start_index = editor.index(start_index)
         self.buttons_frame = self._create_ui_elements()
@@ -54,7 +48,6 @@ class InteractiveSession:
         rephrase_btn = tk.Button(frame, text="Rephrase (Ctrl+R)", bg="#2D2D2D", activebackground="#404040", **btn_style, command=self.rephrase)
         discard_btn = tk.Button(frame, text="Discard (Esc)", bg="#2D2D2D", activebackground="#404040", **btn_style, command=self.discard)
         
-        # Create a dedicated label for the animation
         self.animation_label = tk.Label(frame, text="", bg="#2D2D2D", fg="#aaa", font=("Segoe UI", 9, "italic"), padx=5)
 
         accept_btn.pack(side=tk.LEFT)
@@ -104,59 +97,62 @@ class InteractiveSession:
             self.animation_label.config(text="")
 
     def handle_chunk(self, chunk):
-        if llm_state._is_generation_cancelled: return
+        if self.is_discarded: return
         if self.is_animating: self._stop_generating_animation()
         self.editor.insert(self.text_end_index, chunk, "llm_generated_text")
         self.text_end_index = self.editor.index(f"{self.text_end_index} + {len(chunk)} chars")
         self.full_response_text += chunk
 
     def handle_success(self, final_cleaned_text):
-        if llm_state._is_generation_cancelled: return
+        if self.is_discarded: return
         self._stop_generating_animation()
 
-        # Replace the streamed-in text with the final cleaned text
         self.editor.delete(self.text_start_index, self.text_end_index)
         self.editor.insert(self.text_start_index, final_cleaned_text, "llm_generated_text")
         
-        # Update the end index and the internal full response text
         self.text_end_index = self.editor.index(f"{self.text_start_index} + {len(final_cleaned_text)} chars")
         self.full_response_text = final_cleaned_text
 
         if self.is_completion: self._post_process_completion()
 
-        # If this was a rephrase action, select the newly inserted text
         if self.is_rephrase:
             self.editor.tag_add(tk.SEL, self.text_start_index, self.text_end_index)
 
         llm_state._is_generating = False
         self.editor.focus_set()
 
-        # If this was a generation action (and not a rephrase or completion), open the rephrase dialog
         if not self.is_rephrase and not self.is_completion:
-            self.editor.after(50, self.rephrase) # Use after to ensure UI is fully updated
+            self.editor.after(50, self.rephrase)
 
     def handle_error(self, error_msg):
-        if llm_state._is_generation_cancelled: return
+        if self.is_discarded: return
         debug_console.log(f"LLM interactive session error: {error_msg}", level='ERROR')
         messagebox.showerror("LLM Error", error_msg)
         self.destroy(delete_text=True)
 
     def accept(self):
-        if llm_state._is_generating: return
-        debug_console.log("User ACCEPTED LLM suggestion.", level='ACTION')
+        if self.is_discarded or llm_state._is_generating: return
+        debug_console.log(f"User ACCEPTED LLM suggestion for session {self.session_id}.", level='ACTION')
         self.editor.tag_remove("llm_generated_text", self.text_start_index, self.text_end_index)
         self.destroy(delete_text=False)
         self.editor.focus_set()
 
     def discard(self):
-        debug_console.log("User DISCARDED LLM suggestion.", level='ACTION')
-        if llm_state._is_generating:
-            llm_state._is_generation_cancelled = True
-            debug_console.log("Cancellation flag set for ongoing generation.", level='INFO')
+        if self.is_discarded: return
+        debug_console.log(f"User DISCARDED LLM suggestion for session {self.session_id}.", level='ACTION')
+        self.is_discarded = True # Poison this instance.
+
+        # This is a global flag to signal cancellation to the running thread.
+        llm_state._is_generation_cancelled = True
+        debug_console.log("Cancellation flag set for ongoing generation.", level='INFO')
+
+        # Immediately stop and hide the progress bar from the main thread
+        if llm_state._llm_progress_bar_widget and llm_state._llm_progress_bar_widget.winfo_exists():
+            llm_state._llm_progress_bar_widget.stop()
+            llm_state._llm_progress_bar_widget.pack_forget()
         
         self.destroy(delete_text=True)
         
-        # Run the specific discard callback if it exists (e.g., to restore original text)
         if self.on_discard_callback:
             self.on_discard_callback()
             
