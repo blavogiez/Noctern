@@ -29,6 +29,8 @@ from latex import compiler as latex_compiler
 from latex import translator as latex_translator
 from editor import wordcount as editor_wordcount
 from utils import debug_console
+from utils import screen as screen_utils
+from utils import screen as screen_utils
 
 # --- Global UI Component References ---
 # These global variables hold references to key Tkinter widgets and application state,
@@ -50,7 +52,6 @@ console_output = None # The text widget for the console output
 _theme_settings = {}  # Dictionary holding current theme-specific settings.
 current_theme = "light"  # Name of the currently active theme.
 settings_menu = None  # Reference to the settings menu.
-_advanced_mode_enabled = None  # tk.BooleanVar to track advanced mode state.
 _app_config = {} # Holds user-specific settings from config.json
 _auto_open_pdf_var = None # tk.BooleanVar for the auto-open PDF setting
 
@@ -493,30 +494,7 @@ def on_tab_changed(event=None):
     
     perform_heavy_updates() # Trigger an immediate heavy update for the new tab.
 
-def toggle_advanced_mode():
-    """
-    Toggles the application's advanced mode.
 
-    When advanced mode is enabled, certain debug and development features (like the
-    debug console and application restart option) become accessible. When disabled,
-    these features are hidden or deactivated.
-    """
-    global settings_menu
-    if not settings_menu:
-        debug_console.log("Settings menu not available to toggle advanced mode.", level='WARNING')
-        return
-    
-    is_advanced = _advanced_mode_enabled.get() # Get the current state of the advanced mode.
-    
-    # Enable/disable menu entries based on advanced mode state.
-    settings_menu.entryconfig("Show Debug Console", state="normal" if is_advanced else "disabled")
-    settings_menu.entryconfig("Restart Application", state="normal" if is_advanced else "disabled")
-    
-    if is_advanced:
-        debug_console.log("Advanced mode ENABLED.", level='CONFIG')
-    else:
-        debug_console.hide_console() # Hide the debug console when advanced mode is disabled.
-        debug_console.log("Advanced mode DISABLED.", level='CONFIG')
 
 def toggle_auto_open_pdf():
     """
@@ -524,7 +502,7 @@ def toggle_auto_open_pdf():
     """
     global _app_config
     new_value = _auto_open_pdf_var.get()
-    _app_config['auto_open_pdf'] = new_value
+    _app_config['auto_open_pdf'] = str(new_value)
     app_config.save_config(_app_config)
     debug_console.log(f"Set 'auto_open_pdf' to {new_value}", level='CONFIG')
 
@@ -645,6 +623,49 @@ def _configure_notebook_style_and_events():
     notebook.bind("<ButtonPress-1>", on_close_button_press, True) # True for early binding.
     notebook.bind("<ButtonRelease-1>", on_close_button_release)
 
+def _apply_startup_window_settings(window, config):
+    """Applies window geometry and state from config at startup."""
+    monitors = screen_utils.get_monitors()
+    if not monitors:
+        debug_console.log("No monitors detected, using default geometry.", level='WARNING')
+        window.geometry("1200x800")
+        return
+
+    monitor_name = config.get("app_monitor", "Default")
+    selected_monitor = None
+
+    if monitor_name == "Default":
+        selected_monitor = next((m for m in monitors if m.is_primary), monitors[0])
+    else:
+        try:
+            # "Monitor 1: 1920x1080" -> index 0
+            monitor_index = int(monitor_name.split(':')[0].split(' ')[1]) - 1
+            if 0 <= monitor_index < len(monitors):
+                selected_monitor = monitors[monitor_index]
+            else:
+                selected_monitor = monitors[0]
+        except (ValueError, IndexError):
+            debug_console.log(f"Could not parse monitor name '{monitor_name}'. Falling back to primary.", level='WARNING')
+            selected_monitor = next((m for m in monitors if m.is_primary), monitors[0])
+
+    window_state = config.get("window_state", "Normal")
+
+    if window_state == "Maximized":
+        # For maximized, move to monitor first, then maximize
+        x, y = selected_monitor.x, selected_monitor.y
+        window.geometry(f"+{x}+{y}")
+        window.state('zoomed')
+    elif window_state == "Fullscreen":
+        x, y = selected_monitor.x, selected_monitor.y
+        window.geometry(f"+{x}+{y}")
+        window.attributes("-fullscreen", True)
+    else: # Normal
+        # Center the window on the selected monitor
+        width, height = 1200, 800
+        x = selected_monitor.x + (selected_monitor.width - width) // 2
+        y = selected_monitor.y + (selected_monitor.height - height) // 2
+        window.geometry(f"{width}x{height}+{x}+{y}")
+
 def setup_gui():
     """
     Initializes and sets up the main graphical user interface (GUI) of the application.
@@ -657,18 +678,17 @@ def setup_gui():
         tk.Tk: The root Tkinter window of the application.
     """
     global root, notebook, outline_tree, llm_progress_bar, _theme_settings, status_bar_frame
-    global status_label, gpu_status_label, main_pane, settings_menu, _advanced_mode_enabled
+    global status_label, gpu_status_label, main_pane, settings_menu
     global vertical_pane, console_pane, console_output, _app_config, _auto_open_pdf_var
 
     _app_config = app_config.load_config()
 
     root = tk.Tk() # Create the main application window.
     root.title("AutomaTeX v1.0") # Set the window title.
-    root.geometry("1200x800") # Set the initial window size.
+    _apply_startup_window_settings(root, _app_config)
     debug_console.log("GUI initialization process started.", level='INFO')
 
-    _advanced_mode_enabled = tk.BooleanVar(value=False) # Initialize advanced mode state.
-    _auto_open_pdf_var = tk.BooleanVar(value=_app_config.get('auto_open_pdf', False))
+    _auto_open_pdf_var = tk.BooleanVar(value=app_config.get_bool(_app_config.get('auto_open_pdf', 'False')))
     debug_console.initialize(root) # Initialize the debug console with the root window.
 
     # Create the top buttons frame and retrieve the settings menu.
@@ -713,7 +733,6 @@ def setup_gui():
     # Set the protocol for handling the window close button.
     root.protocol("WM_DELETE_WINDOW", on_close_request)
     
-    toggle_advanced_mode() # Apply initial advanced mode settings.
     debug_console.log("GUI setup completed successfully.", level='SUCCESS')
     
     return root

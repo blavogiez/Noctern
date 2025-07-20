@@ -20,8 +20,9 @@ root = None
 get_current_tab = None
 show_console = None
 hide_console = None
+_pdf_monitor_setting = "Default" # Default value
 
-def initialize_compiler(root_widget, get_current_tab_func, show_console_func, hide_console_func):
+def initialize_compiler(root_widget, get_current_tab_func, show_console_func, hide_console_func, pdf_monitor_setting="Default"):
     """
     Initializes the LaTeX compiler module by setting the root Tkinter window.
 
@@ -30,11 +31,12 @@ def initialize_compiler(root_widget, get_current_tab_func, show_console_func, hi
     Args:
         root_widget (tk.Tk): The main Tkinter application window.
     """
-    global root, get_current_tab, show_console, hide_console
+    global root, get_current_tab, show_console, hide_console, _pdf_monitor_setting
     root = root_widget
     get_current_tab = get_current_tab_func
     show_console = show_console_func
     hide_console = hide_console_func
+    _pdf_monitor_setting = pdf_monitor_setting
     debug_console.log("LaTeX Compiler module initialized.", level='INFO')
 
 def clean_project_directory(event=None):
@@ -330,11 +332,17 @@ def view_pdf_external(event=None, pdf_path=None):
         command.append(sumatra_pdf_path)
         command.append(pdf_path) # File path should come before options
         
-        secondary_monitor_index = get_secondary_monitor_index()
-        if secondary_monitor_index:
+        monitor_index = None
+        if _pdf_monitor_setting != "Default":
+            try:
+                # "Monitor 1: 1920x1080" -> index 1
+                monitor_index = int(_pdf_monitor_setting.split(':')[0].split(' ')[1])
+            except (ValueError, IndexError):
+                debug_console.log(f"Could not parse monitor setting '{_pdf_monitor_setting}'.", level='WARNING')
+        
+        if monitor_index:
             command.append("-monitor")
-            command.append(str(secondary_monitor_index))
-            command.append("-fullscreen")
+            command.append(str(monitor_index))
         
         try:
             subprocess.Popen(command)

@@ -54,7 +54,13 @@ def main():
     # Initialize editor logic, passing the outline tree for document structure display.
     editor_logic.initialize_editor_logic(interface.outline_tree)
     # Initialize the LaTeX compiler, providing the root window for message boxes.
-    latex_compiler.initialize_compiler(root_window, interface.get_current_tab, interface.show_console, interface.hide_console)
+    latex_compiler.initialize_compiler(
+        root_window, 
+        interface.get_current_tab, 
+        interface.show_console, 
+        interface.hide_console,
+        pdf_monitor_setting=interface._app_config.get("pdf_monitor", "Default")
+    )
     # Initialize the snippet manager to load available code snippets.
     snippet_manager.initialize_snippets() 
 

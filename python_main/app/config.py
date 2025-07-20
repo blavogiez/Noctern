@@ -1,45 +1,83 @@
 """
 This module handles loading and saving user configuration settings
-from a JSON file.
+from a .conf file using configparser.
 """
 
-import json
+import configparser
 import os
 from utils import debug_console
 
-CONFIG_FILE = "config.json"
-DEFAULT_CONFIG = {
-    "auto_open_pdf": False
+CONFIG_FILE = "settings.conf"
+DEFAULT_SECTION = "Settings"
+
+# Define default values here. These will be used to create the file if it doesn't exist,
+# and to retrieve values if a specific key is missing.
+DEFAULT_VALUES = {
+    "auto_open_pdf": "False",
+    "app_monitor": "Default",
+    "pdf_monitor": "Default",
+    "window_state": "Normal"
 }
 
 def load_config():
     """
-    Loads the configuration from config.json.
-    If the file doesn't exist, returns default settings.
+    Loads the configuration from settings.conf.
+    If the file or a key doesn't exist, it uses and saves the default settings.
+    
+    Returns:
+        A dictionary containing the configuration settings.
     """
+    config = configparser.ConfigParser()
+    
+    # If the file doesn't exist, create it with default values.
     if not os.path.exists(CONFIG_FILE):
-        debug_console.log(f"Config file not found. Using default settings.", level='INFO')
-        return DEFAULT_CONFIG.copy()
+        debug_console.log(f"Config file not found. Creating default '{CONFIG_FILE}'.", level='INFO')
+        config[DEFAULT_SECTION] = DEFAULT_VALUES
+        save_config(config[DEFAULT_SECTION])
+        return dict(DEFAULT_VALUES)
+
+    try:
+        config.read(CONFIG_FILE)
+        # Ensure the main section exists
+        if DEFAULT_SECTION not in config:
+            config[DEFAULT_SECTION] = {}
+
+        # Check for missing keys and apply defaults
+        settings = config[DEFAULT_SECTION]
+        updated = False
+        for key, value in DEFAULT_VALUES.items():
+            if key not in settings:
+                settings[key] = value
+                updated = True
+        
+        if updated:
+            debug_console.log("Added missing keys to config file.", level='INFO')
+            save_config(settings)
+
+        # Return the settings as a dictionary
+        return dict(settings)
+
+    except configparser.Error as e:
+        debug_console.log(f"Error reading config file: {e}. Using default settings.", level='ERROR')
+        return dict(DEFAULT_VALUES)
+
+def save_config(settings_dict):
+    """
+    Saves the given settings dictionary to settings.conf.
+    
+    Args:
+        settings_dict (dict): A dictionary of settings to save.
+    """
+    config = configparser.ConfigParser()
+    config[DEFAULT_SECTION] = settings_dict
     
     try:
-        with open(CONFIG_FILE, "r") as f:
-            config = json.load(f)
-            # Ensure all default keys are present
-            for key, value in DEFAULT_CONFIG.items():
-                config.setdefault(key, value)
-            return config
-    except (json.JSONDecodeError, IOError) as e:
-        debug_console.log(f"Error loading config file: {e}. Using default settings.", level='ERROR')
-        return DEFAULT_CONFIG.copy()
-
-def save_config(config):
-    """
-    Saves the given configuration dictionary to config.json.
-    """
-    try:
-        with open(CONFIG_FILE, "w") as f:
-            json.dump(config, f, indent=4)
+        with open(CONFIG_FILE, "w") as configfile:
+            config.write(configfile)
         debug_console.log(f"Configuration saved to {CONFIG_FILE}", level='INFO')
     except IOError as e:
         debug_console.log(f"Error saving config file: {e}", level='ERROR')
 
+def get_bool(value_str):
+    """Helper to convert string from config to boolean."""
+    return value_str.lower() in ['true', '1', 't', 'y', 'yes']

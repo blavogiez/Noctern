@@ -12,6 +12,8 @@ from app import main_window as interface
 from utils import debug_console
 from llm import rephrase as llm_rephrase
 from editor import snippets as editor_snippets
+from app import settings_window
+from app import settings_window
 
 def _log_action(action_name):
     """
@@ -92,6 +94,8 @@ def create_top_buttons_frame(root):
     tools_menu.add_command(label="Clean Project Directory", command=lambda: [_log_action("Tools: Clean Project"), latex_compiler.clean_project_directory()])
 
     # --- Populate Settings Menu ---
+    settings_menu.add_command(label="Preferences...", command=lambda: [_log_action("Settings: Open Preferences"), settings_window.open_settings_window(root)])
+    settings_menu.add_separator()
     settings_menu.add_command(label="Set LLM Keywords...", command=lambda: [_log_action("Settings: Set LLM Keywords"), llm_service.open_set_keywords_dialog()])
     settings_menu.add_command(label="Edit LLM Prompts...", command=lambda: [_log_action("Settings: Edit LLM Prompts"), llm_service.open_edit_prompts_dialog()])
     settings_menu.add_command(label="Edit Snippets...", command=lambda: [_log_action("Settings: Edit Snippets"), editor_snippets.open_snippet_editor()])
@@ -103,23 +107,17 @@ def create_top_buttons_frame(root):
         command=interface.toggle_auto_open_pdf
     )
     
-    # Advanced Mode Checkbutton: Toggles advanced features.
-    settings_menu.add_checkbutton(
-        label="Advanced Mode",
-        variable=interface._advanced_mode_enabled, # Linked to a BooleanVar in interface.py.
-        command=interface.toggle_advanced_mode # Callback to toggle advanced features.
-    )
-    # Show Debug Console option (initially disabled, enabled by Advanced Mode).
+    # Show Debug Console option.
     settings_menu.add_command(
         label="Show Debug Console",
         command=lambda: [_log_action("Settings: Show Debug Console"), debug_console.show_console()],
-        state="disabled" # Initially disabled.
+        state="normal"
     )
-    # Restart Application option (initially disabled, enabled by Advanced Mode).
+    # Restart Application option.
     settings_menu.add_command(
         label="Restart Application",
         command=lambda: [_log_action("Settings: Restart Application"), interface.restart_application()],
-        state="disabled" # Initially disabled.
+        state="normal"
     )
     
     return top_frame, settings_menu
