@@ -48,6 +48,13 @@ def open_settings_window(root):
     pdf_monitor_combo = ttk.Combobox(monitor_frame, textvariable=pdf_monitor_var, values=monitor_names, state="readonly")
     pdf_monitor_combo.grid(row=1, column=1, sticky="ew", padx=5, pady=5)
 
+    # Button to identify screens
+    def identify_screens_action():
+        screen.show_screen_numbers(settings_win)
+
+    identify_button = ttk.Button(monitor_frame, text="Identifier les écrans", command=identify_screens_action)
+    identify_button.grid(row=2, column=0, columnspan=2, pady=10)
+
     # --- Window State Settings ---
     window_frame = ttk.LabelFrame(main_frame, text="Window Startup State", padding=10)
     window_frame.pack(fill="x", expand=True, pady=10)

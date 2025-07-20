@@ -91,7 +91,7 @@ FileStates [
 		]
 		IsPinned = false
 		IsMissing = false
-		OpenCount = 3
+		OpenCount = 7
 		UseDefaultState = false
 		DisplayMode = continuous
 		ScrollPos = -1 -1
@@ -111,7 +111,7 @@ FileStates [
 		]
 		IsPinned = false
 		IsMissing = false
-		OpenCount = 26
+		OpenCount = 30
 		UseDefaultState = false
 		DisplayMode = continuous
 		ScrollPos = -1 577.201
@@ -308,32 +308,6 @@ FileStates [
 	]
 ]
 SessionData [
-	[
-		TabStates [
-			[
-				FilePath = C:\Users\lab\Documents\BUT1\BuTeX\rapport\test.pdf
-				DisplayMode = continuous
-				PageNo = 5
-				Zoom = 75
-				Rotation = 0
-				ScrollPos = -1 577.201
-				ShowToc = true
-			]
-			[
-				FilePath = C:\Users\lab\Documents\BUT1\BuTeX\rapport\gusto.pdf
-				DisplayMode = continuous
-				PageNo = 1
-				Zoom = fit page
-				Rotation = 0
-				ScrollPos = -1 -1
-				ShowToc = false
-			]
-		]
-		TabIndex = 3
-		WindowState = 2
-		WindowPos = -1930 0 817 433
-		SidebarDx = 194
-	]
 ]
 TimeOfLastUpdateCheck = 0 0
 OpenCountWeek = 759
