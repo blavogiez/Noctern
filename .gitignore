@@ -11,6 +11,8 @@ pip-delete-this-directory.txt
 .idea/
 .vscode/
 
+.env
+
 # LaTeX temporary files
 *.aux
 *.log

@@ -1,10 +1,10 @@
 {
-    "alpha": "$\\alpha$",
-    "beta": "$\\beta$",
-    "enum": "\\begin{enumerate}\n    \\item \n    \\item \n\\end{enumerate}",
-    "fig": "\\begin{figure}[h!]\n    \\centering\n    \\includegraphics[width=0.8\\textwidth]{figures/}\n    \\caption{Caption here}\n    \\label{fig:my_label}\n\\end{figure}",
+    "alpha": "$\u0007lpha$",
+    "beta": "$\beta$",
+    "enum": "\begin{enumerate}\n    \\item \n    \\item \n\\end{enumerate}",
+    "fig": "\begin{figure}[h!]\n    \\centering\n    \\includegraphics[width=0.8\textwidth]{figures/}\n    \\caption{Caption here}\n    \\label{fig:my_label}\n\\end{figure}",
     "gamma": "$\\gamma$",
-    "item": "\\begin{itemize}\n    \\item \n    \\item \n\\end{itemize}",
-    "table2x2": "\\begin{table}[h!]\n    \\centering\n    \\begin{tabular}{|c|c|}\n        \\hline\n        col1 & col2 \\\\\n        \\hline\n        cell1 & cell2 \\\\\n        \\hline\n    \\end{tabular}\n    \\caption{Caption}\n    \\label{tab:my_label}\n\\end{table}",
-    "table3x3": "\\begin{table}[h!]\n    \\centering\n    \\begin{tabular}{|c|c|c|}\n        \\hline\n        col1 & col2 & col3 \\\\\n        \\hline\n        r1c1 & r1c2 & r1c3 \\\\\n        r2c1 & r2c2 & r2c3 \\\\\n        \\hline\n    \\end{tabular}\n    \\caption{Caption}\n    \\label{tab:my_label}\n\\end{table}"
+    "item": "\begin{itemize}\n    \\item \n    \\item \n\\end{itemize}",
+    "table2x2": "\begin{table}[h!]\n    \\centering\n    \begin{tabular}{|c|c|}\n        \\hline\n        col1 & col2 \\\n        \\hline\n        cell1 & cell2 \\\n        \\hline\n    \\end{tabular}\n    \\caption{Caption}\n    \\label{tab:my_label}\n\\end{table}",
+    "table3x3": "\begin{table}[h!]\n    \\centering\n    \begin{tabular}{|c|c|c|}\n        \\hline\n        col1 & col2 & col3 \\\n        \\hline\n        r1c1 & r1c2 & r1c3 \\\n        r2c1 & r2c2 & r2c3 \\\n        \\hline\n    \\end{tabular}\n    \\caption{Caption}\n    \\label{tab:my_label}\n\\end{table}"
 }
