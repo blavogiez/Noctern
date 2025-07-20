@@ -17,8 +17,9 @@ from app import statusbar as interface_statusbar
 from app import file_operations as interface_fileops
 from app import tab_operations as interface_tabops
 from app import theme as interface_theme
+from app import config as app_config
 from app.topbar import create_top_buttons_frame
-from app.panes import create_main_paned_window, create_outline_tree, create_notebook
+from app.panes import create_main_paned_window, create_outline_tree, create_notebook, create_console_pane
 from app.status import create_status_bar, start_gpu_status_loop
 from app.shortcuts import bind_shortcuts
 from editor.tab import EditorTab
@@ -41,12 +42,17 @@ status_bar_frame = None  # The frame containing status bar elements.
 status_label = None  # Label for general application status messages.
 gpu_status_label = None  # Label for displaying GPU status.
 main_pane = None  # The main paned window separating editor and outline.
+vertical_pane = None # The main vertical paned window
+console_pane = None # The console pane at the bottom
+console_output = None # The text widget for the console output
 
 # --- Theme and Configuration Variables ---
 _theme_settings = {}  # Dictionary holding current theme-specific settings.
 current_theme = "light"  # Name of the currently active theme.
 settings_menu = None  # Reference to the settings menu.
 _advanced_mode_enabled = None  # tk.BooleanVar to track advanced mode state.
+_app_config = {} # Holds user-specific settings from config.json
+_auto_open_pdf_var = None # tk.BooleanVar for the auto-open PDF setting
 
 # --- Editor and Performance Constants ---
 zoom_factor = 1.1  # Factor by which font size changes during zoom operations.
@@ -213,6 +219,32 @@ def zoom_out(_=None):
     debug_console.log("Zoom Out action triggered.", level='ACTION')
     interface_zoom.zoom_out(get_current_tab, perform_heavy_updates, min_font_size, max_font_size, zoom_factor)
 
+def show_console(content):
+    """
+    Displays the console pane with the given content.
+    """
+    global console_pane, console_output, vertical_pane
+    if console_pane and console_output:
+        # Add the pane back if it's not currently there.
+        if str(console_pane) not in vertical_pane.panes():
+            vertical_pane.add(console_pane, height=150)
+
+        console_output.config(state="normal")
+        console_output.delete("1.0", tk.END)
+        console_output.insert("1.0", content)
+        console_output.config(state="disabled")
+
+def hide_console():
+    """
+    Hides the console pane.
+    """
+    global console_pane, vertical_pane
+    if console_pane:
+        # Remove the pane if it is currently visible.
+        if str(console_pane) in vertical_pane.panes():
+            vertical_pane.remove(console_pane)
+
+
 def show_temporary_status_message(message, duration_ms=2500):
     """
     Displays a temporary message in the status bar for a specified duration.
@@ -363,6 +395,15 @@ def create_new_tab(file_path=None, event=None):
         file_path, notebook, tabs, apply_theme, current_theme, on_tab_changed, EditorTab, schedule_heavy_updates
     )
 
+    if file_path and file_path.endswith(".tex"):
+        if _app_config.get('auto_open_pdf', False):
+            pdf_path = file_path.replace(".tex", ".pdf")
+            if os.path.exists(pdf_path):
+                debug_console.log(f"Auto-opening PDF: {pdf_path}", level='INFO')
+                latex_compiler.view_pdf_external(pdf_path=pdf_path)
+            else:
+                debug_console.log(f"Auto-open PDF: Corresponding PDF not found at {pdf_path}", level='DEBUG')
+
 def restore_last_closed_tab(event=None):
     """
     Reopens the most recently closed tab from the `_closed_tabs_stack`.
@@ -476,6 +517,17 @@ def toggle_advanced_mode():
     else:
         debug_console.hide_console() # Hide the debug console when advanced mode is disabled.
         debug_console.log("Advanced mode DISABLED.", level='CONFIG')
+
+def toggle_auto_open_pdf():
+    """
+    Callback to update and save the auto-open PDF setting.
+    """
+    global _app_config
+    new_value = _auto_open_pdf_var.get()
+    _app_config['auto_open_pdf'] = new_value
+    app_config.save_config(_app_config)
+    debug_console.log(f"Set 'auto_open_pdf' to {new_value}", level='CONFIG')
+
 
 def restart_application():
     """
@@ -606,6 +658,9 @@ def setup_gui():
     """
     global root, notebook, outline_tree, llm_progress_bar, _theme_settings, status_bar_frame
     global status_label, gpu_status_label, main_pane, settings_menu, _advanced_mode_enabled
+    global vertical_pane, console_pane, console_output, _app_config, _auto_open_pdf_var
+
+    _app_config = app_config.load_config()
 
     root = tk.Tk() # Create the main application window.
     root.title("AutomaTeX v1.0") # Set the window title.
@@ -613,17 +668,34 @@ def setup_gui():
     debug_console.log("GUI initialization process started.", level='INFO')
 
     _advanced_mode_enabled = tk.BooleanVar(value=False) # Initialize advanced mode state.
+    _auto_open_pdf_var = tk.BooleanVar(value=_app_config.get('auto_open_pdf', False))
     debug_console.initialize(root) # Initialize the debug console with the root window.
 
     # Create the top buttons frame and retrieve the settings menu.
     top_frame, settings_menu = create_top_buttons_frame(root)
 
-    # Create the main paned window for layout management.
-    main_pane = create_main_paned_window(root)
+    # Create the main vertical paned window
+    vertical_pane = tk.PanedWindow(root, orient=tk.VERTICAL, sashrelief=tk.FLAT, sashwidth=6)
+    vertical_pane.pack(fill="both", expand=True)
+
+    # Create the main horizontal paned window for layout management.
+    main_pane = create_main_paned_window(vertical_pane)
+    
     # Create the outline tree widget and link it to the main pane.
     outline_tree = create_outline_tree(main_pane, get_current_tab)
+    
     # Create the notebook (tabbed editor area) and link it to the main pane.
     notebook = create_notebook(main_pane)
+    
+    # Add main_pane to the vertical_pane
+    vertical_pane.add(main_pane, stretch="always")
+
+    # Create the console pane
+    console_frame, console_output = create_console_pane(vertical_pane)
+    console_pane = console_frame
+    vertical_pane.add(console_pane)
+    hide_console() # Initially hidden
+
     # Bind the tab change event to the on_tab_changed callback.
     notebook.bind("<<NotebookTabChanged>>", on_tab_changed)
     # Create the LLM progress bar (initially indeterminate).

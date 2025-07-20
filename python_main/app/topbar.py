@@ -55,6 +55,8 @@ def create_top_buttons_frame(root):
     # --- LaTeX Processing Buttons ---
     # Compile button: Triggers LaTeX compilation.
     ttk.Button(top_frame, text="🛠 Compile", command=lambda: [_log_action("Compile LaTeX"), latex_compiler.compile_latex()]).pack(side="left", padx=3, pady=3)
+    # View PDF button: Opens the PDF in an external viewer.
+    ttk.Button(top_frame, text="📄 View PDF", command=lambda: [_log_action("View PDF"), latex_compiler.view_pdf_external()]).pack(side="left", padx=3, pady=3)
     # Translate button: Opens the translation dialog.
     ttk.Button(top_frame, text="🌐 Translate", command=lambda: [_log_action("Translate Text"), latex_translator.open_translate_dialog()]).pack(side="left", padx=3, pady=3)
     
@@ -94,6 +96,12 @@ def create_top_buttons_frame(root):
     settings_menu.add_command(label="Edit LLM Prompts...", command=lambda: [_log_action("Settings: Edit LLM Prompts"), llm_service.open_edit_prompts_dialog()])
     settings_menu.add_command(label="Edit Snippets...", command=lambda: [_log_action("Settings: Edit Snippets"), editor_snippets.open_snippet_editor()])
     settings_menu.add_separator() # Add a visual separator.
+    
+    settings_menu.add_checkbutton(
+        label="Auto-open PDF on .tex load",
+        variable=interface._auto_open_pdf_var,
+        command=interface.toggle_auto_open_pdf
+    )
     
     # Advanced Mode Checkbutton: Toggles advanced features.
     settings_menu.add_checkbutton(

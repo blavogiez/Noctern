@@ -81,3 +81,21 @@ def create_notebook(main_pane):
     # It is set to stretch and has a minimum size to ensure visibility.
     main_pane.add(notebook_frame, stretch="always", minsize=400)
     return notebook
+
+def create_console_pane(parent):
+    """
+    Creates the console output pane at the bottom of the UI.
+
+    Args:
+        parent (tk.Widget): The parent widget for the console pane.
+
+    Returns:
+        tuple: A tuple containing the console frame and the text widget.
+    """
+    console_frame = ttk.Frame(parent, height=100)
+    console_frame.pack_propagate(False)
+
+    console_output = tk.Text(console_frame, wrap="word", state="disabled", height=6)
+    console_output.pack(fill="both", expand=True)
+
+    return console_frame, console_output

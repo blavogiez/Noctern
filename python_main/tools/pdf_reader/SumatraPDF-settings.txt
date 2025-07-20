@@ -78,48 +78,48 @@ TreeFontName = automatic
 SmoothScroll = false
 ShowStartPage = true
 CheckForUpdates = true
-WindowState = 1
-WindowPos = 950 0 980 1030
+WindowState = 2
+WindowPos = -1930 0 817 433
 UseTabs = true
 UseSysColors = false
 CustomScreenDPI = 0
 
 FileStates [
 	[
-		FilePath = C:\Users\lab\Documents\BUT1\AutomaTeX\python_main\sample_usage\rapport\test.pdf
+		FilePath = C:\Users\lab\Documents\BUT1\BuTeX\rapport\gusto.pdf
 		Favorites [
 		]
 		IsPinned = false
 		IsMissing = false
-		OpenCount = 1
+		OpenCount = 3
 		UseDefaultState = false
 		DisplayMode = continuous
 		ScrollPos = -1 -1
-		PageNo = 3
+		PageNo = 1
 		Zoom = fit page
 		Rotation = 0
-		WindowState = 1
-		WindowPos = 950 0 980 1030
+		WindowState = 2
+		WindowPos = -1930 0 817 433
 		ShowToc = false
 		SidebarDx = 194
 		DisplayR2L = false
 		ReparseIdx = 0
 	]
 	[
-		FilePath = C:\Users\lab\Documents\BUT1\AutomaTeX\python_main\sample_usage\rapport\S2-C_SAE2.04_LAVOGIEZ_Rapport-Stats.pdf
+		FilePath = C:\Users\lab\Documents\BUT1\BuTeX\rapport\test.pdf
 		Favorites [
 		]
 		IsPinned = false
 		IsMissing = false
-		OpenCount = 2
+		OpenCount = 26
 		UseDefaultState = false
 		DisplayMode = continuous
-		ScrollPos = -1 -1
-		PageNo = 31
-		Zoom = fit page
+		ScrollPos = -1 577.201
+		PageNo = 5
+		Zoom = 75
 		Rotation = 0
-		WindowState = 1
-		WindowPos = 950 0 980 1030
+		WindowState = 2
+		WindowPos = -1930 0 817 433
 		ShowToc = true
 		SidebarDx = 194
 		DisplayR2L = false
@@ -131,14 +131,14 @@ FileStates [
 		]
 		IsPinned = false
 		IsMissing = false
-		OpenCount = 3
+		OpenCount = 8
 		UseDefaultState = false
 		DisplayMode = continuous
 		ScrollPos = -1 -1
 		PageNo = 71
 		Zoom = fit page
 		Rotation = 0
-		WindowState = 1
+		WindowState = 2
 		WindowPos = 950 0 980 1030
 		ShowToc = true
 		SidebarDx = 194
@@ -152,14 +152,14 @@ FileStates [
 		]
 		IsPinned = false
 		IsMissing = false
-		OpenCount = 4
+		OpenCount = 9
 		UseDefaultState = false
 		DisplayMode = continuous
-		ScrollPos = -1 232.114
+		ScrollPos = -1 226.864
 		PageNo = 26
 		Zoom = 66.67
 		Rotation = 0
-		WindowState = 1
+		WindowState = 2
 		WindowPos = 950 0 980 1030
 		ShowToc = false
 		SidebarDx = 194
@@ -266,55 +266,76 @@ FileStates [
 		DisplayR2L = false
 		ReparseIdx = 0
 	]
+	[
+		FilePath = C:\Users\lab\Documents\BUT1\AutomaTeX\python_main\sample_usage\rapport\S2-C_SAE2.04_LAVOGIEZ_Rapport-Stats.pdf
+		Favorites [
+		]
+		IsPinned = false
+		IsMissing = false
+		OpenCount = 0
+		UseDefaultState = false
+		DisplayMode = continuous
+		ScrollPos = -1 -1
+		PageNo = 31
+		Zoom = fit page
+		Rotation = 0
+		WindowState = 1
+		WindowPos = 950 0 980 1030
+		ShowToc = true
+		SidebarDx = 194
+		DisplayR2L = false
+		ReparseIdx = 0
+	]
+	[
+		FilePath = C:\Users\lab\Documents\BUT1\AutomaTeX\python_main\sample_usage\rapport\test.pdf
+		Favorites [
+		]
+		IsPinned = false
+		IsMissing = false
+		OpenCount = 0
+		UseDefaultState = false
+		DisplayMode = continuous
+		ScrollPos = -1 -1
+		PageNo = 3
+		Zoom = fit page
+		Rotation = 0
+		WindowState = 1
+		WindowPos = 950 0 980 1030
+		ShowToc = false
+		SidebarDx = 194
+		DisplayR2L = false
+		ReparseIdx = 0
+	]
 ]
 SessionData [
 	[
 		TabStates [
 			[
-				FilePath = C:\Users\lab\Documents\BUT1\Semestre 2\Portfolio\rapportTools\S2-C_Baptiste-Lavogiez_Portfolio.pdf
+				FilePath = C:\Users\lab\Documents\BUT1\BuTeX\rapport\test.pdf
 				DisplayMode = continuous
-				PageNo = 26
-				Zoom = 66.67
+				PageNo = 5
+				Zoom = 75
 				Rotation = 0
-				ScrollPos = -1 232.114
-				ShowToc = false
-			]
-			[
-				FilePath = C:\Users\lab\Documents\BUT1\Semestre 2\SAé\SAE201-202\poo\rapportTools\S2-C_ZHENG_ZAVADSKIYI_LAVOGIEZ_POO-v4-rapport.pdf
-				DisplayMode = continuous
-				PageNo = 71
-				Zoom = fit page
-				Rotation = 0
-				ScrollPos = -1 -1
-				ShowToc = true
-				TocState = 14 26
-			]
-			[
-				FilePath = C:\Users\lab\Documents\BUT1\AutomaTeX\python_main\sample_usage\rapport\S2-C_SAE2.04_LAVOGIEZ_Rapport-Stats.pdf
-				DisplayMode = continuous
-				PageNo = 31
-				Zoom = fit page
-				Rotation = 0
-				ScrollPos = -1 -1
+				ScrollPos = -1 577.201
 				ShowToc = true
 			]
 			[
-				FilePath = C:\Users\lab\Documents\BUT1\AutomaTeX\python_main\sample_usage\rapport\test.pdf
+				FilePath = C:\Users\lab\Documents\BUT1\BuTeX\rapport\gusto.pdf
 				DisplayMode = continuous
-				PageNo = 3
+				PageNo = 1
 				Zoom = fit page
 				Rotation = 0
 				ScrollPos = -1 -1
 				ShowToc = false
 			]
 		]
-		TabIndex = 5
-		WindowState = 1
-		WindowPos = 950 0 980 1030
+		TabIndex = 3
+		WindowState = 2
+		WindowPos = -1930 0 817 433
 		SidebarDx = 194
 	]
 ]
 TimeOfLastUpdateCheck = 0 0
-OpenCountWeek = 758
+OpenCountWeek = 759
 
 # Settings below are not recognized by the current version

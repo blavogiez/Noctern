@@ -12,12 +12,16 @@ import webbrowser
 import tkinter as tk
 from tkinter import messagebox
 from utils import debug_console
+from latex import error_parser
+from utils.screen import get_secondary_monitor_index
 
 # Global reference to the root Tkinter window, initialized during application setup.
 root = None
 get_current_tab = None
+show_console = None
+hide_console = None
 
-def initialize_compiler(root_widget, get_current_tab_func):
+def initialize_compiler(root_widget, get_current_tab_func, show_console_func, hide_console_func):
     """
     Initializes the LaTeX compiler module by setting the root Tkinter window.
 
@@ -26,9 +30,11 @@ def initialize_compiler(root_widget, get_current_tab_func):
     Args:
         root_widget (tk.Tk): The main Tkinter application window.
     """
-    global root, get_current_tab
+    global root, get_current_tab, show_console, hide_console
     root = root_widget
     get_current_tab = get_current_tab_func
+    show_console = show_console_func
+    hide_console = hide_console_func
     debug_console.log("LaTeX Compiler module initialized.", level='INFO')
 
 def clean_project_directory(event=None):
@@ -219,22 +225,19 @@ def compile_latex(event=None):
         command = ["pdflatex", "-interaction=nonstopmode", file_name]
         debug_console.log(f"Executing pdflatex command: {' '.join(command)} in directory: {source_directory}", level='DEBUG')
         result = subprocess.run(command, cwd=source_directory, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=60, check=False)
-        compilation_log_output = result.stdout.decode("utf-8", errors="ignore")
+        
+        log_file_path = os.path.join(source_directory, file_name.replace(".tex", ".log"))
 
         if result.returncode == 0:
             messagebox.showinfo("✅ Compilation Successful", "LaTeX document compiled successfully to PDF.")
             debug_console.log("LaTeX compilation successful.", level='SUCCESS')
+            hide_console()
             display_pdf(pdf_output_path) # Display the generated PDF.
         else:
             messagebox.showerror("❌ LaTeX Compilation Failed", "Compilation failed. Please check the log for details.")
             debug_console.log("LaTeX compilation failed. Displaying log.", level='ERROR')
-            # Display compilation log in a new window.
-            log_window = tk.Toplevel(root)
-            log_window.title("LaTeX Compilation Log")
-            log_text_box = tk.Text(log_window, wrap="word", height=30, width=100)
-            log_text_box.insert("1.0", compilation_log_output)
-            log_text_box.config(state="disabled") # Make read-only.
-            log_text_box.pack(padx=10, pady=10)
+            error_summary = error_parser.read_and_parse_log(log_file_path)
+            show_console(error_summary)
     except FileNotFoundError:
         messagebox.showerror("Error", "`pdflatex` command not found. Please ensure LaTeX is installed and in your system's PATH.")
         debug_console.log("pdflatex command not found.", level='ERROR')
@@ -293,3 +296,52 @@ def display_pdf(pdf_path):
         except Exception as e:
              messagebox.showwarning("Warning", f"Could not open PDF with system default viewer:\n{e}")
              debug_console.log(f"Error opening PDF with system default viewer: {e}", level='ERROR')
+
+def view_pdf_external(event=None, pdf_path=None):
+    """
+    Opens the PDF for the current .tex file in an external viewer,
+    attempting to use fullscreen on a secondary monitor if available.
+    
+    Args:
+        pdf_path (str, optional): Direct path to the PDF. If None, it's derived from the current tab.
+    """
+    debug_console.log("View PDF externally command initiated.", level='ACTION')
+    
+    if pdf_path is None:
+        current_tab = get_current_tab()
+        if not current_tab or not current_tab.file_path:
+            messagebox.showwarning("Action Failed", "Please save your file first to locate the corresponding PDF.")
+            debug_console.log("View PDF failed: No active file path.", level='WARNING')
+            return
+
+        source_directory = os.path.dirname(current_tab.file_path)
+        file_name = os.path.basename(current_tab.file_path)
+        pdf_path = os.path.join(source_directory, file_name.replace(".tex", ".pdf"))
+
+    if not os.path.exists(pdf_path):
+        messagebox.showerror("PDF Not Found", f"The PDF file was not found at:\n{pdf_path}\n\nPlease compile the document first.")
+        debug_console.log(f"PDF file not found for viewing: {pdf_path}", level='ERROR')
+        return
+
+    sumatra_pdf_path = os.path.normpath(os.path.join(os.path.dirname(__file__), '..', 'tools', 'pdf_reader', 'SumatraPDF.exe'))
+    
+    command = []
+    if platform.system() == "Windows" and os.path.exists(sumatra_pdf_path):
+        command.append(sumatra_pdf_path)
+        command.append(pdf_path) # File path should come before options
+        
+        secondary_monitor_index = get_secondary_monitor_index()
+        if secondary_monitor_index:
+            command.append("-monitor")
+            command.append(str(secondary_monitor_index))
+            command.append("-fullscreen")
+        
+        try:
+            subprocess.Popen(command)
+            debug_console.log(f"Opening PDF with SumatraPDF command: {' '.join(command)}", level='INFO')
+        except Exception as e:
+            messagebox.showerror("Error Opening PDF", f"Could not open PDF with SumatraPDF: {e}")
+            debug_console.log(f"Error opening PDF with SumatraPDF: {e}", level='ERROR')
+    else:
+        # Fallback for non-Windows or if Sumatra is not found
+        display_pdf(pdf_path)
