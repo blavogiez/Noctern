@@ -29,8 +29,33 @@ def open_rephrase_dialog():
         end_index = editor_widget.index(tk.SEL_LAST)
         selected_text = editor_widget.get(start_index, end_index)
     except tk.TclError:
-        messagebox.showwarning("Rephrase", "Please select the text you want to rephrase.")
-        return
+        selected_text = ""
+
+    # If no text is selected, try to get it from the active LLM session
+    if not selected_text.strip():
+        from llm.interactive import _current_session
+        if _current_session and _current_session.full_response_text:
+            selected_text = _current_session.full_response_text
+            # We need to replace the entire block, including the UI buttons
+            start_index = _current_session.block_start_index
+            end_index = _current_session.text_end_index
+        else:
+            messagebox.showwarning("Rephrase", "Please select the text you want to rephrase.")
+            return
+
+    # If no text is selected, try to get it from the active LLM session
+    if not selected_text.strip():
+        from llm.interactive import _current_session
+        if _current_session and _current_session.full_response_text:
+            selected_text = _current_session.full_response_text
+            start_index = _current_session.text_start_index
+            end_index = _current_session.text_end_index
+            # Since we are rephrasing the content of an entire session, we should discard the old one.
+            # The new session will replace it.
+            _current_session.destroy(delete_text=False) 
+        else:
+            messagebox.showwarning("Rephrase", "Please select the text you want to rephrase.")
+            return
 
     if not selected_text.strip():
         messagebox.showwarning("Rephrase", "The selected text is empty.")
@@ -83,19 +108,26 @@ def request_rephrase_for_text(editor, original_text, start_index, end_index, ins
         return
 
     # Start the interactive session, passing the specific callback for this rephrase operation
-    session_callbacks = llm_interactive.start_new_interactive_session(editor, on_discard_callback=on_discard_callback)
+    session_callbacks = llm_interactive.start_new_interactive_session(
+        editor, 
+        is_rephrase=True,
+        on_discard_callback=on_discard_callback
+    )
 
     def rephrase_thread_target():
         """The target function for the LLM generation thread."""
+        accumulated_text = ""
         try:
             for chunk in llm_api_client.request_llm_generation(rephrase_prompt):
                 if llm_state._is_generation_cancelled:
                     break
                 if chunk.get("success"):
                     if "chunk" in chunk:
-                        editor.after(0, session_callbacks['on_chunk'], chunk["chunk"])
+                        chunk_text = chunk["chunk"]
+                        accumulated_text += chunk_text
+                        editor.after(0, session_callbacks['on_chunk'], chunk_text)
                     if chunk.get("done"):
-                        editor.after(0, session_callbacks['on_success'])
+                        editor.after(0, session_callbacks['on_success'], accumulated_text)
                         return
                 else:
                     editor.after(0, session_callbacks['on_error'], chunk.get("error", "Unknown error."))

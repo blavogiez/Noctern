@@ -14,19 +14,21 @@ class InteractiveSession:
     Manages an interactive LLM generation session within the editor.
     """
 
-    def __init__(self, editor, start_index, is_completion=False, completion_phrase="", on_discard_callback=None):
+    def __init__(self, editor, start_index, is_completion=False, is_rephrase=False, completion_phrase="", on_discard_callback=None):
         """
         Initializes a new interactive LLM session.
         Args:
             editor (tk.Text): The Tkinter Text widget.
             start_index (str): The Tkinter index where the output should begin.
             is_completion (bool): True if this is a completion session.
+            is_rephrase (bool): True if this is a rephrase session.
             completion_phrase (str): The phrase being completed.
             on_discard_callback (callable, optional): A function to call when the session is discarded.
         """
-        debug_console.log(f"Creating new interactive LLM session. Is completion: {is_completion}", level='INFO')
+        debug_console.log(f"Creating new interactive LLM session. Completion: {is_completion}, Rephrase: {is_rephrase}", level='INFO')
         self.editor = editor
         self.is_completion = is_completion
+        self.is_rephrase = is_rephrase
         self.completion_phrase = completion_phrase
         self.full_response_text = ""
         self.is_animating = False
@@ -121,8 +123,17 @@ class InteractiveSession:
         self.full_response_text = final_cleaned_text
 
         if self.is_completion: self._post_process_completion()
+
+        # If this was a rephrase action, select the newly inserted text
+        if self.is_rephrase:
+            self.editor.tag_add(tk.SEL, self.text_start_index, self.text_end_index)
+
         llm_state._is_generating = False
         self.editor.focus_set()
+
+        # If this was a generation action (and not a rephrase or completion), open the rephrase dialog
+        if not self.is_rephrase and not self.is_completion:
+            self.editor.after(50, self.rephrase) # Use after to ensure UI is fully updated
 
     def handle_error(self, error_msg):
         if llm_state._is_generation_cancelled: return
@@ -153,19 +164,43 @@ class InteractiveSession:
 
     def rephrase(self):
         if llm_state._is_generating: return
+        
         from . import rephrase as llm_rephrase
+        from llm.dialogs.rephrase import show_rephrase_dialog
+        from app.main_window import get_main_app_instance
+
         text_to_rephrase = self.full_response_text
         if not text_to_rephrase.strip():
             messagebox.showinfo("Rephrase", "Nothing to rephrase yet.")
             return
-        
-        # When rephrasing a generation, the discard should restore the *original* text, not the intermediate one.
-        # So, we pass along the original on_discard_callback.
-        llm_rephrase.request_rephrase_for_text(
-            self.editor, text_to_rephrase, self.block_start_index, self.text_end_index,
-            on_discard_callback=self.on_discard_callback
+
+        app = get_main_app_instance()
+        if not app:
+            debug_console.log("Cannot get main app instance for rephrase dialog.", level='ERROR')
+            return
+
+        # This callback will be executed if the user provides an instruction and clicks "Rephrase"
+        def on_rephrase_confirmed(instruction):
+            # The `request_rephrase_for_text` function will start a new interactive session.
+            # The `start_new_interactive_session` function will automatically discard the current session.
+            llm_rephrase.request_rephrase_for_text(
+                self.editor,
+                text_to_rephrase,
+                self.block_start_index, # The start of the area to be replaced by the new session
+                self.text_end_index,   # The end of the area to be replaced
+                instruction,
+                self.on_discard_callback # Preserve the original discard behavior
+            )
+
+        # Show the dialog to get the instruction from the user.
+        # If the user cancels, do nothing and leave the current interactive session as is.
+        show_rephrase_dialog(
+            root_window=app.root,
+            theme_setting_getter_func=app.theme.get_setting,
+            original_text=text_to_rephrase,
+            on_rephrase_callback=on_rephrase_confirmed,
+            on_cancel_callback=lambda: debug_console.log("Rephrase dialog cancelled.", level='INFO')
         )
-        self.destroy(delete_text=True)
 
     def _post_process_completion(self):
         cleaned_text = llm_utils.remove_prefix_overlap_from_completion(self.completion_phrase, self.full_response_text)
@@ -197,7 +232,7 @@ class InteractiveSession:
         _current_session = None
         llm_state._is_generating = False
 
-def start_new_interactive_session(editor, is_completion=False, completion_phrase="", on_discard_callback=None):
+def start_new_interactive_session(editor, is_completion=False, is_rephrase=False, completion_phrase="", on_discard_callback=None):
     global _current_session
     if _current_session:
         _current_session.discard()
@@ -209,7 +244,13 @@ def start_new_interactive_session(editor, is_completion=False, completion_phrase
     # Add a separator to group the entire generation as a single undo action.
     editor.edit_separator()
     
-    _current_session = InteractiveSession(editor, start_index, is_completion, completion_phrase, on_discard_callback)
+    _current_session = InteractiveSession(
+        editor, start_index, 
+        is_completion=is_completion, 
+        is_rephrase=is_rephrase,
+        completion_phrase=completion_phrase, 
+        on_discard_callback=on_discard_callback
+    )
     
     return {
         'on_chunk': _current_session.handle_chunk,

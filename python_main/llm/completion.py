@@ -90,15 +90,20 @@ def request_llm_to_complete_text():
         back to the main thread via `editor.after()` for UI updates. Handles errors
         and ensures the progress bar is stopped upon completion or failure.
         """
+        accumulated_text = ""
         try:
             # Iterate over chunks received from the LLM API client.
             for api_response_chunk in llm_api_client.request_llm_generation(full_llm_prompt):
                 if api_response_chunk["success"]:
                     if "chunk" in api_response_chunk: # If a text chunk is received.
+                        chunk_text = api_response_chunk["chunk"]
+                        accumulated_text += chunk_text
                         # Schedule UI update on the main thread.
-                        editor_widget.after(0, lambda c=api_response_chunk["chunk"]: interactive_session_callbacks['on_chunk'](c))
+                        editor_widget.after(0, lambda c=chunk_text: interactive_session_callbacks['on_chunk'](c))
+                    
                     if api_response_chunk.get("done"): # If the generation is complete.
-                        editor_widget.after(0, interactive_session_callbacks['on_success'])
+                        # Use the accumulated text as the final text.
+                        editor_widget.after(0, interactive_session_callbacks['on_success'], accumulated_text)
                         return # Exit the thread.
                 else:
                     # If an error occurred during generation.
