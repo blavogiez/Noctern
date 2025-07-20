@@ -91,7 +91,7 @@ FileStates [
 		]
 		IsPinned = false
 		IsMissing = false
-		OpenCount = 14
+		OpenCount = 16
 		UseDefaultState = false
 		DisplayMode = continuous
 		ScrollPos = -1 68.1006
@@ -320,7 +320,7 @@ SessionData [
 				ShowToc = false
 			]
 		]
-		TabIndex = 1
+		TabIndex = 2
 		WindowState = 2
 		WindowPos = -1930 0 817 433
 		SidebarDx = 194

@@ -167,17 +167,14 @@ class InteractiveSession:
         
         from . import rephrase as llm_rephrase
         from llm.dialogs.rephrase import show_rephrase_dialog
-        from app.main_window import get_main_app_instance
+        from app import main_window
 
         text_to_rephrase = self.full_response_text
         if not text_to_rephrase.strip():
             messagebox.showinfo("Rephrase", "Nothing to rephrase yet.")
             return
 
-        app = get_main_app_instance()
-        if not app:
-            debug_console.log("Cannot get main app instance for rephrase dialog.", level='ERROR')
-            return
+        root_window = self.editor.winfo_toplevel()
 
         # This callback will be executed if the user provides an instruction and clicks "Rephrase"
         def on_rephrase_confirmed(instruction):
@@ -195,8 +192,8 @@ class InteractiveSession:
         # Show the dialog to get the instruction from the user.
         # If the user cancels, do nothing and leave the current interactive session as is.
         show_rephrase_dialog(
-            root_window=app.root,
-            theme_setting_getter_func=app.theme.get_setting,
+            root_window=root_window,
+            theme_setting_getter_func=main_window.get_theme_setting,
             original_text=text_to_rephrase,
             on_rephrase_callback=on_rephrase_confirmed,
             on_cancel_callback=lambda: debug_console.log("Rephrase dialog cancelled.", level='INFO')
