@@ -11,8 +11,11 @@ import platform
 import webbrowser
 import tkinter as tk
 from tkinter import messagebox
+import shutil # Import shutil for file operations
+import difflib # Import difflib for diffing
 from utils import debug_console
 from latex import error_parser
+from llm import latex_debug # Import the new debug module
 from utils.screen import get_secondary_monitor_index
 
 # Global reference to the root Tkinter window, initialized during application setup.
@@ -220,6 +223,12 @@ def compile_latex(event=None):
 
     # Construct the path to the expected PDF output.
     pdf_output_path = os.path.join(source_directory, file_name.replace(".tex", ".pdf"))
+    
+    # --- New Cache Logic ---
+    cache_directory = os.path.join(source_directory, ".cache")
+    os.makedirs(cache_directory, exist_ok=True)
+    cached_tex_path = os.path.join(cache_directory, "last_successful.tex")
+    # --- End New Cache Logic ---
 
     try:
         # Execute pdflatex command.
@@ -233,13 +242,54 @@ def compile_latex(event=None):
         if result.returncode == 0:
             messagebox.showinfo("✅ Compilation Successful", "LaTeX document compiled successfully to PDF.")
             debug_console.log("LaTeX compilation successful.", level='SUCCESS')
+            
+            # --- New Cache Logic: Save successful compilation ---
+            try:
+                shutil.copy2(tex_file_path, cached_tex_path)
+                debug_console.log(f"Cached successful version to {cached_tex_path}", level='INFO')
+            except Exception as e:
+                debug_console.log(f"Failed to cache successful .tex file: {e}", level='ERROR')
+            # --- End New Cache Logic ---
+            
             hide_console()
             display_pdf(pdf_output_path) # Display the generated PDF.
         else:
             messagebox.showerror("❌ LaTeX Compilation Failed", "Compilation failed. Please check the log for details.")
             debug_console.log("LaTeX compilation failed. Displaying log.", level='ERROR')
-            error_summary = error_parser.read_and_parse_log(log_file_path)
-            show_console(error_summary)
+
+            # --- New Diff Analysis Logic ---
+            if os.path.exists(cached_tex_path):
+                debug_console.log("Cached version found. Analyzing diff.", level='INFO')
+                try:
+                    with open(cached_tex_path, 'r', encoding='utf-8') as f_good:
+                        good_code = f_good.readlines()
+                    with open(tex_file_path, 'r', encoding='utf-8') as f_bad:
+                        bad_code = f_bad.readlines()
+                    with open(log_file_path, 'r', encoding='utf-8', errors='ignore') as f_log:
+                        log_content = f_log.read()
+
+                    diff = difflib.unified_diff(good_code, bad_code, fromfile='last_successful.tex', tofile='current.tex', lineterm='')
+                    diff_content = '\n'.join(diff)
+
+                    if diff_content.strip():
+                        # Call the new LLM analysis function
+                        latex_debug.analyze_compilation_diff_with_llm(diff_content, log_content)
+                    else:
+                        # If there's no diff, just show the standard log
+                        error_summary = error_parser.parse_log_file(log_content)
+                        show_console(error_summary)
+
+                except Exception as e:
+                    debug_console.log(f"Error during diff analysis: {e}", level='ERROR')
+                    # Fallback to old method
+                    error_summary = error_parser.read_and_parse_log(log_file_path)
+                    show_console(error_summary)
+            else:
+                # Fallback if no cached version exists
+                debug_console.log("No cached version found. Using standard error parsing.", level='INFO')
+                error_summary = error_parser.read_and_parse_log(log_file_path)
+                show_console(error_summary)
+            # --- End Diff Analysis Logic ---
     except FileNotFoundError:
         messagebox.showerror("Error", "`pdflatex` command not found. Please ensure LaTeX is installed and in your system's PATH.")
         debug_console.log("pdflatex command not found.", level='ERROR')

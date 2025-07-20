@@ -7,7 +7,7 @@ updating them, and saving them back to file. It also integrates with the prompt 
 from tkinter import messagebox
 from llm import state as llm_state
 from llm import prompt_manager as llm_prompt_manager
-from llm.dialogs import show_edit_prompts_dialog
+from llm.dialogs.prompts import show_edit_prompts_dialog
 from utils import debug_console
 
 def load_prompts_for_current_file():

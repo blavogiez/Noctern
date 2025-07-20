@@ -9,7 +9,7 @@ import threading
 from llm import state as llm_state
 from llm import api_client as llm_api_client
 from llm import interactive as llm_interactive
-from llm.dialogs import show_rephrase_dialog
+from llm.dialogs.rephrase import show_rephrase_dialog
 from utils import debug_console
 
 def open_rephrase_dialog():
@@ -30,32 +30,6 @@ def open_rephrase_dialog():
         selected_text = editor_widget.get(start_index, end_index)
     except tk.TclError:
         selected_text = ""
-
-    # If no text is selected, try to get it from the active LLM session
-    if not selected_text.strip():
-        from llm.interactive import _current_session
-        if _current_session and _current_session.full_response_text:
-            selected_text = _current_session.full_response_text
-            # We need to replace the entire block, including the UI buttons
-            start_index = _current_session.block_start_index
-            end_index = _current_session.text_end_index
-        else:
-            messagebox.showwarning("Rephrase", "Please select the text you want to rephrase.")
-            return
-
-    # If no text is selected, try to get it from the active LLM session
-    if not selected_text.strip():
-        from llm.interactive import _current_session
-        if _current_session and _current_session.full_response_text:
-            selected_text = _current_session.full_response_text
-            start_index = _current_session.text_start_index
-            end_index = _current_session.text_end_index
-            # Since we are rephrasing the content of an entire session, we should discard the old one.
-            # The new session will replace it.
-            _current_session.destroy(delete_text=False) 
-        else:
-            messagebox.showwarning("Rephrase", "Please select the text you want to rephrase.")
-            return
 
     if not selected_text.strip():
         messagebox.showwarning("Rephrase", "The selected text is empty.")

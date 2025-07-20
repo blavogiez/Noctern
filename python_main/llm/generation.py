@@ -6,7 +6,7 @@ response from the LLM, integrating the generated text back into the editor.
 """
 
 from llm import state as llm_state
-from llm.dialogs import show_generate_text_dialog
+from llm.dialogs.generation import show_generate_text_dialog
 from llm import utils as llm_utils
 from llm import api_client as llm_api_client
 from llm import keyword_history

@@ -94,9 +94,9 @@ FileStates [
 		OpenCount = 14
 		UseDefaultState = false
 		DisplayMode = continuous
-		ScrollPos = -1 -1
+		ScrollPos = -1 68.1006
 		PageNo = 1
-		Zoom = fit page
+		Zoom = 100
 		Rotation = 0
 		WindowState = 2
 		WindowPos = -1930 0 817 433
@@ -314,9 +314,9 @@ SessionData [
 				FilePath = C:\Users\lab\Documents\BUT1\BuTeX\rapport\gusto.pdf
 				DisplayMode = continuous
 				PageNo = 1
-				Zoom = fit page
+				Zoom = 100
 				Rotation = 0
-				ScrollPos = -1 -1
+				ScrollPos = -1 68.1006
 				ShowToc = false
 			]
 		]

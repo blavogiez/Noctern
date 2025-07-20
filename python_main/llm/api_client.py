@@ -12,26 +12,28 @@ from utils import debug_console
 LLM_API_URL = "http://localhost:11434/api/generate" # Default URL for the LLM API.
 DEFAULT_LLM_MODEL = "mistral" # Default LLM model to be used if not specified in the request.
 
-def request_llm_generation(prompt_text, model_name=DEFAULT_LLM_MODEL):
+def request_llm_generation(prompt_text, model_name=DEFAULT_LLM_MODEL, stream=True):
     """
     Sends a text generation request to the configured LLM API endpoint.
 
-    This function initiates a streaming request to the LLM, yielding chunks of the
-    generated text as they become available. It handles potential connection errors,
-    request exceptions, and JSON decoding issues.
+    This function can operate in both streaming and non-streaming modes.
+    In streaming mode (default), it yields chunks of the generated text as they become available.
+    In non-streaming mode, it yields a single dictionary with the complete result.
 
     Args:
         prompt_text (str): The input text (prompt) to send to the LLM for generation.
         model_name (str, optional): The name of the LLM model to use for generation.
                                     Defaults to `DEFAULT_LLM_MODEL`.
+        stream (bool, optional): Whether to use streaming. Defaults to True.
 
     Yields:
         dict: A dictionary containing the status of the generation:
-              - {"success": True, "chunk": str, "done": False} for streaming text chunks.
-              - {"success": True, "data": str, "done": True} when generation is complete.
+              - (stream=True) {"success": True, "chunk": str, "done": False} for streaming text chunks.
+              - (stream=True) {"success": True, "data": str, "done": True} when generation is complete.
+              - (stream=False) {"success": True, "data": str, "done": True} for the complete response.
               - {"success": False, "error": str, "done": True} if an error occurs.
     """
-    debug_console.log(f"Initiating LLM generation request for model '{model_name}'. Prompt (first 100 chars): '{prompt_text[:100]}...'", level='INFO')
+    debug_console.log(f"Initiating LLM generation request for model '{model_name}'. Stream: {stream}. Prompt (first 100 chars): '{prompt_text[:100]}...'", level='INFO')
     try:
         # Send a POST request to the LLM API with the prompt and streaming enabled.
         response = requests.post(
@@ -39,14 +41,25 @@ def request_llm_generation(prompt_text, model_name=DEFAULT_LLM_MODEL):
             json={
                 "model": model_name,
                 "prompt": prompt_text,
-                "stream": True, # Enable streaming to receive real-time output.
+                "stream": stream, # Enable streaming to receive real-time output.
                 "options": {
                     "num_predict": 1024 # Maximum number of tokens to predict.
                 }
             },
-            stream=True # Keep the connection open for streaming.
+            stream=stream # Keep the connection open for streaming.
         )
         response.raise_for_status() # Raise an HTTPError for bad responses (4xx or 5xx).
+
+        if not stream:
+            json_data = response.json()
+            if "response" in json_data:
+                debug_console.log("LLM non-stream request successful.", level='SUCCESS')
+                yield {"success": True, "data": json_data["response"], "done": True}
+                return
+            else:
+                debug_console.log(f"LLM non-stream response did not contain 'response' field: {json_data}", level='ERROR')
+                yield {"success": False, "error": "LLM non-stream response did not contain 'response' field.", "done": True}
+                return
 
         full_generated_content = "" # Accumulator for the complete generated text.
         # Iterate over the response lines, decoding and parsing each as a JSON object.
