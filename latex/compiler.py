@@ -24,8 +24,9 @@ get_current_tab = None
 show_console = None
 hide_console = None
 _pdf_monitor_setting = "Default" # Default value
+_auto_open_pdf = False
 
-def initialize_compiler(root_widget, get_current_tab_func, show_console_func, hide_console_func, pdf_monitor_setting="Default"):
+def initialize_compiler(root_widget, get_current_tab_func, show_console_func, hide_console_func, pdf_monitor_setting="Default", auto_open_pdf_setting=False):
     """
     Initializes the LaTeX compiler module by setting the root Tkinter window.
 
@@ -34,12 +35,13 @@ def initialize_compiler(root_widget, get_current_tab_func, show_console_func, hi
     Args:
         root_widget (tk.Tk): The main Tkinter application window.
     """
-    global root, get_current_tab, show_console, hide_console, _pdf_monitor_setting
+    global root, get_current_tab, show_console, hide_console, _pdf_monitor_setting, _auto_open_pdf
     root = root_widget
     get_current_tab = get_current_tab_func
     show_console = show_console_func
     hide_console = hide_console_func
     _pdf_monitor_setting = pdf_monitor_setting
+    _auto_open_pdf = auto_open_pdf_setting
     debug_console.log("LaTeX Compiler module initialized.", level='INFO')
 
 def clean_project_directory(event=None):
@@ -252,7 +254,8 @@ def compile_latex(event=None):
             # --- End New Cache Logic ---
             
             hide_console()
-            display_pdf(pdf_output_path) # Display the generated PDF.
+            if _auto_open_pdf:
+                display_pdf(pdf_output_path) # Display the generated PDF.
         else:
             messagebox.showerror("❌ LaTeX Compilation Failed", "Compilation failed. Please check the log for details.")
             debug_console.log("LaTeX compilation failed. Displaying log.", level='ERROR')

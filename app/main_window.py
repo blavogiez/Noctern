@@ -397,7 +397,7 @@ def create_new_tab(file_path=None, event=None):
     )
 
     if file_path and file_path.endswith(".tex"):
-        if _app_config.get('auto_open_pdf', False):
+        if _auto_open_pdf_var.get():
             pdf_path = file_path.replace(".tex", ".pdf")
             if os.path.exists(pdf_path):
                 debug_console.log(f"Auto-opening PDF: {pdf_path}", level='INFO')

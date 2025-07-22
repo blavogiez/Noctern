@@ -59,7 +59,8 @@ def main():
         interface.get_current_tab, 
         interface.show_console, 
         interface.hide_console,
-        pdf_monitor_setting=interface._app_config.get("pdf_monitor", "Default")
+        pdf_monitor_setting=interface._app_config.get("pdf_monitor", "Default"),
+        auto_open_pdf_setting=interface._auto_open_pdf_var.get()
     )
     # Initialize the snippet manager to load available code snippets.
     snippet_manager.initialize_snippets() 
