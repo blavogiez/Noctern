@@ -83,9 +83,6 @@ def main():
         active_filepath_getter=lambda: interface.get_current_tab().file_path if interface.get_current_tab() else None # Dynamically get active file path.
     )
 
-    # Apply the initial theme to the application (e.g., "dark" theme).
-    interface.apply_theme("dark")
-
     # Schedule an initial heavy update after a short delay.
     # This ensures that UI elements like syntax highlighting and word count are updated
     # once the window is fully rendered and mapped.

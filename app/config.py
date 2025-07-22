@@ -16,7 +16,8 @@ DEFAULT_VALUES = {
     "auto_open_pdf": "False",
     "app_monitor": "Default",
     "pdf_monitor": "Default",
-    "window_state": "Normal"
+    "window_state": "Normal",
+    "theme": "dark"
 }
 
 def load_config():

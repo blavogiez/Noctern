@@ -319,10 +319,21 @@ def on_close_request():
     If there are unsaved changes in any open tabs, a confirmation dialog is displayed.
     The user can choose to save all, discard all, or cancel the close operation.
     """
-    global root, tabs
+    global root, tabs, _app_config, current_theme
     debug_console.log("Application close request received.", level='INFO')
     if not root:
         return
+
+    # Save window state before closing
+    if root.attributes('-fullscreen'):
+        _app_config['window_state'] = 'Fullscreen'
+    elif root.state() == 'zoomed':
+        _app_config['window_state'] = 'Maximized'
+    else:
+        _app_config['window_state'] = 'Normal'
+    
+    _app_config['theme'] = current_theme
+    app_config.save_config(_app_config)
     
     # Identify all tabs with unsaved changes.
     dirty_tabs = [tab for tab in tabs.values() if tab.is_dirty()]
@@ -354,6 +365,7 @@ def on_close_request():
         debug_console.log("No unsaved changes. Closing application.", level='INFO')
         save_session()
         root.destroy() # Close the application directly if no unsaved changes.
+
 
 def close_tab_by_id(tab_id):
     """
@@ -689,6 +701,11 @@ def setup_gui():
     debug_console.log("GUI initialization process started.", level='INFO')
 
     _auto_open_pdf_var = tk.BooleanVar(value=app_config.get_bool(_app_config.get('auto_open_pdf', 'False')))
+    
+    # Apply the saved theme from config FIRST
+    saved_theme = _app_config.get("theme", "dark") # Default to dark if not set
+    apply_theme(saved_theme)
+
     debug_console.initialize(root) # Initialize the debug console with the root window.
 
     # Create the top buttons frame and retrieve the settings menu.
@@ -749,7 +766,7 @@ def apply_theme(theme_name, event=None):
         theme_name (str): The name of the theme to apply (e.g., "light", "dark").
         event (tk.Event, optional): The Tkinter event object. Defaults to None.
     """
-    global current_theme, _theme_settings
+    global current_theme, _theme_settings, _app_config
     debug_console.log(f"Attempting to apply theme: '{theme_name}'.", level='ACTION')
     # Apply the base theme using the interface_theme module and get new settings.
     new_theme, new_settings = interface_theme.apply_theme(
@@ -757,6 +774,10 @@ def apply_theme(theme_name, event=None):
     )
     current_theme = new_theme # Update the global current theme.
     _theme_settings = new_settings # Update the global theme settings.
+    
+    # Save the new theme to the config
+    _app_config['theme'] = current_theme
+    app_config.save_config(_app_config)
     
     # Re-apply our custom notebook style modifications to ensure they are consistent
     # with the newly applied theme.
