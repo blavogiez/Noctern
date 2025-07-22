@@ -17,9 +17,15 @@ def _load_global_default_prompts():
     These default prompts serve as a fallback if no custom prompts are defined for a specific document.
     If the file cannot be loaded, a set of hardcoded fallback prompts is used.
     """
+    import os
     try:
+        # Construct the absolute path to the prompts file.
+        # This ensures that the file can be found regardless of the current working directory.
+        script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        prompts_file_path = os.path.join(script_dir, llm_state.DEFAULT_PROMPTS_FILE)
+
         # Attempt to open and load the default prompts from the specified JSON file.
-        with open(llm_state.DEFAULT_PROMPTS_FILE, 'r', encoding='utf-8') as file_handle:
+        with open(prompts_file_path, 'r', encoding='utf-8') as file_handle:
             llm_state._global_default_prompts = json.load(file_handle)
             debug_console.log("Global default LLM prompts loaded successfully from file.", level='INFO')
     except Exception as e:
@@ -30,8 +36,10 @@ def _load_global_default_prompts():
             "generation": "Generate text for this prompt: {user_prompt}",
             "generation_latex": "You are a LaTeX expert. Generate only the raw LaTeX code for the following request. Do not add any explanation or markdown. Request: {user_prompt}",
             "rephrase": "Rephrase the following text according to the user instruction, without changing the meaning, and respecting the original language and tone.\nText to rephrase:\n\"\"\"{text}\"\"\"\nUser instruction: {instruction}\nRespond only with the rephrased text, without explanation or markdown.",
+            "debug_latex_diff": "As a LaTeX expert, analyze the following code changes (in diff format) and the resulting compilation error log. Identify the most likely cause of the error and provide a concise explanation and a corrected code snippet.\n\n---\n\n[CODE CHANGES (DIFF)]:\n{diff_content}\n\n---\n\n[COMPILATION ERROR LOG]:\n{log_content}\n\n---\n\n[ANALYSIS]:\n",
             "model_for_latex_generation": "codellama" # Default model for LaTeX-oriented generation.
         }
+
 
 def initialize_llm_service(root_window_ref, progress_bar_widget_ref,
                            theme_setting_getter_func, active_editor_getter_func, active_filepath_getter_func):
