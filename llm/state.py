@@ -26,6 +26,8 @@ DEFAULT_PROMPTS_FILE = "data/default_prompts.json"
 _prompt_history_list = [] # List of (user_prompt, llm_response) tuples.
 _completion_prompt_template = ""      # Custom completion prompt for the current file.
 _generation_prompt_template = ""      # Custom generation prompt for the current file.
+_rephrase_prompt_template = ""        # Custom rephrase prompt for the current file.
+_debug_latex_diff_prompt_template = "" # Custom debug prompt for the current file.
 _llm_keywords_list = []               # List of keywords for the current file.
 
 # --- Last Action State (for re-generation) ---

@@ -121,9 +121,6 @@ class InteractiveSession:
         llm_state._is_generating = False
         self.editor.focus_set()
 
-        if not self.is_rephrase and not self.is_completion:
-            self.editor.after(50, self.rephrase)
-
     def handle_error(self, error_msg):
         if self.is_discarded: return
         debug_console.log(f"LLM interactive session error: {error_msg}", level='ERROR')

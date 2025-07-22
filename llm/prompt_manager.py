@@ -81,11 +81,11 @@ def load_prompts_from_file(tex_document_filepath, default_prompts):
             with open(prompts_filepath, 'r', encoding='utf-8') as file_handle:
                 loaded_data = json.load(file_handle)
                 debug_console.log(f"Successfully loaded custom prompts from {os.path.basename(prompts_filepath)}.", level='INFO')
-                # Return loaded prompts, falling back to defaults for any missing keys.
-                return {
-                    "completion": loaded_data.get("completion", default_prompts.get("completion", "")),
-                    "generation": loaded_data.get("generation", default_prompts.get("generation", ""))
-                }
+                
+                # Dynamically load prompts, falling back to defaults for any missing keys.
+                prompts = default_prompts.copy()
+                prompts.update(loaded_data)
+                return prompts
         except json.JSONDecodeError as e:
             debug_console.log(f"Error decoding JSON from custom prompts file '{prompts_filepath}': {e}. Using default prompts.", level='ERROR')
             return default_prompts

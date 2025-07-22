@@ -11,7 +11,7 @@ def show_edit_prompts_dialog(root_window, theme_setting_getter_func,
     """
     Displays a dialog for users to view and edit LLM prompt templates.
 
-    This dialog allows customization of both completion and generation prompts.
+    This dialog allows customization of all available prompt types.
     It provides options to restore default prompts and handles unsaved changes.
 
     Args:
@@ -20,14 +20,14 @@ def show_edit_prompts_dialog(root_window, theme_setting_getter_func,
         current_prompts (dict): Dictionary of currently active prompt templates.
         default_prompts (dict): Dictionary of default prompt templates.
         on_save_callback (callable): Callback function triggered when changes are applied.
-                                    Signature: `(new_completion_prompt, new_generation_prompt)`.
+                                    Signature: `(new_prompts_dict)`.
     """
     debug_console.log("Opening LLM prompt templates editing dialog.", level='ACTION')
     prompts_window = tk.Toplevel(root_window)
     prompts_window.title("Edit LLM Prompt Templates")
     prompts_window.transient(root_window)
     prompts_window.grab_set()
-    prompts_window.geometry("1200x700")
+    prompts_window.geometry("1200x800")
 
     # Apply theme settings.
     dialog_bg = theme_setting_getter_func("root_bg", "#f0f0f0")
@@ -41,27 +41,36 @@ def show_edit_prompts_dialog(root_window, theme_setting_getter_func,
     # Warning and Placeholder Information.
     warning_frame = ttk.Frame(prompts_window, padding=10)
     warning_frame.pack(fill="x", pady=(5, 0))
-    ttk.Label(warning_frame, text="⚠️ Warning: Changes are saved per-document. Available Placeholders: {previous_context}, {current_phrase_start}, {user_prompt}, {keywords}, {context}", wraplength=850, justify="left").pack(fill="x")
+    ttk.Label(warning_frame, text="⚠️ Warning: Changes are saved per-document. Available Placeholders: {previous_context}, {current_phrase_start}, {user_prompt}, {keywords}, {context}, {text}, {instruction}, {diff_content}, {log_content}", wraplength=850, justify="left").pack(fill="x")
 
-    # Paned Window for side-by-side prompt editors.
-    main_pane = tk.PanedWindow(prompts_window, orient=tk.HORIZONTAL, sashrelief=tk.FLAT, sashwidth=6)
-    main_pane.configure(bg=theme_setting_getter_func("panedwindow_sash", "#d0d0d0"))
-    main_pane.pack(fill="both", expand=True, padx=10, pady=10)
+    # Tabbed Interface for different prompt categories
+    notebook = ttk.Notebook(prompts_window)
+    notebook.pack(fill="both", expand=True, padx=10, pady=10)
 
-    # Store initial state to check for unsaved changes.
-    saved_state = {"completion": current_prompts.get("completion", "").strip(), "generation": current_prompts.get("generation", "").strip()}
+    prompt_keys = ["completion", "generation", "rephrase", "debug_latex_diff"]
+    prompt_titles = {
+        "completion": "Completion Prompt ('✨ Complete')",
+        "generation": "Generation Prompt ('🎯 Generate')",
+        "rephrase": "Rephrase Prompt ('✍️ Rephrase')",
+        "debug_latex_diff": "LaTeX Debug Prompt ('🐞 Debug')"
+    }
+    
+    text_widgets = {}
+    saved_state = {key: current_prompts.get(key, "").strip() for key in prompt_keys}
+    labelframes = {}
 
     def create_prompt_pane(parent_widget, prompt_key, title_text):
         """
         Helper function to create a single prompt editing pane.
         """
-        # Determine if the current prompt is using the default template.
+        pane_frame = ttk.Frame(parent_widget, padding=10)
+        
         is_using_default = (current_prompts.get(prompt_key, "").strip() == default_prompts.get(prompt_key, "").strip())
         label_display_text = f"{title_text}{' (Using Default)' if is_using_default else ''}"
         
-        pane_frame = ttk.Frame(parent_widget)
         labelframe = ttk.LabelFrame(pane_frame, text=label_display_text, padding=5)
         labelframe.pack(pady=5, padx=5, fill="both", expand=True)
+        labelframes[prompt_key] = labelframe
         
         text_frame = ttk.Frame(labelframe)
         text_frame.pack(fill="both", expand=True)
@@ -77,43 +86,47 @@ def show_edit_prompts_dialog(root_window, theme_setting_getter_func,
         scrollbar = ttk.Scrollbar(text_frame, orient="vertical", command=text_widget.yview)
         scrollbar.grid(row=0, column=1, sticky="ns")
         text_widget.config(yscrollcommand=scrollbar.set)
-        text_widget.insert("1.0", current_prompts.get(prompt_key, "")) # Load current prompt.
+        text_widget.insert("1.0", current_prompts.get(prompt_key, ""))
+        text_widgets[prompt_key] = text_widget
         
-        return pane_frame, labelframe, text_widget
+        create_buttons_for_pane(pane_frame, text_widget, prompt_key)
+        
+        return pane_frame
 
-    # Create panes for completion and generation prompts.
-    completion_pane, completion_labelframe, completion_text_widget = create_prompt_pane(main_pane, "completion", "Completion Prompt ('✨ Complete')")
-    generation_pane, generation_labelframe, generation_text_widget = create_prompt_pane(main_pane, "generation", "Generation Prompt ('🎯 Generate')")
+    for key in prompt_keys:
+        tab = ttk.Frame(notebook)
+        notebook.add(tab, text=key.replace("_", " ").title())
+        pane = create_prompt_pane(tab, key, prompt_titles.get(key, key.title()))
+        pane.pack(fill="both", expand=True)
 
     def update_default_status_labels():
         """
         Updates the labels of the prompt panes to indicate if they are using default prompts.
         """
-        is_completion_default = (completion_text_widget.get("1.0", tk.END).strip() == default_prompts.get("completion", "").strip())
-        is_generation_default = (generation_text_widget.get("1.0", tk.END).strip() == default_prompts.get("generation", "").strip())
-        
-        completion_labelframe.config(text=f"Completion Prompt ('✨ Complete'){' (Using Default)' if is_completion_default else ''}")
-        generation_labelframe.config(text=f"Generation Prompt ('🎯 Generate'){' (Using Default)' if is_generation_default else ''}")
+        for key in prompt_keys:
+            is_default = (text_widgets[key].get("1.0", tk.END).strip() == default_prompts.get(key, "").strip())
+            title = prompt_titles.get(key, key.title())
+            labelframes[key].config(text=f"{title}{' (Using Default)' if is_default else ''}")
 
     def apply_changes():
         """
         Applies the changes made in the prompt text areas.
         Saves the new prompts and updates the saved state and status labels.
         """
-        new_completion_prompt = completion_text_widget.get("1.0", tk.END).strip()
-        new_generation_prompt = generation_text_widget.get("1.0", tk.END).strip()
+        new_prompts = {key: text_widgets[key].get("1.0", tk.END).strip() for key in prompt_keys}
         debug_console.log("Applying prompt template changes.", level='ACTION')
         if on_save_callback: 
-            on_save_callback(new_completion_prompt, new_generation_prompt)
+            on_save_callback(new_prompts)
         
-        saved_state["completion"] = new_completion_prompt
-        saved_state["generation"] = new_generation_prompt
-        update_default_status_labels() # Refresh labels to reflect default status.
-        return "break" # Prevent default event handling.
+        for key in prompt_keys:
+            saved_state[key] = new_prompts[key]
+            
+        update_default_status_labels()
+        return "break"
 
     def create_buttons_for_pane(parent_frame, text_widget_for_pane, prompt_key_for_pane):
         """
-        Helper function to create 'Apply' and 'Restore Default' buttons for a prompt pane.
+        Helper function to create 'Restore Default' button for a prompt pane.
         """
         button_frame = ttk.Frame(parent_frame)
         button_frame.pack(fill="x", side="bottom", padx=5, pady=(10, 0))
@@ -126,26 +139,16 @@ def show_edit_prompts_dialog(root_window, theme_setting_getter_func,
                 debug_console.log(f"Restoring default for {prompt_key_for_pane} prompt.", level='ACTION')
                 text_widget_for_pane.delete("1.0", tk.END)
                 text_widget_for_pane.insert("1.0", default_prompts.get(prompt_key_for_pane, ""))
-                update_default_status_labels() # Update label after restoring default.
+                update_default_status_labels()
         
-        ttk.Button(button_frame, text="Apply Changes", command=apply_changes).pack(side="left", padx=(0, 5))
         ttk.Button(button_frame, text="Restore Default", command=restore_default_action).pack(side="left")
-
-    # Create buttons for each prompt pane.
-    create_buttons_for_pane(completion_pane, completion_text_widget, "completion")
-    create_buttons_for_pane(generation_pane, generation_text_widget, "generation")
-    
-    # Add panes to the main paned window.
-    main_pane.add(completion_pane, minsize=400, stretch="always")
-    main_pane.add(generation_pane, minsize=400, stretch="always")
 
     def close_window_handler():
         """
         Handles the window closing event, prompting to save unsaved changes.
         """
-        has_unsaved_changes = (
-            completion_text_widget.get("1.0", tk.END).strip() != saved_state["completion"] or
-            generation_text_widget.get("1.0", tk.END).strip() != saved_state["generation"]
+        has_unsaved_changes = any(
+            text_widgets[key].get("1.0", tk.END).strip() != saved_state[key] for key in prompt_keys
         )
         
         if has_unsaved_changes:
@@ -155,17 +158,14 @@ def show_edit_prompts_dialog(root_window, theme_setting_getter_func,
                 prompts_window.destroy()
             elif response is False: 
                 prompts_window.destroy()
-            # If response is None (Cancel), do nothing.
         else:
-            prompts_window.destroy() # Close directly if no changes.
+            prompts_window.destroy()
 
-    # Bottom bar for the close button.
-    bottom_bar = ttk.Frame(prompts_window, padding=(10, 0, 10, 10))
+    bottom_bar = ttk.Frame(prompts_window, padding=(10, 10, 10, 10))
     bottom_bar.pack(fill="x", side="bottom")
+    ttk.Button(bottom_bar, text="Apply All Changes", command=apply_changes).pack(side="right", padx=(5,0))
     ttk.Button(bottom_bar, text="Close", command=close_window_handler).pack(side="right")
 
-    # Bind Ctrl+S to apply changes.
     prompts_window.bind("<Control-s>", lambda event: apply_changes())
-    # Set protocol for window close button.
     prompts_window.protocol("WM_DELETE_WINDOW", close_window_handler)
-    prompts_window.wait_window() # Block until the dialog is closed.
+    prompts_window.wait_window()
