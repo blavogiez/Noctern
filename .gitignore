@@ -29,10 +29,3 @@ pip-delete-this-directory.txt
 *.nav
 *.snm
 *.vrb
-
-# AutomaTeX specific output
-output/
-pdf_reader/
-*_prompt_history.json
-*_prompts.json
-figures/

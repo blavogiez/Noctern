@@ -67,10 +67,7 @@ def request_rephrase_for_text(editor, original_text, start_index, end_index, ins
     editor.delete(start_index, end_index)
     editor.mark_set(tk.INSERT, start_index)
 
-    prompt_template = llm_state._rephrase_prompt_template
-    if not prompt_template:
-        prompt_template = llm_state._global_default_prompts.get("rephrase")
-
+    prompt_template = llm_state._global_default_prompts.get("rephrase")
     if not prompt_template:
         messagebox.showerror("LLM Error", "The 'rephrase' prompt template is missing.")
         debug_console.log("Rephrase failed: 'rephrase' template not found.", level='ERROR')

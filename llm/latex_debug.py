@@ -34,10 +34,7 @@ def analyze_compilation_diff_with_llm(diff_content: str, log_content: str):
         messagebox.showwarning("LLM Service Not Ready", "The LLM service is not fully initialized. Cannot perform analysis.")
         return
 
-    prompt_template = llm_state._debug_latex_diff_prompt_template
-    if not prompt_template:
-        prompt_template = llm_state._global_default_prompts.get("debug_latex_diff")
-
+    prompt_template = llm_state._global_default_prompts.get("debug_latex_diff")
     if not prompt_template:
         messagebox.showerror("LLM Error", "The 'debug_latex_diff' prompt template is missing.")
         return
