@@ -4,7 +4,7 @@ which includes various action buttons and dropdown menus for functionalities
 such as file operations, LaTeX compilation, LLM interactions, and application settings.
 """
 
-from tkinter import ttk, Menu
+import ttkbootstrap as ttk
 from latex import compiler as latex_compiler
 from llm import service as llm_service
 from latex import translator as latex_translator
@@ -12,7 +12,6 @@ from app import main_window as interface
 from utils import debug_console
 from llm import rephrase as llm_rephrase
 from editor import snippets as editor_snippets
-from app import settings_window
 from app import settings_window
 
 def _log_action(action_name):
@@ -32,74 +31,78 @@ def create_top_buttons_frame(root):
     and provides access to various settings and tools through dropdown menus.
 
     Args:
-        root (tk.Tk): The root Tkinter window of the application.
+        root (ttk.Window): The root ttkbootstrap window of the application.
 
     Returns:
         tuple: A tuple containing:
             - top_frame (ttk.Frame): The created top bar frame.
-            - settings_menu (tk.Menu): The settings menu, allowing external modification (e.g., enabling/disabling options).
+            - settings_menu (ttk.Menu): The settings menu, allowing external modification (e.g., enabling/disabling options).
     """
     # Create the main frame for the top bar, packed at the top of the root window.
-    top_frame = ttk.Frame(root, padding=10)
-    top_frame.pack(fill="x", pady=(0, 5))
+    top_frame = ttk.Frame(root, padding=(5, 5, 5, 0))
+    top_frame.pack(fill="x")
 
     # --- File Operation Buttons ---
-    # Open File button: Triggers the open file dialog.
-    ttk.Button(top_frame, text="📂 Open", command=lambda: [_log_action("Open File"), interface.open_file()]).pack(side="left", padx=3, pady=3)
-    # Save File button: Saves the current active file.
-    ttk.Button(top_frame, text="💾 Save", command=lambda: [_log_action("Save File"), interface.save_file()]).pack(side="left", padx=3, pady=3)
-    # Save As button: Saves the current file to a new location/name.
-    ttk.Button(top_frame, text="💾 Save As", command=lambda: [_log_action("Save File As"), interface.save_file_as()]).pack(side="left", padx=3, pady=3)
+    ttk.Button(top_frame, text="📂 Open", command=lambda: [_log_action("Open File"), interface.open_file()], bootstyle="primary-outline").pack(side="left", padx=3)
+    ttk.Button(top_frame, text="💾 Save", command=lambda: [_log_action("Save File"), interface.save_file()], bootstyle="primary-outline").pack(side="left", padx=3)
+    ttk.Button(top_frame, text="💾 Save As", command=lambda: [_log_action("Save File As"), interface.save_file_as()], bootstyle="primary-outline").pack(side="left", padx=3)
     
-    # Separator for visual grouping.
-    ttk.Separator(top_frame, orient='vertical').pack(side='left', padx=5, fill='y')
+    ttk.Separator(top_frame, orient='vertical').pack(side='left', padx=10, fill='y')
 
     # --- LaTeX Processing Buttons ---
-    # Compile button: Triggers LaTeX compilation.
-    ttk.Button(top_frame, text="🛠 Compile", command=lambda: [_log_action("Compile LaTeX"), latex_compiler.compile_latex()]).pack(side="left", padx=3, pady=3)
-    # View PDF button: Opens the PDF in an external viewer.
-    ttk.Button(top_frame, text="📄 View PDF", command=lambda: [_log_action("View PDF"), latex_compiler.view_pdf_external()]).pack(side="left", padx=3, pady=3)
-    # Translate button: Opens the translation dialog.
-    ttk.Button(top_frame, text="🌐 Translate", command=lambda: [_log_action("Translate Text"), latex_translator.open_translate_dialog()]).pack(side="left", padx=3, pady=3)
+    ttk.Button(top_frame, text="🛠 Compile", command=lambda: [_log_action("Compile LaTeX"), latex_compiler.compile_latex()], bootstyle="info-outline").pack(side="left", padx=3)
+    ttk.Button(top_frame, text="📄 View PDF", command=lambda: [_log_action("View PDF"), latex_compiler.view_pdf_external()], bootstyle="info-outline").pack(side="left", padx=3)
+    ttk.Button(top_frame, text="🌐 Translate", command=lambda: [_log_action("Translate Text"), latex_translator.open_translate_dialog()], bootstyle="info-outline").pack(side="left", padx=3)
     
-    # Separator for visual grouping.
-    ttk.Separator(top_frame, orient='vertical').pack(side='left', padx=5, fill='y')
+    ttk.Separator(top_frame, orient='vertical').pack(side='left', padx=10, fill='y')
 
     # --- LLM Interaction Buttons ---
-    # Complete button: Triggers LLM text completion.
-    ttk.Button(top_frame, text="✨ Complete", command=lambda: [_log_action("LLM Complete Text"), llm_service.request_llm_to_complete_text()]).pack(side="left", padx=3, pady=3)
-    # Generate button: Opens the LLM text generation dialog.
-    ttk.Button(top_frame, text="🎯 Generate", command=lambda: [_log_action("LLM Generate Text"), llm_service.open_generate_text_dialog()]).pack(side="left", padx=3, pady=3)
+    ttk.Button(top_frame, text="✨ Complete", command=lambda: [_log_action("LLM Complete Text"), llm_service.request_llm_to_complete_text()], bootstyle="success-outline").pack(side="left", padx=3)
+    ttk.Button(top_frame, text="🎯 Generate", command=lambda: [_log_action("LLM Generate Text"), llm_service.open_generate_text_dialog()], bootstyle="success-outline").pack(side="left", padx=3)
     
-    # Theme Toggle button: Switches between light and dark themes.
-    ttk.Button(top_frame, text="🌓 Theme", command=lambda: [_log_action("Toggle Theme"), interface.apply_theme("dark" if interface.current_theme == "light" else "light")]).pack(side="right", padx=3, pady=3)
+    # --- Settings and Tools Menus ---
+    # A Menubutton provides a dropdown for less frequent actions and settings.
+    settings_menubutton = ttk.Menubutton(top_frame, text="⚙️ Settings", bootstyle="secondary-outline")
+    settings_menubutton.pack(side="right", padx=3)
+    settings_menu = ttk.Menu(settings_menubutton, tearoff=False)
+    settings_menubutton["menu"] = settings_menu
 
-    # --- Settings Menu Button ---
-    settings_menubutton = ttk.Menubutton(top_frame, text="⚙️ Settings")
-    settings_menubutton.pack(side="right", padx=3, pady=3)
-    settings_menu = Menu(settings_menubutton, tearoff=0) # Create a dropdown menu.
-    settings_menubutton["menu"] = settings_menu # Associate the menu with the menubutton.
-    
-    # --- Tools Menu Button ---
-    tools_menubutton = ttk.Menubutton(top_frame, text="🔧 Tools")
-    tools_menubutton.pack(side="right", padx=3, pady=3)
-    tools_menu = Menu(tools_menubutton, tearoff=0) # Create a dropdown menu.
-    tools_menubutton["menu"] = tools_menu # Associate the menu with the menubutton.
+    tools_menubutton = ttk.Menubutton(top_frame, text="🔧 Tools", bootstyle="secondary-outline")
+    tools_menubutton.pack(side="right", padx=3)
+    tools_menu = ttk.Menu(tools_menubutton, tearoff=False)
+    tools_menubutton["menu"] = tools_menu
 
     # --- Populate Tools Menu ---
     tools_menu.add_command(label="Check Document (chktex)", command=lambda: [_log_action("Tools: chktex Check"), latex_compiler.run_chktex_check()])
     tools_menu.add_command(label="Rephrase Selected Text (Ctrl+R)", command=lambda: [_log_action("Tools: Rephrase Text"), llm_rephrase.open_rephrase_dialog()])
     tools_menu.add_command(label="Paste Image from Clipboard (Ctrl+Shift+V)", command=lambda: [_log_action("Tools: Paste Image"), interface.paste_image()])
-    tools_menu.add_separator() # Add a visual separator.
+    tools_menu.add_separator()
     tools_menu.add_command(label="Clean Project Directory", command=lambda: [_log_action("Tools: Clean Project"), latex_compiler.clean_project_directory()])
 
     # --- Populate Settings Menu ---
     settings_menu.add_command(label="Preferences...", command=lambda: [_log_action("Settings: Open Preferences"), settings_window.open_settings_window(root)])
     settings_menu.add_separator()
+    
+    # --- Theme Sub-menu ---
+    theme_menu = ttk.Menu(settings_menu, tearoff=False)
+    settings_menu.add_cascade(label="Theme", menu=theme_menu)
+    
+    def set_theme(theme_name):
+        interface.root.style.theme_use(theme_name)
+        interface.apply_theme()
+
+    theme_menu.add_command(label="Light (Litera)", command=lambda: set_theme("litera"))
+    theme_menu.add_command(label="Dark (Darkly)", command=lambda: set_theme("darkly"))
+    theme_menu.add_command(label="Vapor", command=lambda: set_theme("vapor"))
+    theme_menu.add_command(label="Flatly", command=lambda: set_theme("flatly"))
+    theme_menu.add_command(label="Cyborg", command=lambda: set_theme("cyborg"))
+    theme_menu.add_command(label="Journal", command=lambda: set_theme("journal"))
+    
+    settings_menu.add_separator()
     settings_menu.add_command(label="Set LLM Keywords...", command=lambda: [_log_action("Settings: Set LLM Keywords"), llm_service.open_set_keywords_dialog()])
     settings_menu.add_command(label="Edit LLM Prompts...", command=lambda: [_log_action("Settings: Edit LLM Prompts"), llm_service.open_edit_prompts_dialog()])
     settings_menu.add_command(label="Edit Snippets...", command=lambda: [_log_action("Settings: Edit Snippets"), editor_snippets.open_snippet_editor(root, interface.get_theme_settings())])
-    settings_menu.add_separator() # Add a visual separator.
+    settings_menu.add_separator()
     
     settings_menu.add_checkbutton(
         label="Auto-open PDF on .tex load",
@@ -107,17 +110,13 @@ def create_top_buttons_frame(root):
         command=interface.toggle_auto_open_pdf
     )
     
-    # Show Debug Console option.
     settings_menu.add_command(
         label="Show Debug Console",
         command=lambda: [_log_action("Settings: Show Debug Console"), debug_console.show_console()],
-        state="normal"
     )
-    # Restart Application option.
     settings_menu.add_command(
         label="Restart Application",
         command=lambda: [_log_action("Settings: Restart Application"), interface.restart_application()],
-        state="normal"
     )
     
     return top_frame, settings_menu

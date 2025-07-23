@@ -43,53 +43,63 @@ def create_status_bar(root):
     
     return status_bar_frame, status_label, gpu_status_label
 
-def start_gpu_status_loop(gpu_status_label, root):
-    """
-    Initiates a periodic loop to fetch and update GPU performance information.
+"""
+This module is responsible for creating and managing the status bar
+of the AutomaTeX application.
+"""
 
-    This function attempts to query NVIDIA GPU metrics using `nvidia-smi`.
-    If successful, it updates the `gpu_status_label` with the GPU name, temperature,
-    and utilization. If `nvidia-smi` is not found or an error occurs, it displays
-    "GPU: N/A". The update occurs every 2 seconds.
+import ttkbootstrap as ttk
+import GPUtil
+from app import main_window as mw
+
+def create_status_bar(root):
+    """
+    Creates the status bar frame and its labels.
 
     Args:
-        gpu_status_label (ttk.Label): The label widget where GPU status will be displayed.
-        root (tk.Tk): The root Tkinter window, used for scheduling the update loop.
+        root (tk.Tk): The main application window.
+
+    Returns:
+        tuple: A tuple containing the status bar frame (ttk.Frame),
+               the main status label (ttk.Label), and the GPU status label (ttk.Label).
     """
-    def update_gpu_status():
-        """
-        Internal function to fetch and update the GPU status.
-        This function is called repeatedly by `root.after`.
-        """
-        # Stop the loop if the root window has been closed.
-        if not root or not root.winfo_exists():
-            debug_console.log("GPU status loop stopping: Root window no longer exists.", level='DEBUG')
-            return 
-            
-        status_text = "GPU: N/A" # Default status text.
-        try:
-            # Execute nvidia-smi command to get GPU name, temperature, and utilization.
-            # Output format: CSV, no header, no units.
-            command_output = subprocess.check_output(
-                ["nvidia-smi", "--query-gpu=name,temperature.gpu,utilization.gpu", "--format=csv,noheader,nounits"],
-                encoding="utf-8",
-                stderr=subprocess.DEVNULL # Suppress error messages from nvidia-smi if it fails.
-            ).strip()
-            
-            # Parse the comma-separated output.
-            gpu_name, temperature, utilization = command_output.split(", ")
-            status_text = f"🎮 {gpu_name}   🌡 {temperature}°C   📊 {utilization}%"
-        except (subprocess.CalledProcessError, FileNotFoundError, ValueError) as e:
-            # Log errors if nvidia-smi fails or output parsing fails.
-            debug_console.log(f"Failed to get GPU status (nvidia-smi not found or error): {e}", level='DEBUG')
-            status_text = "GPU: N/A"
-        
-        # Update the dedicated GPU label if it still exists and is visible.
-        if gpu_status_label and gpu_status_label.winfo_exists():
-            gpu_status_label.config(text=status_text)
-        
-        # Schedule the next update after 2 seconds.
-        root.after(2000, update_gpu_status)
+    status_bar_frame = ttk.Frame(root, style='primary.TFrame')
+    status_bar_frame.pack(side="bottom", fill="x", padx=5, pady=(0, 5))
+
+    status_label = ttk.Label(status_bar_frame, text="Ready", anchor="w", style='primary.inverse.TLabel')
+    status_label.pack(side="left", padx=10)
+
+    gpu_status_label = ttk.Label(status_bar_frame, text="", anchor="e", style='primary.inverse.TLabel')
+    gpu_status_label.pack(side="right", padx=10)
     
-    debug_console.log("Starting periodic GPU status update loop.", level='INFO')
-    update_gpu_status() # Call the function once to start the loop immediately.
+    return status_bar_frame, status_label, gpu_status_label
+
+def update_gpu_status(gpu_label):
+    """
+    Updates the GPU status label with the current GPU usage and memory.
+
+    Args:
+        gpu_label (ttk.Label): The label widget to update.
+    """
+    try:
+        gpus = GPUtil.getGPUs()
+        if gpus:
+            gpu = gpus[0]
+            gpu_info = f"GPU: {gpu.load*100:.1f}% | Mem: {gpu.memoryUsed}/{gpu.memoryTotal} MB"
+            gpu_label.config(text=gpu_info)
+        else:
+            gpu_label.config(text="GPU: N/A")
+    except Exception:
+        gpu_label.config(text="GPU: Error")
+
+def start_gpu_status_loop(gpu_label, root):
+    """
+    Starts the periodic update of the GPU status.
+
+    Args:
+        gpu_label (ttk.Label): The label to update.
+        root (tk.Tk): The main application window.
+    """
+    update_gpu_status(gpu_label)
+    root.after(5000, lambda: start_gpu_status_loop(gpu_label, root))
+

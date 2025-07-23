@@ -7,11 +7,12 @@ It manages the main window, tabbed editor, outline tree, status bar, and handles
 user interactions and global application state.
 """
 
-import tkinter as tk
+import ttkbootstrap as ttk
+from ttkbootstrap.dialogs import Messagebox
+from tkinter import TclError
 import os
 import json
 import sys
-from tkinter import ttk, messagebox
 from app import zoom as interface_zoom
 from app import statusbar as interface_statusbar
 from app import file_operations as interface_fileops
@@ -29,7 +30,6 @@ from latex import compiler as latex_compiler
 from latex import translator as latex_translator
 from editor import wordcount as editor_wordcount
 from utils import debug_console
-from utils import screen as screen_utils
 from utils import screen as screen_utils
 
 # --- Global UI Component References ---
@@ -141,7 +141,7 @@ def schedule_heavy_updates(_=None):
             # Increase delay for large files to improve responsiveness.
             if total_lines > LARGE_FILE_LINE_THRESHOLD:
                 current_delay = HEAVY_UPDATE_DELAY_LARGE_FILE
-        except tk.TclError:
+        except TclError:
             debug_console.log("Error determining total lines for heavy update delay.", level='WARNING')
             pass # Ignore TclError if editor state is inconsistent.
         
@@ -183,7 +183,7 @@ def get_current_tab():
     try:
         selected_tab_id = notebook.select() # Get the ID of the currently selected tab.
         return tabs.get(selected_tab_id) # Return the EditorTab instance associated with the ID.
-    except tk.TclError:
+    except TclError:
         debug_console.log("No tab currently selected in the notebook.", level='DEBUG')
         return None
 
@@ -231,7 +231,7 @@ def show_console(content):
             vertical_pane.add(console_pane, height=150)
 
         console_output.config(state="normal")
-        console_output.delete("1.0", tk.END)
+        console_output.delete("1.0", ttk.END)
         console_output.insert("1.0", content)
         console_output.config(state="disabled")
 
@@ -340,9 +340,9 @@ def on_close_request():
     if dirty_tabs:
         # Prepare a list of unsaved files for the message box.
         file_list = "\n - ".join([os.path.basename(tab.file_path) if tab.file_path else "Untitled" for tab in dirty_tabs])
-        response = messagebox.askyesnocancel("Unsaved Changes", f"You have unsaved changes in the following files:\n - {file_list}\n\nDo you want to save them before closing?", parent=root)
+        response = Messagebox.askyesnocancel("Unsaved Changes", f"You have unsaved changes in the following files:\n - {file_list}\n\nDo you want to save them before closing?", parent=root)
         
-        if response is True:
+        if response == "Yes":
             debug_console.log("User chose to save files before closing.", level='ACTION')
             all_saved = True
             # Iterate through dirty tabs and attempt to save each one.
@@ -354,11 +354,11 @@ def on_close_request():
             if all_saved:
                 save_session()
                 root.destroy() # Close the application if all files were saved.
-        elif response is False:
+        elif response == "No":
             debug_console.log("User chose NOT to save files. Closing application.", level='ACTION')
             save_session()
             root.destroy() # Close the application without saving.
-        else:
+        else: # Cancel
             debug_console.log("User CANCELLED the close request.", level='ACTION')
             # Do nothing, application remains open.
     else:
@@ -405,7 +405,7 @@ def create_new_tab(file_path=None, event=None):
         event (tk.Event, optional): The Tkinter event object. Defaults to None.
     """
     interface_tabops.create_new_tab(
-        file_path, notebook, tabs, apply_theme, current_theme, on_tab_changed, EditorTab, schedule_heavy_updates
+        file_path, notebook, tabs, apply_theme, on_tab_changed, EditorTab, schedule_heavy_updates
     )
 
     if file_path and file_path.endswith(".tex"):
@@ -527,7 +527,7 @@ def restart_application():
     If confirmed, it re-executes the current Python script, effectively restarting the application.
     """
     debug_console.log("Application restart requested.", level='ACTION')
-    if messagebox.askyesno("Restart Application", "Are you sure you want to restart?\nUnsaved changes will be lost.", icon='warning'):
+    if Messagebox.askyesno("Restart Application", "Are you sure you want to restart?\nUnsaved changes will be lost.", icon='warning'):
         debug_console.log("User confirmed restart. Proceeding with application restart...", level='INFO')
         try:
             # Perform any necessary cleanup before restarting (e.g., closing files).
@@ -538,102 +538,6 @@ def restart_application():
             os.execl(python_executable, python_executable, *sys.argv)
     else:
         debug_console.log("Application restart cancelled by user.", level='INFO')
-
-def _configure_notebook_style_and_events():
-    """
-    Configures a custom `ttk.Notebook` style to include a close button on each tab.
-
-    This involves creating a new style element for the close button and modifying
-    the default tab layout to incorporate this element. It also binds mouse events
-    to the notebook to detect clicks on these custom close buttons.
-    """
-    try:
-        style = ttk.Style()
-        
-        # Define a new element 'TNotebook.close' as a label with a close character.
-        # This ensures the element is created only once.
-        if "TNotebook.close" not in style.element_names():
-            style.element_create("TNotebook.close", "label", text=' ✕ ') # '✕' is a multiplication sign, used as a close icon.
-            debug_console.log("Created custom TNotebook.close style element.", level='DEBUG')
-
-        # Configure the appearance of the close button element.
-        style.configure("TNotebook.close", padding=0, anchor='center')
-        
-        # Map mouse-over (active) and pressed states to colors for visual feedback.
-        # These colors are dynamically set based on the current theme.
-        style.map("TNotebook.close",
-            foreground=[('active', '#e81123'), ('!active', 'grey')], # Red on hover, grey otherwise.
-            background=[('active', get_theme_setting("llm_generated_bg"))]
-        )
-        
-        # Modify the default layout of a notebook tab to include our new 'close' element.
-        # This check prevents re-applying the layout if it's already been modified.
-        current_layout = style.layout("TNotebook.Tab")
-        if "TNotebook.close" not in str(current_layout):
-            style.layout("TNotebook.Tab", [
-                ('TNotebook.tab', {'sticky': 'nswe', 'children':
-                    [('TNotebook.padding', {'side': 'top', 'sticky': 'nswe', 'children':
-                        [('TNotebook.focus', {'side': 'top', 'sticky': 'nswe', 'children':
-                            [('TNotebook.label', {'side': 'left', 'sticky': ''}),
-                             ('TNotebook.close', {'side': 'left', 'sticky': ''})
-                            ]
-                        })
-                        ]
-                    })
-                    ]
-                })
-            ])
-            debug_console.log("Applied custom notebook tab layout with integrated close button.", level='DEBUG')
-    except tk.TclError as e:
-        debug_console.log(f"Failed to configure custom notebook style. Error: {e}", level='ERROR')
-        return
-
-    # Bind mouse events to the notebook to detect clicks on the custom close button.
-    def on_close_button_press(event):
-        """
-        Handles mouse button press events on the notebook tabs.
-        Identifies if the click was on a custom close button and records the tab index.
-        """
-        global _close_button_pressed_on_tab
-        try:
-            # Identify the element under the mouse click.
-            element = notebook.identify(event.x, event.y)
-        except tk.TclError:
-            return # Notebook is likely empty or click was outside.
-            
-        if "close" in element: # Check if the identified element is our custom close button.
-            index = notebook.index(f"@{event.x},{event.y}") # Get the index of the tab clicked.
-            notebook.state(['pressed']) # Set the notebook state to 'pressed' for visual feedback.
-            _close_button_pressed_on_tab = index # Store the index of the tab whose close button was pressed.
-            return "break" # Prevent default event handling.
-
-    def on_close_button_release(event):
-        """
-        Handles mouse button release events on the notebook tabs.
-        If a close button was pressed and released over the same button, it closes the tab.
-        """
-        global _close_button_pressed_on_tab
-        if _close_button_pressed_on_tab is None:
-            return # No close button was pressed initially.
-
-        try:
-            # Re-identify the element and tab index at the release position.
-            element = notebook.identify(event.x, event.y)
-            index = notebook.index(f"@{event.x},{event.y}")
-            # If the release is over the same close button that was pressed, close the tab.
-            if "close" in element and _close_button_pressed_on_tab == index:
-                tab_id_to_close = notebook.tabs()[index] # Get the actual tab ID.
-                # Use a short delay to allow visual feedback before the tab disappears.
-                notebook.after(50, lambda: close_tab_by_id(tab_id_to_close))
-        except tk.TclError:
-            pass # Click was released outside any valid tab area.
-        finally:
-            notebook.state(["!pressed"]) # Reset notebook state.
-            _close_button_pressed_on_tab = None # Clear the stored tab index.
-
-    # Bind the mouse events to the notebook.
-    notebook.bind("<ButtonPress-1>", on_close_button_press, True) # True for early binding.
-    notebook.bind("<ButtonRelease-1>", on_close_button_release)
 
 def _apply_startup_window_settings(window, config):
     """Applies window geometry and state from config at startup."""
@@ -695,16 +599,28 @@ def setup_gui():
 
     _app_config = app_config.load_config()
 
-    root = tk.Tk() # Create the main application window.
+    # Create the window with a default theme first.
+    root = ttk.Window(themename="litera")
+    
+    # Now, determine the correct theme from config, ensuring it's valid.
+    valid_themes = root.style.theme_names()
+    saved_theme = _app_config.get("theme", "litera")
+    if saved_theme not in valid_themes:
+        debug_console.log(f"Theme '{saved_theme}' not found. Falling back to 'litera'.", level='WARNING')
+        saved_theme = "litera"
+    
+    # Apply the final, validated theme.
+    root.style.theme_use(saved_theme)
+
     root.title("AutomaTeX v1.0") # Set the window title.
     _apply_startup_window_settings(root, _app_config)
     debug_console.log("GUI initialization process started.", level='INFO')
 
-    _auto_open_pdf_var = tk.BooleanVar(value=app_config.get_bool(_app_config.get('auto_open_pdf', 'False')))
+    _auto_open_pdf_var = ttk.BooleanVar(value=app_config.get_bool(_app_config.get('auto_open_pdf', 'False')))
     
-    # Apply the saved theme from config FIRST
-    saved_theme = _app_config.get("theme", "dark") # Default to dark if not set
-    apply_theme(saved_theme)
+    # Set the global variables for the current theme.
+    current_theme = saved_theme
+    _theme_settings = interface_theme.get_theme_colors(root.style, current_theme)
 
     debug_console.initialize(root) # Initialize the debug console with the root window.
 
@@ -712,7 +628,7 @@ def setup_gui():
     top_frame, settings_menu = create_top_buttons_frame(root)
 
     # Create the main vertical paned window
-    vertical_pane = tk.PanedWindow(root, orient=tk.VERTICAL, sashrelief=tk.FLAT, sashwidth=6)
+    vertical_pane = ttk.PanedWindow(root, orient=ttk.VERTICAL)
     vertical_pane.pack(fill="both", expand=True)
 
     # Create the main horizontal paned window for layout management.
@@ -725,7 +641,7 @@ def setup_gui():
     notebook = create_notebook(main_pane)
     
     # Add main_pane to the vertical_pane
-    vertical_pane.add(main_pane, stretch="always")
+    vertical_pane.add(main_pane, weight=1)
 
     # Create the console pane
     console_frame, console_output = create_console_pane(vertical_pane)
@@ -754,23 +670,24 @@ def setup_gui():
     
     return root
 
-def apply_theme(theme_name, event=None):
+def apply_theme(event=None):
     """
     Applies the specified theme to the entire application.
 
-    This function updates the application's visual style, including colors and
-    widget appearances, by delegating to `interface_theme.apply_theme` and then
-    re-configuring the custom notebook tab style.
+    This function updates the application's visual style by changing the ttkbootstrap theme
+    and then re-applying syntax highlighting and other custom styles.
 
     Args:
-        theme_name (str): The name of the theme to apply (e.g., "light", "dark").
         event (tk.Event, optional): The Tkinter event object. Defaults to None.
     """
     global current_theme, _theme_settings, _app_config
+    
+    theme_name = root.style.theme.name
     debug_console.log(f"Attempting to apply theme: '{theme_name}'.", level='ACTION')
+    
     # Apply the base theme using the interface_theme module and get new settings.
     new_theme, new_settings = interface_theme.apply_theme(
-        theme_name, root, main_pane, tabs, perform_heavy_updates
+        theme_name, root, main_pane, tabs, perform_heavy_updates, console_output
     )
     current_theme = new_theme # Update the global current theme.
     _theme_settings = new_settings # Update the global theme settings.
@@ -778,7 +695,3 @@ def apply_theme(theme_name, event=None):
     # Save the new theme to the config
     _app_config['theme'] = current_theme
     app_config.save_config(_app_config)
-    
-    # Re-apply our custom notebook style modifications to ensure they are consistent
-    # with the newly applied theme.
-    _configure_notebook_style_and_events()

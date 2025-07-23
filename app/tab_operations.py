@@ -71,7 +71,7 @@ def close_current_tab(get_current_tab_callback, root_window, notebook_widget, sa
         debug_console.log("No tabs remaining. Creating a new 'Untitled' tab automatically.", level='INFO')
         create_new_tab_callback()
 
-def create_new_tab(file_path, notebook_widget, open_tabs_dict, apply_theme_callback, current_theme_name, on_tab_changed_callback, EditorTab_class, schedule_heavy_updates_callback):
+def create_new_tab(file_path, notebook_widget, open_tabs_dict, apply_theme_callback, on_tab_changed_callback, EditorTab_class, schedule_heavy_updates_callback):
     """
     Creates and adds a new editor tab to the notebook.
 
@@ -84,7 +84,6 @@ def create_new_tab(file_path, notebook_widget, open_tabs_dict, apply_theme_callb
         notebook_widget (ttk.Notebook): The notebook widget to add the new tab to.
         open_tabs_dict (dict): Dictionary mapping tab IDs to EditorTab instances.
         apply_theme_callback (callable): Function to apply the current theme to new widgets.
-        current_theme_name (str): The name of the currently active theme.
         on_tab_changed_callback (callable): Function to call when the tab selection changes.
         EditorTab_class (class): The EditorTab class to instantiate for new tabs.
         schedule_heavy_updates_callback (callable): Function to schedule heavy updates for the editor.
@@ -116,7 +115,7 @@ def create_new_tab(file_path, notebook_widget, open_tabs_dict, apply_theme_callb
     open_tabs_dict[str(new_tab)] = new_tab
     
     # Apply the current theme to the new tab's widgets to ensure visual consistency.
-    apply_theme_callback(current_theme_name) 
+    apply_theme_callback() 
     # Trigger the tab changed callback to update UI elements dependent on the active tab.
     on_tab_changed_callback()
     debug_console.log(f"Tab for '{tab_display_name}' created and loaded successfully.", level='SUCCESS')
