@@ -9,7 +9,7 @@ from utils import debug_console
 from snippets import manager as snippet_manager
 from snippets.editor_dialog import SnippetEditorDialog
 
-def open_snippet_editor():
+def open_snippet_editor(root_window, theme_settings):
     """
     Opens the snippet editor dialog, allowing users to view, add, edit, or delete code snippets.
 
@@ -19,8 +19,8 @@ def open_snippet_editor():
     debug_console.log("Attempting to open snippet editor dialog.", level='ACTION')
     # Create and show the SnippetEditorDialog, passing required data and callbacks.
     SnippetEditorDialog(
-        parent=interface.root,  # The main application window as the parent.
-        theme_settings=interface.get_theme_settings(),  # Current theme settings for consistent UI.
+        parent=root_window,  # The main application window as the parent.
+        theme_settings=theme_settings,  # Current theme settings for consistent UI.
         current_snippets=snippet_manager.get_snippets(),  # The current dictionary of snippets.
         save_callback=snippet_manager.save_snippets  # Callback function to save modified snippets.
     )

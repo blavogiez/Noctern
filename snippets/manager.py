@@ -11,7 +11,7 @@ from utils import debug_console
 
 # --- Configuration and Global State ---
 # The name of the file where snippets are stored.
-SNIPPETS_FILE = "snippets.json"
+SNIPPETS_FILE = "data/snippets.json"
 # A global dictionary to hold the in-memory representation of all snippets.
 _snippets = {}
 
