@@ -39,7 +39,7 @@ def analyze_compilation_diff_with_llm(diff_content: str, log_content: str):
         messagebox.showerror("LLM Error", "The 'debug_latex_diff' prompt template is missing.")
         return
 
-    full_prompt = prompt_template.format(diff_content=diff_content, log_content=log_content)
+    full_prompt = prompt_template.format(latex_code=diff_content, error_log=log_content)
 
     # For now, let's display a placeholder dialog. We'll implement show_debug_dialog next.
     # This allows us to test the flow.
@@ -58,7 +58,8 @@ def analyze_compilation_diff_with_llm(diff_content: str, log_content: str):
                     llm_state._theme_setting_getter_func,
                     diff_content,
                     log_content,
-                    ai_analysis
+                    ai_analysis,
+                    llm_state._active_editor_getter_func  # Pass the getter function
                 ))
             else:
                 messagebox.showerror("LLM Error", response.get("error", "An unknown error occurred."))

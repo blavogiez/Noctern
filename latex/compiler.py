@@ -268,15 +268,26 @@ def compile_latex(event=None):
                         good_code = f_good.readlines()
                     with open(tex_file_path, 'r', encoding='utf-8') as f_bad:
                         bad_code = f_bad.readlines()
-                    with open(log_file_path, 'r', encoding='utf-8', errors='ignore') as f_log:
-                        log_content = f_log.read()
+                    
+                    log_content = ""
+                    try:
+                        with open(log_file_path, 'r', encoding='utf-8', errors='ignore') as f_log:
+                            log_content = f_log.read()
+                    except FileNotFoundError:
+                        debug_console.log("Log file not found, proceeding with empty log.", level='WARNING')
 
                     diff = difflib.unified_diff(good_code, bad_code, fromfile='last_successful.tex', tofile='current.tex', lineterm='')
                     diff_content = '\n'.join(diff)
 
                     if diff_content.strip():
-                        # Call the new LLM analysis function
-                        latex_debug.analyze_compilation_diff_with_llm(diff_content, log_content)
+                        if messagebox.askyesno("Analyze Compilation Error?", "A compilation error occurred. Would you like to use the LLM to analyze the changes and the error log?"):
+                            debug_console.log("User agreed to LLM analysis. Launching.", level='INFO')
+                            # Call the new LLM analysis function
+                            latex_debug.analyze_compilation_diff_with_llm(diff_content, log_content)
+                        else:
+                            debug_console.log("User declined LLM analysis. Showing standard log.", level='INFO')
+                            error_summary = error_parser.parse_log_file(log_content)
+                            show_console(error_summary)
                     else:
                         # If there's no diff, just show the standard log
                         error_summary = error_parser.parse_log_file(log_content)
@@ -289,9 +300,29 @@ def compile_latex(event=None):
                     show_console(error_summary)
             else:
                 # Fallback if no cached version exists
-                debug_console.log("No cached version found. Using standard error parsing.", level='INFO')
-                error_summary = error_parser.read_and_parse_log(log_file_path)
-                show_console(error_summary)
+                debug_console.log("No cached version found. Offering to analyze full file.", level='INFO')
+                try:
+                    with open(tex_file_path, 'r', encoding='utf-8') as f_bad:
+                        bad_code = f_bad.read()
+                    
+                    log_content = ""
+                    try:
+                        with open(log_file_path, 'r', encoding='utf-8', errors='ignore') as f_log:
+                            log_content = f_log.read()
+                    except FileNotFoundError:
+                        debug_console.log("Log file not found, proceeding with empty log.", level='WARNING')
+
+                    if messagebox.askyesno("Analyze Compilation Error?", "No cached version found. Would you like to use the LLM to analyze the full LaTeX file and the error log?"):
+                        debug_console.log("User agreed to LLM analysis on full file. Launching.", level='INFO')
+                        latex_debug.analyze_compilation_diff_with_llm(bad_code, log_content)
+                    else:
+                        debug_console.log("User declined LLM analysis. Showing standard log.", level='INFO')
+                        error_summary = error_parser.parse_log_file(log_content)
+                        show_console(error_summary)
+                except Exception as e:
+                    debug_console.log(f"Error during full file analysis: {e}", level='ERROR')
+                    error_summary = error_parser.read_and_parse_log(log_file_path)
+                    show_console(error_summary)
             # --- End Diff Analysis Logic ---
     except FileNotFoundError:
         messagebox.showerror("Error", "`pdflatex` command not found. Please ensure LaTeX is installed and in your system's PATH.")
