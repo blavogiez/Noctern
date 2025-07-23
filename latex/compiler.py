@@ -283,7 +283,7 @@ def compile_latex(event=None):
                         if messagebox.askyesno("Analyze Compilation Error?", "A compilation error occurred. Would you like to use the LLM to analyze the changes and the error log?"):
                             debug_console.log("User agreed to LLM analysis. Launching.", level='INFO')
                             # Call the new LLM analysis function
-                            latex_debug.analyze_compilation_diff_with_llm(diff_content, log_content)
+                            latex_debug.analyze_compilation_diff(diff_content, log_content)
                         else:
                             debug_console.log("User declined LLM analysis. Showing standard log.", level='INFO')
                             error_summary = error_parser.parse_log_file(log_content)
@@ -314,7 +314,7 @@ def compile_latex(event=None):
 
                     if messagebox.askyesno("Analyze Compilation Error?", "No cached version found. Would you like to use the LLM to analyze the full LaTeX file and the error log?"):
                         debug_console.log("User agreed to LLM analysis on full file. Launching.", level='INFO')
-                        latex_debug.analyze_compilation_diff_with_llm(bad_code, log_content)
+                        latex_debug.analyze_compilation_diff(bad_code, log_content)
                     else:
                         debug_console.log("User declined LLM analysis. Showing standard log.", level='INFO')
                         error_summary = error_parser.parse_log_file(log_content)

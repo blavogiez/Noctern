@@ -1,3 +1,4 @@
+
 """
 This module contains the dedicated dialog for displaying LaTeX debugging information,
 providing AI analysis, a colorized diff, and an option to apply the suggested fix.
@@ -7,29 +8,31 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import json
 import re
+import threading
+from llm import api_client, state as llm_state
 
 class DebugDialog(tk.Toplevel):
     """
     A dedicated dialog window for LaTeX error analysis and debugging.
+    The dialog now starts by showing the diff and offers AI analysis on demand.
     """
-    def __init__(self, root_window, theme_getter, diff_content, log_content, ai_analysis, active_editor_getter):
+    def __init__(self, root_window, theme_getter, diff_content, log_content, active_editor_getter):
         super().__init__(root_window)
         self.transient(root_window)
         self.title("LaTeX Debugger")
         self.geometry("1200x750")
-        self.minsize(800, 500)
+        self.state('zoomed') # Open maximized
         self.grab_set()
 
         self.theme_getter = theme_getter
         self.diff_content = diff_content
         self.log_content = log_content
-        self.ai_analysis_str = ai_analysis
         self.active_editor_getter = active_editor_getter
         
         self.corrected_code = ""
         self.ai_explanation = "No explanation provided."
+        self.ai_analysis_str = ""
 
-        self._parse_ai_analysis()
         self._setup_styles()
         self._create_widgets()
         
@@ -42,18 +45,27 @@ class DebugDialog(tk.Toplevel):
         potential JSON formatting issues and markdown code blocks.
         """
         try:
-            # Find the JSON block. This is more robust against extra text from the AI.
-            json_match = re.search(r'\{.*\}', self.ai_analysis_str, re.DOTALL)
+            json_match = re.search(r'```(?:json)?\s*({.*?})\s*```', self.ai_analysis_str, re.DOTALL)
+            if not json_match:
+                json_match = re.search(r'{.*}', self.ai_analysis_str, re.DOTALL)
+
             if not json_match:
                 raise ValueError("No JSON object found in the AI response.")
             
-            json_str = json_match.group(0)
-            analysis_data = json.loads(json_str)
+            json_str = json_match.group(1) if len(json_match.groups()) > 0 else json_match.group(0)
+            
+            try:
+                analysis_data = json.loads(json_str)
+            except json.JSONDecodeError as e:
+                if "Expecting property name enclosed in double quotes" in str(e):
+                    repaired_json_str = json_str.replace("'", '"')
+                    analysis_data = json.loads(repaired_json_str)
+                else:
+                    raise
             
             self.ai_explanation = analysis_data.get("explanation", "The AI did not provide an explanation.")
             corrected_code_raw = analysis_data.get("corrected_code", "")
 
-            # Extract the code from markdown blocks like ```latex ... ``` or ``` ... ```
             code_match = re.search(r'```(?:latex)?\s*\n?(.*?)\n?```', corrected_code_raw, re.DOTALL)
             if code_match:
                 self.corrected_code = code_match.group(1).strip()
@@ -72,8 +84,8 @@ class DebugDialog(tk.Toplevel):
         self.configure(bg=self.bg_color)
 
         style = ttk.Style(self)
-        style.configure("Debug.TButton", font=("Segoe UI", 10, "bold"), padding=10)
-        style.configure("Debug.TNotebook.Tab", font=("Segoe UI", 10), padding=[10, 5])
+        style.configure("Debug.TButton", font=("Segoe UI", 11, "bold"), padding=12)
+        style.configure("Debug.TNotebook.Tab", font=("Segoe UI", 10, "bold"), padding=[12, 6])
         style.map("Debug.TNotebook.Tab",
                   background=[("selected", self.theme_getter("tab_selected_bg", "#d0d0d0"))],
                   foreground=[("selected", self.theme_getter("tab_selected_fg", "#000000"))])
@@ -81,65 +93,130 @@ class DebugDialog(tk.Toplevel):
     def _create_widgets(self):
         """Creates and lays out the widgets for the dialog."""
         main_pane = ttk.PanedWindow(self, orient=tk.HORIZONTAL)
-        main_pane.pack(fill=tk.BOTH, expand=True, padx=15, pady=15)
+        main_pane.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
 
-        # --- Left Pane: AI Assistant ---
-        left_pane = self._create_ai_pane(main_pane)
-        main_pane.add(left_pane, weight=40) # 40% of width
+        self.left_pane = self._create_initial_ai_pane(main_pane)
+        main_pane.add(self.left_pane, weight=35)
 
-        # --- Right Pane: Context (Diff & Log) ---
         right_pane = self._create_context_pane(main_pane)
-        main_pane.add(right_pane, weight=60) # 60% of width
+        main_pane.add(right_pane, weight=65)
 
-    def _create_ai_pane(self, parent):
-        """Creates the left pane containing the AI's analysis and actions."""
-        ai_frame = ttk.Frame(parent, padding=10)
+    def _create_initial_ai_pane(self, parent):
+        """Creates the initial left pane with just the 'Analyze' button."""
+        self.ai_frame = ttk.Frame(parent, padding=20)
+        
+        title_label = ttk.Label(self.ai_frame, text="AI Assistant", font=("Segoe UI", 16, "bold"))
+        title_label.pack(pady=(0, 10))
 
-        # Explanation
-        exp_frame = ttk.LabelFrame(ai_frame, text="AI Explanation", padding=10)
-        exp_frame.pack(fill=tk.BOTH, expand=True)
+        info_label = ttk.Label(self.ai_frame, text="Review the changes on the right. If you're stuck, the AI can analyze the error and suggest a fix.", wraplength=300, justify=tk.CENTER)
+        info_label.pack(pady=(0, 25))
+
+        self.analyze_button = ttk.Button(self.ai_frame, text="🤖 Analyze with AI", command=self._run_ai_analysis, style="Debug.TButton")
+        self.analyze_button.pack(expand=True, fill=tk.BOTH, ipady=15)
+        
+        return self.ai_frame
+
+    def _run_ai_analysis(self):
+        """Handles the AI analysis process when the button is clicked."""
+        for widget in self.ai_frame.winfo_children():
+            widget.destroy()
+        
+        progress_frame = ttk.Frame(self.ai_frame)
+        progress_frame.pack(expand=True)
+        
+        progress = ttk.Progressbar(progress_frame, mode='indeterminate')
+        progress.pack(pady=20)
+        progress.start()
+        
+        loading_label = ttk.Label(progress_frame, text="Contacting LLM...", font=("Segoe UI", 10, "italic"))
+        loading_label.pack()
+
+        threading.Thread(target=self._fetch_ai_analysis, daemon=True).start()
+
+    def _fetch_ai_analysis(self):
+        """Makes the API call to the LLM."""
+        prompt_template = llm_state._global_default_prompts.get("debug_latex_diff")
+        if not prompt_template:
+            self.after(0, lambda: messagebox.showerror("LLM Error", "The 'debug_latex_diff' prompt template is missing."))
+            return
+
+        full_prompt = prompt_template.format(diff_content=self.diff_content, log_content=self.log_content)
+        
+        try:
+            response_generator = api_client.request_llm_generation(full_prompt, stream=False)
+            response = next(response_generator)
+
+            if response.get("success"):
+                self.ai_analysis_str = response.get("data", "No analysis available.")
+                self.after(0, self._update_ui_with_analysis)
+            else:
+                error_msg = response.get("error", "An unknown error occurred.")
+                self.after(0, lambda: self._show_error_in_pane(error_msg))
+        except Exception as e:
+            self.after(0, lambda: self._show_error_in_pane(f"An unexpected error occurred: {e}"))
+
+    def _show_error_in_pane(self, error_message):
+        """Displays an error message in the AI pane."""
+        for widget in self.ai_frame.winfo_children():
+            widget.destroy()
+        
+        error_label = ttk.Label(self.ai_frame, text="Analysis Failed", font=("Segoe UI", 14, "bold"), foreground="red")
+        error_label.pack(pady=(10, 5))
+        
+        error_text = ttk.Label(self.ai_frame, text=error_message, wraplength=350, justify=tk.CENTER)
+        error_text.pack(pady=10)
+
+        retry_button = ttk.Button(self.ai_frame, text="Retry Analysis", command=self._run_ai_analysis, style="Debug.TButton")
+        retry_button.pack(pady=20)
+
+    def _update_ui_with_analysis(self):
+        """Clears the loading state and populates the pane with AI analysis."""
+        for widget in self.ai_frame.winfo_children():
+            widget.destroy()
+
+        self._parse_ai_analysis()
+
+        exp_frame = ttk.LabelFrame(self.ai_frame, text="AI Explanation", padding=15)
+        exp_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
         
         exp_text = tk.Text(exp_frame, wrap="word", bg=self.bg_color, fg=self.text_fg_color, font=("Segoe UI", 11), relief=tk.FLAT, height=8)
         exp_text.insert("1.0", self.ai_explanation)
         exp_text.config(state="disabled")
         exp_text.pack(fill=tk.BOTH, expand=True)
 
-        # Suggested Fix
-        code_frame = ttk.LabelFrame(ai_frame, text="Suggested Fix", padding=10)
+        code_frame = ttk.LabelFrame(self.ai_frame, text="Suggested Fix", padding=15)
         code_frame.pack(fill=tk.BOTH, expand=True, pady=10)
 
-        self.code_text = tk.Text(code_frame, wrap="none", bg="#2d2d2d", fg="#dcdcdc", font=("Consolas", 10), relief=tk.FLAT, insertbackground="#ffffff")
+        self.code_text = tk.Text(
+            code_frame, wrap="none", bg=self.text_bg_color, fg=self.text_fg_color, 
+            font=("Consolas", 10), relief=tk.FLAT, insertbackground=self.text_fg_color
+        )
         self.code_text.insert("1.0", self.corrected_code)
         self.code_text.config(state="disabled")
         self.code_text.pack(fill=tk.BOTH, expand=True)
 
-        # Action Buttons
-        action_frame = ttk.Frame(ai_frame)
-        action_frame.pack(fill=tk.X, pady=(5, 0))
+        action_frame = ttk.Frame(self.ai_frame)
+        action_frame.pack(fill=tk.X, pady=(10, 0))
 
         copy_button = ttk.Button(action_frame, text="Copy Code", command=self._copy_code, style="Debug.TButton")
         copy_button.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(0, 5))
         
         apply_button = ttk.Button(action_frame, text="Apply Fix", command=self._apply_fix, style="Debug.TButton")
         apply_button.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(5, 0))
-        if not self.corrected_code or "explanation" not in self.ai_analysis_str:
+        if not self.corrected_code or "Could not parse" in self.ai_explanation:
             apply_button.config(state="disabled")
-
-        return ai_frame
 
     def _create_context_pane(self, parent):
         """Creates the right pane containing the diff and error log tabs."""
         context_notebook = ttk.Notebook(parent, style="Debug.TNotebook")
         context_notebook.pack(fill=tk.BOTH, expand=True)
 
-        # Diff Tab
         diff_frame = ttk.Frame(context_notebook, padding=5)
-        diff_text = tk.Text(diff_frame, wrap="none", bg=self.text_bg_color, fg=self.text_fg_color, font=("Consolas", 10))
+        diff_text = tk.Text(diff_frame, wrap="word", bg=self.text_bg_color, fg=self.text_fg_color, font=("Consolas", 10))
         diff_text.pack(fill=tk.BOTH, expand=True)
         self._colorize_diff(diff_text, self.diff_content)
         context_notebook.add(diff_frame, text="Code Changes (Diff)")
 
-        # Log Tab
         log_frame = ttk.Frame(context_notebook, padding=5)
         log_text = tk.Text(log_frame, wrap="word", bg=self.text_bg_color, fg=self.text_fg_color, font=("Consolas", 9))
         log_text.insert("1.0", self.log_content)
@@ -174,18 +251,67 @@ class DebugDialog(tk.Toplevel):
         messagebox.showinfo("Copied", "The suggested fix has been copied to the clipboard.", parent=self)
 
     def _apply_fix(self):
-        """Applies the corrected code to the active editor."""
+        """
+        Applies the corrected code to the active editor.
+        If the analysis was based on a diff, it attempts to replace only the
+        changed block. Otherwise, it replaces the entire content.
+        """
         editor = self.active_editor_getter()
-        if editor:
-            if messagebox.askyesno("Confirm Fix", "This will replace the entire content of the current editor with the suggested fix. Are you sure?", parent=self):
+        if not editor:
+            messagebox.showerror("Error", "Could not find an active editor to apply the fix to.", parent=self)
+            return
+
+        is_diff_analysis = self.diff_content.strip().startswith('---')
+
+        if not is_diff_analysis:
+            if messagebox.askyesno("Confirm Full Replace", "The analysis was based on the full file, not a diff.\n\nThis will replace the ENTIRE content of the current editor with the suggested fix. Are you sure?", parent=self, icon='warning'):
                 editor.delete("1.0", tk.END)
                 editor.insert("1.0", self.corrected_code)
                 self.destroy()
-        else:
-            messagebox.showerror("Error", "Could not find an active editor to apply the fix to.", parent=self)
+            return
 
-def show_debug_dialog(root_window, theme_getter, diff_content, log_content, ai_analysis, active_editor_getter):
+        try:
+            bad_block_lines = []
+            hunk_header_re = re.compile(r'^@@ -\d+(?:,\d+)? \+\d+(?:,\d+)? @@')
+            hunks = hunk_header_re.split(self.diff_content)[1:]
+
+            if len(hunks) > 1:
+                messagebox.showwarning("Ambiguous Fix", "The change involves multiple separate code blocks. This tool can only apply a single, continuous fix automatically.\n\nPlease use 'Copy Code' and apply the fix manually.", parent=self)
+                return
+            
+            if not hunks:
+                 raise ValueError("Could not find any changes in the diff.")
+
+            for line in hunks[0].splitlines():
+                if line.startswith('-'):
+                    continue
+                elif line.startswith('+'):
+                    bad_block_lines.append(line[1:])
+                elif line.startswith(' '):
+                    bad_block_lines.append(line[1:])
+            
+            block_to_replace = "\n".join(bad_block_lines)
+            current_editor_content = editor.get("1.0", tk.END)
+            
+            if block_to_replace.strip() and block_to_replace in current_editor_content:
+                start_index = current_editor_content.find(block_to_replace)
+                end_index = start_index + len(block_to_replace)
+                
+                tk_start = editor.index(f"1.0 + {start_index} chars")
+                tk_end = editor.index(f"1.0 + {end_index} chars")
+
+                if messagebox.askyesno("Confirm Smart Replace", "This will apply the AI's suggested fix by replacing the differing lines in your editor.\n\nAre you sure you want to proceed?", parent=self):
+                    editor.delete(tk_start, tk_end)
+                    editor.insert(tk_start, self.corrected_code)
+                    self.destroy()
+            else:
+                raise ValueError("Could not find the code block to replace in the editor. The content may have changed.")
+
+        except Exception as e:
+            messagebox.showerror("Apply Fix Failed", f"Could not apply the fix automatically: {e}\n\nPlease use 'Copy Code' and apply the fix manually.", parent=self)
+
+def show_debug_dialog(root_window, theme_getter, diff_content, log_content, active_editor_getter):
     """
     Public function to create and show the debug dialog.
     """
-    DebugDialog(root_window, theme_getter, diff_content, log_content, ai_analysis, active_editor_getter)
+    DebugDialog(root_window, theme_getter, diff_content, log_content, active_editor_getter)
