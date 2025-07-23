@@ -1,19 +1,31 @@
-# Python
+# === Python ===
 __pycache__/
-*.pyc
+*.py[cod]
 *.pyo
 *.pyd
 .Python
+
+# Virtual environments
 env/
 venv/
+ENV/
+ENV.bak/
+*.env/  # parfois les envs sont nommés ".env/"
+
+# Pip
 pip-log.txt
 pip-delete-this-directory.txt
+
+# IDEs / Editors
 .idea/
 .vscode/
+*.swp  # fichiers temporaires de certains éditeurs (ex: vim)
 
-.env
+# Configuration sensible
+.env  # fichiers d'environnement (ne jamais versionner !)
+.env.*  # optionnel, pour .env.dev, .env.local, etc.
 
-# LaTeX temporary files
+# === LaTeX ===
 *.aux
 *.log
 *.out
