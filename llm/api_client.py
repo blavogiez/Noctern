@@ -73,7 +73,7 @@ def request_llm_generation(prompt_text, model_name=DEFAULT_LLM_MODEL, stream=Tru
                 }
             },
             stream=stream,
-            timeout=(3.1, 27)  # (connect_timeout, read_timeout)
+            timeout=(3.1, 120)  # (connect_timeout, read_timeout)
         )
         response.raise_for_status()  # Raise an HTTPError for bad responses (4xx or 5xx).
 

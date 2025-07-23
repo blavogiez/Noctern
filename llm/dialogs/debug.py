@@ -195,7 +195,7 @@ class DebugDialog(tk.Toplevel):
         action_frame = ttk.Frame(self.ai_frame)
         action_frame.pack(fill=tk.X, pady=(10, 0))
 
-        copy_button = ttk.Button(action_frame, text="Copy Code", command=self._copy_code, style="Debug.TButton")
+        copy_button = ttk.Button(action_frame, text="Copy Code", command=lambda: self._copy_to_clipboard(self.corrected_code, "The suggested fix has been copied to the clipboard."), style="Debug.TButton")
         copy_button.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(0, 5))
         
         apply_button = ttk.Button(action_frame, text="Apply Fix", command=self._apply_fix, style="Debug.TButton")
@@ -209,9 +209,25 @@ class DebugDialog(tk.Toplevel):
         context_notebook.pack(fill=tk.BOTH, expand=True)
 
         diff_frame = ttk.Frame(context_notebook, padding=5)
-        diff_text = tk.Text(diff_frame, wrap="word", bg=self.text_bg_color, fg=self.text_fg_color, font=("Consolas", 10))
-        diff_text.pack(fill=tk.BOTH, expand=True)
+        
+        # Create a container for the text and the button
+        diff_container = ttk.Frame(diff_frame)
+        diff_container.pack(fill=tk.BOTH, expand=True)
+
+        diff_text = tk.Text(diff_container, wrap="word", bg=self.text_bg_color, fg=self.text_fg_color, font=("Consolas", 10))
+        diff_text.pack(side=tk.TOP, fill=tk.BOTH, expand=True)
         self._colorize_diff(diff_text, self.diff_content)
+
+        # Frame for the copy button, aligned to the right
+        button_frame = ttk.Frame(diff_container)
+        button_frame.pack(fill=tk.X, side=tk.BOTTOM, pady=(5, 0))
+
+        copy_added_button = ttk.Button(button_frame, text="Copy only +", command=lambda: self._copy_to_clipboard(self._extract_added_lines(self.diff_content), "The added lines have been copied to the clipboard."))
+        copy_added_button.pack(side=tk.RIGHT, padx=(5, 0))
+
+        copy_diff_button = ttk.Button(button_frame, text="Copy Diff", command=lambda: self._copy_to_clipboard(self.diff_content, "The diff content has been copied to the clipboard."))
+        copy_diff_button.pack(side=tk.RIGHT)
+
         context_notebook.add(diff_frame, text="Code Changes (Diff)")
 
         log_frame = ttk.Frame(context_notebook, padding=5)
@@ -241,11 +257,18 @@ class DebugDialog(tk.Toplevel):
                 text_widget.insert(tk.END, line)
         text_widget.config(state="disabled")
 
-    def _copy_code(self):
-        """Copies the corrected code to the clipboard."""
+    def _copy_to_clipboard(self, content_to_copy, confirmation_message):
+        """Copies the given content to the clipboard and shows a confirmation."""
         self.clipboard_clear()
-        self.clipboard_append(self.corrected_code)
-        messagebox.showinfo("Copied", "The suggested fix has been copied to the clipboard.", parent=self)
+        self.clipboard_append(content_to_copy)
+        messagebox.showinfo("Copied", confirmation_message, parent=self)
+
+    def _extract_added_lines(self, diff_content):
+        """Extracts only the added lines (starting with '+') from a diff string."""
+        added_lines = [line[1:] for line in diff_content.splitlines() if line.startswith('+')]
+        return "\n".join(added_lines)
+
+    
 
     def _apply_fix(self):
         """
