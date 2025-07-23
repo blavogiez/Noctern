@@ -527,7 +527,7 @@ def restart_application():
     If confirmed, it re-executes the current Python script, effectively restarting the application.
     """
     debug_console.log("Application restart requested.", level='ACTION')
-    if Messagebox.askyesno("Restart Application", "Are you sure you want to restart?\nUnsaved changes will be lost.", icon='warning'):
+    if Messagebox.askyesno("Restart Application", "Are you sure you want to restart?\nUnsaved changes will be lost.", icon='warning') == "Yes":
         debug_console.log("User confirmed restart. Proceeding with application restart...", level='INFO')
         try:
             # Perform any necessary cleanup before restarting (e.g., closing files).
