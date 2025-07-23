@@ -85,6 +85,7 @@ class DebugDialog(tk.Toplevel):
 
         style = ttk.Style(self)
         style.configure("Debug.TButton", font=("Segoe UI", 11, "bold"), padding=12)
+        style.configure("Small.TButton", font=("Segoe UI", 9), padding=8) # New smaller style
         style.configure("Debug.TNotebook.Tab", font=("Segoe UI", 10, "bold"), padding=[12, 6])
         style.map("Debug.TNotebook.Tab",
                   background=[("selected", self.theme_getter("tab_selected_bg", "#d0d0d0"))],
@@ -102,12 +103,20 @@ class DebugDialog(tk.Toplevel):
         main_pane.add(right_pane, weight=65)
 
     def _create_initial_ai_pane(self, parent):
-        """Creates the initial left pane with a single, clear action."""
+        """Creates the initial left pane with a cleaner, more subtle layout."""
         self.ai_frame = ttk.Frame(parent, padding=20)
         
-        # A single, clear button is more direct and professional.
-        self.analyze_button = ttk.Button(self.ai_frame, text="Analyze Error", command=self._run_ai_analysis, style="Debug.TButton")
-        self.analyze_button.pack(expand=True, fill=tk.BOTH, ipady=15)
+        container = ttk.Frame(self.ai_frame)
+        container.pack(expand=True, anchor="center")
+
+        title_label = ttk.Label(container, text="Ready to Fix?", font=("Segoe UI", 14, "bold"))
+        title_label.pack(pady=(0, 5))
+
+        info_label = ttk.Label(container, text="Click the button below to analyze the error in your added code.", wraplength=300, justify=tk.CENTER)
+        info_label.pack(pady=(0, 20))
+        
+        self.analyze_button = ttk.Button(container, text="Analyze Error", command=self._run_ai_analysis, style="Debug.TButton")
+        self.analyze_button.pack()
         
         return self.ai_frame
 
@@ -129,13 +138,18 @@ class DebugDialog(tk.Toplevel):
         threading.Thread(target=self._fetch_ai_analysis, daemon=True).start()
 
     def _fetch_ai_analysis(self):
-        """Makes the API call to the LLM."""
+        """Makes the API call to the LLM, sending only the added lines for analysis."""
         prompt_template = llm_state._global_default_prompts.get("debug_latex_diff")
         if not prompt_template:
             self.after(0, lambda: messagebox.showerror("LLM Error", "The 'debug_latex_diff' prompt template is missing."))
             return
 
-        full_prompt = prompt_template.format(diff_content=self.diff_content, log_content=self.log_content)
+        added_lines = self._extract_added_lines(self.diff_content)
+        if not added_lines.strip():
+            self.after(0, lambda: self._show_error_in_pane("No added lines (+) found in the diff to analyze."))
+            return
+
+        full_prompt = prompt_template.format(added_lines=added_lines, log_content=self.log_content)
         
         try:
             response_generator = api_client.request_llm_generation(full_prompt, model_name=llm_state.model_debug, stream=False)
@@ -195,10 +209,10 @@ class DebugDialog(tk.Toplevel):
         action_frame = ttk.Frame(self.ai_frame)
         action_frame.pack(fill=tk.X, pady=(10, 0))
 
-        copy_button = ttk.Button(action_frame, text="Copy Code", command=lambda: self._copy_to_clipboard(self.corrected_code, "The suggested fix has been copied to the clipboard."), style="Debug.TButton")
+        copy_button = ttk.Button(action_frame, text="Copy Code", command=lambda: self._copy_to_clipboard(self.corrected_code, "The suggested fix has been copied to the clipboard."), style="Small.TButton")
         copy_button.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(0, 5))
         
-        apply_button = ttk.Button(action_frame, text="Apply Fix", command=self._apply_fix, style="Debug.TButton")
+        apply_button = ttk.Button(action_frame, text="Apply Fix", command=self._apply_fix, style="Small.TButton")
         apply_button.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(5, 0))
         if not self.corrected_code or "Could not parse" in self.ai_explanation:
             apply_button.config(state="disabled")
@@ -272,55 +286,30 @@ class DebugDialog(tk.Toplevel):
 
     def _apply_fix(self):
         """
-        Applies the corrected code to the active editor.
-        If the analysis was based on a diff, it attempts to replace only the
-        changed block. Otherwise, it replaces the entire content.
+        Applies the corrected code to the active editor by replacing only the
+        lines that were originally added.
         """
         editor = self.active_editor_getter()
         if not editor:
             messagebox.showerror("Error", "Could not find an active editor to apply the fix to.", parent=self)
             return
 
-        is_diff_analysis = self.diff_content.strip().startswith('---')
-
-        if not is_diff_analysis:
-            if messagebox.askyesno("Confirm Full Replace", "The analysis was based on the full file, not a diff.\n\nThis will replace the ENTIRE content of the current editor with the suggested fix. Are you sure?", parent=self, icon='warning'):
-                editor.delete("1.0", tk.END)
-                editor.insert("1.0", self.corrected_code)
-                self.destroy()
+        block_to_replace = self._extract_added_lines(self.diff_content)
+        if not block_to_replace.strip():
+            messagebox.showerror("Apply Fix Failed", "There were no added lines (+) in the original change to replace.", parent=self)
             return
 
         try:
-            bad_block_lines = []
-            hunk_header_re = re.compile(r'^@@ -\d+(?:,\d+)? \+\d+(?:,\d+)? @@')
-            hunks = hunk_header_re.split(self.diff_content)[1:]
-
-            if len(hunks) > 1:
-                messagebox.showwarning("Ambiguous Fix", "The change involves multiple separate code blocks. This tool can only apply a single, continuous fix automatically.\n\nPlease use 'Copy Code' and apply the fix manually.", parent=self)
-                return
-            
-            if not hunks:
-                 raise ValueError("Could not find any changes in the diff.")
-
-            for line in hunks[0].splitlines():
-                if line.startswith('-'):
-                    continue
-                elif line.startswith('+'):
-                    bad_block_lines.append(line[1:])
-                elif line.startswith(' '):
-                    bad_block_lines.append(line[1:])
-            
-            block_to_replace = "\n".join(bad_block_lines)
             current_editor_content = editor.get("1.0", tk.END)
             
-            if block_to_replace.strip() and block_to_replace in current_editor_content:
+            if block_to_replace in current_editor_content:
                 start_index = current_editor_content.find(block_to_replace)
                 end_index = start_index + len(block_to_replace)
                 
                 tk_start = editor.index(f"1.0 + {start_index} chars")
                 tk_end = editor.index(f"1.0 + {end_index} chars")
 
-                if messagebox.askyesno("Confirm Smart Replace", "This will apply the AI's suggested fix by replacing the differing lines in your editor.\n\nAre you sure you want to proceed?", parent=self):
+                if messagebox.askyesno("Confirm Smart Replace", "This will replace the added lines in your editor with the AI's suggested fix.\n\nAre you sure you want to proceed?", parent=self):
                     editor.delete(tk_start, tk_end)
                     editor.insert(tk_start, self.corrected_code)
                     self.destroy()
