@@ -102,16 +102,11 @@ class DebugDialog(tk.Toplevel):
         main_pane.add(right_pane, weight=65)
 
     def _create_initial_ai_pane(self, parent):
-        """Creates the initial left pane with just the 'Analyze' button."""
+        """Creates the initial left pane with a single, clear action."""
         self.ai_frame = ttk.Frame(parent, padding=20)
         
-        title_label = ttk.Label(self.ai_frame, text="AI Assistant", font=("Segoe UI", 16, "bold"))
-        title_label.pack(pady=(0, 10))
-
-        info_label = ttk.Label(self.ai_frame, text="Review the changes on the right. If you're stuck, the AI can analyze the error and suggest a fix.", wraplength=300, justify=tk.CENTER)
-        info_label.pack(pady=(0, 25))
-
-        self.analyze_button = ttk.Button(self.ai_frame, text="🤖 Analyze with AI", command=self._run_ai_analysis, style="Debug.TButton")
+        # A single, clear button is more direct and professional.
+        self.analyze_button = ttk.Button(self.ai_frame, text="Analyze Error", command=self._run_ai_analysis, style="Debug.TButton")
         self.analyze_button.pack(expand=True, fill=tk.BOTH, ipady=15)
         
         return self.ai_frame
@@ -161,13 +156,15 @@ class DebugDialog(tk.Toplevel):
             widget.destroy()
         
         error_label = ttk.Label(self.ai_frame, text="Analysis Failed", font=("Segoe UI", 14, "bold"), foreground="red")
-        error_label.pack(pady=(10, 5))
+        error_label.pack(pady=(10, 5), anchor="w")
         
-        error_text = ttk.Label(self.ai_frame, text=error_message, wraplength=350, justify=tk.CENTER)
-        error_text.pack(pady=10)
+        error_text = ttk.Label(self.ai_frame, text=error_message, wraplength=350, justify=tk.LEFT)
+        error_text.pack(pady=10, anchor="w")
 
-        retry_button = ttk.Button(self.ai_frame, text="Retry Analysis", command=self._run_ai_analysis, style="Debug.TButton")
-        retry_button.pack(pady=20)
+        # Removed the retry button for a simpler, less frustrating UX.
+        # The user can close the dialog and re-trigger the compilation if they wish to try again.
+        info_label = ttk.Label(self.ai_frame, text="You can close this dialog and try compiling again.", font=("Segoe UI", 9, "italic"))
+        info_label.pack(pady=(20, 0), anchor="w")
 
     def _update_ui_with_analysis(self):
         """Clears the loading state and populates the pane with AI analysis."""
@@ -176,7 +173,7 @@ class DebugDialog(tk.Toplevel):
 
         self._parse_ai_analysis()
 
-        exp_frame = ttk.LabelFrame(self.ai_frame, text="AI Explanation", padding=15)
+        exp_frame = ttk.LabelFrame(self.ai_frame, text="Explanation", padding=15)
         exp_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
         
         exp_text = tk.Text(exp_frame, wrap="word", bg=self.bg_color, fg=self.text_fg_color, font=("Segoe UI", 11), relief=tk.FLAT, height=8)
