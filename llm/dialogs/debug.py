@@ -138,7 +138,7 @@ class DebugDialog(tk.Toplevel):
         full_prompt = prompt_template.format(diff_content=self.diff_content, log_content=self.log_content)
         
         try:
-            response_generator = api_client.request_llm_generation(full_prompt, stream=False)
+            response_generator = api_client.request_llm_generation(full_prompt, model_name=llm_state.model_debug, stream=False)
             response = next(response_generator)
 
             if response.get("success"):

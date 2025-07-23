@@ -71,7 +71,8 @@ def main():
         progress_bar_widget=interface.llm_progress_bar,
         theme_setting_getter=interface.get_theme_setting, # Function to get theme-specific settings.
         active_editor_getter=lambda: interface.get_current_tab().editor if interface.get_current_tab() else None, # Dynamically get active editor.
-        active_filepath_getter=lambda: interface.get_current_tab().file_path if interface.get_current_tab() else None # Dynamically get active file path.
+        active_filepath_getter=lambda: interface.get_current_tab().file_path if interface.get_current_tab() else None, # Dynamically get active file path.
+        app_config=interface._app_config
     )
 
     # Initialize the LaTeX translator service with necessary UI references and callbacks.

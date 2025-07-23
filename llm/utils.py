@@ -121,3 +121,10 @@ def clean_full_llm_response(text: str) -> str:
         
     # Return the text, stripped of any remaining whitespace
     return cleaned_text.strip()
+
+def strip_think_tags(text: str) -> str:
+    """
+    Removes <think> and </think> tags from the text.
+    """
+    import re
+    return re.sub(r'</?think>', '', text).strip()

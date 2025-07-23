@@ -92,7 +92,7 @@ def request_rephrase_for_text(editor, original_text, start_index, end_index, ins
         """The target function for the LLM generation thread."""
         accumulated_text = ""
         try:
-            for chunk in llm_api_client.request_llm_generation(rephrase_prompt):
+            for chunk in llm_api_client.request_llm_generation(rephrase_prompt, model_name=llm_state.model_rephrase):
                 if llm_state._is_generation_cancelled:
                     break
                 if chunk.get("success"):
@@ -101,7 +101,10 @@ def request_rephrase_for_text(editor, original_text, start_index, end_index, ins
                         accumulated_text += chunk_text
                         editor.after(0, session_callbacks['on_chunk'], chunk_text)
                     if chunk.get("done"):
-                        editor.after(0, session_callbacks['on_success'], accumulated_text)
+                        final_text = accumulated_text
+                        if "deepseek" in llm_state.model_rephrase:
+                            final_text = llm_utils.strip_think_tags(final_text)
+                        editor.after(0, session_callbacks['on_success'], final_text)
                         return
                 else:
                     editor.after(0, session_callbacks['on_error'], chunk.get("error", "Unknown error."))

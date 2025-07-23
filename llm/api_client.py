@@ -11,7 +11,32 @@ from llm import state as llm_state
 
 # Configuration for the LLM API endpoint.
 LLM_API_URL = "http://localhost:11434/api/generate" # Default URL for the LLM API.
+MODELS_API_URL = "http://localhost:11434/api/tags" # URL to get the list of available models.
 DEFAULT_LLM_MODEL = "mistral" # Default LLM model to be used if not specified in the request.
+
+def get_available_models():
+    """
+    Fetches the list of available models from the LLM API.
+
+    Returns:
+        list: A list of model names, or an empty list if an error occurs.
+    """
+    try:
+        response = requests.get(MODELS_API_URL, timeout=5)
+        response.raise_for_status()
+        models_data = response.json()
+        
+        # The API returns a list of model objects, we need to extract the name.
+        # The format is typically {"models": [{"name": "model:tag", ...}]}
+        model_names = [model['name'] for model in models_data.get('models', [])]
+        debug_console.log(f"Successfully fetched available models: {model_names}", level='INFO')
+        return model_names
+    except requests.exceptions.RequestException as e:
+        debug_console.log(f"Could not fetch available models from API: {e}", level='ERROR')
+        return []
+    except (KeyError, json.JSONDecodeError) as e:
+        debug_console.log(f"Error parsing models response from API: {e}", level='ERROR')
+        return []
 
 def request_llm_generation(prompt_text, model_name=DEFAULT_LLM_MODEL, stream=True):
     """

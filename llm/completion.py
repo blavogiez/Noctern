@@ -93,7 +93,7 @@ def request_llm_to_complete_text():
         accumulated_text = ""
         try:
             # Iterate over chunks received from the LLM API client.
-            for api_response_chunk in llm_api_client.request_llm_generation(full_llm_prompt):
+            for api_response_chunk in llm_api_client.request_llm_generation(full_llm_prompt, model_name=llm_state.model_completion):
                 if llm_state._is_generation_cancelled:
                     break
                 if api_response_chunk["success"]:
@@ -106,7 +106,10 @@ def request_llm_to_complete_text():
                     if api_response_chunk.get("done"): # If the generation is complete.
                         # Use the accumulated text as the final text.
                         if not llm_state._is_generation_cancelled:
-                            editor_widget.after(0, interactive_session_callbacks['on_success'], accumulated_text)
+                            final_text = accumulated_text
+                            if "deepseek" in llm_state.model_completion:
+                                final_text = llm_utils.strip_think_tags(final_text)
+                            editor_widget.after(0, interactive_session_callbacks['on_success'], final_text)
                         return # Exit the thread.
                 else:
                     # If an error occurred during generation.

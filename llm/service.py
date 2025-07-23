@@ -11,7 +11,7 @@ from llm import keywords as llm_keywords
 from llm import prompts as llm_prompts
 from llm import history as llm_history
 
-def initialize_llm_service(root_window, progress_bar_widget, theme_setting_getter, active_editor_getter, active_filepath_getter):
+def initialize_llm_service(root_window, progress_bar_widget, theme_setting_getter, active_editor_getter, active_filepath_getter, app_config):
     """
     Initializes the entire LLM service by setting up core dependencies and loading initial data.
 
@@ -25,8 +25,9 @@ def initialize_llm_service(root_window, progress_bar_widget, theme_setting_gette
         theme_setting_getter (callable): A function to retrieve current theme settings.
         active_editor_getter (callable): A function to get the currently active editor widget.
         active_filepath_getter (callable): A function to get the file path of the active editor.
+        app_config (dict): The application's configuration dictionary.
     """
-    llm_init.initialize_llm_service(root_window, progress_bar_widget, theme_setting_getter, active_editor_getter, active_filepath_getter)
+    llm_init.initialize_llm_service(root_window, progress_bar_widget, theme_setting_getter, active_editor_getter, active_filepath_getter, app_config)
 
 def load_prompts_for_current_file():
     """

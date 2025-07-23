@@ -70,9 +70,9 @@ def open_generate_text_dialog(initial_prompt_text=None):
         prompt_template_to_use = ""
 
         if is_latex_mode:
-            # Use a specific prompt template and model for LaTeX-oriented generation.
+            # Use a specific prompt template for LaTeX-oriented generation.
             prompt_template_to_use = llm_state._global_default_prompts.get("generation_latex")
-            llm_model_to_use = llm_state._global_default_prompts.get("model_for_latex_generation", "codellama")
+            llm_model_to_use = llm_state.model_generation # Use the configured generation model
             if not prompt_template_to_use:
                 messagebox.showerror("Configuration Error", "The 'generation_latex' prompt is missing from default_prompts.json. Cannot perform LaTeX-oriented generation.")
                 debug_console.log("LLM Generation failed: 'generation_latex' prompt missing from default_prompts.json.", level='ERROR')
@@ -81,6 +81,7 @@ def open_generate_text_dialog(initial_prompt_text=None):
         else:
             # Use the standard generation prompt template.
             prompt_template_to_use = llm_state._generation_prompt_template or llm_state._global_default_prompts.get("generation", "")
+            llm_model_to_use = llm_state.model_generation
         
         # Store the last LLM action type and user prompt for history and re-generation purposes.
         llm_state._last_llm_action_type = "generation"
@@ -135,6 +136,9 @@ def open_generate_text_dialog(initial_prompt_text=None):
                                 # Perform a final, more thorough cleaning on the entire response.
                                 final_cleaned_text = llm_utils.clean_full_llm_response(accumulated_generated_text)
                                 
+                                if "deepseek" in llm_model_to_use:
+                                    final_cleaned_text = llm_utils.strip_think_tags(final_cleaned_text)
+
                                 # Pass the final, cleaned text to the success handler.
                                 editor_widget.after(0, lambda text=final_cleaned_text: interactive_session_callbacks['on_success'](text))
                                 

@@ -42,7 +42,8 @@ def _load_global_default_prompts():
 
 
 def initialize_llm_service(root_window_ref, progress_bar_widget_ref,
-                           theme_setting_getter_func, active_editor_getter_func, active_filepath_getter_func):
+                           theme_setting_getter_func, active_editor_getter_func, 
+                           active_filepath_getter_func, app_config):
     """
     Initializes the core components and state of the LLM service.
 
@@ -56,6 +57,7 @@ def initialize_llm_service(root_window_ref, progress_bar_widget_ref,
         theme_setting_getter_func (callable): Function to retrieve current theme settings.
         active_editor_getter_func (callable): Function to get the currently active editor widget.
         active_filepath_getter_func (callable): Function to get the file path of the active editor.
+        app_config (dict): The application's configuration dictionary.
     """
     # Store references to essential UI components and getter functions in the global state.
     llm_state._root_window = root_window_ref
@@ -64,6 +66,13 @@ def initialize_llm_service(root_window_ref, progress_bar_widget_ref,
     llm_state._active_editor_getter_func = active_editor_getter_func
     llm_state._active_filepath_getter_func = active_filepath_getter_func
     debug_console.log("LLM service core references successfully initialized.", level='INFO')
+
+    # Load model configuration from settings
+    llm_state.model_completion = app_config.get("model_completion", "default")
+    llm_state.model_generation = app_config.get("model_generation", "default")
+    llm_state.model_rephrase = app_config.get("model_rephrase", "default")
+    llm_state.model_debug = app_config.get("model_debug", "default")
+    debug_console.log(f"LLM models loaded: completion='{llm_state.model_completion}', generation='{llm_state.model_generation}', etc.", level='INFO')
 
     # Load global default prompts from the configuration file.
     _load_global_default_prompts()

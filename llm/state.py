@@ -15,6 +15,13 @@ _active_filepath_getter_func = None  # Function to get the file path of the acti
 _is_generating = False  # Flag to indicate if an LLM generation is currently in progress.
 _is_generation_cancelled = False # Flag to indicate if the user has cancelled the current generation.
 
+# --- Model Configuration ---
+model_completion = "default"
+model_generation = "default"
+model_rephrase = "default"
+model_debug = "default"
+
+
 # --- Prompt Templates and History ---
 # Holds the global default prompts loaded from the JSON file.
 _global_default_prompts = {}

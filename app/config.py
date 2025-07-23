@@ -17,7 +17,11 @@ DEFAULT_VALUES = {
     "app_monitor": "Default",
     "pdf_monitor": "Default",
     "window_state": "Normal",
-    "theme": "dark"
+    "theme": "dark",
+    "model_completion": "default",
+    "model_generation": "default",
+    "model_rephrase": "default",
+    "model_debug": "default"
 }
 
 def load_config():

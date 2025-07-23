@@ -9,6 +9,7 @@ from tkinter import ttk
 from utils import screen
 from app import config as app_config
 from utils import debug_console
+from llm import api_client
 
 def open_settings_window(root):
     """
@@ -29,6 +30,30 @@ def open_settings_window(root):
     # --- Load Current Config ---
     current_config = app_config.load_config()
 
+    # --- Model Settings ---
+    model_frame = ttk.LabelFrame(main_frame, text="Model Configuration", padding=10)
+    model_frame.pack(fill="x", expand=True, pady=10)
+
+    available_models = api_client.get_available_models()
+    if not available_models:
+        # If we can't fetch models, we add the currently saved ones as options
+        # so the user can at least see what's configured.
+        available_models = list(set(current_config.get(key) for key in current_config if key.startswith("model_")))
+
+    model_vars = {}
+    model_labels = {
+        "model_completion": "Completion:",
+        "model_generation": "Generation:",
+        "model_rephrase": "Rephrase:",
+        "model_debug": "Debug:"
+    }
+
+    for i, (key, label) in enumerate(model_labels.items()):
+        ttk.Label(model_frame, text=label).grid(row=i, column=0, sticky="w", padx=5, pady=5)
+        model_vars[key] = tk.StringVar(value=current_config.get(key, "default"))
+        combo = ttk.Combobox(model_frame, textvariable=model_vars[key], values=available_models, state="readonly")
+        combo.grid(row=i, column=1, sticky="ew", padx=5, pady=5)
+
     # --- Monitor Settings ---
     monitor_frame = ttk.LabelFrame(main_frame, text="Display Settings", padding=10)
     monitor_frame.pack(fill="x", expand=True, pady=10)
@@ -36,23 +61,17 @@ def open_settings_window(root):
     monitors = screen.get_monitors()
     monitor_names = [f"Monitor {i+1}: {m.width}x{m.height}" for i, m in enumerate(monitors)]
     
-    # App Monitor Setting
     ttk.Label(monitor_frame, text="Application Monitor:").grid(row=0, column=0, sticky="w", padx=5, pady=5)
     app_monitor_var = tk.StringVar(value=current_config.get("app_monitor", monitor_names[0] if monitor_names else "Default"))
     app_monitor_combo = ttk.Combobox(monitor_frame, textvariable=app_monitor_var, values=monitor_names, state="readonly")
     app_monitor_combo.grid(row=0, column=1, sticky="ew", padx=5, pady=5)
 
-    # PDF Viewer Monitor Setting
     ttk.Label(monitor_frame, text="PDF Viewer Monitor:").grid(row=1, column=0, sticky="w", padx=5, pady=5)
     pdf_monitor_var = tk.StringVar(value=current_config.get("pdf_monitor", monitor_names[0] if monitor_names else "Default"))
     pdf_monitor_combo = ttk.Combobox(monitor_frame, textvariable=pdf_monitor_var, values=monitor_names, state="readonly")
     pdf_monitor_combo.grid(row=1, column=1, sticky="ew", padx=5, pady=5)
 
-    # Button to identify screens
-    def identify_screens_action():
-        screen.show_screen_numbers(settings_win)
-
-    identify_button = ttk.Button(monitor_frame, text="Identifier les écrans", command=identify_screens_action)
+    identify_button = ttk.Button(monitor_frame, text="Identify Screens", command=lambda: screen.show_screen_numbers(settings_win))
     identify_button.grid(row=2, column=0, columnspan=2, pady=10)
 
     # --- Window State Settings ---
@@ -73,27 +92,25 @@ def open_settings_window(root):
     button_frame.columnconfigure(1, weight=1)
 
     def save_and_close():
-        """Saves the settings and closes the window."""
-        # Load the most recent config to preserve other settings
         updated_config = app_config.load_config()
         
-        # Update values from the dialog
         updated_config["app_monitor"] = app_monitor_var.get()
         updated_config["pdf_monitor"] = pdf_monitor_var.get()
         updated_config["window_state"] = window_state_var.get()
+        for key, var in model_vars.items():
+            updated_config[key] = var.get()
         
         app_config.save_config(updated_config)
         debug_console.log("Settings saved.", level='SUCCESS')
         settings_win.destroy()
         
-        # Optionally, notify the user that a restart is needed
         from tkinter import messagebox
         messagebox.showinfo("Settings Saved", "Your new settings have been saved. Some changes may require a restart to take effect.", parent=root)
-
 
     ttk.Button(button_frame, text="Save", command=save_and_close).grid(row=0, column=0, padx=5, sticky="e")
     ttk.Button(button_frame, text="Cancel", command=settings_win.destroy).grid(row=0, column=1, padx=5, sticky="w")
 
+    model_frame.columnconfigure(1, weight=1)
     monitor_frame.columnconfigure(1, weight=1)
     window_frame.columnconfigure(1, weight=1)
     
