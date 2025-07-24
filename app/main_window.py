@@ -50,7 +50,7 @@ console_output = None # The text widget for the console output
 
 # --- Theme and Configuration Variables ---
 _theme_settings = {}  # Dictionary holding current theme-specific settings.
-current_theme = "light"  # Name of the currently active theme.
+current_theme = "litera"  # Name of the currently active theme.
 settings_menu = None  # Reference to the settings menu.
 _app_config = {} # Holds user-specific settings from config.json
 _auto_open_pdf_var = None # tk.BooleanVar for the auto-open PDF setting
@@ -605,12 +605,15 @@ def setup_gui():
     # Now, determine the correct theme from config, ensuring it's valid.
     valid_themes = root.style.theme_names()
     saved_theme = _app_config.get("theme", "litera")
-    if saved_theme not in valid_themes:
+    if saved_theme == "light": saved_theme = "litera" # Normalize
+    if saved_theme == "dark": saved_theme = "darkly" # Normalize
+
+    if saved_theme not in valid_themes and saved_theme != "original":
         debug_console.log(f"Theme '{saved_theme}' not found. Falling back to 'litera'.", level='WARNING')
         saved_theme = "litera"
     
     # Apply the final, validated theme.
-    root.style.theme_use(saved_theme)
+    root.style.theme_use(saved_theme if saved_theme != "original" else "litera")
 
     root.title("AutomaTeX v1.0") # Set the window title.
     _apply_startup_window_settings(root, _app_config)
@@ -670,7 +673,7 @@ def setup_gui():
     
     return root
 
-def apply_theme(event=None):
+def apply_theme(theme_name=None, event=None):
     """
     Applies the specified theme to the entire application.
 
@@ -678,16 +681,20 @@ def apply_theme(event=None):
     and then re-applying syntax highlighting and other custom styles.
 
     Args:
+        theme_name (str, optional): The name of the theme to apply. Defaults to the current theme.
         event (tk.Event, optional): The Tkinter event object. Defaults to None.
     """
     global current_theme, _theme_settings, _app_config
     
-    theme_name = root.style.theme.name
+    if theme_name is None:
+        theme_name = current_theme
+
     debug_console.log(f"Attempting to apply theme: '{theme_name}'.", level='ACTION')
     
     # Apply the base theme using the interface_theme module and get new settings.
     new_theme, new_settings = interface_theme.apply_theme(
-        theme_name, root, main_pane, tabs, perform_heavy_updates, console_output
+        theme_name, root, main_pane, tabs, perform_heavy_updates, console_output,
+        status_bar_frame, status_label, gpu_status_label
     )
     current_theme = new_theme # Update the global current theme.
     _theme_settings = new_settings # Update the global theme settings.

@@ -93,9 +93,10 @@ def create_top_buttons_frame(root):
     settings_menu.add_cascade(label="Theme", menu=theme_menu)
     
     def set_theme(theme_name):
-        interface.root.style.theme_use(theme_name)
-        interface.apply_theme()
+        interface.apply_theme(theme_name)
 
+    theme_menu.add_command(label="Original", command=lambda: set_theme("original"))
+    theme_menu.add_separator()
     theme_menu.add_command(label="Light (Litera)", command=lambda: set_theme("litera"))
     theme_menu.add_command(label="Dark (Darkly)", command=lambda: set_theme("darkly"))
     theme_menu.add_command(label="Vapor", command=lambda: set_theme("vapor"))

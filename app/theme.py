@@ -19,6 +19,21 @@ def get_theme_colors(style, theme_name):
         dict: A dictionary of color settings for the application.
     """
     colors = style.colors
+
+    if theme_name == "original":
+        return {
+            "root_bg": "#FAF0E6", "fg_color": "#3D3D3D",
+            "sel_bg": "#d4a37f", "sel_fg": "#FFFFFF",
+            "editor_bg": "#FAF0E6", "editor_fg": "#3D3D3D", "editor_insert_bg": "#3D3D3D",
+            "comment_color": "#008000",
+            "command_color": "#0000ff",
+            "brace_color": "#ff007f",
+            "ln_text_color": "#3D3D3D", "ln_bg_color": "#FAF0E6",
+            "panedwindow_sash": "#e5c8b2",
+            "llm_generated_bg": "#e0e0e0", "llm_generated_fg": "#3D3D3D",
+            "statusbar_bg": "#e5c8b2", "statusbar_fg": "#3D3D3D"
+        }
+
     # Check if the theme is dark by inspecting the default background color
     is_dark = style.lookup('TLabel', 'background') == colors.dark
     
@@ -33,6 +48,7 @@ def get_theme_colors(style, theme_name):
             "ln_text_color": colors.secondary, "ln_bg_color": "#252526",
             "panedwindow_sash": colors.dark,
             "llm_generated_bg": "#3a3a3a", "llm_generated_fg": colors.light,
+            "statusbar_bg": colors.primary, "statusbar_fg": colors.light
         }
     else: # Light themes
         return {
@@ -45,9 +61,10 @@ def get_theme_colors(style, theme_name):
             "ln_text_color": colors.secondary, "ln_bg_color": colors.light,
             "panedwindow_sash": colors.light,
             "llm_generated_bg": "#e0e0e0", "llm_generated_fg": colors.dark,
+            "statusbar_bg": colors.primary, "statusbar_fg": colors.light
         }
 
-def apply_theme(theme_name, root_window, main_paned_window, open_tabs_dict, perform_heavy_updates_callback, console_widget):
+def apply_theme(theme_name, root_window, main_paned_window, open_tabs_dict, perform_heavy_updates_callback, console_widget, status_bar_frame=None, status_label=None, gpu_status_label=None):
     """
     Applies the specified ttkbootstrap theme to the entire application's GUI.
 
@@ -58,14 +75,27 @@ def apply_theme(theme_name, root_window, main_paned_window, open_tabs_dict, perf
         open_tabs_dict (dict): A dictionary mapping tab IDs to EditorTab instances.
         perform_heavy_updates_callback (callable): A callback to re-render editor content.
         console_widget (ttk.Text): The console text widget to style.
+        status_bar_frame (ttk.Frame, optional): The frame for the status bar.
+        status_label (ttk.Label, optional): The label for status messages.
+        gpu_status_label (ttk.Label, optional): The label for GPU status.
 
     Returns:
         tuple: A tuple containing the applied theme name (str) and its settings (dict).
     """
     style = root_window.style
-    style.theme_use(theme_name)
+    
+    # Use 'litera' as the base for our 'original' theme, but don't change the theme name yet.
+    base_theme = "litera" if theme_name == "original" else theme_name
+    style.theme_use(base_theme)
     
     theme_settings = get_theme_colors(style, theme_name)
+
+    # Apply theme to status bar
+    if status_bar_frame and status_label and gpu_status_label:
+        status_bar_frame.configure(style="TFrame")
+        status_label.configure(background=theme_settings["statusbar_bg"], foreground=theme_settings["statusbar_fg"])
+        gpu_status_label.configure(background=theme_settings["statusbar_bg"], foreground=theme_settings["statusbar_fg"])
+
 
     # Apply theme to the console widget
     if console_widget:
