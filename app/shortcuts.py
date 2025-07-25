@@ -6,7 +6,7 @@ It centralizes shortcut definitions and provides a logging wrapper for tracking 
 from latex import compiler as latex_compiler
 from llm import service as llm_service
 from latex import translator as latex_translator
-from app import main_window as interface
+from app import actions as interface
 from llm import rephrase as llm_rephrase
 from utils import debug_console
 from editor import snippets as editor_snippets

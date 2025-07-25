@@ -4,9 +4,8 @@ It includes functionalities for displaying general status messages, word count,
 and real-time GPU performance metrics (if an NVIDIA GPU is detected).
 """
 
-from tkinter import ttk
-import tkinter as tk
-import subprocess
+import ttkbootstrap as ttk
+import GPUtil
 from utils import debug_console
 
 def create_status_bar(root):
@@ -43,37 +42,6 @@ def create_status_bar(root):
     
     return status_bar_frame, status_label, gpu_status_label
 
-"""
-This module is responsible for creating and managing the status bar
-of the AutomaTeX application.
-"""
-
-import ttkbootstrap as ttk
-import GPUtil
-from app import main_window as mw
-
-def create_status_bar(root):
-    """
-    Creates the status bar frame and its labels.
-
-    Args:
-        root (tk.Tk): The main application window.
-
-    Returns:
-        tuple: A tuple containing the status bar frame (ttk.Frame),
-               the main status label (ttk.Label), and the GPU status label (ttk.Label).
-    """
-    status_bar_frame = ttk.Frame(root, style='primary.TFrame')
-    status_bar_frame.pack(side="bottom", fill="x", padx=5, pady=(0, 5))
-
-    status_label = ttk.Label(status_bar_frame, text="Ready", anchor="w", style='primary.inverse.TLabel')
-    status_label.pack(side="left", padx=10)
-
-    gpu_status_label = ttk.Label(status_bar_frame, text="", anchor="e", style='primary.inverse.TLabel')
-    gpu_status_label.pack(side="right", padx=10)
-    
-    return status_bar_frame, status_label, gpu_status_label
-
 def update_gpu_status(gpu_label):
     """
     Updates the GPU status label with the current GPU usage and memory.
@@ -89,7 +57,9 @@ def update_gpu_status(gpu_label):
             gpu_label.config(text=gpu_info)
         else:
             gpu_label.config(text="GPU: N/A")
-    except Exception:
+    except Exception as e:
+        # Log the error but don't crash the status loop
+        debug_console.log(f"Could not update GPU status: {e}", level='WARNING')
         gpu_label.config(text="GPU: Error")
 
 def start_gpu_status_loop(gpu_label, root):
@@ -100,6 +70,7 @@ def start_gpu_status_loop(gpu_label, root):
         gpu_label (ttk.Label): The label to update.
         root (tk.Tk): The main application window.
     """
-    update_gpu_status(gpu_label)
-    root.after(5000, lambda: start_gpu_status_loop(gpu_label, root))
-
+    # Check if the widget still exists before proceeding
+    if gpu_label.winfo_exists():
+        update_gpu_status(gpu_label)
+        root.after(5000, lambda: start_gpu_status_loop(gpu_label, root))

@@ -4,11 +4,10 @@ It initializes the Tkinter GUI, sets up various application subsystems (editor l
 LLM service, and LaTeX translator), and starts the main event loop.
 """
 
-import tkinter as tk
 import platform
 import ctypes
 
-from app import main_window as interface
+from app import main_window, state, actions
 from editor import logic as editor_logic
 from latex import compiler as latex_compiler
 from latex import translator as latex_translator
@@ -24,14 +23,12 @@ def main():
     1. Configures DPI awareness for Windows to ensure proper scaling on HiDPI displays.
     2. Sets up the main graphical user interface (GUI) window and its components.
     3. Initializes various application subsystems, passing necessary references and callbacks.
-    4. Applies the initial theme to the application.
-    5. Schedules an initial heavy update for the editor (e.g., syntax highlighting).
-    6. Starts the Tkinter main event loop, which keeps the application running.
+    4. Schedules an initial heavy update for the editor (e.g., syntax highlighting).
+    5. Starts the Tkinter main event loop, which keeps the application running.
     """
     debug_console.log("AutomaTeX application starting...", level='INFO')
     
     # On Windows, set process DPI awareness for better rendering on HiDPI screens.
-    # This prevents the application from appearing blurry on high-resolution displays.
     if platform.system() == "Windows":
         try:
             ctypes.windll.shcore.SetProcessDpiAwareness(1)
@@ -39,58 +36,52 @@ def main():
         except Exception as e:
             debug_console.log(f"Warning: Could not set DPI awareness for Windows - {e}", level='WARNING')
 
-    # Setup the main GUI window and all its components (top bar, paned window, notebook, status bar).
-    root_window = interface.setup_gui()
+    # Setup the main GUI window and all its components.
+    root_window = main_window.setup_gui()
     if not root_window:
         debug_console.log("GUI setup failed. Exiting application.", level='ERROR')
         return
 
     # --- Initialize Application Subsystems ---
     # Services are initialized with getter functions (lambdas) to dynamically
-    # access the state of the currently active tab from the `interface` module.
-    # This design pattern decouples the subsystems from direct UI implementation details,
-    # making them more modular and testable.
+    # access the application state. This decouples the subsystems from direct
+    # UI implementation details, making them more modular.
 
-    # Initialize editor logic, passing the outline tree for document structure display.
-    editor_logic.initialize_editor_logic(interface.outline_tree)
-    # Initialize the LaTeX compiler, providing the root window for message boxes.
+    editor_logic.initialize_editor_logic(state.outline_tree)
+    
     latex_compiler.initialize_compiler(
         root_window, 
-        interface.get_current_tab, 
-        interface.show_console, 
-        interface.hide_console,
-        pdf_monitor_setting=interface._app_config.get("pdf_monitor", "Default"),
-        auto_open_pdf_setting=interface._auto_open_pdf_var.get()
+        state.get_current_tab, 
+        actions.show_console, 
+        actions.hide_console,
+        pdf_monitor_setting=state.get_app_config().get("pdf_monitor", "Default"),
+        auto_open_pdf_setting=state.get_auto_open_pdf_var().get()
     )
-    # Initialize the snippet manager to load available code snippets.
+    
     snippet_manager.initialize_snippets() 
 
-    # Initialize the LLM service with references to UI components and data getters.
     llm_service.initialize_llm_service(
         root_window=root_window,
-        progress_bar_widget=interface.llm_progress_bar,
-        theme_setting_getter=interface.get_theme_setting, # Function to get theme-specific settings.
-        active_editor_getter=lambda: interface.get_current_tab().editor if interface.get_current_tab() else None, # Dynamically get active editor.
-        active_filepath_getter=lambda: interface.get_current_tab().file_path if interface.get_current_tab() else None, # Dynamically get active file path.
-        app_config=interface._app_config
+        progress_bar_widget=state.llm_progress_bar,
+        theme_setting_getter=state.get_theme_setting,
+        active_editor_getter=lambda: state.get_current_tab().editor if state.get_current_tab() else None,
+        active_filepath_getter=lambda: state.get_current_tab().file_path if state.get_current_tab() else None,
+        app_config=state.get_app_config()
     )
 
-    # Initialize the LaTeX translator service with necessary UI references and callbacks.
     latex_translator.initialize_translator(
         root_ref=root_window,
-        theme_getter=interface.get_theme_setting, # Function to get theme-specific settings.
-        status_message_func=interface.show_temporary_status_message, # Function to display temporary status messages.
-        active_editor_getter=lambda: interface.get_current_tab().editor if interface.get_current_tab() else None, # Dynamically get active editor.
-        active_filepath_getter=lambda: interface.get_current_tab().file_path if interface.get_current_tab() else None # Dynamically get active file path.
+        theme_getter=state.get_theme_setting,
+        status_message_func=actions.show_temporary_status_message,
+        active_editor_getter=lambda: state.get_current_tab().editor if state.get_current_tab() else None,
+        active_filepath_getter=lambda: state.get_current_tab().file_path if state.get_current_tab() else None
     )
 
-    # Schedule an initial heavy update after a short delay.
-    # This ensures that UI elements like syntax highlighting and word count are updated
-    # once the window is fully rendered and mapped.
-    root_window.after(100, interface.perform_heavy_updates)
+    # Schedule an initial heavy update to render syntax highlighting, etc.
+    root_window.after(100, actions.perform_heavy_updates)
     
     debug_console.log("Entering main Tkinter event loop.", level='INFO')
-    root_window.mainloop() # Start the Tkinter event loop, which processes all GUI events.
+    root_window.mainloop()
     debug_console.log("Application has exited main event loop. Shutting down.", level='INFO')
 
 if __name__ == "__main__":

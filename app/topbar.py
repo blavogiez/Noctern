@@ -8,7 +8,7 @@ import ttkbootstrap as ttk
 from latex import compiler as latex_compiler
 from llm import service as llm_service
 from latex import translator as latex_translator
-from app import main_window as interface
+from app import actions as interface, state
 from utils import debug_console
 from llm import rephrase as llm_rephrase
 from editor import snippets as editor_snippets
@@ -107,10 +107,10 @@ def create_top_buttons_frame(root):
     settings_menu.add_separator()
     settings_menu.add_command(label="Set LLM Keywords...", command=lambda: [_log_action("Settings: Set LLM Keywords"), llm_service.open_set_keywords_dialog()])
     settings_menu.add_command(label="Edit LLM Prompts...", command=lambda: [_log_action("Settings: Edit LLM Prompts"), llm_service.open_edit_prompts_dialog()])
-    settings_menu.add_command(label="Edit Snippets...", command=lambda: [_log_action("Settings: Edit Snippets"), editor_snippets.open_snippet_editor(root, interface.get_theme_settings())])
+    settings_menu.add_command(label="Edit Snippets...", command=lambda: [_log_action("Settings: Edit Snippets"), editor_snippets.open_snippet_editor(root, state.get_theme_settings())])
     settings_menu.add_separator()
     
-    settings_menu.add_checkbutton(label="Auto-open PDF on .tex load", variable=interface._auto_open_pdf_var, command=interface.toggle_auto_open_pdf)
+    settings_menu.add_checkbutton(label="Auto-open PDF on .tex load", variable=state._auto_open_pdf_var, command=interface.toggle_auto_open_pdf)
     settings_menu.add_command(label="Show Debug Console", command=lambda: [_log_action("Settings: Show Debug Console"), debug_console.show_console()])
     settings_menu.add_command(label="Restart Application", command=lambda: [_log_action("Settings: Restart Application"), interface.restart_application()])
     

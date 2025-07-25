@@ -163,7 +163,7 @@ class InteractiveSession:
         
         from . import rephrase as llm_rephrase
         from llm.dialogs.rephrase import show_rephrase_dialog
-        from app import main_window
+        from app import state as main_window
 
         text_to_rephrase = self.full_response_text
         if not text_to_rephrase.strip():
