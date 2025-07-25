@@ -22,19 +22,19 @@ def get_theme_colors(style, theme_name):
 
     if theme_name == "original":
         return {
-            "root_bg": "#FAF0E6", "fg_color": "#3D3D3D",
-            "sel_bg": "#d4a37f", "sel_fg": "#FFFFFF",
-            "editor_bg": "#FAF0E6", "editor_fg": "#3D3D3D", "editor_insert_bg": "#3D3D3D",
-            "comment_color": "#008000",
-            "command_color": "#0000ff",
-            "brace_color": "#ff007f",
-            "ln_text_color": "#3D3D3D", "ln_bg_color": "#FAF0E6",
-            "panedwindow_sash": "#e5c8b2",
-            "llm_generated_bg": "#e0e0e0", "llm_generated_fg": "#3D3D3D",
-            "statusbar_bg": "#e5c8b2", "statusbar_fg": "#3D3D3D",
-            "button_bg": "#e5c8b2", "button_fg": "#3D3D3D",
-            "treeview_bg": "#FAF0E6", "treeview_fg": "#3D3D3D", "treeview_heading_bg": "#e5c8b2",
-            "notebook_bg": "#FAF0E6", "notebook_tab_bg": "#e5c8b2", "notebook_active_tab_bg": "#d4a37f", "notebook_active_tab_fg": "#FFFFFF"
+            "root_bg": "#FFF8F0", "fg_color": "#4A4238",
+            "sel_bg": "#9EF444", "sel_fg": "#000000",
+            "editor_bg": "#FFF8F0", "editor_fg": "#4A4238", "editor_insert_bg": "#4A4238",
+            "comment_color": "#6B8E23",
+            "command_color": "#E88216",
+            "brace_color": "#FF8242",
+            "ln_text_color": "#A9A9A9", "ln_bg_color": "#FFF8F0",
+            "panedwindow_sash": "#F6B092",
+            "llm_generated_bg": "#F0FFF0", "llm_generated_fg": "#4A4238",
+            "statusbar_bg": "#F6B092", "statusbar_fg": "#4A4238",
+            "button_bg": "#F6B092", "button_fg": "#4A4238",
+            "treeview_bg": "#FFF8F0", "treeview_fg": "#4A4238", "treeview_heading_bg": "#F6B092",
+            "notebook_bg": "#FFF8F0", "notebook_tab_bg": "#F6B092", "notebook_active_tab_bg": "#FF8242", "notebook_active_tab_fg": "#FFFFFF"
         }
 
     is_dark = style.lookup('TLabel', 'background') == colors.dark
