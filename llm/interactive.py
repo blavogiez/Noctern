@@ -172,21 +172,38 @@ class InteractiveSession:
 
         root_window = self.editor.winfo_toplevel()
 
-        # This callback will be executed if the user provides an instruction and clicks "Rephrase"
         def on_rephrase_confirmed(instruction):
-            # The `request_rephrase_for_text` function will start a new interactive session.
-            # The `start_new_interactive_session` function will automatically discard the current session.
+            """
+            Handles the logic for a chained rephrase.
+            The current session is destroyed, but its text is preserved
+            to be the input for the next rephrase request.
+            """
+            # Store necessary state before destroying the current session
+            editor = self.editor
+            block_start = self.block_start_index
+            text_for_next_request = self.full_response_text
+            original_discard_callback = self.on_discard_callback
+
+            # Destroy the current session's UI, but leave its text in the editor.
+            # This shifts the text, so we must recalculate indices.
+            self.destroy(delete_text=False)
+
+            # The text from the previous session now starts where its UI block was.
+            new_start_index = block_start
+            new_end_index = editor.index(f"{new_start_index} + {len(text_for_next_request)} chars")
+
+            # Initiate the new rephrase request, telling it to replace the text
+            # from the session we just destroyed.
             llm_rephrase.request_rephrase_for_text(
-                self.editor,
-                text_to_rephrase,
-                self.block_start_index, # The start of the area to be replaced by the new session
-                self.text_end_index,   # The end of the area to be replaced
+                editor,
+                text_for_next_request,
+                new_start_index,
+                new_end_index,
                 instruction,
-                self.on_discard_callback # Preserve the original discard behavior
+                original_discard_callback # Pass the original callback down the chain
             )
 
         # Show the dialog to get the instruction from the user.
-        # If the user cancels, do nothing and leave the current interactive session as is.
         show_rephrase_dialog(
             root_window=root_window,
             theme_setting_getter_func=main_window.get_theme_setting,

@@ -340,7 +340,7 @@ def on_close_request():
     if dirty_tabs:
         # Prepare a list of unsaved files for the message box.
         file_list = "\n - ".join([os.path.basename(tab.file_path) if tab.file_path else "Untitled" for tab in dirty_tabs])
-        response = Messagebox.askyesnocancel("Unsaved Changes", f"You have unsaved changes in the following files:\n - {file_list}\n\nDo you want to save them before closing?", parent=root)
+        response = Messagebox.yesno("Unsaved Changes", f"You have unsaved changes in the following files:\n - {file_list}\n\nDo you want to save them before closing?", parent=root)
         
         if response == "Yes":
             debug_console.log("User chose to save files before closing.", level='ACTION')
@@ -527,7 +527,7 @@ def restart_application():
     If confirmed, it re-executes the current Python script, effectively restarting the application.
     """
     debug_console.log("Application restart requested.", level='ACTION')
-    if Messagebox.askyesno("Restart Application", "Are you sure you want to restart?\nUnsaved changes will be lost.", icon='warning') == "Yes":
+    if Messagebox.yesno("Are you sure you want to restart?\nUnsaved changes will be lost.", "Restart Application") == "Yes":
         debug_console.log("User confirmed restart. Proceeding with application restart...", level='INFO')
         try:
             # Perform any necessary cleanup before restarting (e.g., closing files).
