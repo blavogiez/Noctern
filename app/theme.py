@@ -31,10 +31,12 @@ def get_theme_colors(style, theme_name):
             "ln_text_color": "#3D3D3D", "ln_bg_color": "#FAF0E6",
             "panedwindow_sash": "#e5c8b2",
             "llm_generated_bg": "#e0e0e0", "llm_generated_fg": "#3D3D3D",
-            "statusbar_bg": "#e5c8b2", "statusbar_fg": "#3D3D3D"
+            "statusbar_bg": "#e5c8b2", "statusbar_fg": "#3D3D3D",
+            "button_bg": "#e5c8b2", "button_fg": "#3D3D3D",
+            "treeview_bg": "#FAF0E6", "treeview_fg": "#3D3D3D", "treeview_heading_bg": "#e5c8b2",
+            "notebook_bg": "#FAF0E6", "notebook_tab_bg": "#e5c8b2", "notebook_active_tab_bg": "#d4a37f", "notebook_active_tab_fg": "#FFFFFF"
         }
 
-    # Check if the theme is dark by inspecting the default background color
     is_dark = style.lookup('TLabel', 'background') == colors.dark
     
     if is_dark:
@@ -42,62 +44,68 @@ def get_theme_colors(style, theme_name):
             "root_bg": colors.dark, "fg_color": colors.light,
             "sel_bg": colors.primary, "sel_fg": colors.light,
             "editor_bg": colors.dark, "editor_fg": colors.light, "editor_insert_bg": colors.light,
-            "comment_color": "#608b4e",  # Greenish for comments
-            "command_color": "#569cd6",  # VSCode-like blue for commands
-            "brace_color": "#c586c0",    # VSCode-like magenta for braces
+            "comment_color": "#608b4e",
+            "command_color": "#569cd6",
+            "brace_color": "#c586c0",
             "ln_text_color": colors.secondary, "ln_bg_color": "#252526",
             "panedwindow_sash": colors.dark,
             "llm_generated_bg": "#3a3a3a", "llm_generated_fg": colors.light,
-            "statusbar_bg": colors.primary, "statusbar_fg": colors.light
+            "statusbar_bg": colors.primary, "statusbar_fg": colors.light,
+            "button_bg": colors.primary, "button_fg": colors.light,
+            "treeview_bg": colors.dark, "treeview_fg": colors.light, "treeview_heading_bg": colors.primary,
+            "notebook_bg": colors.dark, "notebook_tab_bg": colors.dark, "notebook_active_tab_bg": colors.primary, "notebook_active_tab_fg": colors.light
         }
     else: # Light themes
         return {
             "root_bg": colors.light, "fg_color": colors.dark,
             "sel_bg": colors.primary, "sel_fg": colors.light,
             "editor_bg": colors.light, "editor_fg": colors.dark, "editor_insert_bg": colors.dark,
-            "comment_color": "#008000",  # Dark green for comments
-            "command_color": "#0000ff",  # Bright blue for commands
-            "brace_color": "#ff007f",    # Hot pink for braces
+            "comment_color": "#008000",
+            "command_color": "#0000ff",
+            "brace_color": "#ff007f",
             "ln_text_color": colors.secondary, "ln_bg_color": colors.light,
             "panedwindow_sash": colors.light,
             "llm_generated_bg": "#e0e0e0", "llm_generated_fg": colors.dark,
-            "statusbar_bg": colors.primary, "statusbar_fg": colors.light
+            "statusbar_bg": colors.primary, "statusbar_fg": colors.light,
+            "button_bg": colors.primary, "button_fg": colors.light,
+            "treeview_bg": colors.light, "treeview_fg": colors.dark, "treeview_heading_bg": colors.primary,
+            "notebook_bg": colors.light, "notebook_tab_bg": colors.light, "notebook_active_tab_bg": colors.primary, "notebook_active_tab_fg": colors.light
         }
 
 def apply_theme(theme_name, root_window, main_paned_window, open_tabs_dict, perform_heavy_updates_callback, console_widget, status_bar_frame=None, status_label=None, gpu_status_label=None):
-    """
-    Applies the specified ttkbootstrap theme to the entire application's GUI.
-
-    Args:
-        theme_name (str): The name of the theme to apply (e.g., "litera", "darkly").
-        root_window (ttk.Window): The main ttkbootstrap application window.
-        main_paned_window (ttk.PanedWindow): The main paned window widget.
-        open_tabs_dict (dict): A dictionary mapping tab IDs to EditorTab instances.
-        perform_heavy_updates_callback (callable): A callback to re-render editor content.
-        console_widget (ttk.Text): The console text widget to style.
-        status_bar_frame (ttk.Frame, optional): The frame for the status bar.
-        status_label (ttk.Label, optional): The label for status messages.
-        gpu_status_label (ttk.Label, optional): The label for GPU status.
-
-    Returns:
-        tuple: A tuple containing the applied theme name (str) and its settings (dict).
-    """
     style = root_window.style
     
-    # Use 'litera' as the base for our 'original' theme, but don't change the theme name yet.
     base_theme = "litera" if theme_name == "original" else theme_name
     style.theme_use(base_theme)
     
     theme_settings = get_theme_colors(style, theme_name)
 
-    # Apply theme to status bar
+    # --- Global Style Configurations ---
+    style.configure("TFrame", background=theme_settings["root_bg"])
+    style.configure("TLabel", background=theme_settings["root_bg"], foreground=theme_settings["fg_color"])
+    style.configure("TPanedwindow", background=theme_settings["panedwindow_sash"])
+
+    # --- Button Configurations ---
+    style.configure("TButton", background=theme_settings["button_bg"], foreground=theme_settings["button_fg"], borderwidth=1, focusthickness=0)
+    style.map("TButton", background=[("active", theme_settings["sel_bg"])])
+
+    # --- Treeview (Outline) Configurations ---
+    style.configure("Treeview", background=theme_settings["treeview_bg"], foreground=theme_settings["treeview_fg"], fieldbackground=theme_settings["treeview_bg"])
+    style.map("Treeview", background=[("selected", theme_settings["sel_bg"])], foreground=[("selected", theme_settings["sel_fg"])])
+    style.configure("Treeview.Heading", background=theme_settings["treeview_heading_bg"], foreground=theme_settings["fg_color"])
+
+    # --- Notebook (Tabs) Configurations ---
+    style.configure("TNotebook", background=theme_settings["notebook_bg"])
+    style.configure("TNotebook.Tab", background=theme_settings["notebook_tab_bg"], foreground=theme_settings["fg_color"])
+    style.map("TNotebook.Tab", background=[("selected", theme_settings["notebook_active_tab_bg"])], foreground=[("selected", theme_settings["notebook_active_tab_fg"])])
+
+    # --- Status Bar ---
     if status_bar_frame and status_label and gpu_status_label:
         status_bar_frame.configure(style="TFrame")
         status_label.configure(background=theme_settings["statusbar_bg"], foreground=theme_settings["statusbar_fg"])
         gpu_status_label.configure(background=theme_settings["statusbar_bg"], foreground=theme_settings["statusbar_fg"])
 
-
-    # Apply theme to the console widget
+    # --- Console Widget ---
     if console_widget:
         console_widget.configure(
             background=theme_settings["editor_bg"],
@@ -105,7 +113,7 @@ def apply_theme(theme_name, root_window, main_paned_window, open_tabs_dict, perf
             insertbackground=theme_settings["editor_insert_bg"]
         )
 
-    # Apply theme to all open editor tabs
+    # --- Editor Tabs ---
     for tab in open_tabs_dict.values():
         if tab.editor:
             tab.editor.configure(
@@ -114,7 +122,6 @@ def apply_theme(theme_name, root_window, main_paned_window, open_tabs_dict, perf
                 insertbackground=theme_settings["editor_insert_bg"],
                 relief="flat", borderwidth=0
             )
-            # Reconfigure syntax highlighting tags
             tab.editor.tag_configure("latex_command", foreground=theme_settings["command_color"], font=tab.editor_font)
             tab.editor.tag_configure("latex_brace", foreground=theme_settings["brace_color"], font=tab.editor_font)
             
