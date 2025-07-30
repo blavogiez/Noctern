@@ -27,7 +27,7 @@ from llm import service as llm_service
 from editor import logic as editor_logic
 from latex import compiler as latex_compiler
 from editor import wordcount as editor_wordcount
-from utils import debug_console
+from utils import debug_console, animations
 
 def perform_heavy_updates():
     """
@@ -127,9 +127,15 @@ def hide_console():
 
 def show_temporary_status_message(message, duration_ms=2500):
     """
-    Displays a temporary message in the status bar.
+    Displays a temporary message in the status bar with a subtle flash animation.
     """
     state._temporary_status_active = True
+    
+    if state.status_label:
+        original_color = state.get_theme_setting('statusbar_bg', '#f0f0f0')
+        flash_color = state.get_theme_setting('success', '#77dd77')
+        animations.flash_widget(state.status_label, flash_color, original_color)
+
     interface_statusbar.show_temporary_status_message(
         message, duration_ms, state.status_label, state.root, clear_temporary_status_message
     )
