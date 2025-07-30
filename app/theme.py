@@ -23,7 +23,7 @@ def get_theme_colors(style, theme_name):
     if theme_name == "original":
         return {
             "root_bg": "#FFF8F0", "fg_color": "#4A4238",
-            "sel_bg": "#9EF444", "sel_fg": "#000000",
+            "sel_bg": "#A8DDA8", "sel_fg": "#000000",
             "editor_bg": "#FFF8F0", "editor_fg": "#4A4238", "editor_insert_bg": "#4A4238",
             "comment_color": "#6B8E23",
             "command_color": "#E88216",

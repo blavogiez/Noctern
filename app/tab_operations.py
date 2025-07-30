@@ -90,10 +90,13 @@ def create_new_tab(file_path, notebook_widget, open_tabs_dict, apply_theme_callb
     """
     # Check if the file is already open in an existing tab.
     if file_path:
-        for tab in open_tabs_dict.values():
-            if tab.file_path == file_path:
+        # Iterate over the actual tabs in the notebook to find a match.
+        for tab_id in notebook_widget.tabs():
+            tab_widget = open_tabs_dict.get(tab_id)
+            # Check if the widget exists and its file_path matches.
+            if tab_widget and tab_widget.file_path == file_path:
                 debug_console.log(f"File '{file_path}' is already open. Switching to existing tab.", level='INFO')
-                notebook_widget.select(tab) # Select the existing tab.
+                notebook_widget.select(tab_id)  # Select the existing tab by its ID.
                 return
     
     tab_display_name = os.path.basename(file_path) if file_path else "Untitled"
