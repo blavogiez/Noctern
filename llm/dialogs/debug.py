@@ -149,7 +149,7 @@ class DebugDialog(tk.Toplevel):
             self.after(0, lambda: self._show_error_in_pane("No added lines (+) found in the diff to analyze."))
             return
 
-        full_prompt = prompt_template.format(added_lines=added_lines, log_content=self.log_content)
+        full_prompt = prompt_template.format(diff_content=self.diff_content, log_content=self.log_content)
         
         try:
             response_generator = api_client.request_llm_generation(full_prompt, model_name=llm_state.model_debug, stream=False)

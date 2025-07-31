@@ -156,7 +156,7 @@ def update_outline_tree(editor):
                 break
 
 
-def go_to_section(editor, event):
+def go_to_section(get_current_tab_callback, event):
     """
     Scrolls the editor to the line corresponding to the selected section in the outline tree.
 
@@ -165,12 +165,15 @@ def go_to_section(editor, event):
     view to that line, placing the cursor at the beginning of the line.
 
     Args:
-        editor (tk.Text): The Tkinter Text widget where the document is displayed.
+        get_current_tab_callback (function): A callback to get the current active tab.
         event (tk.Event): The event object that triggered this function (e.g., TreeviewSelect).
     """
-    if not editor:
+    current_tab = get_current_tab_callback()
+    if not current_tab or not hasattr(current_tab, 'editor'):
         debug_console.log("Editor not available for section navigation.", level='WARNING')
         return
+    
+    editor = current_tab.editor
     selected_items = outline_tree.selection() # Get the currently selected items in the treeview.
     if selected_items:
         # Retrieve the values associated with the first selected item.
@@ -180,10 +183,10 @@ def go_to_section(editor, event):
             line_number = values[0] # Extract the line number.
             debug_console.log(f"Navigating editor to line {line_number} for selected section.", level='ACTION')
             try:
+                # Scroll the view so the target line is at the top.
+                editor.yview(f"{line_number}.0")
                 # Set the insertion cursor to the beginning of the target line.
                 editor.mark_set("insert", f"{line_number}.0")
-                # Make sure the target line is visible within the editor's view.
-                editor.see(f"{line_number}.0")
                 editor.focus() # Set focus back to the editor.
             except tk.TclError as e:
                 debug_console.log(f"Error navigating to section: {e}", level='ERROR')

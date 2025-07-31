@@ -53,7 +53,7 @@ def get_theme_colors(style, theme_name):
             "statusbar_bg": colors.primary, "statusbar_fg": colors.light,
             "button_bg": colors.primary, "button_fg": colors.light,
             "treeview_bg": colors.dark, "treeview_fg": colors.light, "treeview_heading_bg": colors.primary,
-            "notebook_bg": colors.dark, "notebook_tab_bg": colors.dark, "notebook_active_tab_bg": colors.primary, "notebook_active_tab_fg": colors.light
+            "notebook_bg": colors.dark, "notebook_tab_bg": colors.dark, "notebook_active_tab_bg": colors.success, "notebook_active_tab_fg": colors.light
         }
     else: # Light themes
         return {
@@ -69,7 +69,7 @@ def get_theme_colors(style, theme_name):
             "statusbar_bg": colors.primary, "statusbar_fg": colors.light,
             "button_bg": colors.primary, "button_fg": colors.light,
             "treeview_bg": colors.light, "treeview_fg": colors.dark, "treeview_heading_bg": colors.primary,
-            "notebook_bg": colors.light, "notebook_tab_bg": colors.light, "notebook_active_tab_bg": colors.primary, "notebook_active_tab_fg": colors.light
+            "notebook_bg": colors.light, "notebook_tab_bg": colors.light, "notebook_active_tab_bg": colors.success, "notebook_active_tab_fg": colors.light
         }
 
 def apply_theme(theme_name, root_window, main_paned_window, open_tabs_dict, perform_heavy_updates_callback, console_widget, status_bar_frame=None, status_label=None, gpu_status_label=None):

@@ -229,7 +229,8 @@ def compile_latex(event=None):
     # --- New Cache Logic ---
     cache_directory = os.path.join(source_directory, ".cache")
     os.makedirs(cache_directory, exist_ok=True)
-    cached_tex_path = os.path.join(cache_directory, "last_successful.tex")
+    base_name = os.path.splitext(file_name)[0]
+    cached_tex_path = os.path.join(cache_directory, f"{base_name}_last_successful.tex")
     # --- End New Cache Logic ---
 
     try:
@@ -276,7 +277,7 @@ def compile_latex(event=None):
                     except FileNotFoundError:
                         debug_console.log("Log file not found, proceeding with empty log.", level='WARNING')
 
-                    diff = difflib.unified_diff(good_code, bad_code, fromfile='last_successful.tex', tofile='current.tex', lineterm='')
+                    diff = difflib.unified_diff(good_code, bad_code, fromfile=os.path.basename(cached_tex_path), tofile='current.tex', lineterm='')
                     diff_content = '\n'.join(diff)
 
                     if diff_content.strip():
