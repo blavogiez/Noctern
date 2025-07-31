@@ -1,31 +1,61 @@
-# === Python ===
+# =============================================================================
+# Fichiers de configuration et secrets - NE JAMAIS PARTAGER SUR GIT !
+# =============================================================================
+# Ignore tous les fichiers nommés ".env" à la racine ou dans n'importe quel sous-dossier.
+**/.env
+
+# Ignore les variations comme .env.local, .env.dev, .env.production
+**/.env.*
+
+# Ignore le fichier de configuration des paramètres
+settings.conf
+
+# =============================================================================
+# Caches et fichiers compilés Python
+# =============================================================================
 __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
-.Python
+build/
+dist/
+*.egg-info/
 
-# Virtual environments
+# =============================================================================
+# Environnements virtuels
+# =============================================================================
 env/
 venv/
 ENV/
-ENV.bak/
-*.env/  # parfois les envs sont nommés ".env/"
+*.venv
+.env/
 
-# Pip
+# =============================================================================
+# Fichiers de projet et temporaires
+# =============================================================================
+.pytest_cache/
+.session_state.json
+/output/
+/debug.png
+/e.png
 pip-log.txt
-pip-delete-this-directory.txt
 
-# IDEs / Editors
+# =============================================================================
+# Configuration des IDEs
+# =============================================================================
 .idea/
 .vscode/
-*.swp  # fichiers temporaires de certains éditeurs (ex: vim)
+*.swp
 
-# Configuration sensible
-.env  # fichiers d'environnement (ne jamais versionner !)
-.env.*  # optionnel, pour .env.dev, .env.local, etc.
+# =============================================================================
+# Fichiers système
+# =============================================================================
+.DS_Store
+Thumbs.db
 
-# === LaTeX ===
+# =============================================================================
+# Fichiers de compilation LaTeX
+# =============================================================================
 *.aux
 *.log
 *.out
