@@ -49,11 +49,11 @@ def get_theme_colors(style, theme_name):
             "brace_color": "#c586c0",
             "ln_text_color": colors.secondary, "ln_bg_color": "#252526",
             "panedwindow_sash": colors.dark,
-            "llm_generated_bg": "#3a3a3a", "llm_generated_fg": colors.light,
+            "llm_generated_bg": "#2c3a4a", "llm_generated_fg": colors.light,
             "statusbar_bg": colors.primary, "statusbar_fg": colors.light,
             "button_bg": colors.primary, "button_fg": colors.light,
             "treeview_bg": colors.dark, "treeview_fg": colors.light, "treeview_heading_bg": colors.primary,
-            "notebook_bg": colors.dark, "notebook_tab_bg": colors.dark, "notebook_active_tab_bg": colors.success, "notebook_active_tab_fg": colors.light
+            "notebook_bg": colors.dark, "notebook_tab_bg": "#3c3c3c", "notebook_active_tab_bg": colors.primary, "notebook_active_tab_fg": colors.light
         }
     else: # Light themes
         return {
@@ -65,11 +65,11 @@ def get_theme_colors(style, theme_name):
             "brace_color": "#ff007f",
             "ln_text_color": colors.secondary, "ln_bg_color": colors.light,
             "panedwindow_sash": colors.light,
-            "llm_generated_bg": "#e0e0e0", "llm_generated_fg": colors.dark,
+            "llm_generated_bg": "#eaf2fa", "llm_generated_fg": colors.dark,
             "statusbar_bg": colors.primary, "statusbar_fg": colors.light,
             "button_bg": colors.primary, "button_fg": colors.light,
             "treeview_bg": colors.light, "treeview_fg": colors.dark, "treeview_heading_bg": colors.primary,
-            "notebook_bg": colors.light, "notebook_tab_bg": colors.light, "notebook_active_tab_bg": colors.success, "notebook_active_tab_fg": colors.light
+            "notebook_bg": colors.light, "notebook_tab_bg": "#f0f0f0", "notebook_active_tab_bg": colors.primary, "notebook_active_tab_fg": colors.light
         }
 
 def apply_theme(theme_name, root_window, main_paned_window, open_tabs_dict, perform_heavy_updates_callback, console_widget, status_bar_frame=None, status_label=None, gpu_status_label=None):
@@ -98,6 +98,8 @@ def apply_theme(theme_name, root_window, main_paned_window, open_tabs_dict, perf
     style.configure("TNotebook", background=theme_settings["notebook_bg"])
     style.configure("TNotebook.Tab", background=theme_settings["notebook_tab_bg"], foreground=theme_settings["fg_color"])
     style.map("TNotebook.Tab", background=[("selected", theme_settings["notebook_active_tab_bg"])], foreground=[("selected", theme_settings["notebook_active_tab_fg"])])
+    style.configure("Closable.TNotebook.Tab", background=theme_settings["notebook_tab_bg"], foreground=theme_settings["fg_color"])
+    style.map("Closable.TNotebook.Tab", background=[("selected", theme_settings["notebook_active_tab_bg"])], foreground=[("selected", theme_settings["notebook_active_tab_fg"])])
 
     # --- Status Bar ---
     if status_bar_frame and status_label and gpu_status_label:

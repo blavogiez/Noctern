@@ -3,6 +3,7 @@ from tkinter import messagebox
 from llm import state as llm_state
 from llm import utils as llm_utils
 from utils import debug_console
+from app import state as main_window
 import uuid # Import uuid for unique session IDs
 
 # NOTE: llm_rephrase is imported locally within functions to avoid circular dependencies
@@ -40,15 +41,21 @@ class InteractiveSession:
         self._bind_keyboard_shortcuts()
 
     def _create_ui_elements(self):
-        frame = tk.Frame(self.editor, bg="#2D2D2D", bd=0)
-        btn_style = {"relief": tk.FLAT, "bd": 0, "fg": "#F0F0F0", "font": ("Segoe UI", 9),
-                     "cursor": "hand2", "padx": 8, "pady": 2, "activeforeground": "#FFFFFF"}
+        bg_color = main_window.get_theme_setting("llm_generated_bg", "#2D2D2D")
+        fg_color = main_window.get_theme_setting("llm_generated_fg", "#F0F0F0")
+        button_bg = main_window.get_theme_setting("button_bg", "#0078D4")
+        button_fg = main_window.get_theme_setting("button_fg", "#F0F0F0")
+        button_active_bg = main_window.get_theme_setting("sel_bg", "#005A9E")
         
-        accept_btn = tk.Button(frame, text="Accept (Tab)", bg="#0078D4", activebackground="#005A9E", **btn_style, command=self.accept)
-        rephrase_btn = tk.Button(frame, text="Rephrase (Ctrl+R)", bg="#2D2D2D", activebackground="#404040", **btn_style, command=self.rephrase)
-        discard_btn = tk.Button(frame, text="Discard (Esc)", bg="#2D2D2D", activebackground="#404040", **btn_style, command=self.discard)
+        frame = tk.Frame(self.editor, bg=bg_color, bd=0)
+        btn_style = {"relief": tk.FLAT, "bd": 0, "fg": button_fg, "font": ("Segoe UI", 9),
+                     "cursor": "hand2", "padx": 8, "pady": 2, "activeforeground": button_fg}
         
-        self.animation_label = tk.Label(frame, text="", bg="#2D2D2D", fg="#aaa", font=("Segoe UI", 9, "italic"), padx=5)
+        accept_btn = tk.Button(frame, text="Accept (Tab)", bg=button_bg, activebackground=button_active_bg, **btn_style, command=self.accept)
+        rephrase_btn = tk.Button(frame, text="Rephrase (Ctrl+R)", bg=bg_color, activebackground=button_active_bg, **btn_style, command=self.rephrase)
+        discard_btn = tk.Button(frame, text="Discard (Esc)", bg=bg_color, activebackground=button_active_bg, **btn_style, command=self.discard)
+        
+        self.animation_label = tk.Label(frame, text="", bg=bg_color, fg=fg_color, font=("Segoe UI", 9, "italic"), padx=5)
 
         accept_btn.pack(side=tk.LEFT)
         rephrase_btn.pack(side=tk.LEFT)

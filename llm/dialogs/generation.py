@@ -42,6 +42,9 @@ def show_generate_text_dialog(root_window, theme_setting_getter_func,
     sel_bg = theme_setting_getter_func("sel_bg", "#0078d4")
     sel_fg = theme_setting_getter_func("sel_fg", "#ffffff")
     insert_bg = theme_setting_getter_func("editor_insert_bg", "#000000")
+    llm_generated_bg = theme_setting_getter_func("llm_generated_bg", "#e0e0e0")
+    llm_generated_fg = theme_setting_getter_func("llm_generated_fg", "#000000")
+    history_bg = theme_setting_getter_func("treeview_bg", "#ffffff")
     prompt_window.configure(bg=dialog_bg);
 
     # Main Paned Window to divide history and input/controls.
@@ -56,7 +59,7 @@ def show_generate_text_dialog(root_window, theme_setting_getter_func,
     history_listbox_frame.pack(fill="both", expand=True)
     history_listbox = tk.Listbox(
         history_listbox_frame, exportselection=False, font=("Segoe UI", 9),
-        bg=text_bg, fg=text_fg, selectbackground=sel_bg, selectforeground=sel_fg,
+        bg=history_bg, fg=text_fg, selectbackground=sel_bg, selectforeground=sel_fg,
         highlightthickness=0, borderwidth=0, relief=tk.FLAT
     )
     history_listbox.pack(side="left", fill="both", expand=True)
@@ -104,7 +107,7 @@ def show_generate_text_dialog(root_window, theme_setting_getter_func,
     response_text_frame.grid_columnconfigure(0, weight=1)
     text_response = tk.Text(
         response_text_frame, height=10, width=50, wrap="word", state="disabled", font=("Segoe UI", 10),
-        bg=text_bg, fg=text_fg, selectbackground=sel_bg, selectforeground=sel_fg, relief=tk.FLAT, borderwidth=0, highlightthickness=0
+        bg=llm_generated_bg, fg=llm_generated_fg, selectbackground=sel_bg, selectforeground=sel_fg, relief=tk.FLAT, borderwidth=0, highlightthickness=0
     )
     
     def on_history_item_selected(event):
