@@ -1,15 +1,13 @@
-
 """
 This module provides functionality for translating LaTeX document content using the Hugging Face `transformers` library.
-It is optimized to run on a CUDA-enabled GPU if available and includes logic to avoid translating LaTeX commands,
-ensuring the structural integrity of the document.
+It is optimized to run on a CUDA-enabled GPU if available and includes a robust protection mechanism
+to avoid translating LaTeX commands, environments, and other syntax, ensuring document compilability.
 """
 
 import tkinter as tk
 from tkinter import ttk, messagebox
 import os
 import threading
-import re
 from utils import debug_console
 
 try:
@@ -39,6 +37,10 @@ SUPPORTED_TRANSLATIONS = {
     "Espagnol -> Français": "Helsinki-NLP/opus-mt-es-fr",
     "Français -> Allemand": "Helsinki-NLP/opus-mt-fr-de",
     "Allemand -> Français": "Helsinki-NLP/opus-mt-de-fr",
+    "Anglais -> Espagnol": "Helsinki-NLP/opus-mt-en-es",
+    "Espagnol -> Anglais": "Helsinki-NLP/opus-mt-es-en",
+    "Anglais -> Allemand": "Helsinki-NLP/opus-mt-en-de",
+    "Allemand -> Anglais": "Helsinki-NLP/opus-mt-de-en",
 }
 
 def initialize_translator(root_ref, theme_getter, status_message_func, active_editor_getter, active_filepath_getter):
@@ -55,83 +57,267 @@ def initialize_translator(root_ref, theme_getter, status_message_func, active_ed
     if _TRANSFORMERS_AVAILABLE:
         is_gpu_available = torch.cuda.is_available()
         _device = "cuda" if is_gpu_available else "cpu"
-        debug_console.log(f"Translator service initialized. PyTorch CUDA available: {is_gpu_available}. Device set to: {_device.upper()}", level='INFO')
-        if not is_gpu_available:
-            debug_console.log("GPU not detected by PyTorch. Translation will run on CPU and may be slow.", level='WARNING')
+        debug_console.log(f"Translator service initialized. Device set to: {_device.upper()}", level='INFO')
     else:
         debug_console.log("Transformers library not available. Translation is disabled.", level='ERROR')
 
 def _get_model_and_tokenizer(model_name):
     """Loads and caches a translation model and tokenizer, moving the model to the correct device."""
     if model_name in _model_cache:
-        debug_console.log(f"Loading model '{model_name}' from cache.", level='DEBUG')
-        # Ensure cached model is on the correct device, in case the device changed (highly unlikely)
         model, tokenizer = _model_cache[model_name]
         model.to(_device)
         return model, tokenizer
 
-    debug_console.log(f"Model '{model_name}' not in cache. Loading from Hugging Face Hub...", level='INFO')
     _show_temporary_status_message_func(f"⏳ Downloading model '{model_name}'...")
-    
     try:
         tokenizer = MarianTokenizer.from_pretrained(model_name)
         model = MarianMTModel.from_pretrained(model_name)
-        
-        debug_console.log(f"Moving model to device: {_device.upper()}", level='DEBUG')
         model.to(_device)
-        debug_console.log(f"Model device confirmed: {model.device}", level='INFO') # Log the actual device
-        
+        debug_console.log(f"Model '{model_name}' loaded and moved to {model.device}", level='INFO')
         _model_cache[model_name] = (model, tokenizer)
-        debug_console.log(f"Model '{model_name}' loaded and cached successfully.", level='SUCCESS')
         _show_temporary_status_message_func(f"✅ Model '{model_name}' ready.")
         return model, tokenizer
     except Exception as e:
         debug_console.log(f"Failed to load model '{model_name}': {e}", level='ERROR')
-        messagebox.showerror("Model Error", f"Could not download or load model '{model_name}'. Check internet connection.")
+        messagebox.showerror("Model Error", f"Could not load model '{model_name}'. Check internet connection.")
         return None, None
 
-def _translate_latex_safely(text, model, tokenizer):
-    """Translates LaTeX text by protecting commands and processing in batches."""
-    commands = []
-    pattern = re.compile(r"""
-        (
-            \[a-zA-Z]+(?:\\[.*?\\])?(?:\{.*?\})? | # Commands with optional args
-            \\(?:begin|end)\\{[a-zA-Z*]+\} |      # Begin/End environments
-            \$\$[^\]+\$\$ |                       # Display math mode
-            \$[^\]]+\$ |                           # Inline math mode
-            %.* |                                  # Comments
-            \\[&%$_#]                              # Escaped special characters
-        )
-    """, re.VERBOSE)
-
-    def protect(m):
-        commands.append(m.group(1))
-        return f"__LATEX_CMD_{len(commands)-1}__"
-
-    protected_text = pattern.sub(protect, text)
+def _parse_latex_text(text):
+    """
+    Simple character-by-character parser that protects all LaTeX commands and math.
+    Returns list of (content, is_protected) tuples.
+    """
+    chunks = []
+    current_chunk = ""
+    current_protected = ""
+    i = 0
     
-    sentences = re.split(r'(?<=[.!?])\s+', protected_text)
-    translated_text = ""
-
-    for i, sentence in enumerate(sentences):
-        if not sentence.strip():
+    while i < len(text):
+        char = text[i]
+        
+        # Handle backslash (start of LaTeX command)
+        if char == '\\':
+            # Save current translatable text
+            if current_chunk.strip():
+                chunks.append((current_chunk, False))
+                current_chunk = ""
+            
+            # Start collecting protected command
+            current_protected = char
+            i += 1
+            
+            # Collect command name (letters only)
+            while i < len(text) and text[i].isalpha():
+                current_protected += text[i]
+                i += 1
+            
+            # Handle command arguments and options
+            while i < len(text):
+                if text[i] in ' \t\n':
+                    current_protected += text[i]
+                    i += 1
+                elif text[i] == '[':
+                    # Optional argument
+                    bracket_count = 1
+                    current_protected += text[i]
+                    i += 1
+                    while i < len(text) and bracket_count > 0:
+                        if text[i] == '[':
+                            bracket_count += 1
+                        elif text[i] == ']':
+                            bracket_count -= 1
+                        current_protected += text[i]
+                        i += 1
+                elif text[i] == '{':
+                    # Required argument
+                    brace_count = 1
+                    current_protected += text[i]
+                    i += 1
+                    while i < len(text) and brace_count > 0:
+                        if text[i] == '{':
+                            brace_count += 1
+                        elif text[i] == '}':
+                            brace_count -= 1
+                        current_protected += text[i]
+                        i += 1
+                else:
+                    break
+            
+            # Save protected command
+            chunks.append((current_protected, True))
+            current_protected = ""
             continue
         
-        debug_console.log(f"Translating sentence {i+1}/{len(sentences)}. Moving tensor to {model.device}", level='DEBUG')
-        inputs = tokenizer(sentence, return_tensors="pt", padding=True, truncation=True).to(model.device)
+        # Handle dollar signs (math mode)
+        elif char == '$':
+            # Save current translatable text
+            if current_chunk.strip():
+                chunks.append((current_chunk, False))
+                current_chunk = ""
+            
+            # Check for double dollar
+            if i + 1 < len(text) and text[i + 1] == '$':
+                # Display math $$...$$
+                current_protected = '$$'
+                i += 2
+                while i < len(text):
+                    current_protected += text[i]
+                    if text[i] == '$' and i + 1 < len(text) and text[i + 1] == '$':
+                        current_protected += text[i + 1]
+                        i += 2
+                        break
+                    i += 1
+            else:
+                # Inline math $...$
+                current_protected = '$'
+                i += 1
+                while i < len(text):
+                    current_protected += text[i]
+                    if text[i] == '$':
+                        i += 1
+                        break
+                    i += 1
+            
+            chunks.append((current_protected, True))
+            current_protected = ""
+            continue
         
-        # Log the device of the input tensor
-        debug_console.log(f"Input tensor device: {inputs.input_ids.device}", level='DEBUG')
+        # Handle comments
+        elif char == '%':
+            # Save current translatable text
+            if current_chunk.strip():
+                chunks.append((current_chunk, False))
+                current_chunk = ""
+            
+            # Collect entire comment line
+            current_protected = ""
+            while i < len(text) and text[i] != '\n':
+                current_protected += text[i]
+                i += 1
+            
+            chunks.append((current_protected, True))
+            current_protected = ""
+            continue
+        
+        # Regular character
+        else:
+            current_chunk += char
+            i += 1
+    
+    # Don't forget the last chunk
+    if current_chunk.strip():
+        chunks.append((current_chunk, False))
+    if current_protected:
+        chunks.append((current_protected, True))
+    
+    return chunks
 
-        translated_ids = model.generate(**inputs)
-        batch_result = tokenizer.batch_decode(translated_ids, skip_special_tokens=True)[0]
-        translated_text += batch_result + " "
+def _clean_translatable_text(text):
+    """Clean text for better translation quality."""
+    # Normalize whitespace
+    lines = text.split('\n')
+    cleaned_lines = []
+    
+    for line in lines:
+        line = line.strip()
+        if line:
+            cleaned_lines.append(line)
+        elif cleaned_lines and cleaned_lines[-1]:  # Preserve paragraph breaks
+            cleaned_lines.append('')
+    
+    return '\n'.join(cleaned_lines).strip()
 
-    def unprotect(m):
-        index = int(m.group(1))
-        return commands[index] if 0 <= index < len(commands) else m.group(0)
-
-    return re.sub(r"__LATEX_CMD_(\d+)__", unprotect, translated_text.strip())
+def _translate_latex_safely(text, model, tokenizer):
+    """
+    Translate LaTeX text while protecting all commands and math.
+    """
+    chunks = _parse_latex_text(text)
+    
+    if not chunks:
+        return text
+    
+    # Count translatable chunks
+    translatable_chunks = [chunk for chunk, is_protected in chunks 
+                          if not is_protected and chunk.strip()]
+    num_translatable = len(translatable_chunks)
+    
+    if num_translatable == 0:
+        debug_console.log("No translatable text found in document.", level='INFO')
+        return text
+    
+    _root.after(0, lambda: _show_temporary_status_message_func(
+        f"⏳ Translating {num_translatable} text segments on {model.device}..."
+    ))
+    
+    translated_chunks = []
+    translated_count = 0
+    
+    for chunk, is_protected in chunks:
+        if is_protected:
+            # Keep protected content as-is
+            translated_chunks.append(chunk)
+        else:
+            # Clean and translate
+            clean_text = _clean_translatable_text(chunk)
+            
+            if not clean_text:
+                translated_chunks.append(chunk)
+                continue
+            
+            try:
+                # Translate in smaller pieces if text is too long
+                max_length = 400
+                if len(clean_text) > max_length:
+                    # Split by sentences or paragraphs
+                    sentences = clean_text.replace('\n\n', ' [PARAGRAPH] ').split('. ')
+                    translated_sentences = []
+                    
+                    for sentence in sentences:
+                        if not sentence.strip():
+                            continue
+                        
+                        sentence = sentence.strip()
+                        if not sentence.endswith('.') and '[PARAGRAPH]' not in sentence:
+                            sentence += '.'
+                        
+                        inputs = tokenizer(sentence, return_tensors="pt", 
+                                         padding=True, truncation=True).to(model.device)
+                        
+                        with torch.no_grad():
+                            translated_ids = model.generate(**inputs, max_length=200,
+                                                           num_beams=2, early_stopping=True)
+                        
+                        translated_sentence = tokenizer.batch_decode(
+                            translated_ids, skip_special_tokens=True)[0]
+                        translated_sentences.append(translated_sentence)
+                    
+                    translated_text = '. '.join(translated_sentences)
+                    translated_text = translated_text.replace(' [PARAGRAPH] ', '\n\n')
+                else:
+                    # Translate normally
+                    inputs = tokenizer(clean_text, return_tensors="pt", 
+                                     padding=True, truncation=True).to(model.device)
+                    
+                    with torch.no_grad():
+                        translated_ids = model.generate(**inputs, max_length=512,
+                                                       num_beams=2, early_stopping=True)
+                    
+                    translated_text = tokenizer.batch_decode(
+                        translated_ids, skip_special_tokens=True)[0]
+                
+                translated_chunks.append(translated_text)
+                translated_count += 1
+                
+                # Update progress
+                if translated_count % 5 == 0:
+                    progress = f"⏳ Translated {translated_count}/{num_translatable} segments..."
+                    _root.after(0, lambda p=progress: _show_temporary_status_message_func(p))
+                
+            except Exception as e:
+                debug_console.log(f"Error translating chunk: {e}", level='WARNING')
+                translated_chunks.append(chunk)  # Keep original if translation fails
+    
+    return ''.join(translated_chunks)
 
 def _perform_translation_threaded(source_text, model_name, original_filepath, dialog_window):
     """Manages the translation process in a background thread."""
@@ -143,8 +329,6 @@ def _perform_translation_threaded(source_text, model_name, original_filepath, di
             if not model or not tokenizer:
                 _root.after(0, dialog_window.destroy)
                 return
-
-            _root.after(0, lambda: _show_temporary_status_message_func(f"⏳ Translating document on {model.device}..."))
             
             translated_text = _translate_latex_safely(source_text, model, tokenizer)
 
@@ -165,8 +349,9 @@ def _perform_translation_threaded(source_text, model_name, original_filepath, di
             _root.after(0, lambda: messagebox.showinfo("Translation Success", f"Document translated and saved to:\n{translated_filepath}", parent=dialog_window))
 
         except Exception as e:
-            debug_console.log(f"An error occurred during translation: {e}", level='ERROR')
-            _root.after(0, lambda: messagebox.showerror("Translation Error", f"An error occurred: {e}", parent=dialog_window))
+            error_message = f"An error occurred during translation: {e}"
+            debug_console.log(error_message, level='ERROR')
+            _root.after(0, lambda msg=error_message: messagebox.showerror("Translation Error", msg, parent=dialog_window))
         finally:
             _root.after(0, dialog_window.destroy)
 
@@ -218,7 +403,6 @@ def open_translate_dialog():
         
         _perform_translation_threaded(source_text, model_name, filepath, dialog)
 
-    # The button text now directly reflects the _device variable set at initialization
     translate_button = ttk.Button(main_frame, text=f"Translate on {_device.upper()}", command=on_translate)
     translate_button.pack(pady=10)
 
