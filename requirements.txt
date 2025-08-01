@@ -5,3 +5,8 @@ pytest
 ttkbootstrap
 Pillow
 tksvg
+
+# Translation
+transformers
+sentencepiece
+torch
