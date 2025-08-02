@@ -15,10 +15,11 @@
 %-------------------- Début du contenu du document ----------------------
 \begin{document}
 
+
 % Création de la page de garde
 \fairepagedegarde
 
-% Activation des en-têtes et pieds de page personnalisés pour le reste du document
+% Activation des en-têtes et pieds de page
 \fairemarges
 
 % Création de la table des matières
@@ -262,6 +263,9 @@ Il est évident que la classe \texttt{rapport.cls} est un outil puissant pour la
 \merci
 
 \end{document}
+
+
+
 
 
 
