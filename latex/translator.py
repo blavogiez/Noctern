@@ -8,6 +8,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import os
 import threading
+import re
 from utils import debug_console
 
 try:
@@ -43,6 +44,9 @@ SUPPORTED_TRANSLATIONS = {
     "Allemand -> Anglais": "Helsinki-NLP/opus-mt-de-en",
 }
 
+# This regex splits the text by LaTeX structures, leaving the plain text in between.
+LATEX_SPLIT_PATTERN = re.compile(r'(\[a-zA-Z@]+|%.*|\$.*?\$|[{}]|&|\\%)')
+
 def initialize_translator(root_ref, theme_getter, status_message_func, active_editor_getter, active_filepath_getter):
     """Initializes the translator service and determines the compute device."""
     global _root, _theme_setting_getter_func, _show_temporary_status_message_func
@@ -68,262 +72,80 @@ def _get_model_and_tokenizer(model_name):
         model.to(_device)
         return model, tokenizer
 
-    _show_temporary_status_message_func(f"⏳ Downloading model '{model_name}'...")
+    _show_temporary_status_message_func(f"Downloading model '{model_name}'...")
     try:
         tokenizer = MarianTokenizer.from_pretrained(model_name)
         model = MarianMTModel.from_pretrained(model_name)
         model.to(_device)
         debug_console.log(f"Model '{model_name}' loaded and moved to {model.device}", level='INFO')
         _model_cache[model_name] = (model, tokenizer)
-        _show_temporary_status_message_func(f"✅ Model '{model_name}' ready.")
+        _show_temporary_status_message_func(f"Model '{model_name}' ready.")
         return model, tokenizer
     except Exception as e:
         debug_console.log(f"Failed to load model '{model_name}': {e}", level='ERROR')
         messagebox.showerror("Model Error", f"Could not load model '{model_name}'. Check internet connection.")
         return None, None
 
-def _parse_latex_text(text):
+def _translate_text_chunk(text, model, tokenizer):
     """
-    Simple character-by-character parser that protects all LaTeX commands and math.
-    Returns list of (content, is_protected) tuples.
+    Translates a single block of text, preserving surrounding whitespace.
     """
-    chunks = []
-    current_chunk = ""
-    current_protected = ""
-    i = 0
-    
-    while i < len(text):
-        char = text[i]
-        
-        # Handle backslash (start of LaTeX command)
-        if char == '\\':
-            # Save current translatable text
-            if current_chunk.strip():
-                chunks.append((current_chunk, False))
-                current_chunk = ""
-            
-            # Start collecting protected command
-            current_protected = char
-            i += 1
-            
-            # Collect command name (letters only)
-            while i < len(text) and text[i].isalpha():
-                current_protected += text[i]
-                i += 1
-            
-            # Handle command arguments and options
-            while i < len(text):
-                if text[i] in ' \t\n':
-                    current_protected += text[i]
-                    i += 1
-                elif text[i] == '[':
-                    # Optional argument
-                    bracket_count = 1
-                    current_protected += text[i]
-                    i += 1
-                    while i < len(text) and bracket_count > 0:
-                        if text[i] == '[':
-                            bracket_count += 1
-                        elif text[i] == ']':
-                            bracket_count -= 1
-                        current_protected += text[i]
-                        i += 1
-                elif text[i] == '{':
-                    # Required argument
-                    brace_count = 1
-                    current_protected += text[i]
-                    i += 1
-                    while i < len(text) and brace_count > 0:
-                        if text[i] == '{':
-                            brace_count += 1
-                        elif text[i] == '}':
-                            brace_count -= 1
-                        current_protected += text[i]
-                        i += 1
-                else:
-                    break
-            
-            # Save protected command
-            chunks.append((current_protected, True))
-            current_protected = ""
-            continue
-        
-        # Handle dollar signs (math mode)
-        elif char == '$':
-            # Save current translatable text
-            if current_chunk.strip():
-                chunks.append((current_chunk, False))
-                current_chunk = ""
-            
-            # Check for double dollar
-            if i + 1 < len(text) and text[i + 1] == '$':
-                # Display math $$...$$
-                current_protected = '$$'
-                i += 2
-                while i < len(text):
-                    current_protected += text[i]
-                    if text[i] == '$' and i + 1 < len(text) and text[i + 1] == '$':
-                        current_protected += text[i + 1]
-                        i += 2
-                        break
-                    i += 1
-            else:
-                # Inline math $...$
-                current_protected = '$'
-                i += 1
-                while i < len(text):
-                    current_protected += text[i]
-                    if text[i] == '$':
-                        i += 1
-                        break
-                    i += 1
-            
-            chunks.append((current_protected, True))
-            current_protected = ""
-            continue
-        
-        # Handle comments
-        elif char == '%':
-            # Save current translatable text
-            if current_chunk.strip():
-                chunks.append((current_chunk, False))
-                current_chunk = ""
-            
-            # Collect entire comment line
-            current_protected = ""
-            while i < len(text) and text[i] != '\n':
-                current_protected += text[i]
-                i += 1
-            
-            chunks.append((current_protected, True))
-            current_protected = ""
-            continue
-        
-        # Regular character
-        else:
-            current_chunk += char
-            i += 1
-    
-    # Don't forget the last chunk
-    if current_chunk.strip():
-        chunks.append((current_chunk, False))
-    if current_protected:
-        chunks.append((current_protected, True))
-    
-    return chunks
+    if not text.strip():
+        return text
 
-def _clean_translatable_text(text):
-    """Clean text for better translation quality."""
-    # Normalize whitespace
-    lines = text.split('\n')
-    cleaned_lines = []
+    leading_whitespace = text[:len(text) - len(text.lstrip())]
+    trailing_whitespace = text[len(text.rstrip()):]
+    trimmed_text = text.strip()
+
+    if not trimmed_text:
+        return text
+
+    inputs = tokenizer(trimmed_text, return_tensors="pt", padding=True, truncation=True, max_length=512).to(_device)
+    with torch.no_grad():
+        translated_ids = model.generate(**inputs, max_length=512, num_beams=4, early_stopping=True)
     
-    for line in lines:
-        line = line.strip()
-        if line:
-            cleaned_lines.append(line)
-        elif cleaned_lines and cleaned_lines[-1]:  # Preserve paragraph breaks
-            cleaned_lines.append('')
+    translated_text = tokenizer.batch_decode(translated_ids, skip_special_tokens=True)[0]
     
-    return '\n'.join(cleaned_lines).strip()
+    return leading_whitespace + translated_text + trailing_whitespace
 
 def _translate_latex_safely(text, model, tokenizer):
     """
-    Translate LaTeX text while protecting all commands and math.
+    Translates LaTeX text safely by splitting it into text and commands.
     """
-    chunks = _parse_latex_text(text)
+    parts = LATEX_SPLIT_PATTERN.split(text)
     
-    if not chunks:
-        return text
-    
-    # Count translatable chunks
-    translatable_chunks = [chunk for chunk, is_protected in chunks 
-                          if not is_protected and chunk.strip()]
-    num_translatable = len(translatable_chunks)
-    
-    if num_translatable == 0:
-        debug_console.log("No translatable text found in document.", level='INFO')
-        return text
+    num_parts_to_translate = sum(1 for i, part in enumerate(parts) if i % 2 == 0 and part and part.strip())
     
     _root.after(0, lambda: _show_temporary_status_message_func(
-        f"⏳ Translating {num_translatable} text segments on {model.device}..."
+        f"Translating {num_parts_to_translate} text segments on {model.device}..."
     ))
     
-    translated_chunks = []
+    translated_parts = []
     translated_count = 0
-    
-    for chunk, is_protected in chunks:
-        if is_protected:
-            # Keep protected content as-is
-            translated_chunks.append(chunk)
-        else:
-            # Clean and translate
-            clean_text = _clean_translatable_text(chunk)
-            
-            if not clean_text:
-                translated_chunks.append(chunk)
-                continue
-            
-            try:
-                # Translate in smaller pieces if text is too long
-                max_length = 400
-                if len(clean_text) > max_length:
-                    # Split by sentences or paragraphs
-                    sentences = clean_text.replace('\n\n', ' [PARAGRAPH] ').split('. ')
-                    translated_sentences = []
-                    
-                    for sentence in sentences:
-                        if not sentence.strip():
-                            continue
-                        
-                        sentence = sentence.strip()
-                        if not sentence.endswith('.') and '[PARAGRAPH]' not in sentence:
-                            sentence += '.'
-                        
-                        inputs = tokenizer(sentence, return_tensors="pt", 
-                                         padding=True, truncation=True).to(model.device)
-                        
-                        with torch.no_grad():
-                            translated_ids = model.generate(**inputs, max_length=200,
-                                                           num_beams=2, early_stopping=True)
-                        
-                        translated_sentence = tokenizer.batch_decode(
-                            translated_ids, skip_special_tokens=True)[0]
-                        translated_sentences.append(translated_sentence)
-                    
-                    translated_text = '. '.join(translated_sentences)
-                    translated_text = translated_text.replace(' [PARAGRAPH] ', '\n\n')
-                else:
-                    # Translate normally
-                    inputs = tokenizer(clean_text, return_tensors="pt", 
-                                     padding=True, truncation=True).to(model.device)
-                    
-                    with torch.no_grad():
-                        translated_ids = model.generate(**inputs, max_length=512,
-                                                       num_beams=2, early_stopping=True)
-                    
-                    translated_text = tokenizer.batch_decode(
-                        translated_ids, skip_special_tokens=True)[0]
-                
-                translated_chunks.append(translated_text)
+    for i, part in enumerate(parts):
+        if part is None or not part:
+            continue
+
+        if i % 2 == 0: # Even-indexed parts are text
+            if part.strip():
+                translated_chunk = _translate_text_chunk(part, model, tokenizer)
+                translated_parts.append(translated_chunk)
                 translated_count += 1
-                
-                # Update progress
-                if translated_count % 5 == 0:
-                    progress = f"⏳ Translated {translated_count}/{num_translatable} segments..."
+                if translated_count % 10 == 0:
+                    progress = f"Translated {translated_count}/{num_parts_to_translate} segments..."
                     _root.after(0, lambda p=progress: _show_temporary_status_message_func(p))
-                
-            except Exception as e:
-                debug_console.log(f"Error translating chunk: {e}", level='WARNING')
-                translated_chunks.append(chunk)  # Keep original if translation fails
-    
-    return ''.join(translated_chunks)
+            else:
+                translated_parts.append(part) # Preserve whitespace
+        else: # Odd-indexed parts are delimiters
+            translated_parts.append(part)
+            
+    return "".join(translated_parts)
 
 def _perform_translation_threaded(source_text, model_name, original_filepath, dialog_window):
     """Manages the translation process in a background thread."""
     def run_translation():
         try:
-            _root.after(0, lambda: _show_temporary_status_message_func(f"⏳ Initializing translation on {_device.upper()}..."))
+            _root.after(0, lambda: _show_temporary_status_message_func(f"Initializing translation on {_device.upper()}..."))
             
             model, tokenizer = _get_model_and_tokenizer(model_name)
             if not model or not tokenizer:
@@ -345,7 +167,7 @@ def _perform_translation_threaded(source_text, model_name, original_filepath, di
                 f.write(translated_text)
 
             debug_console.log(f"Translation complete. Saved to: {translated_filepath}", level='SUCCESS')
-            _root.after(0, lambda: _show_temporary_status_message_func(f"✅ Translation saved to {os.path.basename(translated_filepath)}"))
+            _root.after(0, lambda: _show_temporary_status_message_func(f"Translation saved to {os.path.basename(translated_filepath)}"))
             _root.after(0, lambda: messagebox.showinfo("Translation Success", f"Document translated and saved to:\n{translated_filepath}", parent=dialog_window))
 
         except Exception as e:
