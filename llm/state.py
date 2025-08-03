@@ -21,6 +21,7 @@ model_generation = "default"
 model_rephrase = "default"
 model_debug = "default"
 model_style = "codellama:7b-instruct"
+last_style_intensity = 5 # Default intensity on a 1-10 scale
 
 
 # --- Prompt Templates and History ---

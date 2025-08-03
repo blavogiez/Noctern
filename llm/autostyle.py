@@ -1,44 +1,81 @@
 """
-This module provides the functionality for automatic LaTeX styling of selected text
-using a Large Language Model (LLM) in an interactive, streaming manner.
+This module provides the core functionality for the "Smart Style" feature.
+It orchestrates the user interaction (dialog) and the subsequent call to the
+LLM API for text styling.
 """
 import threading
-import ttkbootstrap as ttk
-from tkinter import simpledialog
+import tkinter as tk
+from tkinter import messagebox
+
 from llm import state as llm_state
 from llm import utils as llm_utils
 from llm import api_client as llm_api_client
 from llm.interactive import start_new_interactive_session
+from llm.dialogs.autostyle import StyleIntensityDialog
 from utils import debug_console
 
-class StyleIntensityDialog(simpledialog.Dialog):
-    """A dialog to ask the user for the styling intensity."""
-    def __init__(self, parent, title=None):
-        self.intensity = "Medium"
-        super().__init__(parent, title)
-
-    def body(self, master):
-        ttk.Label(master, text="Choose the desired styling intensity:").pack(pady=5)
-        self.combo = ttk.Combobox(master, values=["Low", "Medium", "High"], state="readonly")
-        self.combo.set(self.intensity)
-        self.combo.pack(pady=5, padx=10)
-        return self.combo
-
-    def apply(self):
-        self.intensity = self.combo.get()
-
-def get_style_intensity(parent):
-    dialog = StyleIntensityDialog(parent, title="Smart Styling")
-    return dialog.intensity
-
-def request_llm_for_styling(editor, selected_text, selection_indices, intensity):
+def autostyle_selection():
     """
-    Initiates an interactive LLM request to style the selected text.
-    """
-    prompt_template = llm_state._styling_prompt_template or llm_state._global_default_prompts.get("styling", "")
-    full_prompt = prompt_template.format(text=selected_text, intensity=intensity)
+    Main entry point for the autostyle feature.
     
-    debug_console.log(f"LLM Styling Request - Prompt (first 100 chars): '{full_prompt[:100]}...'", level='INFO')
+    It retrieves the active editor, prompts the user for styling intensity
+    via a dialog, and then initiates the LLM styling request.
+    """
+    # 1. Get active editor securely
+    if not llm_state._active_editor_getter_func:
+        messagebox.showerror("LLM Error", "LLM service not fully initialized.")
+        return
+    editor = llm_state._active_editor_getter_func()
+    if not editor:
+        messagebox.showerror("LLM Error", "No active editor found.")
+        return
+
+    # 2. Get selected text
+    try:
+        selection_indices = editor.tag_ranges("sel")
+        if not selection_indices:
+            messagebox.showinfo("Smart Style", "Please select some text to style.")
+            return
+        selected_text = editor.get(selection_indices[0], selection_indices[1])
+        if not selected_text.strip():
+            messagebox.showinfo("Smart Style", "The selected text is empty.")
+            return
+    except tk.TclError:
+        messagebox.showinfo("Smart Style", "Please select some text to style.")
+        return
+
+    # 3. Open dialog to get intensity
+    dialog = StyleIntensityDialog(editor, title="Smart Styling")
+    intensity = dialog.result
+
+    if intensity is None:
+        debug_console.log("Smart Styling cancelled by user.", level='INFO')
+        return
+
+    # 4. Initiate the styling request
+    _request_llm_for_styling(editor, selected_text, selection_indices, intensity)
+
+def _request_llm_for_styling(editor, selected_text, selection_indices, intensity):
+    """
+    Private function to handle the LLM request logic.
+    
+    - Checks if another generation is in progress.
+    - Formats the prompt.
+    - Starts the interactive session.
+    - Runs the API call in a background thread.
+    """
+    if llm_state._is_generating:
+        messagebox.showinfo("LLM Busy", "LLM is currently generating. Please wait.")
+        return
+
+    prompt_template = llm_state._styling_prompt_template or llm_state._global_default_prompts.get("styling", "")
+    if not prompt_template:
+        messagebox.showerror("LLM Error", "Styling prompt template is not configured.")
+        return
+        
+    full_prompt = prompt_template.format(text=selected_text, intensity=f"{intensity}/10")
+    
+    debug_console.log(f"LLM Styling Request - Intensity: {intensity}/10", level='INFO')
 
     interactive_session_callbacks = start_new_interactive_session(
         editor,
@@ -46,42 +83,44 @@ def request_llm_for_styling(editor, selected_text, selection_indices, intensity)
         selection_indices=selection_indices
     )
 
-    def run_styling_thread():
+    def styling_thread_target():
+        """Target for the background thread to avoid blocking the UI."""
         accumulated_text = ""
         try:
-            for api_response_chunk in llm_api_client.request_llm_generation(full_prompt, model_name=llm_state.model_style):
+            for response in llm_api_client.request_llm_generation(full_prompt, model_name=llm_state.model_style):
                 if llm_state._is_generation_cancelled:
                     break
-                if api_response_chunk["success"]:
-                    if "chunk" in api_response_chunk:
-                        chunk_text = api_response_chunk["chunk"]
-                        accumulated_text += chunk_text
-                        editor.after(0, lambda c=chunk_text: interactive_session_callbacks['on_chunk'](c))
+                if response.get("success"):
+                    chunk = response.get("chunk")
+                    if chunk:
+                        accumulated_text += chunk
+                        editor.after(0, interactive_session_callbacks['on_chunk'], chunk)
                     
-                    if api_response_chunk.get("done"):
-                        if not llm_state._is_generation_cancelled:
-                            final_text = accumulated_text
-                            if "deepseek" in llm_state.model_style:
-                                final_text = llm_utils.strip_think_tags(final_text)
-                            editor.after(0, interactive_session_callbacks['on_success'], final_text)
+                    if response.get("done") and not llm_state._is_generation_cancelled:
+                        final_text = accumulated_text
+                        if "deepseek" in llm_state.model_style:
+                            final_text = llm_utils.strip_think_tags(final_text)
+                        editor.after(0, interactive_session_callbacks['on_success'], final_text)
                         return
                 else:
-                    error_message = api_response_chunk["error"]
+                    error_msg = response.get("error", "Unknown error")
                     if not llm_state._is_generation_cancelled:
-                        editor.after(0, lambda e=error_message: interactive_session_callbacks['on_error'](e))
+                        editor.after(0, interactive_session_callbacks['on_error'], error_msg)
                     return
         except Exception as e:
-            error_message = f"An unexpected error occurred in the LLM styling thread: {e}"
-            debug_console.log(error_message, level='ERROR')
+            error_msg = f"An unexpected error occurred in the styling thread: {e}"
+            debug_console.log(error_msg, level='ERROR')
             if not llm_state._is_generation_cancelled:
-                editor.after(0, lambda e_msg=error_message: interactive_session_callbacks['on_error'](e_msg))
+                editor.after(0, interactive_session_callbacks['on_error'], error_msg)
         finally:
-            if llm_state._llm_progress_bar_widget:
-                editor.after(0, llm_state._llm_progress_bar_widget.stop)
-                editor.after(0, llm_state._llm_progress_bar_widget.pack_forget)
+            progress_bar = llm_state._llm_progress_bar_widget
+            if progress_bar:
+                editor.after(0, progress_bar.stop)
+                editor.after(0, progress_bar.pack_forget)
 
-    if llm_state._llm_progress_bar_widget:
-        llm_state._llm_progress_bar_widget.pack(pady=2)
-        llm_state._llm_progress_bar_widget.start(10)
+    progress_bar = llm_state._llm_progress_bar_widget
+    if progress_bar:
+        progress_bar.pack(pady=2)
+        progress_bar.start(10)
     
-    threading.Thread(target=run_styling_thread, daemon=True).start()
+    threading.Thread(target=styling_thread_target, daemon=True).start()

@@ -12,11 +12,11 @@ from llm import prompts as llm_prompts
 from llm import history as llm_history
 from llm import autostyle as llm_autostyle
 
-def request_llm_for_styling(text, intensity):
+def start_autostyle_process(event=None):
     """
-    Sends the selected text to the LLM for automatic styling.
+    Initiates the 'autostyle' process on the selected text in the active editor.
     """
-    return llm_autostyle.request_llm_for_styling(text, intensity)
+    llm_autostyle.autostyle_selection()
 
 def initialize_llm_service(root_window, progress_bar_widget, theme_setting_getter, active_editor_getter, active_filepath_getter, app_config):
     """
