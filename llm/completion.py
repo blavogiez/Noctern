@@ -8,28 +8,12 @@ from llm import state as llm_state
 from llm import utils as llm_utils
 from llm import keyword_history
 from llm.interactive import start_new_interactive_session
-from llm.streaming_service import start_streaming_request, get_blocking_response
+from llm.streaming_service import start_streaming_request
 from utils import debug_console
-
-def get_llm_completion(prompt, model_name=None):
-    """
-    Requests a single, non-streaming completion from the LLM.
-    This is a wrapper around the generic blocking response service.
-    """
-    debug_console.log(f"Requesting blocking LLM completion. Prompt (first 100 chars): '{prompt[:100]}...'", level='INFO')
-    model_to_use = model_name or llm_state.model_completion
-    
-    response = get_blocking_response(prompt, model_to_use)
-    
-    if response:
-        debug_console.log(f"Blocking completion successful. Response length: {len(response)}", level='SUCCESS')
-    
-    return response
 
 def request_llm_to_complete_text():
     """
     Initiates a streaming text completion request to the LLM.
-    This version is refactored to use the generic streaming service.
     """
     debug_console.log("LLM Text Completion request initiated.", level='ACTION')
     
