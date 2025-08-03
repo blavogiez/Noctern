@@ -28,55 +28,6 @@ def load_prompts_for_current_file():
     # Update the global state with the loaded completion and generation prompt templates.
     llm_state._completion_prompt_template = loaded_prompts.get("completion", "")
     llm_state._generation_prompt_template = loaded_prompts.get("generation", "")
-    debug_console.log("Prompt templates loaded into LLM state.", level='DEBUG')
-
-def get_current_prompts():
-    """
-    Returns a dictionary containing the currently active LLM prompt templates.
-
-    This function provides a convenient way to access the prompt templates that are
-    currently in use by the LLM service, whether they are custom or default.
-
-    Returns:
-        dict: A dictionary with keys "completion" and "generation", and their
-              corresponding prompt template strings as values.
-    """
-    return {
-        "completion": llm_state._completion_prompt_template,
-        "generation": llm_state._generation_prompt_template
-    }
-
-def update_prompts(completion_template_text, generation_template_text):
-    """
-    Updates the LLM prompt templates for the current document and saves them to file.
-
-    This function is typically called after a user has edited the prompt templates
-    in the dialog. It updates the in-memory state and then persists the changes
-    to a file associated with the active document.
-
-    Args:
-        completion_template_text (str): The new template string for completion prompts.
-        generation_template_text (str): The new template string for generation prompts.
-    """
-    debug_console.log("Updating LLM prompt templates and saving changes.", level='CONFIG')
-    
-    # Update the in-memory prompt templates in the global state.
-    llm_state._completion_prompt_template = completion_template_text
-    llm_state._generation_prompt_template = generation_template_text
-    
-    # Get the active file path to determine where to save the custom prompts.
-    active_filepath = llm_state._active_filepath_getter_func() if llm_state._active_filepath_getter_func else None
-    
-    if active_filepath:
-        # Create a dictionary of the prompts to be saved.
-        prompts_to_save = {
-            "completion": llm_state._completion_prompt_template,
-            "generation": llm_state._generation_prompt_template
-        }
-        # Save the prompts to the file using the llm_prompt_manager.
-            # Update the global state with the loaded completion and generation prompt templates.
-    llm_state._completion_prompt_template = loaded_prompts.get("completion", "")
-    llm_state._generation_prompt_template = loaded_prompts.get("generation", "")
     llm_state._styling_prompt_template = loaded_prompts.get("styling", "")
     debug_console.log("Prompt templates loaded into LLM state.", level='DEBUG')
 
@@ -135,10 +86,6 @@ def update_prompts(completion_template_text, generation_template_text, styling_t
 def open_edit_prompts_dialog():
     """
     Opens a dialog window that allows the user to edit the LLM prompt templates.
-
-        debug_console.log("Prompt templates saved successfully.", level='SUCCESS')
-    else:
-        debug_console.log("Cannot save prompt templates: No active file path available.", level='WARNING')
     """
 
     debug_console.log("Opening 'Edit LLM Prompt Templates' dialog.", level='ACTION')

@@ -20,7 +20,7 @@ def show_edit_prompts_dialog(root_window, theme_setting_getter_func,
         current_prompts (dict): Dictionary of currently active prompt templates.
         default_prompts (dict): Dictionary of default prompt templates.
         on_save_callback (callable): Callback function triggered when changes are applied.
-                                    Signature: `(new_completion_prompt, new_generation_prompt)`.
+                                    Signature: `(new_completion_prompt, new_generation_prompt, new_styling_prompt)`.
     """
     debug_console.log("Opening LLM prompt templates editing dialog.", level='ACTION')
     prompts_window = tk.Toplevel(root_window)
@@ -49,7 +49,7 @@ def show_edit_prompts_dialog(root_window, theme_setting_getter_func,
     main_pane.pack(fill="both", expand=True, padx=10, pady=10)
 
     # Store initial state to check for unsaved changes.
-    saved_state = {"completion": current_prompts.get("completion", "").strip(), "generation": current_prompts.get("generation", "").strip()}
+    saved_state = {"completion": current_prompts.get("completion", "").strip(), "generation": current_prompts.get("generation", "").strip(), "styling": current_prompts.get("styling", "").strip()}
 
     def create_prompt_pane(parent_widget, prompt_key, title_text):
         """
@@ -84,6 +84,7 @@ def show_edit_prompts_dialog(root_window, theme_setting_getter_func,
     # Create panes for completion and generation prompts.
     completion_pane, completion_labelframe, completion_text_widget = create_prompt_pane(main_pane, "completion", "Completion Prompt ('✨ Complete')")
     generation_pane, generation_labelframe, generation_text_widget = create_prompt_pane(main_pane, "generation", "Generation Prompt ('🎯 Generate')")
+    styling_pane, styling_labelframe, styling_text_widget = create_prompt_pane(main_pane, "styling", "Styling Prompt ('🎨 Style')")
 
     def update_default_status_labels():
         """
@@ -91,9 +92,11 @@ def show_edit_prompts_dialog(root_window, theme_setting_getter_func,
         """
         is_completion_default = (completion_text_widget.get("1.0", tk.END).strip() == default_prompts.get("completion", "").strip())
         is_generation_default = (generation_text_widget.get("1.0", tk.END).strip() == default_prompts.get("generation", "").strip())
+        is_styling_default = (styling_text_widget.get("1.0", tk.END).strip() == default_prompts.get("styling", "").strip())
         
         completion_labelframe.config(text=f"Completion Prompt ('✨ Complete'){' (Using Default)' if is_completion_default else ''}")
         generation_labelframe.config(text=f"Generation Prompt ('🎯 Generate'){' (Using Default)' if is_generation_default else ''}")
+        styling_labelframe.config(text=f"Styling Prompt ('🎨 Style'){' (Using Default)' if is_styling_default else ''}")
 
     def apply_changes():
         """
@@ -102,12 +105,14 @@ def show_edit_prompts_dialog(root_window, theme_setting_getter_func,
         """
         new_completion_prompt = completion_text_widget.get("1.0", tk.END).strip()
         new_generation_prompt = generation_text_widget.get("1.0", tk.END).strip()
+        new_styling_prompt = styling_text_widget.get("1.0", tk.END).strip()
         debug_console.log("Applying prompt template changes.", level='ACTION')
         if on_save_callback: 
-            on_save_callback(new_completion_prompt, new_generation_prompt)
+            on_save_callback(new_completion_prompt, new_generation_prompt, new_styling_prompt)
         
         saved_state["completion"] = new_completion_prompt
         saved_state["generation"] = new_generation_prompt
+        saved_state["styling"] = new_styling_prompt
         update_default_status_labels() # Refresh labels to reflect default status.
         return "break" # Prevent default event handling.
 
@@ -134,10 +139,12 @@ def show_edit_prompts_dialog(root_window, theme_setting_getter_func,
     # Create buttons for each prompt pane.
     create_buttons_for_pane(completion_pane, completion_text_widget, "completion")
     create_buttons_for_pane(generation_pane, generation_text_widget, "generation")
+    create_buttons_for_pane(styling_pane, styling_text_widget, "styling")
     
     # Add panes to the main paned window.
     main_pane.add(completion_pane, minsize=400, stretch="always")
     main_pane.add(generation_pane, minsize=400, stretch="always")
+    main_pane.add(styling_pane, minsize=400, stretch="always")
 
     def close_window_handler():
         """
@@ -145,7 +152,8 @@ def show_edit_prompts_dialog(root_window, theme_setting_getter_func,
         """
         has_unsaved_changes = (
             completion_text_widget.get("1.0", tk.END).strip() != saved_state["completion"] or
-            generation_text_widget.get("1.0", tk.END).strip() != saved_state["generation"]
+            generation_text_widget.get("1.0", tk.END).strip() != saved_state["generation"] or
+            styling_text_widget.get("1.0", tk.END).strip() != saved_state["styling"]
         )
         
         if has_unsaved_changes:
