@@ -202,55 +202,24 @@ class InteractiveSession:
         if llm_state._is_generating: return
         
         from . import rephrase as llm_rephrase
-        from llm.dialogs.rephrase import show_rephrase_dialog
-        from app import state as main_window
 
         text_to_rephrase = self.full_response_text
         if not text_to_rephrase.strip():
             messagebox.showinfo("Rephrase", "Nothing to rephrase yet.")
             return
+            
+        # Destroy the current session UI, but leave its text in the editor.
+        self.destroy(delete_text=False)
+        
+        # The text from the previous session now starts where its UI block was.
+        # We need to select it so the rephrase function knows what to replace.
+        new_start_index = self.block_start_index
+        new_end_index = self.editor.index(f"{new_start_index} + {len(text_to_rephrase)} chars")
+        self.editor.tag_add(tk.SEL, new_start_index, new_end_index)
+        self.editor.focus_set()
 
-        root_window = self.editor.winfo_toplevel()
-
-        def on_rephrase_confirmed(instruction):
-            """
-            Handles the logic for a chained rephrase.
-            The current session is destroyed, but its text is preserved
-            to be the input for the next rephrase request.
-            """
-            # Store necessary state before destroying the current session
-            editor = self.editor
-            block_start = self.block_start_index
-            text_for_next_request = self.full_response_text
-            original_discard_callback = self.on_discard_callback
-
-            # Destroy the current session's UI, but leave its text in the editor.
-            # This shifts the text, so we must recalculate indices.
-            self.destroy(delete_text=False)
-
-            # The text from the previous session now starts where its UI block was.
-            new_start_index = block_start
-            new_end_index = editor.index(f"{new_start_index} + {len(text_for_next_request)} chars")
-
-            # Initiate the new rephrase request, telling it to replace the text
-            # from the session we just destroyed.
-            llm_rephrase.request_rephrase_for_text(
-                editor,
-                text_for_next_request,
-                new_start_index,
-                new_end_index,
-                instruction,
-                original_discard_callback # Pass the original callback down the chain
-            )
-
-        # Show the dialog to get the instruction from the user.
-        show_rephrase_dialog(
-            root_window=root_window,
-            theme_setting_getter_func=main_window.get_theme_setting,
-            original_text=text_to_rephrase,
-            on_rephrase_callback=on_rephrase_confirmed,
-            on_cancel_callback=lambda: debug_console.log("Rephrase dialog cancelled.", level='INFO')
-        )
+        # Call the public entry point, which will handle the rest.
+        llm_rephrase.open_rephrase_dialog()
 
     def _post_process_completion(self):
         cleaned_text = llm_utils.remove_prefix_overlap_from_completion(self.completion_phrase, self.full_response_text)
