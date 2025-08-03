@@ -6,15 +6,13 @@ from utils import debug_console
 from app import state as main_window
 import uuid # Import uuid for unique session IDs
 
-# NOTE: llm_rephrase is imported locally within functions to avoid circular dependencies
-# during module loading.
-
 # This global variable will hold the single active interactive session.
 _current_session = None
 
 class InteractiveSession:
     """
-    Manages an interactive LLM generation session within the editor.
+    Manages the UI and interaction for an LLM generation session.
+    This class should NOT manage the `_is_generating` state flag.
     """
 
     def __init__(self, editor, start_index, is_completion=False, is_rephrase=False, is_styling=False, completion_phrase="", on_discard_callback=None, selection_indices=None):
@@ -35,7 +33,6 @@ class InteractiveSession:
         if is_styling and selection_indices:
             self.selection_start_index = selection_indices[0]
             self.selection_end_index = selection_indices[1]
-            # Hide the original text instead of deleting it
             self.hidden_tag = f"styling_hidden_{self.session_id}"
             self.editor.tag_add(self.hidden_tag, self.selection_start_index, self.selection_end_index)
             self.editor.tag_config(self.hidden_tag, elide=True)
@@ -134,15 +131,9 @@ class InteractiveSession:
         self.full_response_text = final_cleaned_text
 
         if self.is_completion: self._post_process_completion()
+        if self.is_rephrase: self.editor.tag_add(tk.SEL, self.text_start_index, self.text_end_index)
 
-        if self.is_rephrase:
-            self.editor.tag_add(tk.SEL, self.text_start_index, self.text_end_index)
-
-        llm_state._is_generating = False
         self.editor.focus_set()
-
-        # if not self.is_rephrase and not self.is_completion:
-        #     self.editor.after(50, self.rephrase)
 
     def handle_error(self, error_msg):
         if self.is_discarded: return
@@ -156,69 +147,39 @@ class InteractiveSession:
         
         if self.is_styling:
             final_text = self.full_response_text
-            # The location where the original text was
             insert_pos = self.editor.index(f"{self.hidden_tag}.first")
-            
-            # Delete the original, hidden text
             self.editor.delete(f"{self.hidden_tag}.first", f"{self.hidden_tag}.last")
             self.editor.tag_delete(self.hidden_tag)
-            
-            # Destroy the interactive UI and its temporary text
             self.destroy(delete_text=True)
-            
-            # Insert the final styled text
             self.editor.insert(insert_pos, final_text)
         else:
-            # Default behavior
             self.editor.tag_remove("llm_generated_text", self.text_start_index, self.text_end_index)
             self.destroy(delete_text=False)
-
         self.editor.focus_set()
 
     def discard(self):
         if self.is_discarded: return
         debug_console.log(f"User DISCARDED LLM suggestion for session {self.session_id}.", level='ACTION')
         self.is_discarded = True
-
         llm_state._is_generation_cancelled = True
         debug_console.log("Cancellation flag set for ongoing generation.", level='INFO')
-
-        if llm_state._llm_progress_bar_widget and llm_state._llm_progress_bar_widget.winfo_exists():
-            llm_state._llm_progress_bar_widget.stop()
-            llm_state._llm_progress_bar_widget.pack_forget()
-        
-        # If styling, unhide the original text
-        if self.is_styling and self.hidden_tag:
-            self.editor.tag_delete(self.hidden_tag)
-
+        if self.is_styling and self.hidden_tag: self.editor.tag_delete(self.hidden_tag)
         self.destroy(delete_text=True)
-        
-        if self.on_discard_callback:
-            self.on_discard_callback()
-            
+        if self.on_discard_callback: self.on_discard_callback()
         self.editor.focus_set()
 
     def rephrase(self):
         if llm_state._is_generating: return
-        
         from . import rephrase as llm_rephrase
-
         text_to_rephrase = self.full_response_text
         if not text_to_rephrase.strip():
             messagebox.showinfo("Rephrase", "Nothing to rephrase yet.")
             return
-            
-        # Destroy the current session UI, but leave its text in the editor.
         self.destroy(delete_text=False)
-        
-        # The text from the previous session now starts where its UI block was.
-        # We need to select it so the rephrase function knows what to replace.
         new_start_index = self.block_start_index
         new_end_index = self.editor.index(f"{new_start_index} + {len(text_to_rephrase)} chars")
         self.editor.tag_add(tk.SEL, new_start_index, new_end_index)
         self.editor.focus_set()
-
-        # Call the public entry point, which will handle the rest.
         llm_rephrase.open_rephrase_dialog()
 
     def _post_process_completion(self):
@@ -232,31 +193,22 @@ class InteractiveSession:
         self._stop_generating_animation()
         self._unbind_keyboard_shortcuts()
         try:
-            # If we need to delete the generated text, we delete from the start of the text to the end.
             if delete_text and self.editor.winfo_exists():
                 start_text = self.editor.index(self.text_start_index)
                 end_text = self.editor.index(self.text_end_index)
                 if self.editor.compare(start_text, "<", end_text):
                     self.editor.delete(start_text, end_text)
-
-            # Always delete the UI frame (which is 1 character wide in the text widget)
-            if self.editor.winfo_exists():
-                self.editor.delete(self.block_start_index)
-            
-            if self.buttons_frame and self.buttons_frame.winfo_exists():
-                self.buttons_frame.destroy()
+            if self.editor.winfo_exists(): self.editor.delete(self.block_start_index)
+            if self.buttons_frame and self.buttons_frame.winfo_exists(): self.buttons_frame.destroy()
         except tk.TclError as e:
             debug_console.log(f"Error destroying interactive session UI: {e}", level='ERROR')
-        
         _current_session = None
-        llm_state._is_generating = False
 
 def start_new_interactive_session(editor, is_completion=False, is_rephrase=False, is_styling=False, completion_phrase="", on_discard_callback=None, selection_indices=None):
     global _current_session
     if _current_session:
         _current_session.discard()
     
-    llm_state._is_generating = True
     llm_state._is_generation_cancelled = False
     
     if is_styling and selection_indices:
@@ -264,7 +216,6 @@ def start_new_interactive_session(editor, is_completion=False, is_rephrase=False
     else:
         start_index = editor.index(tk.INSERT)
     
-    # Add a separator to group the entire generation as a single undo action.
     editor.edit_separator()
     
     _current_session = InteractiveSession(
