@@ -24,10 +24,47 @@ from app import config as app_config
 
 from editor.tab import EditorTab
 from llm import service as llm_service
+from llm import autostyle as llm_autostyle
 from editor import logic as editor_logic
 from latex import compiler as latex_compiler
 from editor import wordcount as editor_wordcount
 from utils import debug_console, animations
+
+def style_selected_text(event=None):
+    """
+    Main function to apply automatic styling to the selected text in the current editor.
+    """
+    debug_console.log("Initiating Smart Styling action.", level='ACTION')
+    
+    current_tab = state.get_current_tab()
+    if not current_tab:
+        Messagebox.ok("Please open a document first.", title="No Document", parent=state.root)
+        return
+
+    editor = current_tab.editor
+    try:
+        selection_start = editor.index("sel.first")
+        selection_end = editor.index("sel.last")
+        selected_text = editor.get(selection_start, selection_end)
+        if not selected_text.strip():
+            Messagebox.ok("Please select some text to style.", title="No Selection", parent=state.root)
+            return
+    except TclError:
+        Messagebox.ok("Please select some text to style.", title="No Selection", parent=state.root)
+        return
+
+    intensity = llm_autostyle.get_style_intensity(state.root)
+    if not intensity:
+        debug_console.log("Smart Styling cancelled by user.", level='INFO')
+        return
+
+    # The new interactive styling function
+    llm_autostyle.request_llm_for_styling(
+        editor,
+        selected_text,
+        (selection_start, selection_end),
+        intensity
+    )
 
 def perform_heavy_updates():
     """

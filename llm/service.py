@@ -10,6 +10,13 @@ from llm import generation as llm_generation
 from llm import keywords as llm_keywords
 from llm import prompts as llm_prompts
 from llm import history as llm_history
+from llm import autostyle as llm_autostyle
+
+def request_llm_for_styling(text, intensity):
+    """
+    Sends the selected text to the LLM for automatic styling.
+    """
+    return llm_autostyle.request_llm_for_styling(text, intensity)
 
 def initialize_llm_service(root_window, progress_bar_widget, theme_setting_getter, active_editor_getter, active_filepath_getter, app_config):
     """

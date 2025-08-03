@@ -123,6 +123,8 @@ def create_top_buttons_frame(root):
     settings_menubutton["menu"] = settings_menu
 
     # --- Populate Menus ---
+    tools_menu.add_command(label="Smart Style Selected Text", command=lambda: [_log_action("Tools: Smart Style"), interface.style_selected_text()])
+    tools_menu.add_separator()
     tools_menu.add_command(label="Check Document (chktex)", command=lambda: [_log_action("Tools: chktex Check"), latex_compiler.run_chktex_check()])
     tools_menu.add_command(label="Rephrase Selected Text (Ctrl+R)", command=lambda: [_log_action("Tools: Rephrase Text"), llm_rephrase.open_rephrase_dialog()])
     tools_menu.add_command(label="Paste Image from Clipboard (Ctrl+Shift+V)", command=lambda: [_log_action("Tools: Paste Image"), interface.paste_image()])

@@ -20,6 +20,7 @@ model_completion = "default"
 model_generation = "default"
 model_rephrase = "default"
 model_debug = "default"
+model_style = "codellama:7b-instruct"
 
 
 # --- Prompt Templates and History ---
@@ -33,6 +34,7 @@ DEFAULT_PROMPTS_FILE = "data/default_prompts.json"
 _prompt_history_list = [] # List of (user_prompt, llm_response) tuples.
 _completion_prompt_template = ""      # Custom completion prompt for the current file.
 _generation_prompt_template = ""      # Custom generation prompt for the current file.
+_styling_prompt_template = ""         # Custom styling prompt for the current file.
 _llm_keywords_list = []               # List of keywords for the current file.
 
 # --- Last Action State (for re-generation) ---

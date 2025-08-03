@@ -17,18 +17,31 @@ class InteractiveSession:
     Manages an interactive LLM generation session within the editor.
     """
 
-    def __init__(self, editor, start_index, is_completion=False, is_rephrase=False, completion_phrase="", on_discard_callback=None):
+    def __init__(self, editor, start_index, is_completion=False, is_rephrase=False, is_styling=False, completion_phrase="", on_discard_callback=None, selection_indices=None):
         self.session_id = uuid.uuid4()
         debug_console.log(f"Creating new interactive LLM session: {self.session_id}", level='INFO')
         self.editor = editor
         self.is_completion = is_completion
         self.is_rephrase = is_rephrase
+        self.is_styling = is_styling
         self.completion_phrase = completion_phrase
         self.full_response_text = ""
         self.is_animating = False
         self.animation_dot_count = 0
         self.on_discard_callback = on_discard_callback
-        self.is_discarded = False # Flag to poison this instance if discarded
+        self.is_discarded = False
+
+        self.hidden_tag = None
+        if is_styling and selection_indices:
+            self.selection_start_index = selection_indices[0]
+            self.selection_end_index = selection_indices[1]
+            # Hide the original text instead of deleting it
+            self.hidden_tag = f"styling_hidden_{self.session_id}"
+            self.editor.tag_add(self.hidden_tag, self.selection_start_index, self.selection_end_index)
+            self.editor.tag_config(self.hidden_tag, elide=True)
+        else:
+            self.selection_start_index = None
+            self.selection_end_index = None
 
         self.block_start_index = editor.index(start_index)
         self.buttons_frame = self._create_ui_elements()
@@ -140,24 +153,44 @@ class InteractiveSession:
     def accept(self):
         if self.is_discarded or llm_state._is_generating: return
         debug_console.log(f"User ACCEPTED LLM suggestion for session {self.session_id}.", level='ACTION')
-        self.editor.tag_remove("llm_generated_text", self.text_start_index, self.text_end_index)
-        self.destroy(delete_text=False)
+        
+        if self.is_styling:
+            final_text = self.full_response_text
+            # The location where the original text was
+            insert_pos = self.editor.index(f"{self.hidden_tag}.first")
+            
+            # Delete the original, hidden text
+            self.editor.delete(f"{self.hidden_tag}.first", f"{self.hidden_tag}.last")
+            self.editor.tag_delete(self.hidden_tag)
+            
+            # Destroy the interactive UI and its temporary text
+            self.destroy(delete_text=True)
+            
+            # Insert the final styled text
+            self.editor.insert(insert_pos, final_text)
+        else:
+            # Default behavior
+            self.editor.tag_remove("llm_generated_text", self.text_start_index, self.text_end_index)
+            self.destroy(delete_text=False)
+
         self.editor.focus_set()
 
     def discard(self):
         if self.is_discarded: return
         debug_console.log(f"User DISCARDED LLM suggestion for session {self.session_id}.", level='ACTION')
-        self.is_discarded = True # Poison this instance.
+        self.is_discarded = True
 
-        # This is a global flag to signal cancellation to the running thread.
         llm_state._is_generation_cancelled = True
         debug_console.log("Cancellation flag set for ongoing generation.", level='INFO')
 
-        # Immediately stop and hide the progress bar from the main thread
         if llm_state._llm_progress_bar_widget and llm_state._llm_progress_bar_widget.winfo_exists():
             llm_state._llm_progress_bar_widget.stop()
             llm_state._llm_progress_bar_widget.pack_forget()
         
+        # If styling, unhide the original text
+        if self.is_styling and self.hidden_tag:
+            self.editor.tag_delete(self.hidden_tag)
+
         self.destroy(delete_text=True)
         
         if self.on_discard_callback:
@@ -249,14 +282,18 @@ class InteractiveSession:
         _current_session = None
         llm_state._is_generating = False
 
-def start_new_interactive_session(editor, is_completion=False, is_rephrase=False, completion_phrase="", on_discard_callback=None):
+def start_new_interactive_session(editor, is_completion=False, is_rephrase=False, is_styling=False, completion_phrase="", on_discard_callback=None, selection_indices=None):
     global _current_session
     if _current_session:
         _current_session.discard()
     
     llm_state._is_generating = True
     llm_state._is_generation_cancelled = False
-    start_index = editor.index(tk.INSERT)
+    
+    if is_styling and selection_indices:
+        start_index = editor.index(selection_indices[0])
+    else:
+        start_index = editor.index(tk.INSERT)
     
     # Add a separator to group the entire generation as a single undo action.
     editor.edit_separator()
@@ -265,8 +302,10 @@ def start_new_interactive_session(editor, is_completion=False, is_rephrase=False
         editor, start_index, 
         is_completion=is_completion, 
         is_rephrase=is_rephrase,
+        is_styling=is_styling,
         completion_phrase=completion_phrase, 
-        on_discard_callback=on_discard_callback
+        on_discard_callback=on_discard_callback,
+        selection_indices=selection_indices
     )
     
     return {
