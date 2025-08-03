@@ -100,39 +100,41 @@ class InteractiveSession:
     def accept(self):
         if self.is_discarded or llm_state._is_generating: return
         debug_console.log(f"User ACCEPTED LLM suggestion for session {self.session_id}.", level='ACTION')
-        if self.is_styling:
-            insert_pos = self.editor.index(f"{self.hidden_tag}.first")
-            self.editor.delete(f"{self.hidden_tag}.first", f"{self.hidden_tag}.last")
-            self.editor.tag_delete(self.hidden_tag)
-            self.destroy(delete_text=True)
-            self.editor.insert(insert_pos, self.full_response_text)
-        else:
-            self.editor.tag_remove("llm_generated_text", self.text_start_index, self.text_end_index)
-            self.destroy(delete_text=False)
-        self.editor.focus_set()
 
-    def discard(self):
-        """
-        Handles the immediate, synchronous cancellation of the current session.
-        This is the single source of truth for cancellation.
-        """
-        if self.is_discarded: return
-        debug_console.log(f"User DISCARDED LLM suggestion for session {self.session_id}. Forcing state reset.", level='ACTION')
-        self.is_discarded = True
-
-        # 1. Set cancellation flag for the background thread to see
-        llm_state._is_generation_cancelled = True
-        
-        # 2. Immediately reset the global generating state to unlock the UI
-        llm_state._is_generating = False
-
-        # 3. Immediately hide the progress bar
+        # --- FIX 1: Immediately stop progress bar ---
         progress_bar = llm_state._llm_progress_bar_widget
         if progress_bar and progress_bar.winfo_exists():
             progress_bar.stop()
             progress_bar.pack_forget()
 
-        # 4. Clean up UI and callbacks
+        if self.is_styling:
+            # --- FIX 2: Correct order of operations ---
+            # 1. Get insertion position
+            insert_pos = self.editor.index(f"{self.hidden_tag}.first")
+            # 2. Delete original text
+            self.editor.delete(f"{self.hidden_tag}.first", f"{self.hidden_tag}.last")
+            self.editor.tag_delete(self.hidden_tag)
+            # 3. Insert the final text at the correct position BEFORE destroying UI
+            self.editor.insert(insert_pos, self.full_response_text)
+            # 4. Now, destroy the temporary UI elements
+            self.destroy(delete_text=True)
+        else:
+            # Default behavior for completion/generation
+            self.editor.tag_remove("llm_generated_text", self.text_start_index, self.text_end_index)
+            self.destroy(delete_text=False)
+            
+        self.editor.focus_set()
+
+    def discard(self):
+        if self.is_discarded: return
+        debug_console.log(f"User DISCARDED LLM suggestion for session {self.session_id}. Forcing state reset.", level='ACTION')
+        self.is_discarded = True
+        llm_state._is_generation_cancelled = True
+        llm_state._is_generating = False
+        progress_bar = llm_state._llm_progress_bar_widget
+        if progress_bar and progress_bar.winfo_exists():
+            progress_bar.stop()
+            progress_bar.pack_forget()
         if self.is_styling and self.hidden_tag: self.editor.tag_delete(self.hidden_tag)
         self.destroy(delete_text=True)
         if self.on_discard_callback: self.on_discard_callback()
