@@ -25,6 +25,14 @@ class GlobalPromptsEditor(tk.Toplevel):
 
         self.prompts = self._load_prompts()
         self.text_widgets = {}
+        self.placeholders = {
+            "completion": "Placeholders: {previous_context}, {current_phrase_start}",
+            "generation": "Placeholders: {user_prompt}, {context}, {keywords}",
+            "generation_latex": "Placeholders: {user_prompt}, {context}, {keywords}",
+            "styling": "Placeholders: {text}, {intensity}",
+            "rephrase": "Placeholders: {text}, {instruction}",
+            "debug_latex_diff": "Placeholders: {log_content}, {added_lines}"
+        }
 
         self._setup_ui()
         self.protocol("WM_DELETE_WINDOW", self.destroy)
@@ -52,6 +60,11 @@ class GlobalPromptsEditor(tk.Toplevel):
         for key, value in self.prompts.items():
             tab = ttk.Frame(notebook, padding=10)
             notebook.add(tab, text=key.replace("_", " ").title())
+
+            # Add placeholder info label
+            placeholder_text = self.placeholders.get(key, "No specific placeholders for this prompt.")
+            placeholder_label = ttk.Label(tab, text=placeholder_text, font=("Segoe UI", 9), foreground="gray")
+            placeholder_label.pack(fill="x", pady=(0, 5), anchor="w")
 
             text_widget = tk.Text(tab, wrap="word", font=("Consolas", 10), undo=True)
             text_widget.pack(fill="both", expand=True)

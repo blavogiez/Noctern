@@ -38,11 +38,6 @@ def show_edit_prompts_dialog(root_window, theme_setting_getter_func,
     insert_bg = theme_setting_getter_func("editor_insert_bg", "#000000")
     prompts_window.configure(bg=dialog_bg);
 
-    # Warning and Placeholder Information.
-    warning_frame = ttk.Frame(prompts_window, padding=10)
-    warning_frame.pack(fill="x", pady=(5, 0))
-    ttk.Label(warning_frame, text="⚠️ Warning: Changes are saved per-document. Available Placeholders: {previous_context}, {current_phrase_start}, {user_prompt}, {keywords}, {context}", wraplength=850, justify="left").pack(fill="x")
-
     # Paned Window for side-by-side prompt editors.
     main_pane = tk.PanedWindow(prompts_window, orient=tk.HORIZONTAL, sashrelief=tk.FLAT, sashwidth=6)
     main_pane.configure(bg=theme_setting_getter_func("panedwindow_sash", "#d0d0d0"))
@@ -50,6 +45,12 @@ def show_edit_prompts_dialog(root_window, theme_setting_getter_func,
 
     # Store initial state to check for unsaved changes.
     saved_state = {"completion": current_prompts.get("completion", "").strip(), "generation": current_prompts.get("generation", "").strip(), "styling": current_prompts.get("styling", "").strip()}
+
+    placeholders = {
+        "completion": "Placeholders: {previous_context}, {current_phrase_start}",
+        "generation": "Placeholders: {user_prompt}, {context}, {keywords}",
+        "styling": "Placeholders: {text}, {intensity}"
+    }
 
     def create_prompt_pane(parent_widget, prompt_key, title_text):
         """
@@ -63,6 +64,11 @@ def show_edit_prompts_dialog(root_window, theme_setting_getter_func,
         labelframe = ttk.LabelFrame(pane_frame, text=label_display_text, padding=5)
         labelframe.pack(pady=5, padx=5, fill="both", expand=True)
         
+        # Add placeholder info label
+        placeholder_text = placeholders.get(prompt_key, "No specific placeholders.")
+        placeholder_label = ttk.Label(labelframe, text=placeholder_text, font=("Segoe UI", 9), foreground="gray")
+        placeholder_label.pack(fill="x", padx=5, pady=(0, 5), anchor="w")
+
         text_frame = ttk.Frame(labelframe)
         text_frame.pack(fill="both", expand=True)
         text_frame.grid_rowconfigure(0, weight=1)
