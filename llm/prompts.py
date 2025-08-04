@@ -78,7 +78,7 @@ def update_prompts(completion_template_text, generation_template_text, styling_t
             "styling": llm_state._styling_prompt_template
         }
         # Save the prompts to the file using the llm_prompt_manager.
-        llm_prompt_manager.save_prompts_to_file(prompts_to_save, active_filepath)
+        llm_prompt_manager.save_prompts_to_file(prompts_to_save, llm_state.get_global_default_prompts(), active_filepath)
         debug_console.log("Prompt templates saved successfully.", level='SUCCESS')
     else:
         debug_console.log("Cannot save prompt templates: No active file path available.", level='WARNING')

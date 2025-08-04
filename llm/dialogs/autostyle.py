@@ -35,6 +35,9 @@ class StyleIntensityDialog(simpledialog.Dialog):
         slider_frame = ttk.Frame(container)
         slider_frame.pack(fill='x', expand=True, pady=5)
 
+        # Define the label first to ensure it exists for the callback
+        self.value_label = ttk.Label(slider_frame, text=f"{self.intensity}", font=("Helvetica", 10, "bold"), width=2)
+
         self.slider = ttk.Scale(
             slider_frame,
             from_=1,
@@ -43,9 +46,8 @@ class StyleIntensityDialog(simpledialog.Dialog):
             command=self._on_slider_move
         )
         self.slider.set(self.intensity)
+        
         self.slider.pack(side=tk.LEFT, fill='x', expand=True, padx=(5, 10))
-
-        self.value_label = ttk.Label(slider_frame, text=f"{self.intensity}", font=("Helvetica", 10, "bold"), width=2)
         self.value_label.pack(side=tk.RIGHT)
 
         self.slider.focus_set()

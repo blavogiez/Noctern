@@ -4,12 +4,13 @@ This module contains the dialog for editing the global default LLM prompt templa
 
 import tkinter as tk
 from tkinter import ttk, messagebox
-import json
+import os
 from utils import debug_console
 from llm import init as llm_init
+from llm import state as llm_state
 
-# The path to the global prompts file
-DEFAULT_PROMPTS_FILE = "data/default_prompts.json"
+# The path to the global prompts directory
+PROMPTS_DIR = "data/prompts"
 
 def open_global_prompts_editor(root):
     """Opens the editor for global default prompts."""
@@ -23,7 +24,7 @@ class GlobalPromptsEditor(tk.Toplevel):
         self.transient(parent)
         self.grab_set()
 
-        self.prompts = self._load_prompts()
+        self.prompts_content = self._load_prompts()
         self.text_widgets = {}
         self.placeholders = {
             "completion": "Placeholders: {previous_context}, {current_phrase_start}",
@@ -39,15 +40,22 @@ class GlobalPromptsEditor(tk.Toplevel):
         self.wait_window(self)
 
     def _load_prompts(self):
-        """Loads prompts from the JSON file."""
-        try:
-            with open(DEFAULT_PROMPTS_FILE, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except (FileNotFoundError, json.JSONDecodeError) as e:
-            debug_console.log(f"Error loading global prompts: {e}", level='ERROR')
-            messagebox.showerror("Error", f"Could not load prompts file: {e}", parent=self)
-            # Provide a fallback structure
+        """Loads prompts from the .txt files in the prompts directory."""
+        loaded_prompts = {}
+        if not os.path.isdir(PROMPTS_DIR):
+            messagebox.showerror("Error", f"Prompts directory not found: {PROMPTS_DIR}", parent=self)
             return {}
+        
+        for filename in sorted(os.listdir(PROMPTS_DIR)):
+            if filename.endswith(".txt"):
+                prompt_name = os.path.splitext(filename)[0]
+                file_path = os.path.join(PROMPTS_DIR, filename)
+                try:
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        loaded_prompts[prompt_name] = f.read()
+                except Exception as e:
+                    messagebox.showerror("Error", f"Could not read prompt file: {filename}\n{e}", parent=self)
+        return loaded_prompts
 
     def _setup_ui(self):
         """Creates the UI components."""
@@ -57,11 +65,10 @@ class GlobalPromptsEditor(tk.Toplevel):
         notebook = ttk.Notebook(main_frame)
         notebook.pack(fill="both", expand=True, pady=5)
 
-        for key, value in self.prompts.items():
+        for key, value in self.prompts_content.items():
             tab = ttk.Frame(notebook, padding=10)
             notebook.add(tab, text=key.replace("_", " ").title())
 
-            # Add placeholder info label
             placeholder_text = self.placeholders.get(key, "No specific placeholders for this prompt.")
             placeholder_label = ttk.Label(tab, text=placeholder_text, font=("Segoe UI", 9), foreground="gray")
             placeholder_label.pack(fill="x", pady=(0, 5), anchor="w")
@@ -81,21 +88,21 @@ class GlobalPromptsEditor(tk.Toplevel):
         cancel_button.pack(side="right")
 
     def _save_prompts(self):
-        """Saves the prompts to the JSON file and reloads them."""
-        new_prompts = {}
+        """Saves the prompts to their respective .txt files and reloads them."""
         for key, widget in self.text_widgets.items():
-            new_prompts[key] = widget.get("1.0", "end-1c")
+            content = widget.get("1.0", "end-1c")
+            file_path = os.path.join(PROMPTS_DIR, f"{key}.txt")
+            try:
+                with open(file_path, 'w', encoding='utf-8') as f:
+                    f.write(content)
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to save prompt: {key}\n{e}", parent=self)
+                debug_console.log(f"Failed to save prompt {key}: {e}", level='ERROR')
+                return # Stop saving if one file fails
 
-        try:
-            with open(DEFAULT_PROMPTS_FILE, 'w', encoding='utf-8') as f:
-                json.dump(new_prompts, f, indent=4)
-            
-            # Reload the global prompts in the application state
-            llm_init._load_global_default_prompts()
-            
-            messagebox.showinfo("Success", "Global prompts have been saved and applied.", parent=self)
-            debug_console.log("Global prompts saved and reloaded.", level='SUCCESS')
-            self.destroy()
-        except Exception as e:
-            messagebox.showerror("Error", f"Failed to save prompts: {e}", parent=self)
-            debug_console.log(f"Failed to save global prompts: {e}", level='ERROR')
+        # Reload the global prompts in the application state
+        llm_init._load_global_default_prompts()
+        
+        messagebox.showinfo("Success", "Global prompts have been saved and applied.", parent=self)
+        debug_console.log("Global prompts saved and reloaded.", level='SUCCESS')
+        self.destroy()

@@ -1,0 +1,9 @@
+Complete only the current sentence fragment, without rephrasing the context or including tags/code. Maintain the same language. The beginning of the completion must strictly follow the beginning of the current phrase. Respond only with natural, fluid, and coherent text. Do not start a new idea or paragraph; stay in the logical continuation of the text.
+
+Context (up to 30 preceding lines):
+"{previous_context}"
+
+Beginning of the phrase to complete:
+"{current_phrase_start}"
+
+Expected completion (short and natural, no final punctuation if it's already started):

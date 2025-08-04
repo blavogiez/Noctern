@@ -28,7 +28,7 @@ last_style_intensity = 5 # Default intensity on a 1-10 scale
 # Holds the global default prompts loaded from the JSON file.
 _global_default_prompts = {}
 # File path for the default prompts configuration.
-DEFAULT_PROMPTS_FILE = "data/default_prompts.json"
+DEFAULT_PROMPTS_DIR = "data/prompts"
 
 # Per-document state (managed by llm.history and llm.prompts modules)
 # These are loaded/saved based on the active file.

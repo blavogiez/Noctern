@@ -7,31 +7,27 @@ associated with specific LaTeX document files, using JSON for storage.
 import json
 import os
 from utils import debug_console
+from llm.prompt_manager import get_document_cache_dir
 
 # Maximum number of prompt-response pairs to store in the history for each document.
 MAX_PROMPT_HISTORY_SIZE = 20
 
 def _get_prompt_history_filepath(tex_document_filepath):
     """
-    Generates the absolute file path for the prompt history JSON file.
-
-    The history file is named after the LaTeX document, with a '_prompt_history.json' suffix,
-    and is located in the same directory as the .tex file.
-
-    Args:
-        tex_document_filepath (str): The absolute path to the LaTeX document file.
-
-    Returns:
-        str or None: The absolute path to the history JSON file, or None if the
-                     `tex_document_filepath` is invalid or not provided.
+    Generates the absolute file path for the prompt history JSON file inside the doc's cache dir.
     """
     if not tex_document_filepath:
         debug_console.log("Cannot generate history filepath: No .tex document path provided.", level='DEBUG')
         return None
     
-    # Split the base name and extension, then append the history suffix.
-    base_name_without_ext, _ = os.path.splitext(tex_document_filepath)
-    history_file_path = f"{base_name_without_ext}_prompt_history.json"
+    cache_dir = get_document_cache_dir(tex_document_filepath)
+    if not cache_dir:
+        return None
+    
+    # Ensure the cache directory exists
+    os.makedirs(cache_dir, exist_ok=True)
+    
+    history_file_path = os.path.join(cache_dir, "prompt_history.json")
     debug_console.log(f"Generated prompt history filepath: {history_file_path}", level='DEBUG')
     return history_file_path
 

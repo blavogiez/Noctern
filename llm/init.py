@@ -12,33 +12,38 @@ from utils import debug_console
 
 def _load_global_default_prompts():
     """
-    Loads the default LLM prompt templates from a JSON file into the global application state.
-
-    These default prompts serve as a fallback if no custom prompts are defined for a specific document.
-    If the file cannot be loaded, a set of hardcoded fallback prompts is used.
+    Loads the default LLM prompt templates from the `data/prompts` directory.
     """
     import os
-    try:
-        # Construct the absolute path to the prompts file.
-        # This ensures that the file can be found regardless of the current working directory.
-        script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        prompts_file_path = os.path.join(script_dir, llm_state.DEFAULT_PROMPTS_FILE)
+    import tkinter.messagebox
+    
+    script_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    prompts_dir_path = os.path.join(script_dir, llm_state.DEFAULT_PROMPTS_DIR)
 
-        # Attempt to open and load the default prompts from the specified JSON file.
-        with open(prompts_file_path, 'r', encoding='utf-8') as file_handle:
-            llm_state._global_default_prompts = json.load(file_handle)
-            debug_console.log("Global default LLM prompts loaded successfully from file.", level='INFO')
+    if not os.path.exists(prompts_dir_path) or not os.path.isdir(prompts_dir_path):
+        error_msg = f"Critical error: Prompts directory not found at '{prompts_dir_path}'. Please restore the directory."
+        debug_console.log(error_msg, level='CRITICAL')
+        tkinter.messagebox.showerror("Critical Error", error_msg)
+        llm_state._global_default_prompts = {}
+        return
+
+    loaded_prompts = {}
+    try:
+        for filename in os.listdir(prompts_dir_path):
+            if filename.endswith(".txt"):
+                prompt_name = os.path.splitext(filename)[0]
+                file_path = os.path.join(prompts_dir_path, filename)
+                with open(file_path, 'r', encoding='utf-8') as file_handle:
+                    loaded_prompts[prompt_name] = file_handle.read()
+        
+        llm_state._global_default_prompts = loaded_prompts
+        debug_console.log(f"Global default LLM prompts loaded successfully from '{prompts_dir_path}'.", level='INFO')
+
     except Exception as e:
-        # If loading fails, log the error and use hardcoded fallback prompts.
-        debug_console.log(f"Failed to load global default LLM prompts from '{llm_state.DEFAULT_PROMPTS_FILE}': {e}. Using hardcoded fallback prompts.", level='ERROR')
-        llm_state._global_default_prompts = {
-            "completion": "Complete this: {current_phrase_start}",
-            "generation": "Generate text for this prompt: {user_prompt}",
-            "generation_latex": "You are a LaTeX expert. Generate only the raw LaTeX code for the following request. Do not add any explanation or markdown. Request: {user_prompt}",
-            "rephrase": "Rephrase the following text according to the user instruction, without changing the meaning, and respecting the original language and tone.\nText to rephrase:\n\"\"\"{text}\"\"\"\nUser instruction: {instruction}\nRespond only with the rephrased text, without explanation or markdown.",
-            "debug_latex_diff": "As a LaTeX expert, analyze the following code changes (in diff format) and the resulting compilation error log. Identify the most likely cause of the error and provide a concise explanation and a corrected code snippet.\n\n---\n\n[CODE CHANGES (DIFF)]:\n{diff_content}\n\n---\n\n[COMPILATION ERROR LOG]:\n{log_content}\n\n---\n\n[ANALYSIS]:\n",
-            "model_for_latex_generation": "codellama" # Default model for LaTeX-oriented generation.
-        }
+        error_msg = f"Critical error: Failed to load one or more prompts from '{prompts_dir_path}': {e}."
+        debug_console.log(error_msg, level='CRITICAL')
+        tkinter.messagebox.showerror("Critical Error", error_msg)
+        llm_state._global_default_prompts = {}
 
 
 def initialize_llm_service(root_window_ref, progress_bar_widget_ref,

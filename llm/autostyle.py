@@ -50,13 +50,13 @@ def autostyle_selection():
         return
 
     # 4. Check for ongoing generation and prepare prompt
-    if llm_state._is_generating:
+    if llm_state.is_generating():
         messagebox.showinfo("LLM Busy", "LLM is currently generating. Please wait.")
         return
 
-    prompt_template = llm_state._styling_prompt_template or llm_state._global_default_prompts.get("styling", "")
+    prompt_template = llm_state.get_styling_prompt()
     if not prompt_template:
-        messagebox.showerror("LLM Error", "Styling prompt template is not configured.")
+        messagebox.showerror("LLM Error", "Styling prompt template is not configured. Please check the global or document-specific prompt settings.")
         return
         
     full_prompt = prompt_template.format(text=selected_text, intensity=f"{intensity}/10")
