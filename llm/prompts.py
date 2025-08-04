@@ -83,25 +83,18 @@ def update_prompts(completion_template_text, generation_template_text, styling_t
     else:
         debug_console.log("Cannot save prompt templates: No active file path available.", level='WARNING')
 
-def open_edit_prompts_dialog():
-    """
-    Opens a dialog window that allows the user to edit the LLM prompt templates.
-    """
+from llm.dialogs.prompts import show_edit_prompts_dialog
+from llm.dialogs.global_prompts import open_global_prompts_editor as open_global_prompts_editor_dialog
 
-    debug_console.log("Opening 'Edit LLM Prompt Templates' dialog.", level='ACTION')
-    
-    # Pre-check for essential UI components to ensure the dialog can be displayed.
-    if not llm_state._root_window or not llm_state._theme_setting_getter_func:
-        messagebox.showerror("LLM Service Error", "UI components are not fully initialized for the prompts dialog. Please restart the application.")
-        debug_console.log("LLM Prompts dialog failed to open: Missing root window or theme getter.", level='ERROR')
-        return
+def open_global_prompts_editor(event=None):
+    """
+    Opens the dialog for users to edit the global default LLM prompt templates.
+    """
+    debug_console.log("Opening global LLM prompt templates editing dialog.", level='ACTION')
+    root = llm_state.get_root_window()
+    open_global_prompts_editor_dialog(root)
 
-    # Display the prompt editing dialog, passing necessary UI references, current prompts,
-    # default prompts, and the callback function for saving changes.
-    show_edit_prompts_dialog(
-        root_window=llm_state._root_window,
-        theme_setting_getter_func=llm_state._theme_setting_getter_func,
-        current_prompts=get_current_prompts(), # Pass the currently active prompts.
-        default_prompts=llm_state._global_default_prompts, # Pass the global default prompts.
-        on_save_callback=update_prompts # Callback for when the user saves changes in the dialog.
-    )
+def open_edit_prompts_dialog(event=None):
+    """
+    Opens the dialog for users to edit the LLM prompt templates for the current file.
+    """

@@ -10,6 +10,7 @@ from utils import screen
 from app import config as app_config
 from utils import debug_console
 from llm import api_client
+from llm import prompts as llm_prompts
 
 def open_settings_window(root):
     """
@@ -45,14 +46,42 @@ def open_settings_window(root):
         "model_completion": "Completion:",
         "model_generation": "Generation:",
         "model_rephrase": "Rephrase:",
-        "model_debug": "Debug:"
+        "model_debug": "Debug:",
+        "model_style": "Style:"
     }
+
+    def set_all_models_to(model_name):
+        """Helper function to set all model variables to a specific model."""
+        for key in model_vars:
+            model_vars[key].set(model_name)
+        debug_console.log(f"All models set to '{model_name}' in the UI.", level='INFO')
 
     for i, (key, label) in enumerate(model_labels.items()):
         ttk.Label(model_frame, text=label).grid(row=i, column=0, sticky="w", padx=5, pady=5)
-        model_vars[key] = tk.StringVar(value=current_config.get(key, "default"))
+        
+        current_value = current_config.get(key, "default")
+        model_vars[key] = tk.StringVar(value=current_value)
+        
         combo = ttk.Combobox(model_frame, textvariable=model_vars[key], values=available_models, state="readonly")
         combo.grid(row=i, column=1, sticky="ew", padx=5, pady=5)
+        
+        # Button to set all models to the value of this combobox
+        set_all_button = ttk.Button(
+            model_frame, 
+            text="Set for All", 
+            command=lambda m=model_vars[key]: set_all_models_to(m.get())
+        )
+        set_all_button.grid(row=i, column=2, padx=5, pady=5)
+
+    # Add a button to open the global prompts editor
+    global_prompts_button = ttk.Button(
+        model_frame, 
+        text="Manage Global Prompts...", 
+        command=llm_prompts.open_global_prompts_editor
+    )
+    global_prompts_button.grid(row=len(model_labels), column=0, columnspan=3, pady=10)
+
+    model_frame.columnconfigure(1, weight=1)
 
     # --- Monitor Settings ---
     monitor_frame = ttk.LabelFrame(main_frame, text="Display Settings", padding=10)

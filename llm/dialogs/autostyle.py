@@ -15,31 +15,47 @@ class StyleIntensityDialog(simpledialog.Dialog):
         super().__init__(parent, title)
 
     def body(self, master):
-        """Creates the dialog body with a slider and a value label."""
-        container = ttk.Frame(master)
+        """Creates the dialog body with a slider, labels, and improved layout."""
+        container = ttk.Frame(master, padding=10)
+        container.pack(fill='both', expand=True)
+
+        # --- Title and Description ---
+        title_label = ttk.Label(container, text="Style Intensity", font=("Helvetica", 12, "bold"))
+        title_label.pack(pady=(0, 5))
         
-        self.value_label = ttk.Label(container, text=f"Intensity: {self.intensity}/10", font=("Helvetica", 10))
-        self.value_label.pack(pady=(5, 0))
+        description_label = ttk.Label(
+            container, 
+            text="Choose the intensity of the styling. A low value means minor changes, while a high value allows for significant reformatting.",
+            wraplength=300, 
+            justify=tk.LEFT
+        )
+        description_label.pack(pady=(0, 15))
+
+        # --- Slider and Value Display ---
+        slider_frame = ttk.Frame(container)
+        slider_frame.pack(fill='x', expand=True, pady=5)
 
         self.slider = ttk.Scale(
-            container,
+            slider_frame,
             from_=1,
             to=10,
             orient=tk.HORIZONTAL,
             command=self._on_slider_move
         )
         self.slider.set(self.intensity)
-        # Allow the slider to be focused to receive keyboard events
+        self.slider.pack(side=tk.LEFT, fill='x', expand=True, padx=(5, 10))
+
+        self.value_label = ttk.Label(slider_frame, text=f"{self.intensity}", font=("Helvetica", 10, "bold"), width=2)
+        self.value_label.pack(side=tk.RIGHT)
+
         self.slider.focus_set()
-        self.slider.pack(pady=10, padx=10, fill='x', expand=True)
         
-        container.pack(padx=20, pady=10)
         return self.slider # Set initial focus
 
     def _on_slider_move(self, value):
         """Updates the label as the slider moves."""
         self.intensity = int(float(value))
-        self.value_label.config(text=f"Intensity: {self.intensity}/10")
+        self.value_label.config(text=f"{self.intensity}")
 
     def apply(self):
         """

@@ -72,6 +72,7 @@ def initialize_llm_service(root_window_ref, progress_bar_widget_ref,
     llm_state.model_generation = app_config.get("model_generation", "default")
     llm_state.model_rephrase = app_config.get("model_rephrase", "default")
     llm_state.model_debug = app_config.get("model_debug", "default")
+    llm_state.model_style = app_config.get("model_style", "default")
     debug_console.log(f"LLM models loaded: completion='{llm_state.model_completion}', generation='{llm_state.model_generation}', etc.", level='INFO')
 
     # Load global default prompts from the configuration file.

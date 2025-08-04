@@ -21,7 +21,8 @@ DEFAULT_VALUES = {
     "model_completion": "default",
     "model_generation": "default",
     "model_rephrase": "default",
-    "model_debug": "default"
+    "model_debug": "default",
+    "model_style": "default"
 }
 
 def load_config():
