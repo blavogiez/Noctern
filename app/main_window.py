@@ -8,6 +8,7 @@ UI events to their corresponding handlers in the `actions` module.
 import ttkbootstrap as ttk
 
 from app import state, actions, config as app_config, theme as interface_theme
+from app.zoom import ZoomManager
 from app.topbar import create_top_buttons_frame
 from app.panes import create_main_paned_window, create_outline_tree, create_notebook, create_console_pane
 from app.status import create_status_bar, start_gpu_status_loop
@@ -59,6 +60,8 @@ def setup_gui():
     Initializes and sets up the main graphical user interface (GUI).
     """
     state._app_config = app_config.load_config()
+    state.zoom_manager = ZoomManager(state)
+
 
     # Create the window with a default theme first.
     state.root = ttk.Window(themename="litera")

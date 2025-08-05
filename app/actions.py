@@ -15,7 +15,6 @@ from tkinter import TclError
 from ttkbootstrap.dialogs import Messagebox
 
 from app import state
-from app import zoom as interface_zoom
 from app import statusbar as interface_statusbar
 from app import file_operations as interface_fileops
 from app import tab_operations as interface_tabops
@@ -104,14 +103,14 @@ def zoom_in(_=None):
     Increases the font size of the active editor tab.
     """
     debug_console.log("Zoom In action triggered.", level='ACTION')
-    interface_zoom.zoom_in(state.get_current_tab, perform_heavy_updates, state.min_font_size, state.max_font_size, state.zoom_factor)
+    state.zoom_manager.zoom_in()
 
 def zoom_out(_=None):
     """
     Decreases the font size of the active editor tab.
     """
     debug_console.log("Zoom Out action triggered.", level='ACTION')
-    interface_zoom.zoom_out(state.get_current_tab, perform_heavy_updates, state.min_font_size, state.max_font_size, state.zoom_factor)
+    state.zoom_manager.zoom_out()
 
 def show_console(content):
     """
