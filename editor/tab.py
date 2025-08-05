@@ -5,6 +5,7 @@ adjacent to a `tk.Text` widget, while `EditorTab` encapsulates a single editable
 document tab within the application's notebook.
 """
 
+import re
 import tkinter as tk
 from tkinter import ttk
 from tkinter.font import Font
