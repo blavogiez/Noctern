@@ -219,6 +219,15 @@ def apply_syntax_highlighting(editor):
             label.destroy()
         current_tab.error_labels.clear()
 
+    # Get the current font from the editor to ensure zoom is respected
+    current_font = current_tab.editor_font
+    
+    # Configure tags based on the current font to ensure zoom is respected
+    editor.tag_configure("latex_command", font=(current_font.cget("family"), current_font.cget("size"), "bold"))
+    editor.tag_configure("latex_brace", font=(current_font.cget("family"), current_font.cget("size")))
+    editor.tag_configure("latex_comment", font=(current_font.cget("family"), current_font.cget("size")))
+    editor.tag_configure("image_error", font=(current_font.cget("family"), current_font.cget("size")))
+
     # Remove all existing syntax highlighting tags to ensure a clean re-application.
     editor.tag_remove("latex_command", "1.0", tk.END)
     editor.tag_remove("latex_brace", "1.0", tk.END)
