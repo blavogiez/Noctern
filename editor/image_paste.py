@@ -3,7 +3,7 @@ from tkinter import ttk, messagebox
 import os
 import re
 from PIL import ImageGrab, Image
-from editor import logic as editor_logic
+from editor import structure as editor_structure
 from utils import debug_console
 
 class ImageDetailsDialog(tk.Toplevel):
@@ -119,7 +119,7 @@ def paste_image_from_clipboard(root, get_current_tab, get_theme_setting):
         document_content = editor.get("1.0", tk.END)
         char_index = editor.count("1.0", editor.index(tk.INSERT))[0]
         
-        section, subsection, subsubsection = editor_logic.extract_section_structure(document_content, char_index)
+        section, subsection, subsubsection = editor_structure.extract_section_structure(document_content, char_index)
         debug_console.log(f"Document structure for image: Section='{section}', Subsection='{subsection}', Subsubsection='{subsubsection}'.", level='DEBUG')
 
         def sanitize_for_path(text):

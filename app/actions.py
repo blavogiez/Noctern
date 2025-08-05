@@ -24,7 +24,9 @@ from app import config as app_config
 from editor.tab import EditorTab
 from llm import service as llm_service
 from llm import autostyle as llm_autostyle
-from editor import logic as editor_logic
+from editor import outline as editor_outline
+from editor import syntax as editor_syntax
+from editor import image_manager as editor_image_manager
 from latex import compiler as latex_compiler
 from editor import wordcount as editor_wordcount
 from utils import debug_console, animations
@@ -55,8 +57,8 @@ def perform_heavy_updates():
     tab_name = os.path.basename(current_tab.file_path) if current_tab.file_path else "Untitled"
     debug_console.log(f"Initiating heavy updates for tab: '{tab_name}'.", level='INFO')
     
-    editor_logic.apply_syntax_highlighting(current_tab.editor)
-    editor_logic.update_outline_tree(current_tab.editor)
+    editor_syntax.apply_syntax_highlighting(current_tab.editor)
+    editor_outline.update_outline_tree(current_tab.editor)
 
     if not state._temporary_status_active:
         editor_wordcount.update_word_count(current_tab.editor, state.status_label)
@@ -295,7 +297,7 @@ def save_file(event=None):
     """
     current_tab = state.get_current_tab()
     if current_tab:
-        editor_logic.check_for_deleted_images(current_tab)
+        editor_image_manager.check_for_deleted_images(current_tab)
     return interface_fileops.save_file(state.get_current_tab, show_temporary_status_message, save_file_as)
 
 def save_file_as(event=None):
@@ -304,7 +306,7 @@ def save_file_as(event=None):
     """
     current_tab = state.get_current_tab()
     if current_tab:
-        editor_logic.check_for_deleted_images(current_tab)
+        editor_image_manager.check_for_deleted_images(current_tab)
     return interface_fileops.save_file_as(state.get_current_tab, show_temporary_status_message, on_tab_changed)
 
 def on_tab_changed(event=None):

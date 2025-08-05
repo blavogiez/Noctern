@@ -8,7 +8,7 @@ import platform
 import ctypes
 
 from app import main_window, state, actions
-from editor import logic as editor_logic
+from editor import outline as editor_outline
 from latex import compiler as latex_compiler
 from latex import translator as latex_translator
 from llm import service as llm_service
@@ -47,7 +47,7 @@ def main():
     # access the application state. This decouples the subsystems from direct
     # UI implementation details, making them more modular.
 
-    editor_logic.initialize_editor_logic(state.outline_tree)
+    editor_outline.initialize_editor_logic(state.outline_tree)
     
     latex_compiler.initialize_compiler(
         root_window, 

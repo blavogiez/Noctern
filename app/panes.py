@@ -39,8 +39,8 @@ def create_outline_tree(parent, get_current_tab_callback):
 
     def on_tree_select(event):
         """Callback to handle selection changes in the outline tree."""
-        from editor import logic as editor_logic
-        editor_logic.go_to_section(get_current_tab_callback, event)
+        from editor import outline as editor_outline
+        editor_outline.go_to_section(get_current_tab_callback, event)
 
 
     outline_tree.bind("<<TreeviewSelect>>", on_tree_select)
