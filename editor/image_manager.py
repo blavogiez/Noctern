@@ -5,6 +5,7 @@ from utils import debug_console
 import threading
 import time
 import hashlib
+import glob
 
 # --- Intelligent Image Deletion Logic ---
 
@@ -54,6 +55,43 @@ def _get_content_hash(content):
     if not content:
         return ""
     return hashlib.md5(content.encode('utf-8', errors='ignore')).hexdigest()
+
+def _find_orphaned_images(tex_file_path, current_images):
+    """
+    AJOUT SIMPLE : Trouve les images orphelines en comparant les fichiers existants 
+    dans figures/ avec les références actuelles
+    """
+    if not tex_file_path:
+        return set()
+    
+    base_dir = os.path.dirname(tex_file_path)
+    figures_dir = os.path.join(base_dir, 'figures')
+    
+    if not os.path.exists(figures_dir):
+        return set()
+    
+    # Extensions d'images courantes
+    extensions = ['*.png', '*.jpg', '*.jpeg', '*.pdf', '*.eps', '*.svg']
+    existing_files = set()
+    
+    try:
+        for ext in extensions:
+            pattern = os.path.join(figures_dir, '**', ext)
+            for file_path in glob.glob(pattern, recursive=True):
+                # Convertir en chemin relatif depuis le répertoire du .tex
+                rel_path = os.path.relpath(file_path, base_dir)
+                rel_path = rel_path.replace(os.sep, '/')  # Format LaTeX
+                existing_files.add(rel_path)
+        
+        # Retourner les fichiers qui existent mais ne sont plus référencés
+        orphaned = existing_files - current_images
+        if orphaned:
+            debug_console.log(f"Found {len(orphaned)} orphaned images: {orphaned}", level='INFO')
+        return orphaned
+        
+    except Exception as e:
+        debug_console.log(f"Error finding orphaned images: {e}", level='ERROR')
+        return set()
 
 def _resolve_image_path(tex_file_path, image_path_in_tex):
     """
@@ -383,6 +421,7 @@ def shutdown_image_monitoring():
 def check_for_deleted_images(current_tab):
     """
     Legacy function - now just ensures monitoring is active
+    AJOUT SIMPLE : Vérifie aussi les images orphelines au premier appel
     
     Args:
         current_tab (EditorTab): The current active editor tab containing the document.
@@ -400,6 +439,22 @@ def check_for_deleted_images(current_tab):
             start_image_monitoring(current_tab)
         else:
             debug_console.log("Tab already being monitored - real-time detection active", level='DEBUG')
+        
+        # AJOUT SIMPLE : Vérifier les orphelins une seule fois par fichier
+        if hasattr(current_tab, 'file_path') and current_tab.file_path:
+            # Utiliser un attribut du tab pour éviter de refaire la vérification
+            if not hasattr(current_tab, '_orphan_check_done'):
+                current_tab._orphan_check_done = True
+                
+                content = current_tab.get_content()
+                if content is not None:
+                    current_images = _parse_for_images(content)
+                    orphaned = _find_orphaned_images(current_tab.file_path, current_images)
+                    
+                    for orphan_path in orphaned:
+                        absolute_path = _resolve_image_path(current_tab.file_path, orphan_path)
+                        if os.path.exists(absolute_path):
+                            _prompt_for_image_deletion(absolute_path, current_tab.file_path)
             
     except Exception as e:
         debug_console.log(f"Error in check_for_deleted_images: {e}", level='ERROR')
