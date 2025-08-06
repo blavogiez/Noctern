@@ -324,7 +324,7 @@ class EditorTab(ttk.Frame):
                 if os.path.exists(absolute_image_path):
                     self._hover_path = absolute_image_path
                     # Schedule the preview to appear after 1 second
-                    self._hover_timer_id = self.after(1000, self._show_image_preview, event.x_root, event.y_root)
+                    self._hover_timer_id = self.after(200, self._show_image_preview, event.x_root, event.y_root)
 
     def _on_mouse_leave(self, event):
         if self._hover_timer_id:

@@ -28,7 +28,7 @@ class ImagePreview(tk.Toplevel):
             image = Image.open(image_path)
             
             # Define max size for the preview
-            max_size = (200, 200)
+            max_size = (300, 300)
             image.thumbnail(max_size, Image.Resampling.LANCZOS)
             
             # Convert to a PhotoImage that tkinter can use
