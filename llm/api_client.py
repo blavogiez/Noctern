@@ -8,6 +8,7 @@ import json
 import requests
 from utils import debug_console
 from llm import state as llm_state
+from metrics.manager import record_usage
 
 # Configuration for the LLM API endpoint.
 LLM_API_URL = "http://localhost:11434/api/generate" # Default URL for the LLM API.
@@ -58,8 +59,13 @@ def request_llm_generation(prompt_text, model_name=DEFAULT_LLM_MODEL, stream=Tru
         response.raise_for_status()
 
         if not stream:
-            # Non-streaming logic remains the same
+            # Non-streaming logic
             json_data = response.json()
+            # Record usage
+            input_tokens = json_data.get("prompt_eval_count", 0)
+            output_tokens = json_data.get("eval_count", 0)
+            record_usage(input_tokens, output_tokens)
+            
             yield {"success": True, "data": json_data.get("response", ""), "done": True}
             return
 
@@ -88,6 +94,11 @@ def request_llm_generation(prompt_text, model_name=DEFAULT_LLM_MODEL, stream=Tru
                         
                         if json_data.get("done"):
                             debug_console.log("LLM stream finished successfully.", level='SUCCESS')
+                            # Record usage
+                            input_tokens = json_data.get("prompt_eval_count", 0)
+                            output_tokens = json_data.get("eval_count", 0)
+                            record_usage(input_tokens, output_tokens)
+                            
                             yield {"success": True, "data": full_generated_content, "done": True}
                             return
                     except json.JSONDecodeError:

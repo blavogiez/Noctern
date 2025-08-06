@@ -14,6 +14,7 @@ from llm import rephrase as llm_rephrase
 from editor import snippets as editor_snippets
 from app import settings_window
 from utils.animations import move_widget
+from metrics import dialog as metrics_dialog
 
 def _log_action(action_name):
     """Helper function to log user actions triggered from the UI elements."""
@@ -130,6 +131,8 @@ def create_top_buttons_frame(root):
     tools_menu.add_command(label="Paste Image from Clipboard (Ctrl+Shift+V)", command=lambda: [_log_action("Tools: Paste Image"), interface.paste_image()])
     tools_menu.add_separator()
     tools_menu.add_command(label="Clean Project Directory", command=lambda: [_log_action("Tools: Clean Project"), latex_compiler.clean_project_directory()])
+    tools_menu.add_separator()
+    tools_menu.add_command(label="AI Usage Metrics...", command=lambda: [_log_action("Tools: AI Usage Metrics"), metrics_dialog.open_metrics_dialog(root)])
 
     settings_menu.add_command(label="Preferences...", command=lambda: [_log_action("Settings: Open Preferences"), settings_window.open_settings_window(root)])
     settings_menu.add_separator()
