@@ -22,7 +22,8 @@ DEFAULT_VALUES = {
     "model_generation": "default",
     "model_rephrase": "default",
     "model_debug": "default",
-    "model_style": "default"
+    "model_style": "default",
+    "gemini_api_key": ""
 }
 
 def load_config():
@@ -70,17 +71,24 @@ def load_config():
 def save_config(settings_dict):
     """
     Saves the given settings dictionary to settings.conf.
+    The API key is not logged for security.
     
     Args:
         settings_dict (dict): A dictionary of settings to save.
     """
     config = configparser.ConfigParser()
+    
+    # Create a copy for logging to avoid modifying the original dict
+    log_dict = dict(settings_dict)
+    if "gemini_api_key" in log_dict and log_dict["gemini_api_key"]:
+        log_dict["gemini_api_key"] = "****" # Mask the key for logging
+        
     config[DEFAULT_SECTION] = settings_dict
     
     try:
         with open(CONFIG_FILE, "w") as configfile:
             config.write(configfile)
-        debug_console.log(f"Configuration saved to {CONFIG_FILE}", level='INFO')
+        debug_console.log(f"Configuration saved to {CONFIG_FILE}: {log_dict}", level='INFO')
     except IOError as e:
         debug_console.log(f"Error saving config file: {e}", level='ERROR')
 

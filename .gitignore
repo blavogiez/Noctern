@@ -9,6 +9,7 @@
 
 # Ignore le fichier de configuration des paramètres
 settings.conf
+*.conf
 
 # =============================================================================
 # Caches et fichiers compilés Python

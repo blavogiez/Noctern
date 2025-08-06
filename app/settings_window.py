@@ -42,6 +42,7 @@ def open_settings_window(root):
         available_models = list(set(current_config.get(key) for key in current_config if key.startswith("model_")))
 
     model_vars = {}
+    model_comboboxes = {} # To store combobox widgets for later update
     model_labels = {
         "model_completion": "Completion:",
         "model_generation": "Generation:",
@@ -64,6 +65,7 @@ def open_settings_window(root):
         
         combo = ttk.Combobox(model_frame, textvariable=model_vars[key], values=available_models, state="readonly")
         combo.grid(row=i, column=1, sticky="ew", padx=5, pady=5)
+        model_comboboxes[key] = combo # Store the widget
         
         # Button to set all models to the value of this combobox
         set_all_button = ttk.Button(
@@ -82,6 +84,45 @@ def open_settings_window(root):
     global_prompts_button.grid(row=len(model_labels), column=0, columnspan=3, pady=10)
 
     model_frame.columnconfigure(1, weight=1)
+
+    # --- API Keys ---
+    api_frame = ttk.LabelFrame(main_frame, text="API Keys", padding=10)
+    api_frame.pack(fill="x", expand=True, pady=10)
+
+    ttk.Label(api_frame, text="Google Gemini API Key:").grid(row=0, column=0, sticky="w", padx=5, pady=5)
+    gemini_api_key_var = tk.StringVar(value=current_config.get("gemini_api_key", ""))
+    gemini_api_key_entry = ttk.Entry(api_frame, textvariable=gemini_api_key_var)
+    gemini_api_key_entry.grid(row=0, column=1, sticky="ew", padx=5, pady=5)
+    
+    api_frame.columnconfigure(1, weight=1)
+
+    def refresh_models_command():
+        """Saves the API key and refreshes the model list in the UI."""
+        # 1. Save the current API key to the config file so the client can see it
+        temp_config = app_config.load_config()
+        temp_config["gemini_api_key"] = gemini_api_key_var.get()
+        app_config.save_config(temp_config)
+
+        # 2. Fetch the new, updated list of models
+        new_models = api_client.get_available_models()
+        debug_console.log(f"Model list refreshed. Found: {new_models}", level='INFO')
+
+        # 3. Update all model comboboxes with the new list
+        for key, combo in model_comboboxes.items():
+            current_selection = combo.get()
+            combo['values'] = new_models
+            if current_selection in new_models:
+                combo.set(current_selection)
+            elif new_models:
+                combo.set(new_models[0])
+            else:
+                combo.set('')
+        
+        from tkinter import messagebox
+        messagebox.showinfo("Models Refreshed", f"Found {len(new_models)} available models.", parent=settings_win)
+
+    refresh_button = ttk.Button(api_frame, text="Verify and Refresh Models", command=refresh_models_command)
+    refresh_button.grid(row=0, column=2, padx=5, pady=5)
 
     # --- Monitor Settings ---
     monitor_frame = ttk.LabelFrame(main_frame, text="Display Settings", padding=10)
@@ -126,6 +167,7 @@ def open_settings_window(root):
         updated_config["app_monitor"] = app_monitor_var.get()
         updated_config["pdf_monitor"] = pdf_monitor_var.get()
         updated_config["window_state"] = window_state_var.get()
+        updated_config["gemini_api_key"] = gemini_api_key_var.get()
         for key, var in model_vars.items():
             updated_config[key] = var.get()
         
