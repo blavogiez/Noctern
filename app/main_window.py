@@ -10,10 +10,11 @@ import ttkbootstrap as ttk
 from app import state, actions, config as app_config, theme as interface_theme
 from app.zoom import ZoomManager
 from app.topbar import create_top_buttons_frame
-from app.panes import create_main_paned_window, create_outline_tree, create_notebook, create_console_pane
+from app.panes import create_main_paned_window, create_left_pane, create_outline_tree, create_error_panel, create_notebook, create_console_pane
 from app.status import create_status_bar, start_gpu_status_loop
 from app.shortcuts import bind_shortcuts
 from utils import debug_console, screen as screen_utils
+from pre_compiler.checker import Checker
 
 def _apply_startup_window_settings(window, config):
     """Applies window geometry and state from config at startup."""
@@ -61,6 +62,7 @@ def setup_gui():
     """
     state._app_config = app_config.load_config()
     state.zoom_manager = ZoomManager(state)
+    state.checker = Checker()
 
 
     # Create the window with a default theme first.
@@ -95,7 +97,11 @@ def setup_gui():
 
     state.main_pane = create_main_paned_window(state.vertical_pane)
     
-    state.outline_tree = create_outline_tree(state.main_pane, state.get_current_tab)
+    left_pane = create_left_pane(state.main_pane)
+    
+    state.outline_tree = create_outline_tree(left_pane, state.get_current_tab)
+    
+    state.error_panel = create_error_panel(left_pane)
     
     state.notebook = create_notebook(state.main_pane)
     
@@ -106,7 +112,29 @@ def setup_gui():
     state.vertical_pane.add(state.console_pane)
     actions.hide_console()
 
-    state.notebook.bind("<<NotebookTabChanged>>", actions.on_tab_changed)
+    def check_document(event=None):
+        current_tab = state.get_current_tab()
+        if current_tab:
+            content = current_tab.editor.get("1.0", "end-1c")
+            errors = state.checker.check(content)
+            state.error_panel.update_errors(errors)
+
+    def on_text_modified(event):
+        check_document()
+        # We need to call the original handler too
+        state.get_current_tab().editor.edit_modified(False)
+        return None
+
+    def on_tab_changed(event):
+        actions.on_tab_changed(event)
+        current_tab = state.get_current_tab()
+        if current_tab:
+            # Re-bind the modified event to the new tab's editor
+            current_tab.editor.bind("<<Modified>>", on_text_modified)
+            check_document()
+
+
+    state.notebook.bind("<<NotebookTabChanged>>", on_tab_changed)
     state.llm_progress_bar = ttk.Progressbar(state.root, mode="indeterminate", length=200)
     
     state.status_bar_frame, state.status_label, state.gpu_status_label = create_status_bar(state.root)

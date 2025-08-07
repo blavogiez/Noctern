@@ -7,6 +7,8 @@ outline, the outline tree view, the editor notebook, and the console pane.
 import ttkbootstrap as ttk
 from tkinter.font import Font
 from app.custom_notebook import ClosableNotebook
+from pre_compiler.error_panel import ErrorPanel
+
 
 def create_main_paned_window(parent):
     """
@@ -22,6 +24,14 @@ def create_main_paned_window(parent):
     main_pane = ttk.PanedWindow(parent, orient=ttk.HORIZONTAL)
     main_pane.pack(fill="both", expand=True)
     return main_pane
+
+def create_left_pane(parent):
+    """
+    Creates the left pane, containing the outline tree and the error panel.
+    """
+    left_pane = ttk.PanedWindow(parent, orient=ttk.VERTICAL)
+    parent.add(left_pane, weight=1)
+    return left_pane
 
 def create_outline_tree(parent, get_current_tab_callback):
     """
@@ -45,6 +55,14 @@ def create_outline_tree(parent, get_current_tab_callback):
 
     outline_tree.bind("<<TreeviewSelect>>", on_tree_select)
     return outline_tree
+
+def create_error_panel(parent):
+    """
+    Creates the error panel widget.
+    """
+    error_panel = ErrorPanel(parent)
+    parent.add(error_panel)
+    return error_panel
 
 def create_notebook(parent):
     """
