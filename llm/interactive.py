@@ -78,14 +78,26 @@ class InteractiveSession:
 
     def handle_chunk(self, chunk):
         if self.is_discarded: return
-        self.editor.insert(self.text_end_index, chunk, "llm_generated_text")
+        # For styling operations, we don't want to apply the llm_generated_text tag
+        # as it might interfere with the final styling
+        tag = "llm_generated_text" if not self.is_styling else ""
+        if tag:
+            self.editor.insert(self.text_end_index, chunk, tag)
+        else:
+            self.editor.insert(self.text_end_index, chunk)
         self.text_end_index = self.editor.index(f"{self.text_end_index} + {len(chunk)} chars")
         self.full_response_text += chunk
 
     def handle_success(self, final_cleaned_text):
         if self.is_discarded: return
         self.editor.delete(self.text_start_index, self.text_end_index)
-        self.editor.insert(self.text_start_index, final_cleaned_text, "llm_generated_text")
+        # For styling operations, we don't want to apply the llm_generated_text tag
+        # as it might interfere with the final styling
+        tag = "llm_generated_text" if not self.is_styling else ""
+        if tag:
+            self.editor.insert(self.text_start_index, final_cleaned_text, tag)
+        else:
+            self.editor.insert(self.text_start_index, final_cleaned_text)
         self.text_end_index = self.editor.index(f"{self.text_start_index} + {len(final_cleaned_text)} chars")
         self.full_response_text = final_cleaned_text
         if self.is_completion: self._post_process_completion()
@@ -116,7 +128,9 @@ class InteractiveSession:
             self.editor.tag_delete(self.hidden_tag)
             # 3. Insert the final text at the correct position BEFORE destroying UI
             self.editor.insert(insert_pos, self.full_response_text)
-            # 4. Now, destroy the temporary UI elements
+            # 4. Remove any styling tags that might have been applied to the inserted text
+            self.editor.tag_remove("llm_generated_text", insert_pos, f"{insert_pos} + {len(self.full_response_text)} chars")
+            # 5. Now, destroy the temporary UI elements
             self.destroy(delete_text=True)
         else:
             # Default behavior for completion/generation
