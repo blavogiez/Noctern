@@ -75,6 +75,8 @@ class EditorTab(ttk.Frame):
         
         self.editor.bind("<KeyRelease>", self.on_key_release)
         self.editor.bind("<Configure>", self.schedule_heavy_updates)
+        # Marquer le widget comme modifié lors des changements
+        self.editor.bind("<Key>", self._on_key_press)
 
         # Setup image preview functionality
         self.image_preview = ImagePreview(self, lambda: self.file_path)
@@ -90,6 +92,10 @@ class EditorTab(ttk.Frame):
     def schedule_heavy_updates(self, event=None):
         if self._schedule_heavy_updates_callback:
             self._schedule_heavy_updates_callback(event)
+
+    def _on_key_press(self, event=None):
+        """Marque le widget comme modifié lors des changements."""
+        self.editor.edit_modified(True)
 
     def get_content(self):
         return self.editor.get("1.0", tk.END)

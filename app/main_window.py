@@ -101,7 +101,13 @@ def setup_gui():
     state.console_pane = console_frame
     actions.hide_console()
 
+    # Variable to track the last update time
+    last_update_time = 0
+    update_pending = False
+
     def check_document_and_highlight(event=None):
+        nonlocal last_update_time, update_pending
+        
         current_tab = state.get_current_tab()
         if current_tab and current_tab.editor:
             editor_syntax.apply_syntax_highlighting(current_tab.editor)
@@ -112,25 +118,66 @@ def setup_gui():
             state.error_panel.update_errors(errors)
             # Force the update of the UI
             state.root.update_idletasks()
+            
+        # Reset the pending flag
+        update_pending = False
 
     def on_text_modified(event):
-        state.root.after_idle(check_document_and_highlight)
-        if state.get_current_tab():
-            state.get_current_tab().editor.edit_modified(False)
+        nonlocal last_update_time, update_pending
+        
+        # Log to debug
+        current_tab = state.get_current_tab()
+        if current_tab and current_tab.file_path:
+            debug_console.log(f"Text modified in tab: {os.path.basename(current_tab.file_path)}", level='DEBUG')
+        
+        # Check if the event is from the current tab
+        if not current_tab or event.widget != current_tab.editor:
+            return None
+            
+        # Set the modified flag to False to avoid infinite loop
+        current_tab.editor.edit_modified(False)
+        debug_console.log(f"Reset edit_modified flag for tab: {os.path.basename(current_tab.file_path) if current_tab.file_path else 'Untitled'}", level='DEBUG')
+        
+        # If an update is already pending, skip this one
+        if update_pending:
+            debug_console.log(f"Skipping update for tab: {os.path.basename(current_tab.file_path) if current_tab.file_path else 'Untitled'} - update already pending", level='DEBUG')
+            return None
+            
+        # Set the pending flag
+        update_pending = True
+        
+        # Schedule the update
+        state.root.after(100, check_document_and_highlight)
         return None
+
+    def bind_text_modified_event(tab):
+        """Bind the text modified event to a tab."""
+        if tab and tab.editor:
+            # Unbind any existing binding first to avoid duplicates
+            tab.editor.unbind("<<Modified>>")
+            tab.editor.bind("<<Modified>>", on_text_modified)
+            # Also bind KeyRelease to ensure we catch all changes
+            tab.editor.bind("<KeyRelease>", on_text_modified)
+            debug_console.log(f"Bound <<Modified>> and <KeyRelease> events to tab: {tab.file_path if tab.file_path else 'Untitled'}", level='DEBUG')
 
     def on_tab_changed(event):
         actions.on_tab_changed(event)
         current_tab = state.get_current_tab()
         if current_tab:
-            current_tab.editor.bind("<<Modified>>", on_text_modified)
-            check_document_and_highlight()
+            bind_text_modified_event(current_tab)
+            # Always check document when tab changes
+            state.root.after(50, check_document_and_highlight)
+            
+    # Also bind the text modified event to the initial tab
+    state.root.after(100, lambda: bind_text_modified_event(state.get_current_tab()))
 
     state.notebook.bind("<<NotebookTabChanged>>", on_tab_changed)
     
     bind_global_shortcuts(state.root)
     
     actions.load_session()
+    # Schedule an initial error check after loading session
+    state.root.after(200, check_document_and_highlight)
     state.root.protocol("WM_DELETE_WINDOW", actions.on_close_request)
     
     debug_console.log("GUI setup completed successfully.", level='SUCCESS')

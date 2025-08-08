@@ -31,7 +31,9 @@ class ErrorPanel(ttk.Frame):
         self.errors = errors
         self.listbox.delete(0, tk.END)
         for error in self.errors:
-            self.listbox.insert(tk.END, f"L{error['line']}: {error['error']}")
+            # Handle errors that might not have a line number
+            line_num = error.get('line', '?')
+            self.listbox.insert(tk.END, f"L{line_num}: {error['error']}")
         # Force the update of the listbox
         self.listbox.update_idletasks()
 

@@ -120,5 +120,6 @@ def create_new_tab(file_path, notebook_widget, open_tabs_dict, apply_theme_callb
     # Apply the current theme to the new tab's widgets to ensure visual consistency.
     apply_theme_callback() 
     # Trigger the tab changed callback to update UI elements dependent on the active tab.
-    on_tab_changed_callback()
+    # Add a small delay to ensure the tab is fully initialized before binding events
+    notebook_widget.after(50, on_tab_changed_callback)
     debug_console.log(f"Tab for '{tab_display_name}' created and loaded successfully.", level='SUCCESS')
