@@ -7,10 +7,23 @@ class ErrorPanel(ttk.Frame):
         self.on_goto_line = on_goto_line
         self.errors = []
 
-        self.title = ttk.Label(self, text="Pre-compilation Errors")
-        self.title.pack(side="top", fill="x", padx=5, pady=5)
+        # Create a frame for the title with tab-like styling
+        title_frame = ttk.Frame(self)
+        title_frame.pack(side="top", fill="x", padx=2, pady=(2, 2))
         
-        self.listbox = tk.Listbox(self)
+        self.title = ttk.Label(
+            title_frame, 
+            text="Pre-compilation Errors",
+            style="Title.TLabel",
+            anchor="w"  # Align left
+        )
+        self.title.pack(side="top", fill="x", ipady=3, padx=(6, 6))  # Adjusted padding to match tabs
+        
+        # Create a frame for the listbox to ensure proper layout
+        listbox_frame = ttk.Frame(self)
+        listbox_frame.pack(side="top", fill="both", expand=True, padx=2, pady=2)
+        
+        self.listbox = tk.Listbox(listbox_frame)
         self.listbox.pack(side="top", fill="both", expand=True)
         self.listbox.bind("<<ListboxSelect>>", self.on_error_select)
 
@@ -19,6 +32,8 @@ class ErrorPanel(ttk.Frame):
         self.listbox.delete(0, tk.END)
         for error in self.errors:
             self.listbox.insert(tk.END, f"L{error['line']}: {error['error']}")
+        # Force the update of the listbox
+        self.listbox.update_idletasks()
 
     def on_error_select(self, event):
         if not self.on_goto_line:

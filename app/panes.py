@@ -54,7 +54,7 @@ def create_error_panel(parent, on_goto_line=None):
     Creates the error panel widget.
     """
     error_panel = ErrorPanel(parent, on_goto_line=on_goto_line)
-    parent.add(error_panel)
+    parent.add(error_panel, weight=1)
     return error_panel
 
 def create_notebook(parent):

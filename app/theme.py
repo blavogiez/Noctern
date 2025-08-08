@@ -84,6 +84,15 @@ def apply_theme(theme_name, root_window, main_paned_window, open_tabs_dict, perf
     style.configure("TFrame", background=theme_settings["root_bg"])
     style.configure("TLabel", background=theme_settings["root_bg"], foreground=theme_settings["fg_color"])
     style.configure("TPanedwindow", background=theme_settings["panedwindow_sash"])
+    
+    # --- Title Box Configurations ---
+    style.configure(
+        "Title.TLabel",
+        background=theme_settings["notebook_tab_bg"],
+        foreground=theme_settings["fg_color"],
+        relief="solid",
+        borderwidth=1
+    )
 
     # --- Button Configurations ---
     style.configure("TButton", background=theme_settings["button_bg"], foreground=theme_settings["button_fg"], borderwidth=1, focusthickness=0)

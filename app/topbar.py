@@ -26,7 +26,7 @@ def create_top_buttons_frame(root):
     This version uses .place() for layout to allow for hover animations.
     """
     top_frame = ttk.Frame(root, height=45)
-    top_frame.pack(fill="x", padx=5, pady=(5,0))
+    top_frame.pack(fill="x", padx=5, pady=(5,10))  # Added more space below (10 instead of 0)
 
     # --- Animation Constants ---
     Y_POS = 5
@@ -69,11 +69,21 @@ def create_top_buttons_frame(root):
     create_animated_button("Save", lambda: [_log_action("Save File"), interface.save_file()], "primary-outline", "save.svg")
     create_animated_button("Save As", lambda: [_log_action("Save File As"), interface.save_file_as()], "primary-outline")
     
+    # Add some spacing between groups
+    spacer1 = ttk.Frame(top_frame, width=10)
+    spacer1.place(x=0, y=0)
+    buttons.append(spacer1)
+    
     # LaTeX Processing
     create_animated_button("Compile", lambda: [_log_action("Compile LaTeX"), latex_compiler.compile_latex()], "info-outline", "tool.svg")
     create_animated_button("View PDF", lambda: [_log_action("View PDF"), latex_compiler.view_pdf_external()], "info-outline", "file-text.svg")
     create_animated_button("Translate", lambda: [_log_action("Translate Text"), latex_translator.open_translate_dialog()], "info-outline", "globe.svg")
 
+    # Add some spacing between groups
+    spacer2 = ttk.Frame(top_frame, width=10)
+    spacer2.place(x=0, y=0)
+    buttons.append(spacer2)
+    
     # LLM Interaction
     create_animated_button("Complete", lambda: [_log_action("LLM Complete Text"), llm_service.request_llm_to_complete_text()], "success-outline", "complete.svg")
     create_animated_button("Generate", lambda: [_log_action("LLM Generate Text"), llm_service.open_generate_text_dialog()], "success-outline", "generate.svg")
@@ -81,10 +91,15 @@ def create_top_buttons_frame(root):
     # Place buttons dynamically
     current_x = 5
     for button in buttons:
-        button.place(x=current_x, y=Y_POS)
-        # Update current_x for the next button, adding width and padding
-        root.update_idletasks() # Ensures winfo_width() is accurate
-        current_x += button.winfo_width() + 5
+        # Skip spacers for width calculation but still place them
+        if isinstance(button, ttk.Frame) and button.winfo_width() == 10:
+            button.place(x=current_x, y=Y_POS)
+            current_x += 10  # Fixed width for spacer
+        else:
+            button.place(x=current_x, y=Y_POS)
+            # Update current_x for the next button, adding width and padding
+            root.update_idletasks() # Ensures winfo_width() is accurate
+            current_x += button.winfo_width() + 5
 
     # --- Menus (placed on the right) ---
     def create_animated_menubutton(text, bootstyle, icon_name=None):

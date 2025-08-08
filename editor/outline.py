@@ -8,8 +8,25 @@ class Outline:
     Displays sections with arrows and allows navigation.
     """
     def __init__(self, parent_frame, get_current_tab_callback):
+        # Create a frame to contain the title and treeview
+        self.frame = ttk.Frame(parent_frame)
+        self.frame.pack(fill="both", expand=True)
+        
+        # Create a frame for the title with tab-like styling
+        title_frame = ttk.Frame(self.frame)
+        title_frame.pack(side="top", fill="x", padx=2, pady=(2, 2))
+        
+        self.title = ttk.Label(
+            title_frame, 
+            text="Document outline",
+            style="Title.TLabel",
+            anchor="w"  # Align left
+        )
+        self.title.pack(side="top", fill="x", ipady=3, padx=(6, 6))  # Adjusted padding to match tabs
+        
         # Create Treeview without + and - symbols
-        self.tree = ttk.Treeview(parent_frame, show="tree", selectmode="browse")
+        self.tree = ttk.Treeview(self.frame, show="tree", selectmode="browse")
+        self.tree.pack(side="top", fill="both", expand=True)
         self.tree.configure(style="NoPlus.Treeview")
         
         # Callback to get current tab
@@ -26,8 +43,8 @@ class Outline:
         self.tree.bind("<Button-1>", self._on_single_click)
 
     def get_widget(self):
-        """Returns the Treeview widget."""
-        return self.tree
+        """Returns the frame containing the title and Treeview widget."""
+        return self.frame
 
     def _on_click_section(self, event):
         """Navigate to selected section in the editor."""

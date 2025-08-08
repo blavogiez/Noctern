@@ -110,6 +110,8 @@ def setup_gui():
             errors = state.checker.check(content, current_tab.file_path)
             errors.sort(key=lambda e: e.get('line', 0))
             state.error_panel.update_errors(errors)
+            # Force the update of the UI
+            state.root.update_idletasks()
 
     def on_text_modified(event):
         state.root.after_idle(check_document_and_highlight)
