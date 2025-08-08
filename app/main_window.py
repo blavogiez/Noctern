@@ -1,8 +1,6 @@
 """
 This module is responsible for setting up the main graphical user interface (GUI)
-of the AutomaTeX application. It constructs the main window, assembles the
-various UI components (like panes, toolbars, and status bars), and connects
-UI events to their corresponding handlers in the `actions` module.
+of the AutomaTeX application.
 """
 import os
 import ttkbootstrap as ttk
@@ -12,7 +10,7 @@ from app.zoom import ZoomManager
 from app.topbar import create_top_buttons_frame
 from app.panes import create_main_paned_window, create_left_pane, create_outline_tree, create_error_panel, create_notebook, create_console_pane
 from app.status import create_status_bar, start_gpu_status_loop
-from app.shortcuts import bind_shortcuts
+from app.shortcuts import bind_global_shortcuts
 from utils import debug_console, screen as screen_utils
 from pre_compiler.checker import Checker
 from editor import syntax as editor_syntax
@@ -54,7 +52,7 @@ def setup_gui():
     """
     state._app_config = app_config.load_config()
     state.zoom_manager = ZoomManager(state)
-    state.checker = Checker() # Checker no longer needs project_root
+    state.checker = Checker()
 
     state.root = ttk.Window(themename="litera")
     
@@ -66,7 +64,7 @@ def setup_gui():
     state.root.style.theme_use(saved_theme if saved_theme != "original" else "litera")
 
     state.root.title("AutomaTeX v1.0")
-    _apply_startup_window_settings(state.root, state._app_config)
+    _apply_startup_window_settings(state.root, state._app_config) # RESTORED THIS CALL
     debug_console.log("GUI initialization process started.", level='INFO')
 
     state._auto_open_pdf_var = ttk.BooleanVar(value=app_config.get_bool(state._app_config.get('auto_open_pdf', 'False')))
@@ -106,20 +104,16 @@ def setup_gui():
     def check_document_and_highlight(event=None):
         current_tab = state.get_current_tab()
         if current_tab and current_tab.editor:
-            # Perform syntax highlighting
             editor_syntax.apply_syntax_highlighting(current_tab.editor)
-            
-            # Get all errors from the checker, providing the file path
             content = current_tab.editor.get("1.0", "end-1c")
             errors = state.checker.check(content, current_tab.file_path)
             errors.sort(key=lambda e: e.get('line', 0))
-            
-            # Update the error panel
             state.error_panel.update_errors(errors)
 
     def on_text_modified(event):
         state.root.after_idle(check_document_and_highlight)
-        state.get_current_tab().editor.edit_modified(False)
+        if state.get_current_tab():
+            state.get_current_tab().editor.edit_modified(False)
         return None
 
     def on_tab_changed(event):
@@ -130,11 +124,9 @@ def setup_gui():
             check_document_and_highlight()
 
     state.notebook.bind("<<NotebookTabChanged>>", on_tab_changed)
-    state.llm_progress_bar = ttk.Progressbar(state.root, mode="indeterminate", length=200)
-    state.status_bar_frame, state.status_label, state.gpu_status_label = create_status_bar(state.root)
-    start_gpu_status_loop(state.gpu_status_label, state.root)
     
-    bind_shortcuts(state.root)
+    bind_global_shortcuts(state.root)
+    
     actions.load_session()
     state.root.protocol("WM_DELETE_WINDOW", actions.on_close_request)
     
