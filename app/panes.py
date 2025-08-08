@@ -56,11 +56,11 @@ def create_outline_tree(parent, get_current_tab_callback):
     outline_tree.bind("<<TreeviewSelect>>", on_tree_select)
     return outline_tree
 
-def create_error_panel(parent):
+def create_error_panel(parent, on_goto_line=None):
     """
     Creates the error panel widget.
     """
-    error_panel = ErrorPanel(parent)
+    error_panel = ErrorPanel(parent, on_goto_line=on_goto_line)
     parent.add(error_panel)
     return error_panel
 
@@ -99,4 +99,3 @@ def create_console_pane(parent):
     console_output.configure(font=console_font)
 
     return console_frame, console_output
-
