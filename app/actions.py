@@ -251,11 +251,20 @@ def on_close_request():
         
         if response == "Yes":
             all_saved = True
-            for tab in dirty_tabs:
-                state.notebook.select(tab)
-                if not save_file():
-                    all_saved = False
-                    break
+            # Create a copy of the tabs dictionary since we'll be modifying it during iteration
+            tabs_copy = dict(state.tabs)
+            for tab_id, tab in tabs_copy.items():
+                if tab.is_dirty():
+                    # Check if the tab still exists before trying to select it
+                    if tab_id in state.notebook.tabs():
+                        try:
+                            state.notebook.select(tab_id)
+                            if not save_file():
+                                all_saved = False
+                                break
+                        except TclError:
+                            # Tab might have been closed already, skip it
+                            continue
             if all_saved:
                 save_session()
                 state.root.destroy()
