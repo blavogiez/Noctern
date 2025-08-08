@@ -77,17 +77,59 @@ class EditorTab(ttk.Frame):
         self.editor.bind("<Configure>", self.schedule_heavy_updates)
 
         self.image_preview = ImagePreview(self)
+        self._hover_timer_id = None
+        self._hover_path = None
         self.editor.bind("<Motion>", self._on_mouse_motion)
         self.editor.bind("<Leave>", self._on_mouse_leave)
 
         # Setup all editor shortcuts from the dedicated module
         setup_editor_shortcuts(self.editor)
 
+        # Image preview on hover
+        self._hover_timer_id = None
+        self._hover_path = None
+
     def _on_mouse_motion(self, event):
-        pass
+        # Cancel any existing timer
+        if self._hover_timer_id:
+            self.after_cancel(self._hover_timer_id)
+            self._hover_timer_id = None
+        
+        self.image_preview.hide()
+
+        index = self.editor.index(f"@{event.x},{event.y}")
+        line_content = self.editor.get(f"{index.split('.')[0]}.0", f"{index.split('.')[0]}.end")
+
+        if r"\includegraphics" in line_content:
+            match = re.search(r'\\includegraphics(?:\[[^]]*\])?\{(.*?)\}', line_content)
+            if match:
+                image_path = match.group(1)
+                
+                # If the file_path is not set, we can't resolve relative paths
+                if not self.file_path:
+                    return
+
+                # Resolve the absolute path
+                base_dir = os.path.dirname(self.file_path)
+                absolute_image_path = os.path.join(base_dir, image_path)
+                
+                if os.path.exists(absolute_image_path):
+                    self._hover_path = absolute_image_path
+                    # Schedule the preview to appear after 0.2 seconds
+                    self._hover_timer_id = self.after(200, self._show_image_preview, event.x_root, event.y_root)
 
     def _on_mouse_leave(self, event):
-        pass
+        if self._hover_timer_id:
+            self.after_cancel(self._hover_timer_id)
+            self._hover_timer_id = None
+        self.image_preview.hide()
+
+    def _show_image_preview(self, x_root, y_root):
+        if self._hover_path:
+            # Position the preview near the cursor
+            self.image_preview.show_image(self._hover_path, (x_root + 10, y_root + 10))
+        self._hover_timer_id = None
+        self._hover_path = None
 
     def on_key_release(self, event=None):
         self.update_tab_title()
