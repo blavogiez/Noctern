@@ -43,7 +43,34 @@ def get_available_models():
     config = app_config.load_config()
     if config.get("gemini_api_key"):
         debug_console.log("Gemini API key found, adding Gemini models.", level='INFO')
-        gemini_models = ["gemini/gemini-1.5-flash", "gemini/gemini-1.5-pro", "gemini/gemini-pro"]
+        gemini_models = [
+            # Latest models (2025)
+            "gemini/gemini-2.5-pro-exp-01-28",
+            "gemini/gemini-2.5-flash-exp-01-28",
+            "gemini/gemini-2.5-flash-lite-exp-01-28",
+            "gemini/gemini-2.0-flash-exp",
+            "gemini/gemini-2.0-pro-exp",
+            "gemini/gemini-2.0-flash-lite",
+            
+            # Gemini 2.0 models
+            "gemini/gemini-2.0-flash",
+            
+            # Gemini 1.5 models
+            "gemini/gemini-1.5-pro-latest",
+            "gemini/gemini-1.5-pro-002",
+            "gemini/gemini-1.5-pro-001",
+            "gemini/gemini-1.5-flash-latest",
+            "gemini/gemini-1.5-flash-002",
+            "gemini/gemini-1.5-flash-001",
+            "gemini/gemini-1.5-flash-8b-latest",
+            "gemini/gemini-1.5-flash-8b-001",
+            
+            # Legacy models
+            "gemini/gemini-1.0-pro-latest",
+            "gemini/gemini-1.0-pro-002",
+            "gemini/gemini-1.0-pro-001",
+            "gemini/gemini-pro"
+        ]
         model_names.extend(gemini_models)
     
     if not model_names:

@@ -32,7 +32,7 @@ class GlobalPromptsEditor(tk.Toplevel):
             "generation_latex": "Placeholders: {user_prompt}, {context}, {keywords}",
             "styling": "Placeholders: {text}, {intensity}",
             "rephrase": "Placeholders: {text}, {instruction}",
-            "debug_latex_diff": "Placeholders: {log_content}, {added_lines}"
+            "debug_latex_diff": "Placeholders: {added_lines}"
         }
 
         self._setup_ui()
