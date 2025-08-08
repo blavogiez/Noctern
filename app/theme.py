@@ -90,19 +90,25 @@ def apply_theme(theme_name, root_window, main_paned_window, open_tabs_dict, perf
     style.map("TButton", background=[("active", theme_settings["sel_bg"])])
 
     # --- Treeview (Outline) Configurations ---
+    # Redefine the Treeview item layout to completely remove the indicator space
+    style.layout("Treeview.Item", 
+                 [('Treeitem.padding', {'sticky': 'nswe', 'children': 
+                     [('Treeitem.image', {'side': 'left', 'sticky': ''}), 
+                      ('Treeitem.text', {'side': 'left', 'sticky': ''})]})])
+    
     style.configure("Treeview", 
                     background=theme_settings["treeview_bg"], 
                     foreground=theme_settings["treeview_fg"], 
                     fieldbackground=theme_settings["treeview_bg"],
-                    font=("Segoe UI", 10),
-                    rowheight=25) # Increased row height for better spacing
+                    font=("Consolas", 11), # Editor-like font
+                    rowheight=32) # More vertical space
     style.map("Treeview", 
               background=[("selected", theme_settings["sel_bg"])], 
               foreground=[("selected", theme_settings["sel_fg"])])
     style.configure("Treeview.Heading", 
                     background=theme_settings["treeview_heading_bg"], 
                     foreground=theme_settings["fg_color"],
-                    font=("Segoe UI", 10, "bold"))
+                    font=("Consolas", 11, "bold"))
 
     # --- Notebook (Tabs) Configurations ---
     style.configure("TNotebook", background=theme_settings["notebook_bg"])
