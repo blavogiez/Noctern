@@ -35,7 +35,6 @@ ENV/
 # Fichiers de projet et temporaires
 # =============================================================================
 .pytest_cache/
-.session_state.json
 /output/
 /debug.png
 /e.png

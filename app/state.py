@@ -47,7 +47,7 @@ _temporary_status_active = False
 _temporary_status_timer_id = None
 _closed_tabs_stack = []
 _close_button_pressed_on_tab = None
-SESSION_STATE_FILE = ".session_state.json"
+# SESSION_STATE_FILE is now managed in settings.conf
 
 def get_theme_setting(key, default=None):
     """

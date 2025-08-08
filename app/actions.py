@@ -13,11 +13,13 @@ import sys
 import ttkbootstrap as ttk
 from tkinter import TclError
 from ttkbootstrap.dialogs import Messagebox
+import configparser
 
 from app import state
 from app import statusbar as interface_statusbar
 from app import file_operations as interface_fileops
 from app import tab_operations as interface_tabops
+from app.config import CONFIG_FILE, DEFAULT_SECTION
 from app import theme as interface_theme
 from app import config as app_config
 
@@ -165,35 +167,58 @@ def clear_temporary_status_message():
 
 def save_session():
     """
-    Saves the current session state (open files).
+    Saves the current session state (open files) to settings.conf.
     """
     open_files = [tab.file_path for tab in state.tabs.values() if tab.file_path and os.path.exists(tab.file_path)]
+    
+    # Load existing config
+    config = configparser.ConfigParser()
+    if os.path.exists(CONFIG_FILE):
+        config.read(CONFIG_FILE)
+    
+    # Ensure the main section exists
+    if DEFAULT_SECTION not in config:
+        config[DEFAULT_SECTION] = {}
+        
+    # Add or update session section
+    SESSION_SECTION = "Session"
+    if SESSION_SECTION not in config:
+        config[SESSION_SECTION] = {}
+        
+    # Save open files as a JSON string
+    config[SESSION_SECTION]["open_files"] = json.dumps(open_files)
+    
     try:
-        with open(state.SESSION_STATE_FILE, "w") as f:
-            json.dump({"open_files": open_files}, f)
-        debug_console.log(f"Session state saved to {state.SESSION_STATE_FILE}", level='INFO')
+        with open(CONFIG_FILE, "w") as configfile:
+            config.write(configfile)
+        debug_console.log(f"Session state saved to {CONFIG_FILE}", level='INFO')
     except Exception as e:
         debug_console.log(f"Error saving session state: {e}", level='ERROR')
 
 def load_session():
     """
-    Loads the last session state, reopening previously opened files.
+    Loads the last session state from settings.conf, reopening previously opened files.
     """
     try:
-        if os.path.exists(state.SESSION_STATE_FILE):
-            with open(state.SESSION_STATE_FILE, "r") as f:
-                session_data = json.load(f)
-                open_files = session_data.get("open_files", [])
+        if os.path.exists(CONFIG_FILE):
+            config = configparser.ConfigParser()
+            config.read(CONFIG_FILE)
+            
+            SESSION_SECTION = "Session"
+            if SESSION_SECTION in config and "open_files" in config[SESSION_SECTION]:
+                open_files_json = config[SESSION_SECTION]["open_files"]
+                open_files = json.loads(open_files_json) if open_files_json else []
+                
                 if open_files:
                     for file_path in open_files:
                         if os.path.exists(file_path):
                             create_new_tab(file_path)
                         else:
                             debug_console.log(f"File not found, not reopening: {file_path}", level='WARNING')
-                    if not state.notebook.tabs():
-                        create_new_tab(None)
                 else:
                     create_new_tab(None)
+            else:
+                create_new_tab(None)
         else:
             create_new_tab(None)
     except Exception as e:
