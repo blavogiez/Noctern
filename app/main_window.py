@@ -180,5 +180,14 @@ def setup_gui():
     state.root.after(200, check_document_and_highlight)
     state.root.protocol("WM_DELETE_WINDOW", actions.on_close_request)
     
+    # Create the status bar
+    status_bar_frame, status_label, gpu_status_label = create_status_bar(state.root)
+    state.status_bar_frame = status_bar_frame
+    state.status_label = status_label
+    state.gpu_status_label = gpu_status_label
+    
+    # Start the GPU status update loop
+    start_gpu_status_loop(state.gpu_status_label, state.root)
+    
     debug_console.log("GUI setup completed successfully.", level='SUCCESS')
     return state.root
