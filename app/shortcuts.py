@@ -19,14 +19,14 @@ def bind_global_shortcuts(root):
         Wrapper to log shortcut execution and prevent conflicts by checking focus.
         """
         def wrapper(event=None):
-            # This is the safe way: only run global shortcuts if the focus
-            # is NOT on a Text widget (the editor).
+            debug_console.log(f"Global Shortcut: {name}", level='ACTION')
+            if pass_event:
+                func(event)
+            else:
+                func()
+            # We return "break" only if the focus is not on the editor,
+            # to allow editor-specific bindings to still work.
             if not isinstance(root.focus_get(), tk.Text):
-                debug_console.log(f"Global Shortcut: {name}", level='ACTION')
-                if pass_event:
-                    func(event)
-                else:
-                    func()
                 return "break"
         return wrapper
 
