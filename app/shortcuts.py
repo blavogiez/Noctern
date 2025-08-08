@@ -41,6 +41,9 @@ def bind_shortcuts(root):
             callable: A wrapper function suitable for binding to Tkinter events.
         """
         def wrapper(event=None):
+            # The editor has its own bindings; don't run global shortcuts if an editor is focused.
+            if isinstance(root.focus_get(), tk.Text):
+                return
             debug_console.log(f"Keyboard shortcut triggered: {name}", level='ACTION')
             if pass_event:
                 func(event)
@@ -55,7 +58,7 @@ def bind_shortcuts(root):
         "<Control-n>": (interface.create_new_tab, "New File"),
         "<Control-o>": (interface.open_file, "Open File"),
         "<Control-s>": (interface.save_file, "Save File"),
-        "<Control-w>": (interface.close_current_tab, "Close Tab"),
+        # "<Control-w>": (interface.close_current_tab, "Close Tab"), # Removed to allow local editor binding
         "<Control-Shift-T>": (interface.restore_last_closed_tab, "Restore Closed Tab"),
         "<Control-Shift-G>": (llm_service.open_generate_text_dialog, "LLM Generate Dialog"),
         "<Control-Shift-C>": (llm_service.request_llm_to_complete_text, "LLM Complete"),
