@@ -8,6 +8,7 @@ import ttkbootstrap as ttk
 from tkinter.font import Font
 from app.custom_notebook import ClosableNotebook
 from pre_compiler.error_panel import ErrorPanel
+from editor.outline import Outline
 
 
 def create_main_paned_window(parent):
@@ -33,28 +34,20 @@ def create_left_pane(parent):
     parent.add(left_pane, weight=1)
     return left_pane
 
-def create_outline_tree(parent, get_current_tab_callback):
+def create_outline(parent, get_current_tab_callback):
     """
-    Creates the treeview widget used to display the document's outline.
+    Creates the outline manager and its widget.
 
     Args:
         parent (tk.Widget): The parent widget for the treeview.
         get_current_tab_callback (callable): A function to get the current editor tab.
 
     Returns:
-        ttk.Treeview: The configured treeview for the document outline.
+        Outline: The configured Outline object.
     """
-    outline_tree = ttk.Treeview(parent, show="tree", selectmode="browse")
-    parent.add(outline_tree, weight=1) # Add to paned window with a weight
-
-    def on_tree_select(event):
-        """Callback to handle selection changes in the outline tree."""
-        from editor import outline as editor_outline
-        editor_outline.go_to_section(get_current_tab_callback, event)
-
-
-    outline_tree.bind("<<TreeviewSelect>>", on_tree_select)
-    return outline_tree
+    outline = Outline(parent, get_current_tab_callback)
+    parent.add(outline.get_widget(), weight=1) # Add the widget to the pane
+    return outline
 
 def create_error_panel(parent, on_goto_line=None):
     """
@@ -62,7 +55,6 @@ def create_error_panel(parent, on_goto_line=None):
     """
     error_panel = ErrorPanel(parent, on_goto_line=on_goto_line)
     parent.add(error_panel)
-    return error_panel
 
 def create_notebook(parent):
     """

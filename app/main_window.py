@@ -8,7 +8,7 @@ import ttkbootstrap as ttk
 from app import state, actions, config as app_config, theme as interface_theme
 from app.zoom import ZoomManager
 from app.topbar import create_top_buttons_frame
-from app.panes import create_main_paned_window, create_left_pane, create_outline_tree, create_error_panel, create_notebook, create_console_pane
+from app.panes import create_main_paned_window, create_left_pane, create_outline, create_error_panel, create_notebook, create_console_pane
 from app.status import create_status_bar, start_gpu_status_loop
 from app.shortcuts import bind_global_shortcuts
 from utils import debug_console, screen as screen_utils
@@ -80,7 +80,7 @@ def setup_gui():
     state.main_pane = create_main_paned_window(state.vertical_pane)
     left_pane = create_left_pane(state.main_pane)
     
-    state.outline_tree = create_outline_tree(left_pane, state.get_current_tab)
+    state.outline = create_outline(left_pane, state.get_current_tab)
     
     def go_to_line(line_number):
         current_tab = state.get_current_tab()
@@ -105,6 +105,7 @@ def setup_gui():
         current_tab = state.get_current_tab()
         if current_tab and current_tab.editor:
             editor_syntax.apply_syntax_highlighting(current_tab.editor)
+            state.outline.update_outline(current_tab.editor) # Update outline
             content = current_tab.editor.get("1.0", "end-1c")
             errors = state.checker.check(content, current_tab.file_path)
             errors.sort(key=lambda e: e.get('line', 0))

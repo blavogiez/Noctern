@@ -33,7 +33,7 @@ def get_theme_colors(style, theme_name):
             "llm_generated_bg": "#F0FFF0", "llm_generated_fg": "#4A4238",
             "statusbar_bg": "#F6B092", "statusbar_fg": "#4A4238",
             "button_bg": "#F6B092", "button_fg": "#4A4238",
-            "treeview_bg": "#FFF8F0", "treeview_fg": "#4A4238", "treeview_heading_bg": "#F6B092",
+            "treeview_bg": "#FFFFFF", "treeview_fg": "#4A4238", "treeview_heading_bg": "#F6B092",
             "notebook_bg": "#FFF8F0", "notebook_tab_bg": "#F6B092", "notebook_active_tab_bg": "#FF8242", "notebook_active_tab_fg": "#FFFFFF"
         }
 
@@ -90,9 +90,19 @@ def apply_theme(theme_name, root_window, main_paned_window, open_tabs_dict, perf
     style.map("TButton", background=[("active", theme_settings["sel_bg"])])
 
     # --- Treeview (Outline) Configurations ---
-    style.configure("Treeview", background=theme_settings["treeview_bg"], foreground=theme_settings["treeview_fg"], fieldbackground=theme_settings["treeview_bg"])
-    style.map("Treeview", background=[("selected", theme_settings["sel_bg"])], foreground=[("selected", theme_settings["sel_fg"])])
-    style.configure("Treeview.Heading", background=theme_settings["treeview_heading_bg"], foreground=theme_settings["fg_color"])
+    style.configure("Treeview", 
+                    background=theme_settings["treeview_bg"], 
+                    foreground=theme_settings["treeview_fg"], 
+                    fieldbackground=theme_settings["treeview_bg"],
+                    font=("Segoe UI", 10),
+                    rowheight=25) # Increased row height for better spacing
+    style.map("Treeview", 
+              background=[("selected", theme_settings["sel_bg"])], 
+              foreground=[("selected", theme_settings["sel_fg"])])
+    style.configure("Treeview.Heading", 
+                    background=theme_settings["treeview_heading_bg"], 
+                    foreground=theme_settings["fg_color"],
+                    font=("Segoe UI", 10, "bold"))
 
     # --- Notebook (Tabs) Configurations ---
     style.configure("TNotebook", background=theme_settings["notebook_bg"])

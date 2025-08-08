@@ -24,7 +24,6 @@ from app import config as app_config
 from editor.tab import EditorTab
 from llm import service as llm_service
 from llm import autostyle as llm_autostyle
-from editor import outline as editor_outline
 from editor import syntax as editor_syntax
 from editor import image_manager as editor_image_manager
 from latex import compiler as latex_compiler
@@ -49,8 +48,8 @@ def perform_heavy_updates():
     current_tab = state.get_current_tab()
     
     if not current_tab:
-        if state.outline_tree:
-            state.outline_tree.delete(*state.outline_tree.get_children())
+        if state.outline:
+            state.outline.update_outline(None)
         debug_console.log("Heavy update skipped: No active editor tab.", level='DEBUG')
         return
 
@@ -58,7 +57,8 @@ def perform_heavy_updates():
     debug_console.log(f"Initiating heavy updates for tab: '{tab_name}'.", level='INFO')
     
     editor_syntax.apply_syntax_highlighting(current_tab.editor)
-    editor_outline.update_outline_tree(current_tab.editor)
+    if state.outline:
+        state.outline.update_outline(current_tab.editor)
 
     if not state._temporary_status_active:
         editor_wordcount.update_word_count(current_tab.editor, state.status_label)

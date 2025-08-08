@@ -46,8 +46,6 @@ def main():
     # Services are initialized with getter functions (lambdas) to dynamically
     # access the application state. This decouples the subsystems from direct
     # UI implementation details, making them more modular.
-
-    editor_outline.initialize_editor_logic(state.outline_tree)
     
     latex_compiler.initialize_compiler(
         root_window, 

@@ -1,5 +1,9 @@
 [
     [
+        "Fais un texte sur Mexico City avec 20 sections latex qui ont chacune une sous section. Le document doit compiler en prenant en compte le dernier contexte",
+        "\\section{Histoire de Mexico}\n\\subsection{Fondation de Tenochtitlan}\n\\section{Géographie de Mexico}\n\\subsection{Altitude et relief}\n\\section{Climat de Mexico}\n\\subsection{Variations saisonnières}\n\\section{Démographie de Mexico}\n\\subsection{Croissance démographique}\n\\section{Culture de Mexico}\n\\subsection{Traditions et coutumes}\n\\section{Gastronomie mexicaine}\n\\subsection{Plats typiques}\n\\section{Architecture de Mexico}\n\\subsection{Styles architecturaux}\n\\section{Musées de Mexico}\n\\subsection{Collections et expositions}\n\\section{Sites historiques de Mexico}\n\\subsection{Vestiges archéologiques}\n\\section{Vie nocturne de Mexico}\n\\subsection{Divertissement et loisirs}\n\\section{Économie de Mexico}\n\\subsection{Secteurs économiques}\n\\section{Transports à Mexico}\n\\subsection{Réseau de transport}\n\\section{Environnement de Mexico}\n\\subsection{Défis environnementaux}\n\\section{Politique de Mexico}\n\\subsection{Gouvernement local}\n\\section{Éducation à Mexico}\n\\subsection{Institutions éducatives}\n\\section{Art et culture populaire à Mexico}\n\\subsection{Expressions artistiques}\n\\section{Sécurité à Mexico}\n\\subsection{Conseils aux visiteurs}\n\\section{Tourisme à Mexico}\n\\subsection{Sites touristiques majeurs}\n\\section{Zones périphériques de Mexico}\n\\subsection{Extension urbaine}"
+    ],
+    [
         "Fais une conclusion",
         "Ainsi, si le train ne permet pas une exploration exhaustive du territoire mexicain, il demeure un moyen de transport attrayant pour qui souhaite allier découverte culturelle et contemplation des paysages, contribuant à une expérience de voyage authentique et mémorable."
     ],

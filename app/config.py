@@ -18,6 +18,7 @@ DEFAULT_VALUES = {
     "pdf_monitor": "Default",
     "window_state": "Normal",
     "theme": "dark",
+    "font_size": "12",
     "model_completion": "default",
     "model_generation": "default",
     "model_rephrase": "default",

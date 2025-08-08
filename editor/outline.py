@@ -1,188 +1,172 @@
 import tkinter as tk
+from tkinter import ttk
 from utils import debug_console
 
-# Global variable to hold the reference to the outline treeview widget.
-# This allows different parts of the editor logic to interact with the outline.
-outline_tree = None
-
-def initialize_editor_logic(tree_widget):
+class Outline:
     """
-    Initializes the editor logic by setting the global reference to the outline treeview widget.
-
-    This function is called during application startup to link the editor's
-    backend logic with the UI component responsible for displaying the document outline.
-
-    Args:
-        tree_widget (ttk.Treeview): The Treeview widget used for the document outline.
+    Simple document outline manager.
+    Displays sections with arrows and allows navigation.
     """
-    global outline_tree
-    outline_tree = tree_widget
-    debug_console.log("Editor logic initialized with outline tree reference.", level='INFO')
+    def __init__(self, parent_frame, get_current_tab_callback):
+        # Create Treeview without + and - symbols
+        self.tree = ttk.Treeview(parent_frame, show="tree", selectmode="browse")
+        self.tree.configure(style="NoPlus.Treeview")
+        
+        # Callback to get current tab
+        self.get_current_tab_callback = get_current_tab_callback
+        
+        # Improve vertical spacing
+        style = ttk.Style()
+        style.configure("NoPlus.Treeview", rowheight=25)
+        # Hide + and - symbols
+        style.layout("NoPlus.Treeview", [('Treeview.treearea', {'sticky': 'nswe'})])
+        
+        # When clicking on a section
+        self.tree.bind("<<TreeviewSelect>>", self._on_click_section)
+        self.tree.bind("<Button-1>", self._on_single_click)
 
-def _get_title_from_line(line, command):
-    """
-    Essaie d'extraire un titre de section LaTeX à partir d'une ligne.
+    def get_widget(self):
+        """Returns the Treeview widget."""
+        return self.tree
 
-    Cette fonction est conçue pour être très simple et lisible. Elle vérifie
-    si une ligne contient une commande de section (comme \section) et en
-    extrait le titre.
+    def _on_click_section(self, event):
+        """Navigate to selected section in the editor."""
+        current_tab = self.get_current_tab_callback()
+        if not current_tab or not hasattr(current_tab, 'editor'):
+            return
+        
+        selected = self.tree.selection()
+        if not selected:
+            return
 
-    Args:
-        line (str): La ligne de texte à analyser.
-        command (str): La commande à rechercher (ex: \"\\section\").
-
-    Returns:
-        str ou None: Le titre trouvé, ou None si la ligne ne correspond pas.
-    """
-    # Étape 1: Vérifier si la ligne commence bien par la commande.
-    if not line.startswith(command):
-        return None
-
-    # Étape 2: Supprimer la commande pour ne garder que la suite.
-    # Exemple: \"\\section{Titre}\" devient "{Titre}".
-    line_after_command = line[len(command):]
-
-    # Étape 3: Gérer les commandes étoilées (ex: \"\\section*\").
-    # Si la ligne commence par une étoile, on la supprime.
-    if line_after_command.startswith('*'):
-        line_after_command = line_after_command[1:]
-    
-    # Étape 4: Supprimer les espaces blancs au début.
-    line_after_command = line_after_command.lstrip()
-
-    # Étape 5: Gérer les arguments optionnels (ex: [Titre court]).
-    # Si on trouve un crochet ouvrant, on supprime tout jusqu'au crochet fermant.
-    if line_after_command.startswith('['):
-        end_bracket_index = line_after_command.find(']')
-        # Si on ne trouve pas de crochet fermant, la commande est mal formée.
-        if end_bracket_index == -1:
-            return None
-        # On ne garde que ce qui se trouve APRES le crochet fermant.
-        line_after_command = line_after_command[end_bracket_index + 1:]
-
-    # Étape 6: Supprimer à nouveau les espaces blancs.
-    line_after_command = line_after_command.lstrip()
-
-    # Étape 7: Le titre doit maintenant commencer par une accolade ouvrante '{'.
-    if not line_after_command.startswith('{'):
-        return None
-
-    # Étape 8: Trouver l'accolade fermante '}'.
-    end_brace_index = line_after_command.find('}')
-    if end_brace_index == -1:
-        return None # Accolade fermante non trouvée.
-
-    # Étape 9: Extraire le texte entre les deux accolades.
-    title = line_after_command[1:end_brace_index]
-    
-    # Étape 10: Renvoyer le titre en supprimant les espaces au début et à la fin.
-    return title.strip()
-
-def update_outline_tree(editor):
-    """
-    Met à jour la Treeview avec la structure des sections du document.
-    Cette version utilise des fonctions de chaînes de caractères simples pour
-    être facile à comprendre par un développeur junior.
-    """
-    if not outline_tree or not editor:
-        return
-
-    # On vide complètement l'arbre avant de le reconstruire.
-    outline_tree.delete(*outline_tree.get_children())
-    
-    content = editor.get("1.0", tk.END)
-    lines = content.split("\n")
-    
-    # Ce dictionnaire mémorise le dernier élément créé pour chaque niveau.
-    # ex: {1: "id_de_la_derniere_section", 2: "id_de_la_derniere_subsection"}
-    # Le niveau 0 est la racine de l'arbre (invisible).
-    parent_item_at_level = {0: ""} 
-
-    # On parcourt chaque ligne du document.
-    for line_index, line_text in enumerate(lines):
-        clean_line = line_text.strip()
-
-        # On définit les commandes à chercher et leur niveau hiérarchique.
-        commands_to_check = {
-            "\\section": 1,
-            "\\subsection": 2,
-            "\\subsubsection": 3
-        }
-
-        # On teste chaque type de commande pour la ligne actuelle.
-        for command, level in commands_to_check.items():
-            
-            # On utilise notre fonction d'aide pour extraire le titre.
-            title = _get_title_from_line(clean_line, command)
-
-            # Si on a trouvé un titre :
-            if title:
-                # Le parent de notre élément est l'élément du niveau juste au-dessus.
-                # Pour un \"\\subsection\" (niveau 2), le parent est le dernier \"\\section\" (niveau 1).
-                parent_level = level - 1
-                parent_id = parent_item_at_level.get(parent_level, "")
-
-                # Le numéro de ligne pour la navigation (l'index commence à 0).
-                line_number_for_goto = line_index + 1
-
-                # On ajoute l'élément à l'arbre.
-                new_item_id = outline_tree.insert(
-                    parent_id, 
-                    "end", 
-                    text=title, 
-                    values=(line_number_for_goto,)
-                )
-
-                # On mémorise ce nouvel élément comme étant le dernier pour son niveau.
-                parent_item_at_level[level] = new_item_id
-
-                # Si on a trouvé une \"\\section\", on oublie les anciennes \"\\subsection\".
-                if level == 1:
-                    if 2 in parent_item_at_level:
-                        del parent_item_at_level[2]
-                    if 3 in parent_item_at_level:
-                        del parent_item_at_level[3]
-                # Si on a trouvé une \"\\subsection\", on oublie les anciennes \"\\subsubsection\".
-                elif level == 2:
-                    if 3 in parent_item_at_level:
-                        del parent_item_at_level[3]
-
-                # On a trouvé la commande pour cette ligne, on passe à la ligne suivante.
-                break
-
-
-def go_to_section(get_current_tab_callback, event):
-    """
-    Scrolls the editor to the line corresponding to the selected section in the outline tree.
-
-    This function is typically triggered by a user selecting an item in the outline treeview.
-    It extracts the line number associated with the selected section and moves the editor's
-    view to that line, placing the cursor at the beginning of the line.
-
-    Args:
-        get_current_tab_callback (function): A callback to get the current active tab.
-        event (tk.Event): The event object that triggered this function (e.g., TreeviewSelect).
-    """
-    current_tab = get_current_tab_callback()
-    if not current_tab or not hasattr(current_tab, 'editor'):
-        debug_console.log("Editor not available for section navigation.", level='WARNING')
-        return
-    
-    editor = current_tab.editor
-    selected_items = outline_tree.selection() # Get the currently selected items in the treeview.
-    if selected_items:
-        # Retrieve the values associated with the first selected item.
-        # The line number is stored as the first value.
-        values = outline_tree.item(selected_items[0], "values")
+        # Get line number
+        values = self.tree.item(selected[0], "values")
         if values:
-            line_number = values[0] # Extract the line number.
-            debug_console.log(f"Navigating editor to line {line_number} for selected section.", level='ACTION')
-            try:
-                # Scroll the view so the target line is at the top.
-                editor.yview(f"{line_number}.0")
-                # Set the insertion cursor to the beginning of the target line.
-                editor.mark_set("insert", f"{line_number}.0")
-                editor.focus() # Set focus back to the editor.
-            except tk.TclError as e:
-                debug_console.log(f"Error navigating to section: {e}", level='ERROR')
-                pass # Ignore errors if the line number is invalid or out of range.
+            line_number = values[0]
+            editor = current_tab.editor
+            editor.yview(f"{line_number}.0")
+            editor.mark_set("insert", f"{line_number}.0")
+            editor.focus()
+
+    def _on_single_click(self, event):
+        """Open/close sections when clicked."""
+        item = self.tree.identify('item', event.x, event.y)
+        if item and self.tree.get_children(item):
+            # If section has children, toggle open/close
+            if self.tree.item(item, 'open'):
+                self.tree.item(item, open=False)
+                self._update_arrow(item, False)
+            else:
+                self.tree.item(item, open=True)
+                self._update_arrow(item, True)
+
+    def _update_arrow(self, item, is_open):
+        """Update arrow (▶ or ▼)."""
+        text = self.tree.item(item, "text")
+        
+        if is_open:
+            # Change ▶ to ▼
+            if text.startswith("▶"):
+                new_text = "▼" + text[1:]
+                self.tree.item(item, text=new_text)
+        else:
+            # Change ▼ to ▶
+            if text.startswith("▼"):
+                new_text = "▶" + text[1:]
+                self.tree.item(item, text=new_text)
+
+    def _find_sections(self, text_content):
+        """Find all sections in the text."""
+        lines = text_content.split("\n")
+        sections = []
+        
+        for line_num, line in enumerate(lines):
+            line = line.strip()
+            
+            # Look for \section{title}
+            if line.startswith("\\section{"):
+                title = self._extract_title(line, "\\section{")
+                if title:
+                    sections.append(("section", title, line_num + 1, []))
+            
+            # Look for \subsection{title}
+            elif line.startswith("\\subsection{"):
+                title = self._extract_title(line, "\\subsection{")
+                if title:
+                    sections.append(("subsection", title, line_num + 1, []))
+            
+            # Look for \subsubsection{title}
+            elif line.startswith("\\subsubsection{"):
+                title = self._extract_title(line, "\\subsubsection{")
+                if title:
+                    sections.append(("subsubsection", title, line_num + 1, []))
+        
+        return self._organize_hierarchy(sections)
+
+    def _extract_title(self, line, command):
+        """Extract title from a LaTeX line."""
+        # Remove command from beginning
+        line = line[len(command):]
+        # Find closing brace
+        end = line.find('}')
+        if end == -1:
+            return None
+        return line[:end].strip()
+
+    def _organize_hierarchy(self, sections):
+        """Organize sections in hierarchy."""
+        result = []
+        stack = [(result, "")]  # (current_list, parent_level)
+        
+        for section_type, title, line_num, children in sections:
+            # Move up in stack according to level
+            if section_type == "section":
+                stack = [(result, "")]
+            elif section_type == "subsection":
+                # Keep only up to section level
+                stack = [item for item in stack if item[1] in ["", "section"]]
+            elif section_type == "subsubsection":
+                # Keep up to subsection level
+                stack = [item for item in stack if item[1] in ["", "section", "subsection"]]
+            
+            # Add to current list
+            new_item = (title, line_num, [])
+            stack[-1][0].append(new_item)
+            stack.append((new_item[2], section_type))
+        
+        return result
+
+    def _add_to_tree(self, parent_id, items, prefix=""):
+        """Add items to the Treeview."""
+        for i, (title, line_num, children) in enumerate(items):
+            number = f"{prefix}{i + 1}."
+            
+            # Add arrow if there are children
+            if children:
+                display_text = f"▶ {number} {title}"
+            else:
+                display_text = f"{number} {title}"
+            
+            # Create the item
+            item_id = self.tree.insert(parent_id, "end", text=display_text, values=(line_num,))
+            
+            # Add children
+            if children:
+                self._add_to_tree(item_id, children, prefix=number)
+
+    def update_outline(self, editor_widget):
+        """Update outline with editor content."""
+        if not editor_widget:
+            return
+        
+        # Clear the tree
+        self.tree.delete(*self.tree.get_children())
+        
+        # Get content
+        content = editor_widget.get("1.0", tk.END)
+        if not content.strip():
+            return
+        
+        # Find sections and add them
+        sections = self._find_sections(content)
+        self._add_to_tree("", sections)
