@@ -8,6 +8,8 @@ import re
 from utils import debug_console
 from snippets import manager as snippet_manager
 from snippets.editor_dialog import SnippetEditorDialog
+from editor.placeholder_navigation import PlaceholderManager, handle_placeholder_navigation
+
 
 def open_snippet_editor(root_window, theme_settings):
     """
@@ -25,6 +27,7 @@ def open_snippet_editor(root_window, theme_settings):
         save_callback=snippet_manager.save_snippets  # Callback function to save modified snippets.
     )
     debug_console.log("Snippet editor dialog opened.", level='INFO')
+
 
 def handle_snippet_expansion(event):
     """
@@ -60,6 +63,7 @@ def handle_snippet_expansion(event):
         debug_console.log("No potential snippet keyword found before cursor.", level='DEBUG')
         return
 
+
     keyword = matches[-1] # The last word found is the most relevant potential keyword.
     all_snippets = snippet_manager.get_snippets() # Retrieve all defined snippets.
     
@@ -71,10 +75,29 @@ def handle_snippet_expansion(event):
         keyword_position_in_line = text_before_cursor.rfind(keyword)
         keyword_start_index = f"{line_start_index} + {keyword_position_in_line} chars"
         
+        # Record the insertion point to find placeholders later
+        insertion_point = editor.index(keyword_start_index)
+        
         # Delete the keyword from the editor.
         editor.delete(keyword_start_index, cursor_position)
         # Insert the full snippet content in place of the keyword.
-        editor.insert(keyword_start_index, all_snippets[keyword])
+        editor.insert(insertion_point, all_snippets[keyword])
+        
+        # Check if the snippet contains placeholders
+        if '$' in all_snippets[keyword]:
+            # Create a placeholder manager for the text widget if it doesn't exist
+            if not hasattr(editor, 'placeholder_manager'):
+                editor.placeholder_manager = PlaceholderManager(editor)
+            
+            # Find placeholders in the inserted snippet
+            snippet_lines = all_snippets[keyword].count('\n')
+            end_position = editor.index(f"{insertion_point} + {snippet_lines + 1} lines")
+            
+            editor.placeholder_manager.find_placeholders(insertion_point, end_position)
+            
+            # Navigate to the first placeholder
+            if editor.placeholder_manager.has_placeholders():
+                editor.placeholder_manager.navigate_to_next_placeholder()
 
         debug_console.log(f"Snippet '{keyword}' successfully expanded.", level='INFO')
         # Return "break" to prevent Tkinter from processing the event further (e.g., inserting a space).

@@ -3,6 +3,7 @@ This module contains all the logic and bindings for editor-specific shortcuts.
 """
 import tkinter as tk
 import re
+from editor.placeholder_navigation import handle_placeholder_navigation
 
 # --- Helper Function ---
 def _get_line_range(editor):
@@ -75,6 +76,12 @@ def move_line_down(event):
     return "break"
 
 def handle_tab(event):
+    # First, try to handle placeholder navigation
+    result = handle_placeholder_navigation(event)
+    if result == "break":
+        return result
+        
+    # If no placeholder navigation occurred, handle normal tab behavior
     editor = event.widget
     start_line, end_line = _get_line_range(editor)
     if editor.tag_ranges("sel"):
