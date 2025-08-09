@@ -1,6 +1,6 @@
 """
 This module manages loading and saving custom LLM prompt templates for specific documents.
-It uses a cache directory (`.cache/prompts/`) alongside the document to store overrides.
+It uses a cache directory (`document_name.cache/prompts/`) alongside the document to store overrides.
 """
 
 import os

@@ -98,3 +98,23 @@ def open_edit_prompts_dialog(event=None):
     """
     Opens the dialog for users to edit the LLM prompt templates for the current file.
     """
+    debug_console.log("Opening LLM prompt templates editing dialog.", level='ACTION')
+    # Get the root window reference from llm_state.
+    root = llm_state.get_root_window()
+    if not root:
+        debug_console.log("Cannot open prompt editor: No root window reference.", level='ERROR')
+        return
+
+    # Get the necessary getter functions and current state from llm_state.
+    theme_getter = llm_state._theme_setting_getter_func
+    current_prompts = get_current_prompts()
+    default_prompts = llm_state.get_global_default_prompts()
+    
+    # Show the dialog with the required parameters.
+    show_edit_prompts_dialog(
+        root_window=root,
+        theme_setting_getter_func=theme_getter,
+        current_prompts=current_prompts,
+        default_prompts=default_prompts,
+        on_save_callback=update_prompts
+    )

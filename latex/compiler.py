@@ -227,9 +227,9 @@ def compile_latex(event=None):
     pdf_output_path = os.path.join(source_directory, file_name.replace(".tex", ".pdf"))
     
     # --- New Cache Logic ---
-    cache_directory = os.path.join(source_directory, ".cache")
-    os.makedirs(cache_directory, exist_ok=True)
     base_name = os.path.splitext(file_name)[0]
+    cache_directory = os.path.join(source_directory, f"{base_name}.cache")
+    os.makedirs(cache_directory, exist_ok=True)
     cached_tex_path = os.path.join(cache_directory, f"{base_name}_last_successful.tex")
     # --- End New Cache Logic ---
 
