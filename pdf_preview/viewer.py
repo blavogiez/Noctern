@@ -8,6 +8,7 @@ import ttkbootstrap as ttk
 from tkinter import Canvas, Scrollbar
 from PIL import Image, ImageTk
 import os
+import threading
 from utils import debug_console
 
 
@@ -30,8 +31,13 @@ class PDFPreviewViewer:
         self.current_page = 1
         self.total_pages = 1
         self.zoom_level = 1.0
-        self.page_images = {}  # Cache for rendered page images
-        self.page_sizes = {}   # Cache for page sizes
+        
+        # Caching and performance
+        self.master_images = {}  # Cache for high-res master page images
+        self.display_photo = None # To prevent garbage collection
+        self.render_lock = threading.Lock()
+        self.prerender_thread = None
+        self.MASTER_DPI = 200 # Fixed high DPI for master images
         
         self._create_widgets()
         if pdf_path and os.path.exists(pdf_path):
@@ -144,8 +150,7 @@ class PDFPreviewViewer:
         self.canvas.delete("all")
         
         # Clear page cache
-        self.page_images.clear()
-        self.page_sizes.clear()
+        self._clear_page_cache()
         
         # Reset page info
         self.current_page = 1
@@ -199,12 +204,10 @@ class PDFPreviewViewer:
             return
             
         self.pdf_path = pdf_path
+        self._clear_page_cache()
         debug_console.log(f"Loading PDF: {pdf_path}", level='INFO')
         
         try:
-            # Import pdf2image here to avoid issues if not installed
-            from pdf2image import convert_from_path
-            
             # Get page count using PyPDF2
             from PyPDF2 import PdfReader
             reader = PdfReader(pdf_path)
@@ -219,7 +222,7 @@ class PDFPreviewViewer:
             self._enable_toolbar()
             
             # Render first page
-            self._render_page()
+            self._update_page_display()
             
         except ImportError as e:
             debug_console.log(f"PDF rendering libraries not available: {e}", level='ERROR')
@@ -285,60 +288,67 @@ class PDFPreviewViewer:
             fill="red"
         )
     
-    def _render_page(self):
-        """Render the current page."""
+    def _get_master_image(self, page_num):
+        """
+        Get the high-resolution master image for a page, rendering if not cached.
+        """
+        if page_num in self.master_images:
+            return self.master_images[page_num]
+        
         if not self.pdf_path or not os.path.exists(self.pdf_path):
-            return
-            
+            return None
+        
+        # Render the page if not in cache
         try:
             from pdf2image import convert_from_path
             
-            # Check if page is already cached
-            cache_key = (self.current_page, self.zoom_level)
-            if cache_key in self.page_images:
-                self._display_page_image(self.page_images[cache_key])
-                return
-            
-            # Convert PDF page to image
-            # We use a lower DPI for better performance, will be scaled by zoom
-            dpi = int(100 * self.zoom_level)
+            debug_console.log(f"Rendering master image for page {page_num} at {self.MASTER_DPI} DPI", level='DEBUG')
             images = convert_from_path(
                 self.pdf_path,
-                first_page=self.current_page,
-                last_page=self.current_page,
-                dpi=min(dpi, 200),  # Cap DPI for performance
+                first_page=page_num,
+                last_page=page_num,
+                dpi=self.MASTER_DPI,
                 grayscale=False
             )
             
             if images:
-                # Cache the image
-                self.page_images[cache_key] = images[0]
-                self._display_page_image(images[0])
+                self.master_images[page_num] = images[0]
+                return images[0]
                 
         except ImportError:
-            self._show_pdf_info()
+            self.parent.after(0, self._show_pdf_info)
         except Exception as e:
-            debug_console.log(f"Error rendering page: {e}", level='ERROR')
-            self._show_pdf_info()
-    
-    def _display_page_image(self, image):
-        """Display a page image on the canvas."""
+            debug_console.log(f"Error rendering master page {page_num}: {e}", level='ERROR')
+        
+        return None
+
+    def _update_page_display(self):
+        """
+        Update the canvas with the current page at the current zoom level.
+        """
+        master_image = self._get_master_image(self.current_page)
+        
+        if not master_image:
+            return
+
+        # Resize master image based on zoom level
+        original_width, original_height = master_image.size
+        new_width = int(original_width * self.zoom_level * (100 / self.MASTER_DPI))
+        new_height = int(original_height * self.zoom_level * (100 / self.MASTER_DPI))
+
+        # Use ANTIALIAS for better quality resizing
+        resized_image = master_image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+        
         self.canvas.delete("all")
         
         # Convert PIL image to PhotoImage
-        photo = ImageTk.PhotoImage(image)
-        
-        # Store reference to prevent garbage collection
-        self.current_photo = photo
-        
-        # Get image dimensions
-        width, height = image.size
+        self.display_photo = ImageTk.PhotoImage(resized_image)
         
         # Configure scroll region
-        self.canvas.configure(scrollregion=(0, 0, width, height))
+        self.canvas.configure(scrollregion=(0, 0, new_width, new_height))
         
         # Display image
-        self.canvas.create_image(0, 0, anchor="nw", image=photo)
+        self.canvas.create_image(0, 0, anchor="nw", image=self.display_photo)
         
         # Update page label
         self.page_label.configure(text=f"Page {self.current_page} of {self.total_pages}")
@@ -346,7 +356,42 @@ class PDFPreviewViewer:
         # Update zoom label
         zoom_percent = int(self.zoom_level * 100)
         self.zoom_label.configure(text=f"{zoom_percent}%")
-    
+
+        # Start pre-rendering adjacent pages
+        self._start_prerender()
+
+    def _start_prerender(self):
+        """Start a background thread to pre-render adjacent pages."""
+        if self.prerender_thread and self.prerender_thread.is_alive():
+            return # A thread is already running
+
+        self.prerender_thread = threading.Thread(
+            target=self._prerender_worker,
+            args=(self.current_page,),
+            daemon=True
+        )
+        self.prerender_thread.start()
+
+    def _prerender_worker(self, initial_page):
+        """
+        Worker thread to pre-render pages around the initial page.
+        """
+        # Pre-render next pages
+        for i in range(1, 4):
+            page_to_render = initial_page + i
+            if page_to_render > self.total_pages:
+                break
+            if page_to_render not in self.master_images:
+                self._get_master_image(page_to_render)
+        
+        # Pre-render previous pages
+        for i in range(1, 3):
+            page_to_render = initial_page - i
+            if page_to_render < 1:
+                break
+            if page_to_render not in self.master_images:
+                self._get_master_image(page_to_render)
+
     def _enable_toolbar(self):
         """Enable toolbar buttons when PDF is loaded."""
         self.prev_button.configure(state="normal")
@@ -367,31 +412,29 @@ class PDFPreviewViewer:
         """Navigate to the previous page."""
         if self.current_page > 1:
             self.current_page -= 1
-            self._render_page()
+            self._update_page_display()
     
     def next_page(self):
         """Navigate to the next page."""
         if self.current_page < self.total_pages:
             self.current_page += 1
-            self._render_page()
+            self._update_page_display()
     
     def zoom_in(self):
         """Increase the zoom level."""
         if self.zoom_level < 3.0:  # Max 300%
             self.zoom_level *= 1.2
-            self._clear_page_cache()
-            self._render_page()
+            self._update_page_display()
     
     def zoom_out(self):
         """Decrease the zoom level."""
         if self.zoom_level > 0.2:  # Min 20%
             self.zoom_level /= 1.2
-            self._clear_page_cache()
-            self._render_page()
+            self._update_page_display()
     
     def _clear_page_cache(self):
-        """Clear the page image cache."""
-        self.page_images.clear()
+        """Clear all page caches."""
+        self.master_images.clear()
     
     def refresh(self):
         """Refresh the PDF display."""

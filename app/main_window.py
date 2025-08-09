@@ -110,6 +110,7 @@ def setup_gui():
     
     # Create PDF preview pane
     pdf_preview_content = create_pdf_preview_pane(state.main_pane)
+    state.pdf_preview_interface.create_preview_panel(pdf_preview_content)
     
     state.vertical_pane.add(state.main_pane, weight=1)
 
