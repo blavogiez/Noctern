@@ -1,6 +1,6 @@
 """
 PDF Preview Viewer Component
-Handles the display and navigation of PDF documents with synchronization features.
+Handles the display and navigation of PDF documents with continuous scrolling.
 """
 
 import tkinter as tk
@@ -9,13 +9,13 @@ from tkinter import Canvas, Scrollbar
 from PIL import Image, ImageTk
 import os
 import threading
+import time
 from utils import debug_console
 
 
 class PDFPreviewViewer:
     """
-    A PDF preview viewer component that displays PDF documents and provides
-    navigation and synchronization features.
+    A PDF preview viewer component that displays PDF documents with continuous scrolling.
     """
     
     def __init__(self, parent, pdf_path=None):
@@ -28,16 +28,20 @@ class PDFPreviewViewer:
         """
         self.parent = parent
         self.pdf_path = pdf_path
-        self.current_page = 1
-        self.total_pages = 1
         self.zoom_level = 1.0
         
         # Caching and performance
-        self.master_images = {}  # Cache for high-res master page images
-        self.display_photo = None # To prevent garbage collection
-        self.render_lock = threading.Lock()
-        self.prerender_thread = None
-        self.MASTER_DPI = 200 # Fixed high DPI for master images
+        self.page_images = {}  # Cache for page images
+        self.page_photos = {}  # Cache for PhotoImage objects
+        self.page_layouts = {}  # Layout information for each page
+        self.total_height = 0
+        self.render_thread = None
+        self.RENDER_DPI = 150
+        
+        # Status tracking
+        self.last_compilation_time = None
+        self.compilation_status = "Not yet compiled"
+        self.status_update_job = None
         
         self._create_widgets()
         if pdf_path and os.path.exists(pdf_path):
@@ -49,31 +53,36 @@ class PDFPreviewViewer:
         self.frame = ttk.Frame(self.parent)
         self.frame.pack(fill="both", expand=True)
         
-        # Toolbar
+        # Status label (replaces "PDF Preview" title)
+        self.status_label = ttk.Label(self.frame, text="Not yet compiled", anchor="w")
+        self.status_label.pack(fill="x", padx=5, pady=(5, 0))
+        
+        # Toolbar (with previous/next buttons)
         self._create_toolbar()
         
         # Canvas for PDF display with scrollbars
-        self.canvas_frame = ttk.Frame(self.frame)
-        self.canvas_frame.pack(fill="both", expand=True, padx=5, pady=5)
+        canvas_frame = ttk.Frame(self.frame)
+        canvas_frame.pack(fill="both", expand=True, padx=5, pady=5)
         
         # Create canvas with scrollbars
-        self.canvas = Canvas(self.canvas_frame, bg="lightgray")
-        self.v_scrollbar = Scrollbar(self.canvas_frame, orient="vertical", command=self.canvas.yview)
-        self.h_scrollbar = Scrollbar(self.canvas_frame, orient="horizontal", command=self.canvas.xview)
-        self.canvas.configure(yscrollcommand=self.v_scrollbar.set, xscrollcommand=self.h_scrollbar.set)
+        self.canvas = Canvas(canvas_frame, bg="lightgray")
+        v_scrollbar = Scrollbar(canvas_frame, orient="vertical", command=self.canvas.yview)
+        h_scrollbar = Scrollbar(canvas_frame, orient="horizontal", command=self.canvas.xview)
+        self.canvas.configure(yscrollcommand=v_scrollbar.set, xscrollcommand=h_scrollbar.set)
         
         # Grid layout
         self.canvas.grid(row=0, column=0, sticky="nsew")
-        self.v_scrollbar.grid(row=0, column=1, sticky="ns")
-        self.h_scrollbar.grid(row=1, column=0, sticky="ew")
+        v_scrollbar.grid(row=0, column=1, sticky="ns")
+        h_scrollbar.grid(row=1, column=0, sticky="ew")
         
-        self.canvas_frame.grid_rowconfigure(0, weight=1)
-        self.canvas_frame.grid_columnconfigure(0, weight=1)
+        canvas_frame.grid_rowconfigure(0, weight=1)
+        canvas_frame.grid_columnconfigure(0, weight=1)
         
-        # Bind events for zooming
+        # Bind events for zooming and scrolling
         self.canvas.bind("<Control-MouseWheel>", self._on_zoom)
-        self.canvas.bind("<Control-Button-4>", self._on_zoom_in)
-        self.canvas.bind("<Control-Button-5>", self._on_zoom_out)
+        self.canvas.bind("<MouseWheel>", self._on_mouse_wheel)
+        self.canvas.bind("<Button-4>", self._on_mouse_wheel_up)
+        self.canvas.bind("<Button-5>", self._on_mouse_wheel_down)
     
     def _create_toolbar(self):
         """Create the toolbar with navigation controls."""
@@ -83,9 +92,6 @@ class PDFPreviewViewer:
         # Navigation buttons
         self.prev_button = ttk.Button(toolbar, text="◀ Previous", command=self.previous_page, state="disabled")
         self.prev_button.pack(side="left", padx=(0, 5))
-        
-        self.page_label = ttk.Label(toolbar, text="Page 1 of 1")
-        self.page_label.pack(side="left", padx=10)
         
         self.next_button = ttk.Button(toolbar, text="Next ▶", command=self.next_page, state="disabled")
         self.next_button.pack(side="left", padx=(5, 10))
@@ -105,30 +111,18 @@ class PDFPreviewViewer:
         # Refresh button
         self.refresh_button = ttk.Button(toolbar, text="Refresh", command=self.refresh)
         self.refresh_button.pack(side="right")
-        
-        # Page jump
-        ttk.Label(toolbar, text="Go to page:").pack(side="right", padx=(20, 5))
-        self.page_entry = ttk.Entry(toolbar, width=5)
-        self.page_entry.pack(side="right", padx=5)
-        self.page_entry.bind("<Return>", self._on_page_entry)
-        
-        # Go button
-        self.go_button = ttk.Button(toolbar, text="Go", command=self._go_to_page, state="disabled")
-        self.go_button.pack(side="right", padx=(0, 5))
     
-    def _on_page_entry(self, event):
-        """Handle page entry submission."""
-        self._go_to_page()
-    
-    def _go_to_page(self):
-        """Go to the page specified in the entry."""
-        try:
-            page_num = int(self.page_entry.get())
-            if 1 <= page_num <= self.total_pages:
-                self.current_page = page_num
-                self._update_page_display()
-        except ValueError:
-            pass  # Ignore invalid input
+    def _on_mouse_wheel(self, event):
+        """Handle mouse wheel scrolling."""
+        self.canvas.yview_scroll(-1 * (event.delta // 120), "units")
+        
+    def _on_mouse_wheel_up(self, event):
+        """Handle mouse wheel up scrolling (Linux)."""
+        self.canvas.yview_scroll(-1, "units")
+        
+    def _on_mouse_wheel_down(self, event):
+        """Handle mouse wheel down scrolling (Linux)."""
+        self.canvas.yview_scroll(1, "units")
     
     def _on_zoom(self, event):
         """Handle zoom with mouse wheel."""
@@ -137,32 +131,14 @@ class PDFPreviewViewer:
         else:
             self.zoom_out()
     
-    def _on_zoom_in(self, event):
-        """Handle zoom in with mouse wheel (Linux)."""
-        self.zoom_in()
-    
-    def _on_zoom_out(self, event):
-        """Handle zoom out with mouse wheel (Linux)."""
-        self.zoom_out()
-    
     def _create_placeholder(self):
         """Create a placeholder display when no PDF is loaded."""
         self.canvas.delete("all")
-        
-        # Clear page cache
-        self._clear_page_cache()
-        
-        # Reset page info
-        self.current_page = 1
-        self.total_pages = 1
+        self._clear_caches()
         self.zoom_level = 1.0
-        
-        # Update UI
-        self.page_label.configure(text="Page 1 of 1")
         self.zoom_label.configure(text="100%")
         self._disable_toolbar()
         
-        # Draw placeholder
         width, height = 600, 800
         self.canvas.configure(scrollregion=(0, 0, width, height))
         
@@ -171,25 +147,19 @@ class PDFPreviewViewer:
         
         # Placeholder text
         self.canvas.create_text(
-            width // 2, height // 2 - 50,
-            text="PDF Preview",
-            font=("Arial", 24, "bold"),
-            fill="gray"
-        )
-        
-        self.canvas.create_text(
             width // 2, height // 2,
             text="No PDF document loaded",
             font=("Arial", 16),
             fill="lightgray"
         )
         
-        self.canvas.create_text(
-            width // 2, height // 2 + 50,
-            text="Open a .tex file with an associated .pdf to preview it here",
-            font=("Arial", 12),
-            fill="lightgray"
-        )
+        self._update_status_label()
+    
+    def _clear_caches(self):
+        """Clear all page caches."""
+        self.page_images.clear()
+        self.page_photos.clear()
+        self.page_layouts.clear()
     
     def load_pdf(self, pdf_path):
         """
@@ -199,265 +169,197 @@ class PDFPreviewViewer:
             pdf_path (str): Path to the PDF file
         """
         if not os.path.exists(pdf_path):
-            debug_console.log(f"PDF file not found: {pdf_path}", level='ERROR')
             self._create_placeholder()
             return
             
         self.pdf_path = pdf_path
-        self._clear_page_cache()
-        debug_console.log(f"Loading PDF: {pdf_path}", level='INFO')
+        self._clear_caches()
         
-        try:
-            # Get page count using PyPDF2
-            from PyPDF2 import PdfReader
-            reader = PdfReader(pdf_path)
-            self.total_pages = len(reader.pages)
+        # Cancel any existing render thread
+        if self.render_thread and self.render_thread.is_alive():
+            return
             
-            debug_console.log(f"PDF has {self.total_pages} pages", level='INFO')
-            
-            # Reset to first page
-            self.current_page = 1
-            
-            # Enable toolbar
-            self._enable_toolbar()
-            
-            # Render first page
-            self._update_page_display()
-            
-        except ImportError as e:
-            debug_console.log(f"PDF rendering libraries not available: {e}", level='ERROR')
-            self._show_pdf_info()
-        except Exception as e:
-            debug_console.log(f"Error loading PDF: {e}", level='ERROR')
-            self._create_placeholder()
+        # Start rendering in a separate thread
+        self.render_thread = threading.Thread(target=self._render_all_pages, daemon=True)
+        self.render_thread.start()
     
-    def _show_pdf_info(self):
-        """Show PDF information when rendering is not available."""
-        self.canvas.delete("all")
-        
-        width, height = 600, 400
-        self.canvas.configure(scrollregion=(0, 0, width, height))
-        
-        # Background
-        self.canvas.create_rectangle(0, 0, width, height, fill="white", outline="gray")
-        
-        # Title
-        self.canvas.create_text(
-            width // 2, 50,
-            text="PDF Preview",
-            font=("Arial", 24, "bold"),
-            fill="black"
-        )
-        
-        # PDF info
-        if self.pdf_path:
-            filename = os.path.basename(self.pdf_path)
-            self.canvas.create_text(
-                width // 2, 120,
-                text=f"File: {filename}",
-                font=("Arial", 14),
-                fill="black"
-            )
-            
-            self.canvas.create_text(
-                width // 2, 160,
-                text=f"Path: {self.pdf_path}",
-                font=("Arial", 12),
-                fill="gray"
-            )
-            
-            self.canvas.create_text(
-                width // 2, 200,
-                text=f"Pages: {self.total_pages}",
-                font=("Arial", 12),
-                fill="black"
-            )
-        
-        # Install message
-        self.canvas.create_text(
-            width // 2, 300,
-            text="To enable full PDF rendering, install required packages:",
-            font=("Arial", 12),
-            fill="blue"
-        )
-        
-        self.canvas.create_text(
-            width // 2, 330,
-            text="pip install pdf2image Pillow PyPDF2",
-            font=("Courier", 12),
-            fill="red"
-        )
-    
-    def _get_master_image(self, page_num):
-        """
-        Get the high-resolution master image for a page, rendering if not cached.
-        """
-        if page_num in self.master_images:
-            return self.master_images[page_num]
-        
-        if not self.pdf_path or not os.path.exists(self.pdf_path):
-            return None
-        
-        # Render the page if not in cache
+    def _render_all_pages(self):
+        """Render all pages of the PDF in a separate thread."""
         try:
             from pdf2image import convert_from_path
+            images = convert_from_path(self.pdf_path, dpi=self.RENDER_DPI)
             
-            debug_console.log(f"Rendering master image for page {page_num} at {self.MASTER_DPI} DPI", level='DEBUG')
-            images = convert_from_path(
-                self.pdf_path,
-                first_page=page_num,
-                last_page=page_num,
-                dpi=self.MASTER_DPI,
-                grayscale=False
-            )
-            
-            if images:
-                self.master_images[page_num] = images[0]
-                return images[0]
+            # Store images in cache
+            for i, img in enumerate(images):
+                self.page_images[i + 1] = img
                 
-        except ImportError:
-            self.parent.after(0, self._show_pdf_info)
+            # Update UI in main thread
+            self.parent.after(0, self._display_pages, len(images))
         except Exception as e:
-            debug_console.log(f"Error rendering master page {page_num}: {e}", level='ERROR')
-        
-        return None
-
-    def _update_page_display(self):
-        """
-        Update the canvas with the current page at the current zoom level.
-        """
-        master_image = self._get_master_image(self.current_page)
-        
-        if not master_image:
-            return
-
-        # Resize master image based on zoom level
-        original_width, original_height = master_image.size
-        new_width = int(original_width * self.zoom_level * (100 / self.MASTER_DPI))
-        new_height = int(original_height * self.zoom_level * (100 / self.MASTER_DPI))
-
-        # Use ANTIALIAS for better quality resizing
-        resized_image = master_image.resize((new_width, new_height), Image.Resampling.LANCZOS)
-        
+            debug_console.log(f"Error rendering PDF: {e}", level='ERROR')
+            self.parent.after(0, self._create_placeholder)
+    
+    def _display_pages(self, num_pages):
+        """Display all rendered pages on the canvas."""
         self.canvas.delete("all")
+        self.page_layouts.clear()
+        self.page_photos.clear()
         
-        # Convert PIL image to PhotoImage
-        self.display_photo = ImageTk.PhotoImage(resized_image)
+        y_offset = 10
+        max_width = 0
         
-        # Configure scroll region
-        self.canvas.configure(scrollregion=(0, 0, new_width, new_height))
+        # Display each page
+        for page_num in range(1, num_pages + 1):
+            if page_num not in self.page_images:
+                continue
+                
+            img = self.page_images[page_num]
+            w, h = img.size
+            
+            # Calculate display dimensions
+            disp_w = int(w * self.zoom_level)
+            disp_h = int(h * self.zoom_level)
+            
+            if disp_w == 0 or disp_h == 0:
+                continue
+                
+            # Resize image for display
+            display_img = img.resize((disp_w, disp_h), Image.Resampling.LANCZOS)
+            photo = ImageTk.PhotoImage(display_img)
+            
+            # Store photo to prevent garbage collection
+            self.page_photos[page_num] = photo
+            
+            # Draw image on canvas
+            self.canvas.create_image(10, y_offset, anchor="nw", image=photo)
+            
+            # Store layout information
+            self.page_layouts[page_num] = {
+                'y_offset': y_offset,
+                'height': disp_h,
+                'width': disp_w
+            }
+            
+            # Update offset and width
+            y_offset += disp_h + 10
+            if disp_w > max_width:
+                max_width = disp_w
+                
+        # Set scroll region
+        self.total_height = y_offset
+        self.canvas.configure(scrollregion=(0, 0, max_width + 20, self.total_height))
         
-        # Display image
-        self.canvas.create_image(0, 0, anchor="nw", image=self.display_photo)
+        # Enable toolbar
+        self._enable_toolbar()
         
-        # Update page label
-        self.page_label.configure(text=f"Page {self.current_page} of {self.total_pages}")
-        
-        # Update zoom label
-        zoom_percent = int(self.zoom_level * 100)
-        self.zoom_label.configure(text=f"{zoom_percent}%")
-
-        # Start pre-rendering adjacent pages
-        self._start_prerender()
-
-    def _start_prerender(self):
-        """Start a background thread to pre-render adjacent pages."""
-        if self.prerender_thread and self.prerender_thread.is_alive():
-            return # A thread is already running
-
-        self.prerender_thread = threading.Thread(
-            target=self._prerender_worker,
-            args=(self.current_page,),
-            daemon=True
-        )
-        self.prerender_thread.start()
-
-    def _prerender_worker(self, initial_page):
-        """
-        Worker thread to pre-render pages around the initial page.
-        """
-        # Pre-render next pages
-        for i in range(1, 4):
-            page_to_render = initial_page + i
-            if page_to_render > self.total_pages:
-                break
-            if page_to_render not in self.master_images:
-                self._get_master_image(page_to_render)
-        
-        # Pre-render previous pages
-        for i in range(1, 3):
-            page_to_render = initial_page - i
-            if page_to_render < 1:
-                break
-            if page_to_render not in self.master_images:
-                self._get_master_image(page_to_render)
-
+        # Update status
+        self._update_status_label()
+    
     def _enable_toolbar(self):
-        """Enable toolbar buttons when PDF is loaded."""
-        self.prev_button.configure(state="normal")
-        self.next_button.configure(state="normal")
-        self.zoom_out_button.configure(state="normal")
-        self.zoom_in_button.configure(state="normal")
-        self.go_button.configure(state="normal")
+        """Enable toolbar buttons."""
+        for btn in [self.zoom_in_button, self.zoom_out_button]:
+            btn.configure(state="normal")
     
     def _disable_toolbar(self):
-        """Disable toolbar buttons when no PDF is loaded."""
-        self.prev_button.configure(state="disabled")
-        self.next_button.configure(state="disabled")
-        self.zoom_out_button.configure(state="disabled")
-        self.zoom_in_button.configure(state="disabled")
-        self.go_button.configure(state="disabled")
-    
-    def previous_page(self):
-        """Navigate to the previous page."""
-        if self.current_page > 1:
-            self.current_page -= 1
-            self._update_page_display()
-    
-    def next_page(self):
-        """Navigate to the next page."""
-        if self.current_page < self.total_pages:
-            self.current_page += 1
-            self._update_page_display()
+        """Disable toolbar buttons."""
+        for btn in [self.zoom_in_button, self.zoom_out_button]:
+            btn.configure(state="disabled")
     
     def zoom_in(self):
-        """Increase the zoom level."""
-        if self.zoom_level < 3.0:  # Max 300%
+        """Zoom in on the PDF."""
+        if self.zoom_level < 3.0:
             self.zoom_level *= 1.2
-            self._update_page_display()
+            self.zoom_label.configure(text=f"{int(self.zoom_level * 100)}%")
+            self._display_pages(len(self.page_images))
     
     def zoom_out(self):
-        """Decrease the zoom level."""
-        if self.zoom_level > 0.2:  # Min 20%
+        """Zoom out on the PDF."""
+        if self.zoom_level > 0.3:
             self.zoom_level /= 1.2
-            self._update_page_display()
+            self.zoom_label.configure(text=f"{int(self.zoom_level * 100)}%")
+            self._display_pages(len(self.page_images))
     
-    def _clear_page_cache(self):
-        """Clear all page caches."""
-        self.master_images.clear()
+    def previous_page(self):
+        """Scroll to the previous page."""
+        if not self.page_layouts:
+            return
+            
+        # Get current view position
+        current_y = self.canvas.yview()[0] * self.total_height
+        
+        # Find current page
+        current_page = 1
+        for page_num, layout in self.page_layouts.items():
+            if layout['y_offset'] <= current_y < layout['y_offset'] + layout['height']:
+                current_page = page_num
+                break
+                
+        # Scroll to previous page
+        if current_page > 1:
+            prev_layout = self.page_layouts[current_page - 1]
+            self.canvas.yview_moveto(prev_layout['y_offset'] / self.total_height)
+    
+    def next_page(self):
+        """Scroll to the next page."""
+        if not self.page_layouts:
+            return
+            
+        # Get current view position
+        current_y = self.canvas.yview()[0] * self.total_height
+        
+        # Find current page
+        current_page = 1
+        for page_num, layout in self.page_layouts.items():
+            if layout['y_offset'] <= current_y < layout['y_offset'] + layout['height']:
+                current_page = page_num
+                
+        # Scroll to next page
+        if current_page < len(self.page_layouts):
+            next_layout = self.page_layouts[current_page + 1]
+            self.canvas.yview_moveto(next_layout['y_offset'] / self.total_height)
     
     def refresh(self):
         """Refresh the PDF display."""
         if self.pdf_path:
-            debug_console.log("Refreshing PDF preview", level='INFO')
-            self._clear_page_cache()
             self.load_pdf(self.pdf_path)
     
-    def synchronize_with_editor(self, line_number):
+    def _update_status_label(self):
+        """Update the status label with compilation information."""
+        status_text = self.compilation_status
+        time_ago = ""
+        
+        if self.last_compilation_time:
+            seconds = int(time.time() - self.last_compilation_time)
+            if seconds < 60:
+                time_ago = "Last compiled less than a minute ago"
+            else:
+                minutes = seconds // 60
+                if minutes == 1:
+                    time_ago = "Last compiled about a minute ago"
+                else:
+                    time_ago = f"Last compiled {minutes} minutes ago"
+        
+        full_text = f"{time_ago}\n{status_text}" if time_ago else status_text
+        self.status_label.config(text=full_text)
+    
+    def set_compilation_status(self, status, last_compilation_time=None):
         """
-        Synchronize the PDF view with a specific line in the editor.
+        Set the compilation status and update the display.
         
         Args:
-            line_number (int): Line number in the LaTeX editor
+            status (str): Compilation status ("Compilable", "Compiling...", "Not compilable")
+            last_compilation_time (float, optional): Timestamp of last compilation
         """
-        debug_console.log(f"Synchronizing PDF with editor line {line_number}", level='DEBUG')
-        # In a full implementation, this would scroll to the relevant page/position
+        self.compilation_status = status
+        if last_compilation_time:
+            self.last_compilation_time = last_compilation_time
+        self._update_status_label()
     
     def get_widget(self):
         """
         Get the main widget for this viewer.
         
         Returns:
-            ttk.Frame: The main frame containing the viewer
+            ttk.Frame: The main frame widget
         """
         return self.frame
