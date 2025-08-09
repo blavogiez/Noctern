@@ -1,3 +1,11 @@
-ttkbootstrap
-requests
-google-generativeai
+# Core dependencies
+ttkbootstrap>=1.10.0
+
+# PDF rendering dependencies
+pdf2image>=1.16.0
+Pillow>=9.0.0
+PyPDF2>=3.0.0
+
+# LaTeX compilation tools should already be installed:
+# - pdflatex (part of TeX distribution)
+# - chktex (optional, for linting)

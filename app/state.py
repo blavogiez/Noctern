@@ -25,6 +25,7 @@ main_pane = None
 vertical_pane = None
 console_pane = None
 console_output = None
+pdf_preview_interface = None
 
 # --- Theme and Configuration Variables ---
 _theme_settings = {}

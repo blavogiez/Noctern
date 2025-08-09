@@ -8,12 +8,13 @@ import ttkbootstrap as ttk
 from app import state, actions, config as app_config, theme as interface_theme
 from app.zoom import ZoomManager
 from app.topbar import create_top_buttons_frame
-from app.panes import create_main_paned_window, create_left_pane, create_outline, create_error_panel, create_notebook, create_console_pane
+from app.panes import create_main_paned_window, create_left_pane, create_outline, create_error_panel, create_notebook, create_console_pane, create_pdf_preview_pane
 from app.status import create_status_bar, start_gpu_status_loop
 from app.shortcuts import bind_global_shortcuts
 from utils import debug_console, screen as screen_utils
 from pre_compiler.checker import Checker
 from editor import syntax as editor_syntax
+from pdf_preview.interface import PDFPreviewInterface
 
 def _apply_startup_window_settings(window, config):
     """Applies window geometry and state from config at startup."""
@@ -73,6 +74,17 @@ def setup_gui():
 
     debug_console.initialize(state.root)
     create_top_buttons_frame(state.root)
+    
+    # Initialize PDF preview interface
+    state.pdf_preview_interface = PDFPreviewInterface(state.root, state.get_current_tab)
+    
+    # After UI is set up, load PDF for initial tab
+    def load_initial_pdf():
+        current_tab = state.get_current_tab()
+        if current_tab and hasattr(state, 'pdf_preview_interface') and state.pdf_preview_interface:
+            state.pdf_preview_interface.load_existing_pdf_for_tab(current_tab)
+    
+    state.root.after(300, load_initial_pdf)
 
     state.vertical_pane = ttk.PanedWindow(state.root, orient=ttk.VERTICAL)
     state.vertical_pane.pack(fill="both", expand=True)
@@ -95,6 +107,10 @@ def setup_gui():
 
     state.error_panel = create_error_panel(left_pane, on_goto_line=go_to_line)
     state.notebook = create_notebook(state.main_pane)
+    
+    # Create PDF preview pane
+    pdf_preview_content = create_pdf_preview_pane(state.main_pane)
+    
     state.vertical_pane.add(state.main_pane, weight=1)
 
     console_frame, state.console_output = create_console_pane(state.vertical_pane)
@@ -138,6 +154,10 @@ def setup_gui():
         current_tab.editor.edit_modified(False)
         debug_console.log(f"Reset edit_modified flag for tab: {os.path.basename(current_tab.file_path) if current_tab.file_path else 'Untitled'}", level='DEBUG')
         
+        # Trigger PDF preview update
+        if hasattr(state, 'pdf_preview_interface') and state.pdf_preview_interface:
+            state.pdf_preview_interface.on_editor_content_change()
+        
         # If an update is already pending, skip this one
         if update_pending:
             debug_console.log(f"Skipping update for tab: {os.path.basename(current_tab.file_path) if current_tab.file_path else 'Untitled'} - update already pending", level='DEBUG')
@@ -167,6 +187,10 @@ def setup_gui():
             bind_text_modified_event(current_tab)
             # Always check document when tab changes
             state.root.after(50, check_document_and_highlight)
+            
+            # Load existing PDF for the tab if it exists
+            if hasattr(state, 'pdf_preview_interface') and state.pdf_preview_interface:
+                state.pdf_preview_interface.load_existing_pdf_for_tab(current_tab)
             
     # Also bind the text modified event to the initial tab
     state.root.after(100, lambda: bind_text_modified_event(state.get_current_tab()))

@@ -92,3 +92,38 @@ def create_console_pane(parent):
     console_output.configure(font=console_font)
 
     return console_frame, console_output
+
+
+def create_pdf_preview_pane(parent):
+    """
+    Creates the PDF preview pane for displaying compiled PDF documents.
+
+    Args:
+        parent (tk.Widget): The parent widget for the PDF preview pane.
+
+    Returns:
+        ttk.Frame: The frame containing the PDF preview components.
+    """
+    preview_frame = ttk.Frame(parent)
+    
+    # Header label
+    header = ttk.Label(
+        preview_frame, 
+        text="PDF Preview", 
+        font=("Arial", 12, "bold"),
+        anchor="center"
+    )
+    header.pack(fill="x", padx=5, pady=5)
+    
+    # Separator
+    separator = ttk.Separator(preview_frame, orient="horizontal")
+    separator.pack(fill="x", padx=5)
+    
+    # This frame will be populated by the PDF preview module
+    content_frame = ttk.Frame(preview_frame)
+    content_frame.pack(fill="both", expand=True, padx=2, pady=2)
+    
+    # Add to parent pane
+    parent.add(preview_frame, weight=2)
+    
+    return content_frame
