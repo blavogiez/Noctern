@@ -40,16 +40,44 @@ def move_word_right(event):
 
 def select_word_left(event):
     editor = event.widget
-    if not editor.tag_ranges("sel"): editor.mark_set("anchor", "insert")
-    editor.mark_set("insert", "insert-1c wordstart")
-    editor.tag_add("sel", "anchor", "insert")
+    # Mémoriser la position actuelle si aucune sélection n'existe
+    if not editor.tag_ranges("sel"):
+        editor.mark_set("anchor", "insert")
+    
+    # Déplacer le curseur au début du mot précédent
+    current_pos = editor.index("insert")
+    new_pos = editor.index("insert-1c wordstart")
+    
+    # Mettre à jour la position du curseur
+    editor.mark_set("insert", new_pos)
+    
+    # Ajouter la nouvelle sélection
+    editor.tag_remove("sel", "1.0", "end")
+    editor.tag_add("sel", "insert", "anchor")
+    
+    # S'assurer que le curseur est visible
+    editor.see("insert")
     return "break"
 
 def select_word_right(event):
     editor = event.widget
-    if not editor.tag_ranges("sel"): editor.mark_set("anchor", "insert")
-    editor.mark_set("insert", "insert wordend")
+    # Mémoriser la position actuelle si aucune sélection n'existe
+    if not editor.tag_ranges("sel"):
+        editor.mark_set("anchor", "insert")
+    
+    # Déplacer le curseur à la fin du mot suivant
+    current_pos = editor.index("insert")
+    new_pos = editor.index("insert wordend")
+    
+    # Mettre à jour la position du curseur
+    editor.mark_set("insert", new_pos)
+    
+    # Ajouter la nouvelle sélection
+    editor.tag_remove("sel", "1.0", "end")
     editor.tag_add("sel", "anchor", "insert")
+    
+    # S'assurer que le curseur est visible
+    editor.see("insert")
     return "break"
 
 def move_line_up(event):
