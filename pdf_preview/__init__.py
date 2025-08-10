@@ -9,6 +9,7 @@ Modules:
 - manager: PDF preview manager component
 - sync: PDF-editor synchronization component
 - interface: Main interface integration
+- navigator: PDF text navigation component
 """
 
 # Package version

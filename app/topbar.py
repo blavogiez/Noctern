@@ -87,6 +87,14 @@ def create_top_buttons_frame(root):
     # LLM Interaction
     create_animated_button("Complete", lambda: [_log_action("LLM Complete Text"), llm_service.request_llm_to_complete_text()], "success-outline", "complete.svg")
     create_animated_button("Generate", lambda: [_log_action("LLM Generate Text"), llm_service.open_generate_text_dialog()], "success-outline", "generate.svg")
+    
+    # Add some spacing between groups
+    spacer3 = ttk.Frame(top_frame, width=10)
+    spacer3.place(x=0, y=0)
+    buttons.append(spacer3)
+    
+    # PDF Navigation
+    create_animated_button("Go to line in PDF", lambda: [_log_action("Go to line in PDF"), interface.go_to_line_in_pdf()], "warning-outline", "file-text.svg")
 
     # Place buttons dynamically
     current_x = 5

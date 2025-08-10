@@ -121,6 +121,16 @@ AutomaTeX est un éditeur LaTeX moderne conçu pour simplifier votre workflow d'
   </table>
 </div>
 
+### 📦 Dépendances Python
+
+L'application utilise plusieurs bibliothèques Python :
+
+- `ttkbootstrap` - Interface utilisateur moderne
+- `pdf2image` - Conversion PDF vers images
+- `Pillow` - Traitement d'images
+- `PyPDF2` - Manipulation de PDFs
+- `pdfplumber` - Extraction de texte depuis les PDFs
+
 ### 🛠️ Installation pas à pas
 
 1. **Cloner le dépôt**

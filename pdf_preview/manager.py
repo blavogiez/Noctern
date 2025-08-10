@@ -165,3 +165,13 @@ class PDFPreviewManager:
 
     def set_auto_refresh(self, enabled):
         self.auto_refresh_enabled = enabled
+        
+    def go_to_text_in_pdf(self, text):
+        """
+        Navigate to the specified text in the PDF using the viewer's text navigator.
+        
+        Args:
+            text (str): Text to search for in the PDF
+        """
+        if self.viewer:
+            self.viewer.go_to_text(text)

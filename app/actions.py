@@ -383,6 +383,31 @@ def restart_application():
     else:
         debug_console.log("Application restart cancelled by user.", level='INFO')
 
+def go_to_line_in_pdf(event=None):
+    """
+    Navigate to the selected text in the PDF preview.
+    """
+    current_tab = state.get_current_tab()
+    if not current_tab or not current_tab.editor:
+        debug_console.log("No active editor tab found.", level='WARNING')
+        return
+        
+    # Get selected text
+    try:
+        selected_text = current_tab.editor.get("sel.first", "sel.last")
+        if not selected_text.strip():
+            debug_console.log("No text selected.", level='INFO')
+            return
+    except tk.TclError:
+        debug_console.log("No text selected.", level='INFO')
+        return
+        
+    # Use the PDF preview interface to navigate to the text
+    if hasattr(state, 'pdf_preview_interface') and state.pdf_preview_interface:
+        state.pdf_preview_interface.go_to_text_in_pdf(selected_text)
+    else:
+        debug_console.log("PDF preview interface not available.", level='WARNING')
+
 def apply_theme(theme_name=None, event=None):
     """
     Applies the specified theme to the entire application.

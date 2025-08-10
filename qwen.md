@@ -127,6 +127,7 @@ AutomaTeX/
    - Pillow : Manipulation d'images
    - ttkbootstrap : Thèmes et styles
    - google-generativeai : API Google Gemini
+   - pdfplumber : Extraction de texte depuis les PDFs
 
 ### Standards de codage
 

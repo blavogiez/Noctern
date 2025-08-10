@@ -12,6 +12,9 @@ import threading
 import time
 from utils import debug_console
 
+# Import the new navigator component
+from pdf_preview.navigator import PDFTextNavigator
+
 
 class PDFPreviewViewer:
     """
@@ -42,6 +45,9 @@ class PDFPreviewViewer:
         self.last_compilation_time = None
         self.compilation_status = "Not yet compiled"
         self.status_update_job = None
+        
+        # Text navigator component
+        self.text_navigator = PDFTextNavigator(self)
         
         self._create_widgets()
         if pdf_path and os.path.exists(pdf_path):
@@ -363,3 +369,12 @@ class PDFPreviewViewer:
             ttk.Frame: The main frame widget
         """
         return self.frame
+        
+    def go_to_text(self, text):
+        """
+        Navigate to the specified text in the PDF using the text navigator component.
+        
+        Args:
+            text (str): Text to search for in the PDF
+        """
+        self.text_navigator.go_to_text(text)

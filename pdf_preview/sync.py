@@ -178,3 +178,39 @@ class PDFSyncManager:
                 level='DEBUG'
             )
         return editor_line
+        
+    def find_text_in_pdf(self, pdf_path, text):
+        """
+        Find the specified text in the PDF and return its position.
+        
+        Args:
+            pdf_path (str): Path to the PDF file
+            text (str): Text to search for
+            
+        Returns:
+            dict: Position information (page number, coordinates) or None
+        """
+        try:
+            import pdfplumber
+            
+            with pdfplumber.open(pdf_path) as pdf:
+                for page_num, page in enumerate(pdf.pages):
+                    # Extract text with bounding boxes
+                    chars = page.chars
+                    if chars:
+                        # Simple text search
+                        page_text = ''.join([char['text'] for char in chars])
+                        if text.lower() in page_text.lower():
+                            # Found the text on this page
+                            return {
+                                'page': page_num + 1,
+                                'approx_y': 0.5  # Middle of page as approximation
+                            }
+                            
+            return None
+        except ImportError:
+            debug_console.log("pdfplumber not installed. Cannot search text in PDF.", level='ERROR')
+            return None
+        except Exception as e:
+            debug_console.log(f"Error searching text in PDF: {e}", level='ERROR')
+            return None
