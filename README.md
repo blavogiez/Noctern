@@ -56,6 +56,7 @@ AutomaTeX est un éditeur LaTeX moderne conçu pour simplifier votre workflow d'
           <li>Interface claire avec thèmes clair/sombre</li>
           <li>Surlignage syntaxique</li>
           <li>Navigation par plan du document</li>
+          <li>Recherche rapide (Ctrl+F)</li>
           <li>Raccourcis clavier intuitifs</li>
         </ul>
       </td>
@@ -207,6 +208,11 @@ L'application utilise plusieurs bibliothèques Python :
       <th>Description</th>
     </tr>
     <tr>
+      <td><b>Recherche</b></td>
+      <td><kbd>Ctrl</kbd> + <kbd>F</kbd></td>
+      <td>Ouvre la barre de recherche</td>
+    </tr>
+    <tr>
       <td><b>Complétion IA</b></td>
       <td><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>C</kbd></td>
       <td>Complète la phrase en cours</td>
@@ -257,6 +263,14 @@ L'application utilise plusieurs bibliothèques Python :
    - **Reformulation** : Modèle pour reformuler
    - **Débogage** : Modèle pour corriger les erreurs
    - **Style** : Modèle pour améliorer le style
+
+### 🔍 Utilisation de la recherche
+
+1. Appuyez sur <kbd>Ctrl</kbd> + <kbd>F</kbd> pour ouvrir la barre de recherche
+2. Saisissez le terme à rechercher dans le champ de texte
+3. Les correspondances seront automatiquement mises en surbrillance
+4. Utilisez les boutons « Précédent » et « Suivant » pour naviguer
+5. Appuyez sur <kbd>Échap</kbd> pour fermer la barre de recherche
 
 ### 🖼️ Utilisation du collage d'images
 

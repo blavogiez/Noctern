@@ -8,11 +8,15 @@ from app import actions as interface
 from llm import rephrase as llm_rephrase
 from utils import debug_console
 from editor import snippets as editor_snippets
+from editor import search as editor_search
 import tkinter as tk
 
 def bind_global_shortcuts(root):
     """Binds all global keyboard shortcuts for the application."""
     debug_console.log("Binding global shortcuts.", level='INFO')
+    
+    # Initialize the search bar
+    editor_search.initialize_search_bar(root)
     
     def log_and_run(func, name, pass_event=False):
         """
@@ -45,6 +49,7 @@ def bind_global_shortcuts(root):
         "<Control-Shift-D>": (latex_compiler.run_chktex_check, "Chktex Check"),
         "<Control-Shift-V>": (interface.paste_image, "Paste Image"),
         "<Control-t>": (latex_translator.open_translate_dialog, "Translate Dialog"),
+        "<Control-f>": (editor_search.show_search_bar, "Find"),
     }
 
     for key, (func, name) in simple_shortcuts.items():
@@ -52,7 +57,7 @@ def bind_global_shortcuts(root):
 
     # Snippets are a special case that needs to work in the editor
     root.bind_all("<Control-space>", editor_snippets.handle_snippet_expansion)
-        
+    
     # Zoom shortcuts are safe to be global without the wrapper
     root.bind_all("<Control-equal>", interface.zoom_in)
     root.bind_all("<Control-minus>", interface.zoom_out)
