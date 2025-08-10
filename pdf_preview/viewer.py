@@ -14,6 +14,7 @@ from utils import debug_console
 
 # Import the new navigator component
 from pdf_preview.navigator import PDFTextNavigator
+from pdf_preview.sync import PDFSyncManager
 
 
 class PDFPreviewViewer:
@@ -48,6 +49,9 @@ class PDFPreviewViewer:
         
         # Text navigator component
         self.text_navigator = PDFTextNavigator(self)
+        
+        # Sync manager for text search
+        self.sync_manager = PDFSyncManager()
         
         self._create_widgets()
         if pdf_path and os.path.exists(pdf_path):
@@ -180,6 +184,10 @@ class PDFPreviewViewer:
             
         self.pdf_path = pdf_path
         self._clear_caches()
+        
+        # Clear any text highlights
+        if hasattr(self, 'text_navigator'):
+            self.text_navigator.clear_highlights()
         
         # Cancel any existing render thread
         if self.render_thread and self.render_thread.is_alive():
@@ -370,11 +378,13 @@ class PDFPreviewViewer:
         """
         return self.frame
         
-    def go_to_text(self, text):
+    def go_to_text(self, text, context_before="", context_after=""):
         """
         Navigate to the specified text in the PDF using the text navigator component.
         
         Args:
             text (str): Text to search for in the PDF
+            context_before (str): Text before the target text
+            context_after (str): Text after the target text
         """
-        self.text_navigator.go_to_text(text)
+        self.text_navigator.go_to_text(text, context_before, context_after)

@@ -179,17 +179,24 @@ class PDFSyncManager:
             )
         return editor_line
         
-    def find_text_in_pdf(self, pdf_path, text):
+    def find_text_in_pdf(self, pdf_path, text, context_before="", context_after=""):
         """
         Find the specified text in the PDF and return its position.
         
         Args:
             pdf_path (str): Path to the PDF file
             text (str): Text to search for
+            context_before (str): Text before the target text
+            context_after (str): Text after the target text
             
         Returns:
             dict: Position information (page number, coordinates) or None
         """
+        # Only log initialization if this is a new instance
+        if not hasattr(self, '_initialized'):
+            debug_console.log("PDF Synchronization Manager initialized", level='INFO')
+            self._initialized = True
+            
         try:
             import pdfplumber
             
@@ -198,13 +205,31 @@ class PDFSyncManager:
                     # Extract text with bounding boxes
                     chars = page.chars
                     if chars:
-                        # Simple text search
+                        # Get page text
                         page_text = ''.join([char['text'] for char in chars])
-                        if text.lower() in page_text.lower():
-                            # Found the text on this page
+                        
+                        # Search for text with context
+                        search_text = context_before + text + context_after
+                        if search_text.lower() in page_text.lower():
+                            # Found the text with context on this page
+                            start_idx = page_text.lower().find(search_text.lower())
+                            # Calculate approximate position
                             return {
                                 'page': page_num + 1,
-                                'approx_y': 0.5  # Middle of page as approximation
+                                'start_index': start_idx,
+                                'text_length': len(search_text),
+                                'chars': chars
+                            }
+                        
+                        # Fallback to simple text search
+                        if text.lower() in page_text.lower():
+                            # Found the text on this page
+                            start_idx = page_text.lower().find(text.lower())
+                            return {
+                                'page': page_num + 1,
+                                'start_index': start_idx,
+                                'text_length': len(text),
+                                'chars': chars
                             }
                             
             return None

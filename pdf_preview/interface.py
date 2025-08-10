@@ -153,12 +153,14 @@ class PDFPreviewInterface:
         if self.preview_manager:
             self.preview_manager.set_auto_refresh(enabled)
             
-    def go_to_text_in_pdf(self, text):
+    def go_to_text_in_pdf(self, text, context_before="", context_after=""):
         """
         Navigate to the specified text in the PDF using the preview manager.
         
         Args:
             text (str): Text to search for in the PDF
+            context_before (str): Text before the target text
+            context_after (str): Text after the target text
         """
         if self.preview_manager:
-            self.preview_manager.go_to_text_in_pdf(text)
+            self.preview_manager.go_to_text_in_pdf(text, context_before, context_after)

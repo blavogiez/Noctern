@@ -385,7 +385,7 @@ def restart_application():
 
 def go_to_line_in_pdf(event=None):
     """
-    Navigate to the selected text in the PDF preview.
+    Navigate to the selected text in the PDF preview with context matching.
     """
     current_tab = state.get_current_tab()
     if not current_tab or not current_tab.editor:
@@ -402,9 +402,39 @@ def go_to_line_in_pdf(event=None):
         debug_console.log("No text selected.", level='INFO')
         return
         
-    # Use the PDF preview interface to navigate to the text
+    # Get context around selected text
+    try:
+        # Get start and end positions of selection
+        sel_start = current_tab.editor.index("sel.first")
+        sel_end = current_tab.editor.index("sel.last")
+        
+        # Get a few lines before and after the selection
+        start_line = int(sel_start.split('.')[0])
+        end_line = int(sel_end.split('.')[0])
+        
+        # Get context before (2 lines before selection)
+        context_start_line = max(1, start_line - 2)
+        context_before = ""
+        if context_start_line < start_line:
+            context_before = current_tab.editor.get(f"{context_start_line}.0", f"{start_line}.0")
+            
+        # Get context after (2 lines after selection)
+        # First, get the total number of lines
+        last_line_index = current_tab.editor.index("end-1c")
+        total_lines = int(last_line_index.split('.')[0])
+        context_end_line = min(total_lines, end_line + 2)
+        context_after = ""
+        if context_end_line > end_line:
+            context_after = current_tab.editor.get(f"{end_line}.end", f"{context_end_line}.end")
+            
+    except Exception as e:
+        debug_console.log(f"Error getting context: {e}", level='WARNING')
+        context_before = ""
+        context_after = ""
+        
+    # Use the PDF preview interface to navigate to the text with context
     if hasattr(state, 'pdf_preview_interface') and state.pdf_preview_interface:
-        state.pdf_preview_interface.go_to_text_in_pdf(selected_text)
+        state.pdf_preview_interface.go_to_text_in_pdf(selected_text, context_before, context_after)
     else:
         debug_console.log("PDF preview interface not available.", level='WARNING')
 
