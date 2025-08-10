@@ -6,6 +6,7 @@ Handles navigation to specific text within PDF documents and highlights the foun
 import os
 import tkinter as tk
 from utils import debug_console
+import pdfplumber
 
 class PDFTextNavigator:
     """
@@ -50,6 +51,28 @@ class PDFTextNavigator:
         layout = self.pdf_viewer.page_layouts[page_num]
         y_offset = layout['y_offset']
         
+        # Get page dimensions from pdfplumber to calculate scaling factor
+        try:
+            with pdfplumber.open(self.pdf_viewer.pdf_path) as pdf:
+                if page_num - 1 < len(pdf.pages):
+                    page = pdf.pages[page_num - 1]
+                    page_width = page.width
+                    page_height = page.height
+                else:
+                    debug_console.log(f"Page {page_num} not found in PDF.", level='WARNING')
+                    return
+        except Exception as e:
+            debug_console.log(f"Error getting page dimensions: {e}", level='ERROR')
+            return
+
+        # Ensure dimensions are not zero to avoid division by zero
+        if not page_width or not page_height:
+            debug_console.log(f"Invalid page dimensions for page {page_num}.", level='WARNING')
+            return
+
+        scale_x = layout['width'] / float(page_width)
+        scale_y = layout['height'] / float(page_height)
+        
         # Calculate the bounding box for the text
         if start_idx + text_length <= len(chars):
             # Get the characters for the text
@@ -68,16 +91,19 @@ class PDFTextNavigator:
                     min_y = min(min_y, char['top'])
                     max_y = max(max_y, char['bottom'])
                 
-                # Apply zoom scaling and position offset
-                scaled_min_x = min_x * self.pdf_viewer.zoom_level
-                scaled_max_x = max_x * self.pdf_viewer.zoom_level
-                scaled_min_y = min_y * self.pdf_viewer.zoom_level
-                scaled_max_y = max_y * self.pdf_viewer.zoom_level
+                # Apply scaling
+                scaled_min_x = min_x * scale_x
+                scaled_max_x = max_x * scale_x
+                scaled_min_y = min_y * scale_y
+                scaled_max_y = max_y * scale_y
                 
-                # Create a semi-transparent green rectangle
+                # Add a vertical margin for the highlight
+                v_margin = 25  # pixels
+                
+                # Create a semi-transparent green rectangle that spans the full width
                 rect = self.pdf_viewer.canvas.create_rectangle(
-                    10 + scaled_min_x, y_offset + scaled_min_y,
-                    10 + scaled_max_x, y_offset + scaled_max_y,
+                    10, y_offset + scaled_min_y - v_margin,
+                    10 + layout['width'], y_offset + scaled_max_y + v_margin,
                     fill="green", stipple="gray50", outline="darkgreen", width=1
                 )
                 
