@@ -116,8 +116,14 @@ def setup_gui():
     state.pdf_preview_pane = pdf_preview_content
     state.pdf_preview_parent = state.main_pane
     
+    # Add main pane to vertical pane
     state.vertical_pane.add(state.main_pane, weight=1)
 
+    # Add PDF preview pane according to user preferences
+    show_pdf_preview = app_config.get_bool(state._app_config.get("show_pdf_preview", "True"))
+    if show_pdf_preview:
+        state.main_pane.add(state.pdf_preview_pane.master, weight=2)
+    
     console_frame, state.console_output = create_console_pane(state.vertical_pane)
     state.console_pane = console_frame
     actions.hide_console()
@@ -215,10 +221,19 @@ def setup_gui():
     state.status_label = status_label
     state.gpu_status_label = gpu_status_label
     
-    # Initialize visibility tracking variables
+    # Initialize visibility tracking variables with saved settings
     from app import ui_visibility
-    state._status_bar_visible_var = ttk.BooleanVar(value=True)
-    state._pdf_preview_visible_var = ttk.BooleanVar(value=True)
+    show_status_bar = app_config.get_bool(state._app_config.get("show_status_bar", "True"))
+    show_pdf_preview = app_config.get_bool(state._app_config.get("show_pdf_preview", "True"))
+    
+    state._status_bar_visible_var = ttk.BooleanVar(value=show_status_bar)
+    state._pdf_preview_visible_var = ttk.BooleanVar(value=show_pdf_preview)
+    
+    # Apply initial visibility settings
+    if not show_status_bar:
+        ui_visibility.toggle_status_bar()
+    if not show_pdf_preview:
+        ui_visibility.toggle_pdf_preview()
     
     # Start the GPU status update loop
     start_gpu_status_loop(state.gpu_status_label, state.root)

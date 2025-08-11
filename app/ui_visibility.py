@@ -50,12 +50,15 @@ def toggle_pdf_preview():
     
     # Check if the PDF preview is currently in the paned window
     try:
-        if str(state.pdf_preview_pane.master) == str(state.pdf_preview_parent):
-            state.pdf_preview_parent.remove(state.pdf_preview_pane)
+        # Get the master frame that contains the pdf_preview_pane
+        pdf_preview_master_frame = state.pdf_preview_pane.master
+        
+        if str(pdf_preview_master_frame.master) == str(state.pdf_preview_parent):
+            state.pdf_preview_parent.remove(pdf_preview_master_frame)
             debug_console.log("PDF preview hidden.", level='INFO')
         else:
             # Add it back to the paned window with appropriate weight
-            state.pdf_preview_parent.add(state.pdf_preview_pane, weight=2)
+            state.pdf_preview_parent.add(pdf_preview_master_frame, weight=2)
             debug_console.log("PDF preview shown.", level='INFO')
     except Exception as e:
         debug_console.log(f"Error toggling PDF preview: {e}", level='ERROR')
@@ -71,6 +74,8 @@ def is_pdf_preview_visible():
     if not state.pdf_preview_pane or not state.pdf_preview_parent:
         return False
     try:
-        return str(state.pdf_preview_pane.master) == str(state.pdf_preview_parent)
+        # Get the master frame that contains the pdf_preview_pane
+        pdf_preview_master_frame = state.pdf_preview_pane.master
+        return str(pdf_preview_master_frame.master) == str(state.pdf_preview_parent)
     except:
         return False

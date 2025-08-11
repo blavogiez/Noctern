@@ -123,7 +123,7 @@ def create_pdf_preview_pane(parent):
     content_frame = ttk.Frame(preview_frame)
     content_frame.pack(fill="both", expand=True, padx=2, pady=2)
     
-    # Add to parent pane
-    parent.add(preview_frame, weight=2)
+    # Note: We don't add to parent pane here as visibility is managed by ui_visibility module
+    # The frame will be added to parent when needed
     
     return content_frame

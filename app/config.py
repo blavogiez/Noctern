@@ -24,7 +24,9 @@ DEFAULT_VALUES = {
     "model_rephrase": "default",
     "model_debug": "default",
     "model_style": "default",
-    "gemini_api_key": ""
+    "gemini_api_key": "",
+    "show_status_bar": "True",
+    "show_pdf_preview": "True"
 }
 
 def load_config():
