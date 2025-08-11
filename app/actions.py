@@ -298,16 +298,6 @@ def create_new_tab(file_path=None, event=None):
         file_path, state.notebook, state.tabs, apply_theme, on_tab_changed, EditorTab, schedule_heavy_updates
     )
 
-    if file_path and file_path.endswith(".tex"):
-        auto_open_var = state.get_auto_open_pdf_var()
-        if auto_open_var and auto_open_var.get():
-            pdf_path = file_path.replace(".tex", ".pdf")
-            if os.path.exists(pdf_path):
-                debug_console.log(f"Auto-opening PDF: {pdf_path}", level='INFO')
-                latex_compiler.view_pdf_external(pdf_path=pdf_path)
-            else:
-                debug_console.log(f"Auto-open PDF: Corresponding PDF not found at {pdf_path}", level='DEBUG')
-
 def restore_last_closed_tab(event=None):
     """
     Reopens the most recently closed tab.
@@ -357,17 +347,7 @@ def on_tab_changed(event=None):
     
     perform_heavy_updates()
 
-def toggle_auto_open_pdf():
-    """
-    Callback to update and save the auto-open PDF setting.
-    """
-    app_config_data = state.get_app_config()
-    auto_open_var = state.get_auto_open_pdf_var()
-    if auto_open_var:
-        new_value = auto_open_var.get()
-        app_config_data['auto_open_pdf'] = str(new_value)
-        app_config.save_config(app_config_data)
-        debug_console.log(f"Set 'auto_open_pdf' to {new_value}", level='CONFIG')
+
 
 def restart_application():
     """

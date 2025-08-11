@@ -34,7 +34,6 @@ _theme_settings = {}
 current_theme = "litera"
 settings_menu = None
 _app_config = {}
-_auto_open_pdf_var = None
 _status_bar_visible_var = None
 _pdf_preview_visible_var = None
 
@@ -90,8 +89,4 @@ def get_app_config():
     """
     return _app_config
 
-def get_auto_open_pdf_var():
-    """
-    Returns the tk.BooleanVar for the auto-open PDF setting.
-    """
-    return _auto_open_pdf_var
+

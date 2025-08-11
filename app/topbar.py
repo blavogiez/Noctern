@@ -149,7 +149,6 @@ def create_top_buttons_frame(root):
     # --- Populate Menus ---
     tools_menu.add_command(label="Smart Style (Ctrl+Shift+S)...", command=lambda: [_log_action("Tools: Smart Style"), interface.style_selected_text()])
     tools_menu.add_separator()
-    tools_menu.add_command(label="Check Document (chktex)", command=lambda: [_log_action("Tools: chktex Check"), latex_compiler.run_chktex_check()])
     tools_menu.add_command(label="Rephrase Selected Text (Ctrl+R)", command=lambda: [_log_action("Tools: Rephrase Text"), llm_rephrase.open_rephrase_dialog()])
     tools_menu.add_command(label="Paste Image from Clipboard (Ctrl+Shift+V)", command=lambda: [_log_action("Tools: Paste Image"), interface.paste_image()])
     tools_menu.add_separator()
@@ -181,7 +180,7 @@ def create_top_buttons_frame(root):
     settings_menu.add_command(label="Edit Snippets...", command=lambda: [_log_action("Settings: Edit Snippets"), editor_snippets.open_snippet_editor(root, state.get_theme_settings())])
     settings_menu.add_separator()
     
-    settings_menu.add_checkbutton(label="Auto-open PDF on .tex load", variable=state._auto_open_pdf_var, command=interface.toggle_auto_open_pdf)
+    
     settings_menu.add_command(label="Show Debug Console", command=lambda: [_log_action("Settings: Show Debug Console"), debug_console.show_console()])
     settings_menu.add_command(label="Restart Application", command=lambda: [_log_action("Settings: Restart Application"), interface.restart_application()])
     

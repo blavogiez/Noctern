@@ -68,7 +68,7 @@ def setup_gui():
     _apply_startup_window_settings(state.root, state._app_config) # RESTORED THIS CALL
     debug_console.log("GUI initialization process started.", level='INFO')
 
-    state._auto_open_pdf_var = ttk.BooleanVar(value=app_config.get_bool(state._app_config.get('auto_open_pdf', 'False')))
+    
     state.current_theme = saved_theme
     state._theme_settings = interface_theme.get_theme_colors(state.root.style, state.current_theme)
 

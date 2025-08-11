@@ -52,8 +52,7 @@ def main():
         state.get_current_tab, 
         actions.show_console, 
         actions.hide_console,
-        pdf_monitor_setting=state.get_app_config().get("pdf_monitor", "Default"),
-        auto_open_pdf_setting=state.get_auto_open_pdf_var().get()
+        pdf_monitor_setting=state.get_app_config().get("pdf_monitor", "Default")
     )
     
     snippet_manager.initialize_snippets() 

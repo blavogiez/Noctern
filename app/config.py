@@ -13,7 +13,6 @@ DEFAULT_SECTION = "Settings"
 # Define default values here. These will be used to create the file if it doesn't exist,
 # and to retrieve values if a specific key is missing.
 DEFAULT_VALUES = {
-    "auto_open_pdf": "False",
     "app_monitor": "Default",
     "pdf_monitor": "Default",
     "window_state": "Normal",
