@@ -145,46 +145,16 @@ def compile_latex(event=None):
             debug_console.log(f"Error saving temporary file for compilation: {e}", level='ERROR')
             return
 
-    # Create cache directory for auxiliary files
-    base_name = os.path.splitext(file_name)[0]
-    cache_directory = os.path.join(source_directory, f"{base_name}.cache")
+    # Compile in the source directory
     try:
-        os.makedirs(cache_directory, exist_ok=True)
-    except Exception as e:
-        messagebox.showerror("Error", f"Could not create cache directory:\n{e}")
-        debug_console.log(f"Error creating cache directory: {e}", level='ERROR')
-        return
-    
-    # Copy the .tex file to cache directory for compilation
-    try:
-        cached_tex_path = os.path.join(cache_directory, file_name)
-        shutil.copy2(tex_file_path, cached_tex_path)
-        debug_console.log(f"Copied .tex file to cache directory: {cached_tex_path}", level='DEBUG')
-    except Exception as e:
-        messagebox.showerror("Error", f"Could not copy .tex file to cache directory:\n{e}")
-        debug_console.log(f"Error copying .tex file to cache directory: {e}", level='ERROR')
-        return
-    
-    # Set up pdflatex to run in the cache directory
-    try:
-        # Execute pdflatex command in the cache directory
+        # Execute pdflatex command in the source directory
         command = ["pdflatex", "-interaction=nonstopmode", file_name]
-        debug_console.log(f"Executing pdflatex command: {' '.join(command)} in directory: {cache_directory}", level='DEBUG')
-        result = subprocess.run(command, cwd=cache_directory, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=120, check=False)
+        debug_console.log(f"Executing pdflatex command: {' '.join(command)} in directory: {source_directory}", level='DEBUG')
+        result = subprocess.run(command, cwd=source_directory, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=120, check=False)
         
-        # Move the PDF to the main directory
-        pdf_cache_path = os.path.join(cache_directory, file_name.replace(".tex", ".pdf"))
+        # Path to log file and PDF in source directory
+        log_file_path = os.path.join(source_directory, file_name.replace(".tex", ".log"))
         pdf_output_path = os.path.join(source_directory, file_name.replace(".tex", ".pdf"))
-        
-        if os.path.exists(pdf_cache_path):
-            try:
-                shutil.move(pdf_cache_path, pdf_output_path)
-                debug_console.log(f"Moved PDF from cache to main directory: {pdf_output_path}", level='DEBUG')
-            except Exception as e:
-                debug_console.log(f"Error moving PDF to main directory: {e}", level='ERROR')
-        
-        # Path to log file (in cache directory)
-        log_file_path = os.path.join(cache_directory, file_name.replace(".tex", ".log"))
 
         if result.returncode == 0:
             messagebox.showinfo("✅ Compilation Successful", "LaTeX document compiled successfully to PDF.")
