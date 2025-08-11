@@ -15,6 +15,8 @@ from utils import debug_console
 # Import the new navigator component
 from pdf_preview.navigator import PDFTextNavigator
 from pdf_preview.sync import PDFSyncManager
+# Import the new circular magnifier component
+from pdf_preview.magnifier import CircularMagnifier
 
 
 class PDFPreviewViewer:
@@ -55,10 +57,7 @@ class PDFPreviewViewer:
         
         # Magnifier properties
         self.magnifier_active = False
-        self.magnifier_window = None
-        self.magnifier_canvas = None
-        self.magnifier_zoom = 2.0  # 2x zoom for magnifier
-        self.magnifier_size = (300, 200)  # Size of magnifier window
+        self.magnifier = None
         
         self._create_widgets()
         if pdf_path and os.path.exists(pdf_path):
@@ -128,8 +127,7 @@ class PDFPreviewViewer:
         
         # Magnifier state
         self.magnifier_active = False
-        self.magnifier_window = None
-        self.magnifier_canvas = None
+        self.magnifier = None
     
     def _on_mouse_wheel(self, event):
         """Handle mouse wheel scrolling."""
@@ -410,42 +408,21 @@ class PDFPreviewViewer:
 
     def _create_magnifier(self):
         """Create the magnifier window."""
-        if self.magnifier_window:
+        if self.magnifier:
             return
             
-        # Create magnifier window
-        self.magnifier_window = tk.Toplevel(self.parent)
-        self.magnifier_window.title("Magnifier")
-        self.magnifier_window.geometry(f"{self.magnifier_size[0]}x{self.magnifier_size[1]}")
-        self.magnifier_window.resizable(False, False)
-        
-        # Make it stay on top
-        self.magnifier_window.attributes("-topmost", True)
-        
-        # Create canvas for magnified view
-        self.magnifier_canvas = tk.Canvas(
-            self.magnifier_window, 
-            width=self.magnifier_size[0], 
-            height=self.magnifier_size[1],
-            bg="white"
-        )
-        self.magnifier_canvas.pack(fill="both", expand=True)
+        # Create new circular magnifier
+        self.magnifier = CircularMagnifier(self.parent, self)
         
         # Bind mouse motion to update magnifier
         self.canvas.bind("<Motion>", self._update_magnifier)
         self.canvas.bind("<Leave>", self._hide_magnifier)
-        
-        # Position near the main window
-        x = self.parent.winfo_rootx() + 50
-        y = self.parent.winfo_rooty() + 50
-        self.magnifier_window.geometry(f"+{x}+{y}")
 
     def _destroy_magnifier(self):
         """Destroy the magnifier window."""
-        if self.magnifier_window:
-            self.magnifier_window.destroy()
-            self.magnifier_window = None
-            self.magnifier_canvas = None
+        if self.magnifier:
+            self.magnifier.destroy()
+            self.magnifier = None
             
         # Unbind mouse events
         self.canvas.unbind("<Motion>")
@@ -453,7 +430,7 @@ class PDFPreviewViewer:
 
     def _update_magnifier(self, event):
         """Update the magnifier view based on mouse position."""
-        if not self.magnifier_active or not self.magnifier_window or not self.magnifier_canvas:
+        if not self.magnifier_active or not self.magnifier:
             return
             
         # Get mouse position relative to canvas
@@ -461,12 +438,7 @@ class PDFPreviewViewer:
         canvas_y = self.canvas.canvasy(event.y)
         
         # Update magnifier window position
-        mag_x = event.x_root + 20
-        mag_y = event.y_root + 20
-        self.magnifier_window.geometry(f"+{mag_x}+{mag_y}")
-        
-        # Clear previous content
-        self.magnifier_canvas.delete("all")
+        self.magnifier.update_position(event.x_root, event.y_root)
         
         # Find which page we're hovering over
         current_page = None
@@ -485,40 +457,10 @@ class PDFPreviewViewer:
             img_x = int((canvas_x - 10) / self.zoom_level)
             img_y = int((canvas_y - layout['y_offset']) / self.zoom_level)
             
-            # Ensure we don't go out of bounds
-            img_width, img_height = original_img.size
-            crop_size = 100  # Size of region to magnify
-            
-            left = max(0, img_x - crop_size // 2)
-            top = max(0, img_y - crop_size // 2)
-            right = min(img_width, img_x + crop_size // 2)
-            bottom = min(img_height, img_y + crop_size // 2)
-            
-            # Crop the region
-            cropped = original_img.crop((left, top, right, bottom))
-            
-            # Resize for magnification
-            magnified = cropped.resize(
-                (int(cropped.width * self.magnifier_zoom), int(cropped.height * self.magnifier_zoom)),
-                Image.Resampling.LANCZOS
-            )
-            
-            # Convert to PhotoImage
-            photo = ImageTk.PhotoImage(magnified)
-            
-            # Display in magnifier canvas
-            self.magnifier_canvas.create_image(
-                self.magnifier_size[0] // 2, 
-                self.magnifier_size[1] // 2, 
-                image=photo
-            )
-            
-            # Keep a reference to prevent garbage collection
-            self.magnifier_canvas.image = photo
+            # Update the magnified view
+            self.magnifier.update_view(original_img, img_x, img_y)
 
     def _hide_magnifier(self, event):
         """Hide the magnifier when mouse leaves the canvas."""
-        if self.magnifier_window:
-            # Just clear the content but keep the window open
-            if self.magnifier_canvas:
-                self.magnifier_canvas.delete("all")
+        if self.magnifier:
+            self.magnifier.hide()
