@@ -32,7 +32,7 @@ class PDFPreviewViewer:
         """
         self.parent = parent
         self.pdf_path = pdf_path
-        self.zoom_level = 1.0
+        self.zoom_level = 0.7  # Start with a smaller zoom level for better initial view
         
         # Caching and performance
         self.page_images = {}  # Cache for page images
@@ -52,6 +52,13 @@ class PDFPreviewViewer:
         
         # Sync manager for text search
         self.sync_manager = PDFSyncManager()
+        
+        # Magnifier properties
+        self.magnifier_active = False
+        self.magnifier_window = None
+        self.magnifier_canvas = None
+        self.magnifier_zoom = 2.0  # 2x zoom for magnifier
+        self.magnifier_size = (300, 200)  # Size of magnifier window
         
         self._create_widgets()
         if pdf_path and os.path.exists(pdf_path):
@@ -99,15 +106,8 @@ class PDFPreviewViewer:
         toolbar = ttk.Frame(self.frame)
         toolbar.pack(fill="x", padx=5, pady=5)
         
-        # Navigation buttons
-        self.prev_button = ttk.Button(toolbar, text="◀ Previous", command=self.previous_page, state="disabled")
-        self.prev_button.pack(side="left", padx=(0, 5))
-        
-        self.next_button = ttk.Button(toolbar, text="Next ▶", command=self.next_page, state="disabled")
-        self.next_button.pack(side="left", padx=(5, 10))
-        
         # Zoom controls
-        ttk.Label(toolbar, text="Zoom:").pack(side="left", padx=(10, 5))
+        ttk.Label(toolbar, text="Zoom:").pack(side="left", padx=(0, 5))
         
         self.zoom_out_button = ttk.Button(toolbar, text="−", width=3, command=self.zoom_out, state="disabled")
         self.zoom_out_button.pack(side="left", padx=(0, 2))
@@ -118,9 +118,18 @@ class PDFPreviewViewer:
         self.zoom_in_button = ttk.Button(toolbar, text="+", width=3, command=self.zoom_in, state="disabled")
         self.zoom_in_button.pack(side="left", padx=(2, 10))
         
+        # Magnifier button
+        self.magnifier_button = ttk.Button(toolbar, text="🔍 Magnifier", command=self.toggle_magnifier)
+        self.magnifier_button.pack(side="left", padx=(0, 10))
+        
         # Refresh button
         self.refresh_button = ttk.Button(toolbar, text="Refresh", command=self.refresh)
         self.refresh_button.pack(side="right")
+        
+        # Magnifier state
+        self.magnifier_active = False
+        self.magnifier_window = None
+        self.magnifier_canvas = None
     
     def _on_mouse_wheel(self, event):
         """Handle mouse wheel scrolling."""
@@ -388,3 +397,128 @@ class PDFPreviewViewer:
             context_after (str): Text after the target text
         """
         self.text_navigator.go_to_text(text, context_before, context_after)
+        
+    def toggle_magnifier(self):
+        """Toggle the magnifier tool."""
+        self.magnifier_active = not self.magnifier_active
+        if self.magnifier_active:
+            self.magnifier_button.configure(style="primary.TButton")  # Highlight when active
+            self._create_magnifier()
+        else:
+            self.magnifier_button.configure(style="secondary.TButton")  # Normal when inactive
+            self._destroy_magnifier()
+
+    def _create_magnifier(self):
+        """Create the magnifier window."""
+        if self.magnifier_window:
+            return
+            
+        # Create magnifier window
+        self.magnifier_window = tk.Toplevel(self.parent)
+        self.magnifier_window.title("Magnifier")
+        self.magnifier_window.geometry(f"{self.magnifier_size[0]}x{self.magnifier_size[1]}")
+        self.magnifier_window.resizable(False, False)
+        
+        # Make it stay on top
+        self.magnifier_window.attributes("-topmost", True)
+        
+        # Create canvas for magnified view
+        self.magnifier_canvas = tk.Canvas(
+            self.magnifier_window, 
+            width=self.magnifier_size[0], 
+            height=self.magnifier_size[1],
+            bg="white"
+        )
+        self.magnifier_canvas.pack(fill="both", expand=True)
+        
+        # Bind mouse motion to update magnifier
+        self.canvas.bind("<Motion>", self._update_magnifier)
+        self.canvas.bind("<Leave>", self._hide_magnifier)
+        
+        # Position near the main window
+        x = self.parent.winfo_rootx() + 50
+        y = self.parent.winfo_rooty() + 50
+        self.magnifier_window.geometry(f"+{x}+{y}")
+
+    def _destroy_magnifier(self):
+        """Destroy the magnifier window."""
+        if self.magnifier_window:
+            self.magnifier_window.destroy()
+            self.magnifier_window = None
+            self.magnifier_canvas = None
+            
+        # Unbind mouse events
+        self.canvas.unbind("<Motion>")
+        self.canvas.unbind("<Leave>")
+
+    def _update_magnifier(self, event):
+        """Update the magnifier view based on mouse position."""
+        if not self.magnifier_active or not self.magnifier_window or not self.magnifier_canvas:
+            return
+            
+        # Get mouse position relative to canvas
+        canvas_x = self.canvas.canvasx(event.x)
+        canvas_y = self.canvas.canvasy(event.y)
+        
+        # Update magnifier window position
+        mag_x = event.x_root + 20
+        mag_y = event.y_root + 20
+        self.magnifier_window.geometry(f"+{mag_x}+{mag_y}")
+        
+        # Clear previous content
+        self.magnifier_canvas.delete("all")
+        
+        # Find which page we're hovering over
+        current_page = None
+        for page_num, layout in self.page_layouts.items():
+            if (layout['y_offset'] <= canvas_y <= layout['y_offset'] + layout['height'] and
+                10 <= canvas_x <= layout['width'] + 10):  # 10px margin
+                current_page = page_num
+                break
+                
+        if current_page and current_page in self.page_images:
+            # Get the original image
+            original_img = self.page_images[current_page]
+            
+            # Calculate the region to magnify
+            # Convert canvas coordinates to image coordinates
+            img_x = int((canvas_x - 10) / self.zoom_level)
+            img_y = int((canvas_y - layout['y_offset']) / self.zoom_level)
+            
+            # Ensure we don't go out of bounds
+            img_width, img_height = original_img.size
+            crop_size = 100  # Size of region to magnify
+            
+            left = max(0, img_x - crop_size // 2)
+            top = max(0, img_y - crop_size // 2)
+            right = min(img_width, img_x + crop_size // 2)
+            bottom = min(img_height, img_y + crop_size // 2)
+            
+            # Crop the region
+            cropped = original_img.crop((left, top, right, bottom))
+            
+            # Resize for magnification
+            magnified = cropped.resize(
+                (int(cropped.width * self.magnifier_zoom), int(cropped.height * self.magnifier_zoom)),
+                Image.Resampling.LANCZOS
+            )
+            
+            # Convert to PhotoImage
+            photo = ImageTk.PhotoImage(magnified)
+            
+            # Display in magnifier canvas
+            self.magnifier_canvas.create_image(
+                self.magnifier_size[0] // 2, 
+                self.magnifier_size[1] // 2, 
+                image=photo
+            )
+            
+            # Keep a reference to prevent garbage collection
+            self.magnifier_canvas.image = photo
+
+    def _hide_magnifier(self, event):
+        """Hide the magnifier when mouse leaves the canvas."""
+        if self.magnifier_window:
+            # Just clear the content but keep the window open
+            if self.magnifier_canvas:
+                self.magnifier_canvas.delete("all")

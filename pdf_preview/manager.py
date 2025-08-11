@@ -49,7 +49,7 @@ class PDFPreviewManager:
         
     def create_preview_panel(self, parent):
         """Create a new PDF preview panel."""
-        # Always create a fresh viewer
+        # Always create a fresh viewer with the correct initial zoom
         self.viewer = PDFPreviewViewer(parent)
         return self.viewer
 
