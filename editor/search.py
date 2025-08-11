@@ -82,18 +82,33 @@ class SearchEngine:
     
     def next_match(self) -> Optional[Tuple[str, int, int]]:
         """Move to the next match and return it."""
+        # Print debug info
+        print(f"next_match called: matches={len(self.matches)}, current_index={self.current_match_index}")
+        
         if not self.matches:
+            print("No matches, returning None")
             return None
             
-        self.current_match_index = (self.current_match_index + 1) % len(self.matches)
-        return self.get_current_match()
+        # If we're at the last match, don't go further
+        if self.current_match_index >= len(self.matches) - 1:
+            print("At last match, returning None")
+            return None
+            
+        self.current_match_index += 1
+        result = self.get_current_match()
+        print(f"Moving to index {self.current_match_index}, result={result}")
+        return result
     
     def previous_match(self) -> Optional[Tuple[str, int, int]]:
         """Move to the previous match and return it."""
         if not self.matches:
             return None
             
-        self.current_match_index = (self.current_match_index - 1) % len(self.matches)
+        # If we're at the first match, don't go further
+        if self.current_match_index <= 0:
+            return None
+            
+        self.current_match_index -= 1
         return self.get_current_match()
     
     def reset(self):
@@ -222,8 +237,8 @@ class SearchBar:
         """Bind events to widgets."""
         self.search_entry.bind("<KeyRelease>", self._on_search_change)
         self.search_entry.bind("<Escape>", lambda e: self.hide())
-        self.search_entry.bind("<Return>", lambda e: self._next_match())
-        self.search_entry.bind("<Shift-Return>", lambda e: self._previous_match())
+        self.search_entry.bind("<Return>", lambda e: (self._next_match(), "break"))
+        self.search_entry.bind("<Shift-Return>", lambda e: (self._previous_match(), "break"))
         
         # Bind focus events for visual feedback
         self.search_entry.bind("<FocusIn>", self._on_focus_in)
@@ -247,6 +262,11 @@ class SearchBar:
         
     def _on_search_change(self, event=None):
         """Handle search term changes."""
+        # Ignore Enter and Shift key releases to avoid resetting the search
+        if event and event.keysym in ("Return", "Shift_L", "Shift_R"):
+            return
+
+        print("_on_search_change called")
         search_term = self.search_entry.get()
         case_sensitive = self.case_sensitive_var.get()
         
@@ -270,13 +290,11 @@ class SearchBar:
         # Highlight matches
         if matches:
             self._highlight_matches(current_tab.editor, matches)
-            # Move to first match
-            self.search_engine.current_match_index = 0
-            self._go_to_current_match()
+            # Set index to -1 to indicate we're at the start but haven't navigated yet
+            self.search_engine.current_match_index = -1
         else:
             # No matches found
             self.search_engine.current_match_index = -1
-            self._update_counter()
             
     def _highlight_matches(self, editor: tk.Text, matches: List[Tuple[str, int, int]]):
         """Highlight all matches in the editor."""
@@ -334,13 +352,16 @@ class SearchBar:
         # Scroll to the match
         current_tab.editor.see(pos)
         current_tab.editor.mark_set("insert", pos)
-        current_tab.editor.focus()
+        # Ne pas donner le focus à l'éditeur pour garder le focus sur la barre de recherche
         
         # Simple animation for the current match
         self._animate_match_highlight(current_tab.editor, start_pos, end_pos)
         
         # Update counter
         self._update_counter()
+        
+        # Maintenir le focus sur la barre de recherche
+        self.search_entry.focus()
         
     def _animate_match_highlight(self, editor, start_pos, end_pos):
         """Simple animation for highlighting the current match."""
@@ -350,12 +371,15 @@ class SearchBar:
         
     def _next_match(self):
         """Navigate to the next match."""
+        print("_next_match called")
         match = self.search_engine.next_match()
         if match:
+            print("Got match, going to current match")
             self._go_to_current_match()
         else:
-            # Wrap around or show no matches
-            self._update_counter()
+            print("No match, flashing counter")
+            # No more matches or no matches at all
+            self._flash_counter()
             
     def _previous_match(self):
         """Navigate to the previous match."""
@@ -363,8 +387,17 @@ class SearchBar:
         if match:
             self._go_to_current_match()
         else:
-            # Wrap around or show no matches
-            self._update_counter()
+            # No more matches or no matches at all
+            self._flash_counter()
+            
+    def _flash_counter(self):
+        """Provide visual feedback by flashing the counter label."""
+        # Store original color
+        original_fg = self.counter_label.cget("foreground")
+        
+        # Flash to red and back
+        self.counter_label.config(foreground="red")
+        self.counter_label.after(100, lambda: self.counter_label.config(foreground=original_fg))
             
     def show(self):
         """Show the search bar with a smooth animation."""
