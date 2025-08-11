@@ -34,6 +34,13 @@ def bind_global_shortcuts(root):
                 return "break"
         return wrapper
 
+    def toggle_search_bar():
+        """Toggle the search bar visibility."""
+        if editor_search._search_bar and editor_search._search_bar.is_visible:
+            editor_search.hide_search_bar()
+        else:
+            editor_search.show_search_bar()
+
     simple_shortcuts = {
         "<Control-n>": (interface.create_new_tab, "New File"),
         "<Control-o>": (interface.open_file, "Open File"),
@@ -49,7 +56,7 @@ def bind_global_shortcuts(root):
         "<Control-Shift-D>": (latex_compiler.run_chktex_check, "Chktex Check"),
         "<Control-Shift-V>": (interface.paste_image, "Paste Image"),
         "<Control-t>": (latex_translator.open_translate_dialog, "Translate Dialog"),
-        "<Control-f>": (editor_search.show_search_bar, "Find"),
+        "<Control-f>": (toggle_search_bar, "Find"),
     }
 
     for key, (func, name) in simple_shortcuts.items():

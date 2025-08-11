@@ -336,8 +336,17 @@ class SearchBar:
         current_tab.editor.mark_set("insert", pos)
         current_tab.editor.focus()
         
+        # Simple animation for the current match
+        self._animate_match_highlight(current_tab.editor, start_pos, end_pos)
+        
         # Update counter
         self._update_counter()
+        
+    def _animate_match_highlight(self, editor, start_pos, end_pos):
+        """Simple animation for highlighting the current match."""
+        # This is a placeholder for a simple animation
+        # We could implement a brief highlight effect here if desired
+        pass
         
     def _next_match(self):
         """Navigate to the next match."""
@@ -366,9 +375,12 @@ class SearchBar:
         # Position the search bar at the top of the parent
         self.frame.place(relx=0.5, rely=0.02, anchor="n", relwidth=0.5)
         
-        # Add a subtle fade-in effect (simplified for tkinter)
+        # Add a subtle fade-in effect
         self.frame.winfo_toplevel().after(10, lambda: self.search_entry.focus())
         self.is_visible = True
+        
+        # Simple slide-down animation
+        self._animate_show()
         
         # Pre-fill with selected text if any
         current_tab = state.get_current_tab()
@@ -383,8 +395,40 @@ class SearchBar:
                 # No text selected
                 pass
                 
+    def _animate_show(self):
+        """Simple slide-down animation for showing the search bar."""
+        # We'll implement a simple animation by moving the frame down
+        start_y = -self.frame.winfo_reqheight()
+        end_y = 0.02 * self.parent.winfo_height()
+        steps = 10
+        duration = 100  # ms
+        
+        step_delay = duration // steps
+        y_step = (end_y - start_y) // steps
+        
+        def animate_step(step):
+            if step <= steps:
+                y_pos = start_y + (y_step * step)
+                relative_y = y_pos / self.parent.winfo_height()
+                self.frame.place(relx=0.5, rely=relative_y, anchor="n", relwidth=0.5)
+                self.frame.after(step_delay, lambda: animate_step(step + 1))
+            else:
+                # Final position
+                self.frame.place(relx=0.5, rely=0.02, anchor="n", relwidth=0.5)
+                
+        # Start animation
+        self.frame.place(relx=0.5, rely=start_y/self.parent.winfo_height(), anchor="n", relwidth=0.5)
+        animate_step(1)
+                
     def hide(self):
         """Hide the search bar and clear highlights."""
+        # Simple slide-up animation
+        self._animate_hide()
+        # Perform the actual hide after a short delay to allow animation to complete
+        self.frame.after(100, self._perform_hide)
+            
+    def _perform_hide(self):
+        """Actually hide the search bar."""
         self.frame.place_forget()
         self.is_visible = False
         
@@ -403,6 +447,30 @@ class SearchBar:
         # Focus back to editor
         if current_tab and current_tab.editor:
             current_tab.editor.focus()
+            
+    def _animate_hide(self):
+        """Simple slide-up animation for hiding the search bar."""
+        # We'll implement a simple animation by moving the frame up
+        start_y = 0.02 * self.parent.winfo_height()
+        end_y = -self.frame.winfo_reqheight()
+        steps = 10
+        duration = 100  # ms
+        
+        step_delay = duration // steps
+        y_step = (end_y - start_y) // steps
+        
+        def animate_step(step):
+            if step <= steps:
+                y_pos = start_y + (y_step * step)
+                relative_y = y_pos / self.parent.winfo_height()
+                self.frame.place(relx=0.5, rely=relative_y, anchor="n", relwidth=0.5)
+                self.frame.after(step_delay, lambda: animate_step(step + 1))
+            else:
+                # Final position (hidden)
+                self.frame.place_forget()
+                
+        # Start animation
+        animate_step(1)
 
 
 # Global search bar instance
