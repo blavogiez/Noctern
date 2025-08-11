@@ -71,6 +71,6 @@ def start_gpu_status_loop(gpu_label, root):
         root (tk.Tk): The main application window.
     """
     # Check if the widget still exists before proceeding
-    if gpu_label.winfo_exists():
+    if gpu_label and gpu_label.winfo_exists():
         update_gpu_status(gpu_label)
         root.after(5000, lambda: start_gpu_status_loop(gpu_label, root))

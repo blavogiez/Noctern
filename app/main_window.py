@@ -203,6 +203,10 @@ def setup_gui():
             if hasattr(state, 'pdf_preview_interface') and state.pdf_preview_interface:
                 state.pdf_preview_interface.load_existing_pdf_for_tab(current_tab)
             
+            # Update status bar with file info
+            from app import status_utils
+            status_utils.update_status_bar_text()
+            
     # Also bind the text modified event to the initial tab
     state.root.after(100, lambda: bind_text_modified_event(state.get_current_tab()))
 
@@ -215,28 +219,34 @@ def setup_gui():
     state.root.after(200, check_document_and_highlight)
     state.root.protocol("WM_DELETE_WINDOW", actions.on_close_request)
     
-    # Create the status bar
-    status_bar_frame, status_label, gpu_status_label = create_status_bar(state.root)
-    state.status_bar_frame = status_bar_frame
-    state.status_label = status_label
-    state.gpu_status_label = gpu_status_label
+    # Create the status bar according to user preferences
+    show_status_bar = app_config.get_bool(state._app_config.get("show_status_bar", "True"))
+    
+    if show_status_bar:
+        status_bar_frame, status_label, gpu_status_label = create_status_bar(state.root)
+        state.status_bar_frame = status_bar_frame
+        state.status_label = status_label
+        state.gpu_status_label = gpu_status_label
+    else:
+        # Initialize variables to None if status bar is not shown
+        state.status_bar_frame = None
+        state.status_label = None
+        state.gpu_status_label = None
     
     # Initialize visibility tracking variables with saved settings
     from app import ui_visibility
-    show_status_bar = app_config.get_bool(state._app_config.get("show_status_bar", "True"))
     show_pdf_preview = app_config.get_bool(state._app_config.get("show_pdf_preview", "True"))
     
     state._status_bar_visible_var = ttk.BooleanVar(value=show_status_bar)
     state._pdf_preview_visible_var = ttk.BooleanVar(value=show_pdf_preview)
     
-    # Apply initial visibility settings
-    if not show_status_bar:
-        ui_visibility.toggle_status_bar()
+    # Apply initial visibility settings for PDF preview (status bar is already handled above)
     if not show_pdf_preview:
         ui_visibility.toggle_pdf_preview()
     
-    # Start the GPU status update loop
-    start_gpu_status_loop(state.gpu_status_label, state.root)
+    # Start the GPU status update loop if status bar is shown
+    if show_status_bar and state.gpu_status_label:
+        start_gpu_status_loop(state.gpu_status_label, state.root)
     
     debug_console.log("GUI setup completed successfully.", level='SUCCESS')
     return state.root

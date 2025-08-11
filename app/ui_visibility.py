@@ -13,16 +13,32 @@ def toggle_status_bar():
     Toggle the visibility of the status bar.
     """
     if not state.status_bar_frame:
-        debug_console.log("Status bar frame not found.", level='WARNING')
-        return
-    
-    # Check if the status bar is currently packed
-    if state.status_bar_frame.winfo_viewable():
-        state.status_bar_frame.pack_forget()
-        debug_console.log("Status bar hidden.", level='INFO')
+        # If status bar frame doesn't exist, we need to create it
+        from app.status import create_status_bar
+        status_bar_frame, status_label, gpu_status_label = create_status_bar(state.root)
+        state.status_bar_frame = status_bar_frame
+        state.status_label = status_label
+        state.gpu_status_label = gpu_status_label
+        
+        # Update the status with current file info if there's an active tab
+        from app import status_utils
+        status_utils.update_status_bar_text()
+        
+        # Start GPU status loop
+        from app.status import start_gpu_status_loop
+        start_gpu_status_loop(state.gpu_status_label, state.root)
+        debug_console.log("Status bar created and shown.", level='INFO')
     else:
-        state.status_bar_frame.pack(side="bottom", fill="x")
-        debug_console.log("Status bar shown.", level='INFO')
+        # Check if the status bar is currently packed
+        if state.status_bar_frame.winfo_viewable():
+            state.status_bar_frame.pack_forget()
+            debug_console.log("Status bar hidden.", level='INFO')
+        else:
+            state.status_bar_frame.pack(side="bottom", fill="x")
+            debug_console.log("Status bar shown.", level='INFO')
+            # Update status when showing
+            from app import status_utils
+            status_utils.update_status_bar_text()
 
 
 def is_status_bar_visible():

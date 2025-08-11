@@ -55,6 +55,7 @@ def perform_heavy_updates():
         debug_console.log("Heavy update skipped: No active editor tab.", level='DEBUG')
         return
 
+
     tab_name = os.path.basename(current_tab.file_path) if current_tab.file_path else "Untitled"
     debug_console.log(f"Initiating heavy updates for tab: '{tab_name}'.", level='INFO')
     
@@ -63,7 +64,8 @@ def perform_heavy_updates():
         state.outline.update_outline(current_tab.editor)
 
     if not state._temporary_status_active:
-        editor_wordcount.update_word_count(current_tab.editor, state.status_label)
+        from app import status_utils
+        status_utils.update_status_bar_text()
 
     if current_tab.line_numbers:
         current_tab.line_numbers.redraw()
@@ -146,8 +148,10 @@ def show_temporary_status_message(message, duration_ms=2500):
     if state.status_label:
         original_color = state.get_theme_setting('statusbar_bg', '#f0f0f0')
         flash_color = state.get_theme_setting('success', '#77dd77')
+        from utils import animations
         animations.flash_widget(state.status_label, flash_color, original_color)
 
+    from app import statusbar as interface_statusbar
     interface_statusbar.show_temporary_status_message(
         message, duration_ms, state.status_label, state.root, clear_temporary_status_message
     )
@@ -157,12 +161,9 @@ def clear_temporary_status_message():
     Clears any active temporary status message and restores the default status.
     """
     state._temporary_status_active = False
-    current_tab = state.get_current_tab()
-    if current_tab:
-        editor_wordcount.update_word_count(current_tab.editor, state.status_label)
-    else:
-        if state.status_label:
-            state.status_label.config(text="...")
+    from app import status_utils
+    status_utils.update_status_bar_text()
+    from app import statusbar as interface_statusbar
     interface_statusbar.clear_temporary_status_message()
 
 def save_session():
