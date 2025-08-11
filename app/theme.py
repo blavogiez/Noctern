@@ -109,15 +109,15 @@ def apply_theme(theme_name, root_window, main_paned_window, open_tabs_dict, perf
                     background=theme_settings["treeview_bg"], 
                     foreground=theme_settings["treeview_fg"], 
                     fieldbackground=theme_settings["treeview_bg"],
-                    font=("Consolas", 11), # Editor-like font
-                    rowheight=32) # More vertical space
+                    font=("Arial", 10), # Use Arial font for better readability
+                    rowheight=28) # Consistent row height
     style.map("Treeview", 
               background=[("selected", theme_settings["sel_bg"])], 
               foreground=[("selected", theme_settings["sel_fg"])])
     style.configure("Treeview.Heading", 
                     background=theme_settings["treeview_heading_bg"], 
                     foreground=theme_settings["fg_color"],
-                    font=("Consolas", 11, "bold"))
+                    font=("Arial", 11, "bold"))
 
     # --- Notebook (Tabs) Configurations ---
     style.configure("TNotebook", background=theme_settings["notebook_bg"])

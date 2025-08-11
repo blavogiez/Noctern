@@ -185,4 +185,18 @@ def create_top_buttons_frame(root):
     settings_menu.add_command(label="Show Debug Console", command=lambda: [_log_action("Settings: Show Debug Console"), debug_console.show_console()])
     settings_menu.add_command(label="Restart Application", command=lambda: [_log_action("Settings: Restart Application"), interface.restart_application()])
     
+    # Add UI visibility options
+    from app import ui_visibility
+    
+    # Add separator before UI visibility options
+    settings_menu.add_separator()
+    settings_menu.add_checkbutton(label="Show Status Bar", 
+                                  variable=state._status_bar_visible_var,
+                                  command=lambda: [_log_action("Settings: Toggle Status Bar"), 
+                                                  ui_visibility.toggle_status_bar()])
+    settings_menu.add_checkbutton(label="Show PDF Preview", 
+                                  variable=state._pdf_preview_visible_var,
+                                  command=lambda: [_log_action("Settings: Toggle PDF Preview"), 
+                                                  ui_visibility.toggle_pdf_preview()])
+    
     return top_frame, settings_menu

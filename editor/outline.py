@@ -32,15 +32,28 @@ class Outline:
         # Callback to get current tab
         self.get_current_tab_callback = get_current_tab_callback
         
-        # Improve vertical spacing
-        style = ttk.Style()
-        style.configure("NoPlus.Treeview", rowheight=25)
-        # Hide + and - symbols
-        style.layout("NoPlus.Treeview", [('Treeview.treearea', {'sticky': 'nswe'})])
+        # Configure styles
+        self._configure_styles()
         
         # When clicking on a section
         self.tree.bind("<<TreeviewSelect>>", self._on_click_section)
         self.tree.bind("<Button-1>", self._on_single_click)
+        
+    def _configure_styles(self):
+        """Configure the styles for the outline Treeview and title."""
+        # Style for the Treeview
+        style = ttk.Style()
+        style.configure("NoPlus.Treeview", 
+                       rowheight=28,  # Increased row height for better readability
+                       font=("Arial", 10))  # Use a cleaner font
+        # Hide + and - symbols
+        style.layout("NoPlus.Treeview", [('Treeview.treearea', {'sticky': 'nswe'})])
+        
+        # Style for the title
+        title_style = ttk.Style()
+        title_style.configure("Title.TLabel", 
+                             font=("Arial", 11, "bold"),  # Bold title with better font
+                             foreground=title_style.lookup("TLabel", "foreground"))  # Use theme's foreground color
 
     def get_widget(self):
         """Returns the frame containing the title and Treeview widget."""
@@ -173,6 +186,9 @@ class Outline:
 
     def update_outline(self, editor_widget):
         """Update outline with editor content."""
+        # Ensure styles are applied
+        self._configure_styles()
+        
         if not editor_widget:
             return
         

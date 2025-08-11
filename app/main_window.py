@@ -112,6 +112,10 @@ def setup_gui():
     pdf_preview_content = create_pdf_preview_pane(state.main_pane)
     state.pdf_preview_interface.create_preview_panel(pdf_preview_content)
     
+    # Store references to UI elements we want to be able to hide
+    state.pdf_preview_pane = pdf_preview_content
+    state.pdf_preview_parent = state.main_pane
+    
     state.vertical_pane.add(state.main_pane, weight=1)
 
     console_frame, state.console_output = create_console_pane(state.vertical_pane)
@@ -210,6 +214,11 @@ def setup_gui():
     state.status_bar_frame = status_bar_frame
     state.status_label = status_label
     state.gpu_status_label = gpu_status_label
+    
+    # Initialize visibility tracking variables
+    from app import ui_visibility
+    state._status_bar_visible_var = ttk.BooleanVar(value=True)
+    state._pdf_preview_visible_var = ttk.BooleanVar(value=True)
     
     # Start the GPU status update loop
     start_gpu_status_loop(state.gpu_status_label, state.root)

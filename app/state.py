@@ -26,6 +26,8 @@ vertical_pane = None
 console_pane = None
 console_output = None
 pdf_preview_interface = None
+pdf_preview_pane = None
+pdf_preview_parent = None
 
 # --- Theme and Configuration Variables ---
 _theme_settings = {}
@@ -33,6 +35,8 @@ current_theme = "litera"
 settings_menu = None
 _app_config = {}
 _auto_open_pdf_var = None
+_status_bar_visible_var = None
+_pdf_preview_visible_var = None
 
 # --- Editor and Performance Constants ---
 zoom_factor = 1.1
