@@ -247,6 +247,15 @@ def on_close_request():
         app_config_data['window_state'] = 'Normal'
     
     app_config_data['theme'] = state.current_theme
+    
+    # Save LLM model configuration
+    from llm import state as llm_state
+    app_config_data['model_completion'] = llm_state.model_completion
+    app_config_data['model_generation'] = llm_state.model_generation
+    app_config_data['model_rephrase'] = llm_state.model_rephrase
+    app_config_data['model_debug'] = llm_state.model_debug
+    app_config_data['model_style'] = llm_state.model_style
+    
     app_config.save_config(app_config_data)
     
     dirty_tabs = [tab for tab in state.tabs.values() if tab.is_dirty()]
