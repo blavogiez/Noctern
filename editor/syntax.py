@@ -11,12 +11,15 @@ COLOR_SCHEME = {
     'command_secondary': '#A23B72',     # Magenta pour les commandes de formatage
     'command_environment': '#F18F01',   # Orange pour les environnements
     'command_math': '#C73E1D',         # Rouge-orange pour les commandes mathématiques
+    'section_main': '#1565C0',         # Bleu royal pour les sections principales
+    'section_sub': '#7986CB',          # Bleu-violet pour les sous-sections
     
     # Couleurs de contenu - tons plus doux pour réduire la fatigue oculaire
     'text_bold': '#2D5016',            # Vert foncé pour le texte gras
     'text_italic': '#6A4C93',          # Violet pour l'italique
     'text_underline': '#9B59B6',       # Violet clair pour le souligné
     'text_emphasis': '#8E44AD',        # Violet profond pour l'emphase
+    'proper_noun': '#D35400',          # Orange brûlé pour les noms propres
     
     # Couleurs structurelles - hiérarchie visuelle claire
     'brace_level1': '#34495E',         # Gris-bleu pour les accolades principales
@@ -51,9 +54,14 @@ COLOR_SCHEME = {
 # Classification des commandes LaTeX par catégorie
 LATEX_COMMANDS = {
     'primary': [
-        'documentclass', 'usepackage', 'begin', 'end', 'chapter', 'section', 
-        'subsection', 'subsubsection', 'paragraph', 'subparagraph', 'part',
+        'documentclass', 'usepackage', 'begin', 'end', 'chapter', 'part',
         'maketitle', 'tableofcontents', 'listoffigures', 'listoftables'
+    ],
+    'section_main': [
+        'section'
+    ],
+    'section_sub': [
+        'subsection', 'subsubsection', 'paragraph', 'subparagraph'
     ],
     'formatting': [
         'textbf', 'textit', 'texttt', 'textrm', 'textsf', 'textsl', 'textsc',
@@ -129,12 +137,15 @@ def _configure_tags(editor, bold_font, italic_font, normal_font, small_font):
     editor.tag_configure("cmd_math", foreground=COLOR_SCHEME['command_math'], font=normal_font)
     editor.tag_configure("cmd_environment", foreground=COLOR_SCHEME['command_environment'], font=bold_font)
     editor.tag_configure("cmd_generic", foreground=COLOR_SCHEME['command_primary'], font=normal_font)
+    editor.tag_configure("cmd_section_main", foreground=COLOR_SCHEME['section_main'], font=bold_font)
+    editor.tag_configure("cmd_section_sub", foreground=COLOR_SCHEME['section_sub'], font=normal_font)
     
     # Contenu formaté
     editor.tag_configure("content_bold", foreground=COLOR_SCHEME['text_bold'], font=bold_font)
     editor.tag_configure("content_italic", foreground=COLOR_SCHEME['text_italic'], font=italic_font)
     editor.tag_configure("content_underline", foreground=COLOR_SCHEME['text_underline'], underline=True)
     editor.tag_configure("content_emphasis", foreground=COLOR_SCHEME['text_emphasis'], font=italic_font)
+    editor.tag_configure("proper_noun", foreground=COLOR_SCHEME['proper_noun'], font=normal_font)
     
     # Délimiteurs hiérarchiques
     editor.tag_configure("brace_l1", foreground=COLOR_SCHEME['brace_level1'], font=bold_font)
@@ -164,6 +175,7 @@ def _clear_all_tags(editor):
     """Supprime tous les tags de coloration existants."""
     tags_to_remove = [
         "cmd_primary", "cmd_formatting", "cmd_math", "cmd_environment", "cmd_generic",
+        "cmd_section_main", "cmd_section_sub", "proper_noun",
         "content_bold", "content_italic", "content_underline", "content_emphasis",
         "brace_l1", "brace_l2", "brace_l3", "bracket", "parenthesis",
         "comment", "string", "number", "float_number", "special_char",
@@ -200,6 +212,9 @@ def _apply_advanced_highlighting(editor, content):
     
     # 7. Références, citations et URLs
     _highlight_references_and_links(editor, content)
+    
+    # 8. Noms propres (détection par majuscules)
+    _highlight_proper_nouns(editor, content)
 
 def _highlight_math_environments(editor, content):
     """Colore les environnements mathématiques avec arrière-plan."""
@@ -214,6 +229,18 @@ def _highlight_commands_by_category(editor, content):
         pattern = r'\\' + re.escape(cmd) + r'\b'
         for match in re.finditer(pattern, content):
             editor.tag_add("cmd_primary", f"1.0 + {match.start()} chars", f"1.0 + {match.end()} chars")
+    
+    # Sections principales
+    for cmd in LATEX_COMMANDS['section_main']:
+        pattern = r'\\' + re.escape(cmd) + r'\b'
+        for match in re.finditer(pattern, content):
+            editor.tag_add("cmd_section_main", f"1.0 + {match.start()} chars", f"1.0 + {match.end()} chars")
+    
+    # Sous-sections
+    for cmd in LATEX_COMMANDS['section_sub']:
+        pattern = r'\\' + re.escape(cmd) + r'\b'
+        for match in re.finditer(pattern, content):
+            editor.tag_add("cmd_section_sub", f"1.0 + {match.start()} chars", f"1.0 + {match.end()} chars")
     
     # Commandes de formatage
     for cmd in LATEX_COMMANDS['formatting']:
@@ -238,7 +265,10 @@ def _highlight_commands_by_category(editor, content):
     for match in re.finditer(generic_pattern, content):
         # Vérifier si cette commande n'est pas déjà classifiée
         cmd_name = match.group(0)[1:]  # Enlever le backslash
-        if not any(cmd_name in category for category in LATEX_COMMANDS.values()):
+        all_commands = []
+        for category in LATEX_COMMANDS.values():
+            all_commands.extend(category)
+        if cmd_name not in all_commands:
             editor.tag_add("cmd_generic", f"1.0 + {match.start()} chars", f"1.0 + {match.end()} chars")
 
 def _highlight_formatted_content(editor, content):
@@ -336,6 +366,45 @@ def _highlight_references_and_links(editor, content):
     for pattern in file_patterns:
         for match in re.finditer(pattern, content):
             editor.tag_add("file_path", f"1.0 + {match.start(1)} chars", f"1.0 + {match.end(1)} chars")
+
+def _highlight_proper_nouns(editor, content):
+    """Détecte et colore les noms propres basés sur les majuscules."""
+    # Pattern pour détecter les mots commençant par une majuscule
+    # Exclut les mots en début de phrase et après certains signes de ponctuation
+    proper_noun_pattern = r'(?<![.!?]\s)(?<!\A)\b[A-ZÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞ][a-zàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþß]+\b'
+    
+    for match in re.finditer(proper_noun_pattern, content):
+        word = match.group(0)
+        # Éviter certains faux positifs courants en LaTeX
+        if word not in ['LaTeX', 'TeX', 'PDF', 'HTML', 'XML', 'ASCII', 'UTF', 'URL']:
+            # Vérifier que le mot n'est pas dans un commentaire
+            line_start = content.rfind('\n', 0, match.start()) + 1
+            line_content = content[line_start:content.find('\n', match.start())]
+            comment_pos = line_content.find('%')
+            word_pos_in_line = match.start() - line_start
+            
+            # Si le mot est après un % sur la même ligne, c'est dans un commentaire
+            if comment_pos == -1 or word_pos_in_line < comment_pos:
+                editor.tag_add("proper_noun", f"1.0 + {match.start()} chars", f"1.0 + {match.end()} chars")
+    
+    # Pattern spécial pour les acronymes et noms techniques courants
+    technical_names = [
+        'LaTeX', 'TeX', 'XeTeX', 'LuaTeX', 'BibTeX', 'PDF', 'PostScript', 'TikZ',
+        'PGF', 'Beamer', 'KOMA', 'MiKTeX', 'TeXLive', 'MacTeX', 'GNU', 'Linux',
+        'Windows', 'macOS', 'GitHub', 'UTF', 'ASCII', 'Unicode'
+    ]
+    
+    for name in technical_names:
+        pattern = r'\b' + re.escape(name) + r'\b'
+        for match in re.finditer(pattern, content):
+            # Vérifier que ce n'est pas dans un commentaire
+            line_start = content.rfind('\n', 0, match.start()) + 1
+            line_content = content[line_start:content.find('\n', match.start())]
+            comment_pos = line_content.find('%')
+            word_pos_in_line = match.start() - line_start
+            
+            if comment_pos == -1 or word_pos_in_line < comment_pos:
+                editor.tag_add("proper_noun", f"1.0 + {match.start()} chars", f"1.0 + {match.end()} chars")
 
 def _resolve_image_path(tex_file_path, image_path_in_tex):
     """Résout le chemin d'une image relativement au fichier TeX."""
