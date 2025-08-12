@@ -51,6 +51,9 @@ class PDFPreviewManager:
         """Create a new PDF preview panel."""
         # Always create a fresh viewer with the correct initial zoom
         self.viewer = PDFPreviewViewer(parent)
+        # Set the shared sync manager if available
+        if hasattr(self, 'sync_manager') and self.sync_manager:
+            self.viewer.sync_manager = self.sync_manager
         return self.viewer
 
     def trigger_compilation(self):

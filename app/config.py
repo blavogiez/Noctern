@@ -16,7 +16,7 @@ DEFAULT_VALUES = {
     "app_monitor": "Default",
     "pdf_monitor": "Default",
     "window_state": "Normal",
-    "theme": "dark",
+    "theme": "flatly",
     "font_size": "12",
     "model_completion": "default",
     "model_generation": "default",

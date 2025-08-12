@@ -52,8 +52,8 @@ class PDFPreviewViewer:
         # Text navigator component
         self.text_navigator = PDFTextNavigator(self)
         
-        # Sync manager for text search
-        self.sync_manager = PDFSyncManager()
+        # Sync manager for text search (share instance with interface to avoid duplication)
+        self.sync_manager = None  # Will be set by interface when needed
         
         # Magnifier properties
         self.magnifier_active = False

@@ -69,7 +69,8 @@ def toggle_pdf_preview():
         # Get the master frame that contains the pdf_preview_pane
         pdf_preview_master_frame = state.pdf_preview_pane.master
         
-        if str(pdf_preview_master_frame.master) == str(state.pdf_preview_parent):
+        # Check if the master frame is currently added to the parent paned window
+        if pdf_preview_master_frame in state.pdf_preview_parent.panes():
             state.pdf_preview_parent.remove(pdf_preview_master_frame)
             debug_console.log("PDF preview hidden.", level='INFO')
         else:
@@ -92,6 +93,6 @@ def is_pdf_preview_visible():
     try:
         # Get the master frame that contains the pdf_preview_pane
         pdf_preview_master_frame = state.pdf_preview_pane.master
-        return str(pdf_preview_master_frame.master) == str(state.pdf_preview_parent)
+        return pdf_preview_master_frame in state.pdf_preview_parent.panes()
     except:
         return False

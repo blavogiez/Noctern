@@ -69,6 +69,10 @@ def setup_gui():
     debug_console.log("GUI initialization process started.", level='INFO')
 
     
+    # Ensure we use flatly as default theme
+    if saved_theme == "litera":
+        saved_theme = "flatly"
+        
     state.current_theme = saved_theme
     state._theme_settings = interface_theme.get_theme_colors(state.root.style, state.current_theme)
 

@@ -216,15 +216,19 @@ def load_session():
                             create_new_tab(file_path)
                         else:
                             debug_console.log(f"File not found, not reopening: {file_path}", level='WARNING')
-                else:
-                    create_new_tab(None)
-            else:
-                create_new_tab(None)
-        else:
-            create_new_tab(None)
+                # Ne plus créer d'onglet vide si aucun fichier n'est ouvert
+                # else:
+                #     create_new_tab(None)
+            # Ne plus créer d'onglet vide si la section session n'existe pas
+            # else:
+            #     create_new_tab(None)
+        # Ne plus créer d'onglet vide si le fichier de config n'existe pas
+        # else:
+        #     create_new_tab(None)
     except Exception as e:
         debug_console.log(f"Error loading session state: {e}", level='ERROR')
-        create_new_tab(None)
+        # Ne plus créer d'onglet vide en cas d'erreur
+        # create_new_tab(None)
 
 def on_close_request():
     """
@@ -339,9 +343,14 @@ def on_tab_changed(event=None):
     Callback executed when the active tab changes.
     """
     current_tab = state.get_current_tab()
+    if current_tab is None:
+        # No active tab, nothing to do
+        return
+        
     tab_name = os.path.basename(current_tab.file_path) if current_tab and current_tab.file_path else "Untitled"
     debug_console.log(f"Active tab changed to: '{tab_name}'.", level='ACTION')
     
+    # Load LLM history and prompts for the current file
     llm_service.load_prompt_history_for_current_file()
     llm_service.load_prompts_for_current_file()
     

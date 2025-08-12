@@ -131,13 +131,16 @@ class PDFTextNavigator:
             debug_console.log("No PDF loaded for text search.", level='WARNING')
             return
             
-        # Try to use the sync manager for more accurate text search
-        # Use the sync manager from the viewer if available, otherwise create a new one
+        # Try to use the sync manager from the viewer if available, otherwise create a new one
         if hasattr(self.pdf_viewer, 'sync_manager') and self.pdf_viewer.sync_manager:
             sync_manager = self.pdf_viewer.sync_manager
         else:
+            # Create a new instance only if needed and not already set
             from pdf_preview.sync import PDFSyncManager
             sync_manager = PDFSyncManager()
+            # Store it in the viewer for future use
+            if hasattr(self.pdf_viewer, 'sync_manager'):
+                self.pdf_viewer.sync_manager = sync_manager
             
         position = sync_manager.find_text_in_pdf(
             self.pdf_viewer.pdf_path, text, context_before, context_after

@@ -29,6 +29,7 @@ _active_filepath_getter_func = None
 # --- Model Cache ---
 _model_cache = {}
 _device = None
+_is_initialized = False
 
 # --- Supported Languages ---
 SUPPORTED_TRANSLATIONS = {
@@ -62,16 +63,21 @@ KEYWORD_ARG_COMMANDS = {
     '\\documentclass', '\\addbibresource', '\\printbibliography'
 }
 
-def initialize_translator(root_ref, theme_getter, status_message_func, active_editor_getter, active_filepath_getter):
-    """Initializes the translator service and determines the compute device."""
+def _ensure_translator_initialized():
+    """Ensures the translator service is initialized before use."""
     global _root, _theme_setting_getter_func, _show_temporary_status_message_func
-    global _active_editor_getter_func, _active_filepath_getter_func, _device
-
-    _root = root_ref
-    _theme_setting_getter_func = theme_getter
-    _show_temporary_status_message_func = status_message_func
-    _active_editor_getter_func = active_editor_getter
-    _active_filepath_getter_func = active_filepath_getter
+    global _active_editor_getter_func, _active_filepath_getter_func, _device, _is_initialized
+    
+    # Check if already initialized
+    if _is_initialized:
+        return True
+        
+    # If we get here, the translator wasn't initialized at startup
+    # We'll need the parameters to initialize it now
+    if (_root is None or _theme_setting_getter_func is None or _show_temporary_status_message_func is None or 
+        _active_editor_getter_func is None or _active_filepath_getter_func is None):
+        debug_console.log("Translator service not properly configured.", level='ERROR')
+        return False
 
     if _TRANSFORMERS_AVAILABLE:
         is_gpu_available = torch.cuda.is_available()
@@ -79,6 +85,26 @@ def initialize_translator(root_ref, theme_getter, status_message_func, active_ed
         debug_console.log(f"Translator service initialized. Device set to: {_device.upper()}", level='INFO')
     else:
         debug_console.log("Transformers library not available. Translation is disabled.", level='ERROR')
+        return False
+    
+    _is_initialized = True
+    return True
+
+def initialize_translator(root_ref, theme_getter, status_message_func, active_editor_getter, active_filepath_getter):
+    """Initializes the translator service and determines the compute device."""
+    global _root, _theme_setting_getter_func, _show_temporary_status_message_func
+    global _active_editor_getter_func, _active_filepath_getter_func, _device, _is_initialized
+
+    _root = root_ref
+    _theme_setting_getter_func = theme_getter
+    _show_temporary_status_message_func = status_message_func
+    _active_editor_getter_func = active_editor_getter
+    _active_filepath_getter_func = active_filepath_getter
+
+    # Note: We're not actually initializing the device here to speed up startup
+    # Initialization will happen when translation is first requested
+    debug_console.log("Translator service configured for on-demand initialization.", level='INFO')
+    _is_initialized = False  # Mark as not yet fully initialized
 
 def _get_model_and_tokenizer(model_name):
     """Loads and caches a translation model and tokenizer."""
@@ -237,6 +263,11 @@ def _perform_translation_threaded(source_text, model_name, original_filepath, di
 
 def open_translate_dialog():
     """Opens a dialog for the user to select a translation language pair and options."""
+    # Ensure translator is initialized before use
+    if not _ensure_translator_initialized():
+        messagebox.showerror("Translation Error", "Failed to initialize translation service.")
+        return
+    
     if not _TRANSFORMERS_AVAILABLE:
         messagebox.showerror("Translation Error", "The 'transformers' library is not installed. Please run 'pip install transformers sentencepiece'.")
         return

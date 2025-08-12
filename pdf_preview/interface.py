@@ -31,6 +31,9 @@ class PDFPreviewInterface:
         self.preview_manager = PDFPreviewManager(root_window, get_current_tab_func)
         self.sync_manager = PDFSyncManager()
         
+        # Share the sync manager with the preview manager's viewer
+        # This will be set when the viewer is created
+        
         # UI elements
         self.preview_pane = None
         self.preview_viewer = None

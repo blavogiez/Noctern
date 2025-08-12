@@ -192,10 +192,7 @@ class PDFSyncManager:
         Returns:
             dict: Position information (page number, coordinates) or None
         """
-        # Only log initialization if this is a new instance
-        if not hasattr(self, '_initialized'):
-            debug_console.log("PDF Synchronization Manager initialized", level='INFO')
-            self._initialized = True
+        # Remove redundant initialization log - already initialized in __init__
             
         try:
             import pdfplumber

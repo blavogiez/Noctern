@@ -55,7 +55,11 @@ def main():
         pdf_monitor_setting=state.get_app_config().get("pdf_monitor", "Default")
     )
     
-    snippet_manager.initialize_snippets() 
+    # Schedule an initial heavy update to render syntax highlighting, etc.
+    root_window.after(100, actions.perform_heavy_updates)
+    
+    # Defer snippets initialization to improve startup time
+    root_window.after(500, snippet_manager.initialize_snippets) 
 
     llm_service.initialize_llm_service(
         root_window=root_window,
@@ -66,6 +70,7 @@ def main():
         app_config=state.get_app_config()
     )
 
+    # Initialize translator service on demand to improve startup time
     latex_translator.initialize_translator(
         root_ref=root_window,
         theme_getter=state.get_theme_setting,

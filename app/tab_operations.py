@@ -66,10 +66,10 @@ def close_current_tab(get_current_tab_callback, root_window, notebook_widget, sa
     del open_tabs_dict[tab_id_to_close]
     debug_console.log(f"Tab '{tab_display_name}' successfully closed and removed from notebook.", level='INFO')
     
-    # If no tabs remain open, create a new default 'Untitled' tab.
+    # If no tabs remain open, we don't create a new 'Untitled' tab automatically
+    # The application can function without any open tabs
     if not open_tabs_dict:
-        debug_console.log("No tabs remaining. Creating a new 'Untitled' tab automatically.", level='INFO')
-        create_new_tab_callback()
+        debug_console.log("No tabs remaining. Application will continue without open tabs.", level='INFO')
 
 def create_new_tab(file_path, notebook_widget, open_tabs_dict, apply_theme_callback, on_tab_changed_callback, EditorTab_class, schedule_heavy_updates_callback):
     """
