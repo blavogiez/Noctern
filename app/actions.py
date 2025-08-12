@@ -57,7 +57,7 @@ def perform_heavy_updates():
 
 
     tab_name = os.path.basename(current_tab.file_path) if current_tab.file_path else "Untitled"
-    debug_console.log(f"Initiating heavy updates for tab: '{tab_name}'.", level='INFO')
+    debug_console.log(f"Initiating heavy updates for tab: '{tab_name}'.", level='TRACE')
     
     editor_syntax.apply_syntax_highlighting(current_tab.editor)
     if state.outline:

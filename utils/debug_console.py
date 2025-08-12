@@ -24,6 +24,7 @@ class DebugConsole:
         # Define color codes for different log levels to enhance readability.
         self.levels = {
             'DEBUG': '#9E9E9E',   # Grey for detailed debugging information.
+            'TRACE': '#616161',   # Darker grey for very detailed tracing.
             'INFO': '#FFFFFF',    # White for general informational messages.
             'ACTION': '#81D4FA',  # Light Blue for user or system actions.
             'SUCCESS': '#A5D6A7', # Green for successful operations.
@@ -31,6 +32,10 @@ class DebugConsole:
             'ERROR': '#EF9A9A',   # Red for critical errors.
             'CONFIG': '#CE93D8',  # Purple for configuration-related messages.
         }
+        # Define the order of levels for filtering
+        self.level_order = ['TRACE', 'DEBUG', 'INFO', 'ACTION', 'SUCCESS', 'WARNING', 'ERROR', 'CONFIG']
+        # Set default minimum level to show
+        self.min_level = 'DEBUG'  # Show DEBUG and above by default
 
     def initialize(self, root):
         """
@@ -43,6 +48,34 @@ class DebugConsole:
             root (tk.Tk or tk.Toplevel): The root Tkinter window of the application.
         """
         self.root = root
+
+    def set_min_level(self, level):
+        """
+        Sets the minimum log level to display in the console.
+        
+        Args:
+            level (str): The minimum level to show (e.g., 'TRACE', 'DEBUG', 'INFO')
+        """
+        if level in self.levels:
+            self.min_level = level
+
+    def _should_show_level(self, level):
+        """
+        Determines if a log level should be shown based on the minimum level setting.
+        
+        Args:
+            level (str): The level to check
+            
+        Returns:
+            bool: True if the level should be shown, False otherwise
+        """
+        try:
+            level_idx = self.level_order.index(level.upper())
+            min_idx = self.level_order.index(self.min_level.upper())
+            return level_idx >= min_idx
+        except ValueError:
+            # If level is not in our known levels, show it by default
+            return True
 
     def show_console(self):
         """
@@ -102,6 +135,10 @@ class DebugConsole:
             level (str, optional): The severity level of the log message (e.g., 'INFO', 'ERROR').
                                    Defaults to 'INFO'.
         """
+        # Check if this level should be shown
+        if not self._should_show_level(level):
+            return
+            
         # Fallback to stdout if the console window is not active or does not exist.
         if not self.console_window or not self.text_widget or not self.console_window.winfo_exists():
             print(f"[{level}] {message}")
@@ -134,3 +171,4 @@ initialize = _console_instance.initialize
 show_console = _console_instance.show_console
 hide_console = _console_instance.hide_console
 log = _console_instance.log
+set_min_level = _console_instance.set_min_level

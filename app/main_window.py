@@ -73,6 +73,8 @@ def setup_gui():
     state._theme_settings = interface_theme.get_theme_colors(state.root.style, state.current_theme)
 
     debug_console.initialize(state.root)
+    # Set minimum log level to reduce verbosity
+    debug_console.set_min_level('INFO')
     create_top_buttons_frame(state.root)
     
     # Initialize PDF preview interface
@@ -155,7 +157,7 @@ def setup_gui():
         # Log to debug
         current_tab = state.get_current_tab()
         if current_tab and current_tab.file_path:
-            debug_console.log(f"Text modified in tab: {os.path.basename(current_tab.file_path)}", level='DEBUG')
+            debug_console.log(f"Text modified in tab: {os.path.basename(current_tab.file_path)}", level='TRACE')
         
         # Check if the event is from the current tab
         if not current_tab or event.widget != current_tab.editor:
@@ -163,7 +165,7 @@ def setup_gui():
             
         # Set the modified flag to False to avoid infinite loop
         current_tab.editor.edit_modified(False)
-        debug_console.log(f"Reset edit_modified flag for tab: {os.path.basename(current_tab.file_path) if current_tab.file_path else 'Untitled'}", level='DEBUG')
+        debug_console.log(f"Reset edit_modified flag for tab: {os.path.basename(current_tab.file_path) if current_tab.file_path else 'Untitled'}", level='TRACE')
         
         # Trigger PDF preview update
         if hasattr(state, 'pdf_preview_interface') and state.pdf_preview_interface:
@@ -171,7 +173,7 @@ def setup_gui():
         
         # If an update is already pending, skip this one
         if update_pending:
-            debug_console.log(f"Skipping update for tab: {os.path.basename(current_tab.file_path) if current_tab.file_path else 'Untitled'} - update already pending", level='DEBUG')
+            debug_console.log(f"Skipping update for tab: {os.path.basename(current_tab.file_path) if current_tab.file_path else 'Untitled'} - update already pending", level='TRACE')
             return None
             
         # Set the pending flag
@@ -189,7 +191,7 @@ def setup_gui():
             tab.editor.bind("<<Modified>>", on_text_modified)
             # Also bind KeyRelease to ensure we catch all changes
             tab.editor.bind("<KeyRelease>", on_text_modified)
-            debug_console.log(f"Bound <<Modified>> and <KeyRelease> events to tab: {tab.file_path if tab.file_path else 'Untitled'}", level='DEBUG')
+            debug_console.log(f"Bound <<Modified>> and <KeyRelease> events to tab: {tab.file_path if tab.file_path else 'Untitled'}", level='TRACE')
 
     def on_tab_changed(event):
         actions.on_tab_changed(event)

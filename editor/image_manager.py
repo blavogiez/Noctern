@@ -146,7 +146,7 @@ def _cleanup_empty_dirs(path, base_figures_dir):
         try:
             if not os.listdir(current_path):
                 os.rmdir(current_path)
-                debug_console.log(f"Removed empty directory: {current_path}", level='INFO')
+                debug_console.log(f"Removed empty directory: {current_path}", level='TRACE')
                 current_path = os.path.dirname(current_path)
             else:
                 break # Stop if the directory is not empty.
@@ -307,7 +307,7 @@ def _monitor_changes():
     """
     global _monitoring_active, _tracked_tabs, _pending_deletions
     
-    debug_console.log("Image monitoring thread started", level='INFO')
+    debug_console.log("Image monitoring thread started", level='TRACE')
     
     while _monitoring_active:
         try:
@@ -338,7 +338,7 @@ def _monitor_changes():
             # Clean up closed tabs
             for tab_id in tabs_to_remove:
                 if tab_id in _tracked_tabs:
-                    debug_console.log(f"Removing dead tab {tab_id} from monitoring", level='DEBUG')
+                    debug_console.log(f"Removing dead tab {tab_id} from monitoring", level='TRACE')
                     del _tracked_tabs[tab_id]
             
             time.sleep(0.1)  # Very short pause for responsiveness
@@ -347,7 +347,7 @@ def _monitor_changes():
             debug_console.log(f"Critical error in monitoring thread: {e}", level='ERROR')
             time.sleep(0.5)
     
-    debug_console.log("Image monitoring thread stopped", level='INFO')
+    debug_console.log("Image monitoring thread stopped", level='TRACE')
 
 def _check_tab_for_deletions(tab_id, tab_ref, tab_data):
     """
@@ -395,7 +395,7 @@ def _check_tab_for_deletions(tab_id, tab_ref, tab_data):
                         _handle_image_deletion(image_path, tab_ref, image_key)
         
         if added_images:
-            debug_console.log(f"New images detected in tab {tab_id}: {added_images}", level='DEBUG')
+            debug_console.log(f"New images detected in tab {tab_id}: {added_images}", level='TRACE')
         
         # Update tracking data
         tab_data['images'] = current_images
@@ -508,7 +508,7 @@ def shutdown_image_monitoring():
     """
     global _monitoring_active, _monitor_thread, _tracked_tabs, _pending_deletions
     
-    debug_console.log("Shutting down image monitoring system", level='INFO')
+    debug_console.log("Shutting down image monitoring system", level='TRACE')
     
     _monitoring_active = False
     if _monitor_thread and _monitor_thread.is_alive():
@@ -516,7 +516,7 @@ def shutdown_image_monitoring():
     
     _tracked_tabs.clear()
     _pending_deletions.clear()
-    debug_console.log("Image monitoring system shut down", level='INFO')
+    debug_console.log("Image monitoring system shut down", level='TRACE')
 
 def check_for_deleted_images(current_tab):
     """
