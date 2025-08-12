@@ -179,11 +179,111 @@ def _prompt_for_image_deletion(image_path_to_delete, tex_file_path):
         
     debug_console.log(f"Prompting user for deletion of image file: {display_path}", level='ACTION')
     
-    response = messagebox.askyesno(
-        "Delete Associated Image File?",
-        f"The reference to the following image file has been removed from your document:\n\n'{display_path}'\n\nDo you want to permanently delete the file itself?",
-        icon='warning'
-    )
+    # Get additional information about the image file
+    file_size = "Unknown size"
+    try:
+        size_bytes = os.path.getsize(image_path_to_delete)
+        # Format file size in a human-readable way
+        if size_bytes < 1024:
+            file_size = f"{size_bytes} bytes"
+        elif size_bytes < 1024 * 1024:
+            file_size = f"{size_bytes / 1024:.1f} KB"
+        else:
+            file_size = f"{size_bytes / (1024 * 1024):.1f} MB"
+    except OSError:
+        pass
+    
+    # Get file modification time
+    mod_time = "Unknown"
+    try:
+        mod_timestamp = os.path.getmtime(image_path_to_delete)
+        mod_time = time.ctime(mod_timestamp)
+    except OSError:
+        pass
+    
+    # Create a custom dialog with image preview
+    from tkinter import Toplevel, Label, Button, Frame
+    from PIL import Image, ImageTk
+    
+    # Create custom dialog
+    dialog = Toplevel()
+    dialog.title("Delete Associated Image File?")
+    dialog.resizable(False, False)
+    dialog.grab_set()  # Make the dialog modal
+    
+    # Create main frame
+    main_frame = Frame(dialog)
+    main_frame.pack(padx=20, pady=20)
+    
+    # Message label
+    message = (f"The reference to the following image file has been removed from your document:\n\n"
+               f"'{display_path}'\n\n"
+               f"File information:\n"
+               f"- Size: {file_size}\n"
+               f"- Last modified: {mod_time}\n\n"
+               f"Do you want to permanently delete the file itself?")
+    
+    message_label = Label(main_frame, text=message, justify="left")
+    message_label.pack(pady=(0, 10))
+    
+    # Try to create image preview
+    preview_frame = Frame(main_frame)
+    preview_frame.pack(pady=(0, 10))
+    
+    try:
+        # Open and resize the image for preview
+        image = Image.open(image_path_to_delete)
+        # Resize to a reasonable preview size
+        image.thumbnail((200, 200), Image.Resampling.LANCZOS)
+        photo = ImageTk.PhotoImage(image)
+        
+        # Create label for image preview
+        image_label = Label(preview_frame, image=photo)
+        image_label.image = photo  # Keep a reference to avoid garbage collection
+        image_label.pack()
+        
+        # Add a label to indicate this is a preview
+        preview_label = Label(preview_frame, text="Image Preview", font=("Arial", 8, "italic"))
+        preview_label.pack()
+    except Exception as e:
+        # If we can't load the image, just show a message
+        no_preview_label = Label(preview_frame, text=f"Cannot preview image: {str(e)}", 
+                                font=("Arial", 8, "italic"))
+        no_preview_label.pack()
+    
+    # Create button frame
+    button_frame = Frame(main_frame)
+    button_frame.pack()
+    
+    # Result variable to store user choice
+    result = [False]  # Using list to allow modification in nested function
+    
+    def on_yes():
+        result[0] = True
+        dialog.destroy()
+    
+    def on_no():
+        result[0] = False
+        dialog.destroy()
+    
+    # Create buttons
+    yes_button = Button(button_frame, text="Yes, Delete", command=on_yes, width=12)
+    yes_button.pack(side="left", padx=(0, 10))
+    
+    no_button = Button(button_frame, text="No, Keep File", command=on_no, width=12)
+    no_button.pack(side="left")
+    
+    # Center the dialog on the screen
+    dialog.update_idletasks()
+    x = (dialog.winfo_screenwidth() // 2) - (dialog.winfo_width() // 2)
+    y = (dialog.winfo_screenheight() // 2) - (dialog.winfo_height() // 2)
+    dialog.geometry(f"+{x}+{y}")
+    
+    # Wait for user response
+    dialog.wait_window()
+    
+    response = result[0]
+    
     if response:
         debug_console.log(f"User confirmed deletion of file: {image_path_to_delete}", level='ACTION')
         try:
