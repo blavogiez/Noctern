@@ -404,25 +404,30 @@ class PerformanceOptimizer:
     
     def _update_outline_intelligent(self, editor, context, category):
         """Intelligently update document outline with caching.""" 
-        from app import state
-        
-        if not state.outline:
-            return
+        try:
+            from app import state
             
-        # Check cache first
-        cached_outline = self.content_cache.get_cached_outline(context.content_hash)
-        if cached_outline is not None:
-            # Apply cached outline (implementation depends on outline structure)
-            debug_console.log("Using cached outline", level='DEBUG')
-            return
+            if not hasattr(state, 'outline') or not state.outline:
+                debug_console.log("Outline not available, skipping update", level='DEBUG')
+                return
+                
+            # Check cache first
+            cached_outline = self.content_cache.get_cached_outline(context.content_hash)
+            if cached_outline is not None:
+                # Apply cached outline (implementation depends on outline structure)
+                debug_console.log("Using cached outline", level='DEBUG')
+                return
+                
+            # For huge files, skip outline updates during rapid editing
+            if category == 'huge' and time.time() - context.timestamp < 2.0:
+                return
+                
+            # Update outline and cache result
+            state.outline.update_outline(editor)
+            # Note: Actual caching would require outline data structure access
             
-        # For huge files, skip outline updates during rapid editing
-        if category == 'huge' and time.time() - context.timestamp < 2.0:
-            return
-            
-        # Update outline and cache result
-        state.outline.update_outline(editor)
-        # Note: Actual caching would require outline data structure access
+        except (ImportError, AttributeError) as e:
+            debug_console.log(f"Could not update outline: {e}", level='DEBUG')
         
         self.last_update_times[editor][UpdateType.OUTLINE] = time.time()
     
