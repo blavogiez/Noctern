@@ -7,6 +7,7 @@ import os
 import threading
 import time
 import subprocess
+import shutil
 from utils import debug_console
 from pdf_preview.viewer import PDFPreviewViewer
 
@@ -105,6 +106,19 @@ class PDFPreviewManager:
             self.last_compilation_time = time.time()
             self.compilation_status = "Compilable"
             pdf_path = os.path.join(source_directory, file_name.replace(".tex", ".pdf"))
+            
+            # Cache successful compilation
+            try:
+                base_name = os.path.splitext(file_name)[0]
+                cache_directory = os.path.join(source_directory, f"{base_name}.cache")
+                os.makedirs(cache_directory, exist_ok=True)
+                cached_tex_path = os.path.join(cache_directory, f"{base_name}_last_successful.tex")
+                tex_file_path = os.path.join(source_directory, file_name)
+                shutil.copy2(tex_file_path, cached_tex_path)
+                debug_console.log(f"Auto-compilation: Cached successful version to {cached_tex_path}", level='INFO')
+            except Exception as e:
+                debug_console.log(f"Auto-compilation: Failed to cache successful .tex file: {e}", level='ERROR')
+            
             if self.viewer and os.path.exists(pdf_path):
                 self.viewer.load_pdf(pdf_path)
                 # Update viewer status
