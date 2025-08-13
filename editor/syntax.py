@@ -14,24 +14,89 @@ MAX_CACHE_SIZE = 15           # Reduced cache size
 DEBOUNCE_DELAY = 100          # Faster debounce for better responsiveness
 VERY_LARGE_FILE_THRESHOLD = 10000  # Lines for extreme optimizations
 
-# Simplified color scheme
+# Enhanced color scheme for better LaTeX syntax highlighting
 COLORS = {
-    'command': '#2E86AB',
-    'section': '#1565C0', 
-    'math': '#C73E1D',
-    'comment': '#7D8491',
-    'number': '#E74C3C',
-    'bracket': '#E67E22'
+    # Document structure
+    'documentclass': '#8E24AA',     # Purple for document class
+    'package': '#5E35B1',           # Deep purple for packages
+    'section': '#1565C0',           # Blue for sections (keeping original)
+    'subsection': '#1976D2',        # Lighter blue for subsections
+    'title_commands': '#AD1457',    # Pink for title/author/date
+    
+    # Environments
+    'environment': '#2E7D32',       # Green for begin/end environments
+    'list_env': '#388E3C',          # Lighter green for itemize/enumerate
+    'math_env': '#C73E1D',          # Red for math environments (keeping original)
+    'figure_env': '#F57C00',        # Orange for figure/table environments
+    
+    # Commands and text formatting
+    'command': '#2E86AB',           # Blue for general commands (keeping original)
+    'text_format': '#D84315',       # Dark orange for textbf, textit, etc.
+    'font_size': '#6A1B9A',         # Purple for font size commands
+    'geometry': '#795548',          # Brown for geometry and layout
+    
+    # References and citations
+    'ref_cite': '#00796B',          # Teal for references and citations
+    'label': '#004D40',             # Dark teal for labels
+    'hyperref': '#1565C0',          # Blue for hyperref commands
+    
+    # Math elements
+    'math': '#C73E1D',              # Red for inline math (keeping original)
+    'math_symbols': '#E91E63',      # Pink for special math symbols
+    
+    # Basic elements
+    'comment': '#7D8491',           # Gray for comments (keeping original)
+    'number': '#E74C3C',            # Red for numbers (keeping original)
+    'bracket': '#E67E22',           # Orange for brackets (keeping original)
+    'string': '#689F38',            # Green for strings in braces
+    
+    # Special characters
+    'special_chars': '#FF5722',     # Red-orange for special characters
+    'units': '#3F51B5'              # Indigo for units and measurements
 }
 
-# Optimized regex patterns with compiled flags
+# Enhanced regex patterns for comprehensive LaTeX highlighting
+# Ordered from most specific to most general to avoid conflicts
 PATTERNS = {
+    # Comments (highest priority - can appear anywhere)
     'comment': re.compile(r'%[^\n]*', re.MULTILINE),
-    'command': re.compile(r'\\[a-zA-Z@]+(?![a-zA-Z@])', re.MULTILINE),
-    'section': re.compile(r'\\(?:sub)*section\*?(?![a-zA-Z])', re.MULTILINE),
-    'math_env': re.compile(r'\\begin\{(?:equation|align|gather|split)\*?\}.*?\\end\{(?:equation|align|gather|split)\*?\}', re.DOTALL | re.MULTILINE),
+    
+    # Document structure (very specific)
+    'documentclass': re.compile(r'\\documentclass(?:\[[^\]]*\])?\{[^}]*\}', re.MULTILINE),
+    'package': re.compile(r'\\usepackage(?:\[[^\]]*\])?\{[^}]*\}', re.MULTILINE),
+    
+    # Specific environments (before general environment pattern)
+    'list_env': re.compile(r'\\(?:begin|end)\{(?:itemize|enumerate|description)\}', re.MULTILINE),
+    'math_env': re.compile(r'\\(?:begin|end)\{(?:equation|align|gather|split|math|displaymath|eqnarray)\*?\}', re.MULTILINE),
+    'figure_env': re.compile(r'\\(?:begin|end)\{(?:figure|table|tabular|array)\*?\}', re.MULTILINE),
+    
+    # Math content (before math commands)
+    'math': re.compile(r'\$[^$\n]*\$|\\\([^)]*\\\)', re.MULTILINE),
+    'math_symbols': re.compile(r'\\(?:alpha|beta|gamma|delta|epsilon|theta|lambda|mu|pi|sigma|phi|psi|omega|sum|int|prod|sqrt|frac|partial|infty|nabla|times|cdot|ldots|pm|mp|leq|geq|neq|approx|equiv|subset|supset|in|cup|cap|forall|exists)(?![a-zA-Z])', re.MULTILINE),
+    
+    # Specific command types (before general commands)
+    'section': re.compile(r'\\section\*?(?![a-zA-Z])', re.MULTILINE),
+    'subsection': re.compile(r'\\(?:sub)+section\*?(?![a-zA-Z])', re.MULTILINE),
+    'title_commands': re.compile(r'\\(?:title|author|date)(?![a-zA-Z])', re.MULTILINE),
+    'text_format': re.compile(r'\\(?:textbf|textit|texttt|textsc|emph|underline|textcolor)(?![a-zA-Z])', re.MULTILINE),
+    'font_size': re.compile(r'\\(?:tiny|scriptsize|footnotesize|small|normalsize|large|Large|LARGE|huge|Huge)(?![a-zA-Z])', re.MULTILINE),
+    'geometry': re.compile(r'\\(?:geometry|newpage|clearpage|pagebreak|noindent|indent|hspace|vspace)(?![a-zA-Z])', re.MULTILINE),
+    'ref_cite': re.compile(r'\\(?:ref|cite|citet|citep|autoref|nameref|pageref|eqref)(?![a-zA-Z])', re.MULTILINE),
+    'hyperref': re.compile(r'\\(?:href|url|hyperref)(?![a-zA-Z])', re.MULTILINE),
+    'special_chars': re.compile(r'\\(?:&|%|\$|#|_|\^|~|\\|textbackslash)(?![a-zA-Z])', re.MULTILINE),
+    
+    # Specific patterns with braces
+    'label': re.compile(r'\\label\{[^}]*\}', re.MULTILINE),
+    'units': re.compile(r'\\(?:si|SI|unit|num|ang|celsius|degree)\{[^}]*\}', re.MULTILINE),
+    
+    # General patterns (lower priority)
+    'environment': re.compile(r'\\(?:begin|end)\{[^}]+\}', re.MULTILINE),
     'number': re.compile(r'(?<!\w)\d+(?:\.\d+)?(?!\w)', re.MULTILINE),
-    'brackets': re.compile(r'[{}\[\]()]', re.MULTILINE)
+    'brackets': re.compile(r'[{}\[\]()]', re.MULTILINE),
+    'string': re.compile(r'\{[^{}]*\}', re.MULTILINE),
+    
+    # General commands (lowest priority - catch-all)
+    'command': re.compile(r'\\[a-zA-Z@]+(?![a-zA-Z@])', re.MULTILINE)
 }
 
 class SyntaxCache:
@@ -228,8 +293,11 @@ def _highlight_content_range_minimal(editor, content, start_idx, line_offset):
     try:
         # Only highlight the most important elements for large files
         minimal_patterns = {
-            'section': PATTERNS['section'],  # Sections are important for navigation
-            'comment': PATTERNS['comment']   # Comments are visually important
+            'section': PATTERNS['section'],      # Sections are important for navigation
+            'subsection': PATTERNS['subsection'], # Subsections too
+            'comment': PATTERNS['comment'],      # Comments are visually important
+            'math': PATTERNS['math'],            # Math expressions stand out
+            'documentclass': PATTERNS['documentclass'] # Document structure
         }
         
         for name, pattern in minimal_patterns.items():
@@ -334,14 +402,45 @@ def _highlight_content_range(editor, content, start_idx, line_offset):
         pass
 
 def _setup_tags(editor, normal_font, bold_font):
-    """Configure highlighting tags with minimal overhead."""
+    """Configure highlighting tags with comprehensive LaTeX support."""
     tags_config = {
-        "command": (COLORS['command'], normal_font),
+        # Document structure (bold for emphasis)
+        "documentclass": (COLORS['documentclass'], bold_font),
+        "package": (COLORS['package'], normal_font),
         "section": (COLORS['section'], bold_font),
+        "subsection": (COLORS['subsection'], bold_font),
+        "title_commands": (COLORS['title_commands'], bold_font),
+        
+        # Environments
+        "environment": (COLORS['environment'], normal_font),
+        "list_env": (COLORS['list_env'], normal_font),
+        "math_env": (COLORS['math_env'], bold_font),
+        "figure_env": (COLORS['figure_env'], normal_font),
+        
+        # Commands and formatting
+        "command": (COLORS['command'], normal_font),
+        "text_format": (COLORS['text_format'], normal_font),
+        "font_size": (COLORS['font_size'], normal_font),
+        "geometry": (COLORS['geometry'], normal_font),
+        
+        # References and citations
+        "ref_cite": (COLORS['ref_cite'], normal_font),
+        "label": (COLORS['label'], normal_font),
+        "hyperref": (COLORS['hyperref'], normal_font),
+        
+        # Math elements
         "math": (COLORS['math'], normal_font),
+        "math_symbols": (COLORS['math_symbols'], normal_font),
+        
+        # Basic elements
         "comment": (COLORS['comment'], normal_font),
         "number": (COLORS['number'], normal_font),
-        "bracket": (COLORS['bracket'], normal_font)
+        "bracket": (COLORS['bracket'], normal_font),
+        "string": (COLORS['string'], normal_font),
+        
+        # Special elements
+        "special_chars": (COLORS['special_chars'], normal_font),
+        "units": (COLORS['units'], normal_font)
     }
     
     for tag_name, (color, font) in tags_config.items():
@@ -349,7 +448,15 @@ def _setup_tags(editor, normal_font, bold_font):
 
 def _clear_tags(editor):
     """Clear all highlighting tags."""
-    tags = ['command', 'section', 'math', 'comment', 'number', 'bracket']
+    tags = [
+        'documentclass', 'package', 'section', 'subsection', 'title_commands',
+        'environment', 'list_env', 'math_env', 'figure_env',
+        'command', 'text_format', 'font_size', 'geometry',
+        'ref_cite', 'label', 'hyperref',
+        'math', 'math_symbols',
+        'comment', 'number', 'bracket', 'string',
+        'special_chars', 'units'
+    ]
     for tag in tags:
         try:
             editor.tag_remove(tag, "1.0", tk.END)
@@ -358,7 +465,15 @@ def _clear_tags(editor):
 
 def _clear_tags_in_range(editor, start_idx, end_idx):
     """Clear highlighting tags in specific range."""
-    tags = ['command', 'section', 'math', 'comment', 'number', 'bracket']
+    tags = [
+        'documentclass', 'package', 'section', 'subsection', 'title_commands',
+        'environment', 'list_env', 'math_env', 'figure_env',
+        'command', 'text_format', 'font_size', 'geometry',
+        'ref_cite', 'label', 'hyperref',
+        'math', 'math_symbols',
+        'comment', 'number', 'bracket', 'string',
+        'special_chars', 'units'
+    ]
     for tag in tags:
         try:
             editor.tag_remove(tag, start_idx, end_idx)
