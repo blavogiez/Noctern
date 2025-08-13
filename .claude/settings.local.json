@@ -8,7 +8,9 @@
       "Bash(python test_zoom_compatibility.py:*)",
       "Bash(python test:*)",
       "Bash(python -m pytest tests/ -v)",
-      "Bash(python -m pytest tests/test_error_refresh_integration.py -v)"
+      "Bash(python -m pytest tests/test_error_refresh_integration.py -v)",
+      "Bash(python -m pytest \"tests\\test_syntax_performance.py::TestSyntaxPerformance::test_first_highlight_performance\" -v -s)",
+      "Bash(python -m pytest tests/test_editor_events.py tests/test_tab_operations.py tests/test_theme.py -v)"
     ],
     "deny": [],
     "ask": []
