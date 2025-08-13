@@ -1,19 +1,21 @@
 """
 This module is responsible for creating and managing the application's status bar.
 It includes functionalities for displaying general status messages, word count,
-and real-time GPU performance metrics (if an NVIDIA GPU is detected).
+real-time GPU performance metrics (if an NVIDIA GPU is detected),
+and session productivity metrics.
 """
 
 import ttkbootstrap as ttk
 import GPUtil
 from utils import debug_console
+from metrics.status_display import MetricsStatusDisplay
 
 def create_status_bar(root):
     """
     Creates the main status bar frame and its constituent labels.
 
-    The status bar is divided into two main sections: one for general status messages
-    (like word count or temporary notifications) and another for displaying GPU status.
+    The status bar is divided into sections: general status messages (word count),
+    session metrics, and GPU status.
 
     Args:
         root (tk.Tk): The root Tkinter window to which the status bar will be attached.
@@ -23,6 +25,7 @@ def create_status_bar(root):
             - status_bar_frame (ttk.Frame): The main frame for the status bar.
             - status_label (ttk.Label): The label for general status messages and word count.
             - gpu_status_label (ttk.Label): The label for displaying GPU performance metrics.
+            - metrics_display (MetricsStatusDisplay): The metrics status display instance.
     """
     # Create the main frame for the status bar, packed at the bottom of the root window.
     status_bar_frame = ttk.Frame(root, padding=(5, 3))
@@ -32,7 +35,10 @@ def create_status_bar(root):
     status_label = ttk.Label(status_bar_frame, text="...", anchor="w")
     status_label.pack(side="left", fill="x", expand=True)
 
-    # A vertical separator to visually divide the general status from the GPU status.
+    # Session metrics display
+    metrics_display = MetricsStatusDisplay(status_bar_frame, root)
+
+    # A vertical separator to visually divide the metrics from the GPU status.
     separator = ttk.Separator(status_bar_frame, orient='vertical')
     separator.pack(side="left", fill='y', padx=10)
 
@@ -40,7 +46,7 @@ def create_status_bar(root):
     gpu_status_label = ttk.Label(status_bar_frame, text="GPU: N/A", anchor="e")
     gpu_status_label.pack(side="right")
     
-    return status_bar_frame, status_label, gpu_status_label
+    return status_bar_frame, status_label, gpu_status_label, metrics_display
 
 def update_gpu_status(gpu_label):
     """

@@ -82,6 +82,15 @@ def main():
     # Schedule an initial heavy update to render syntax highlighting, etc.
     root_window.after(100, actions.perform_heavy_updates)
     
+    # Add cleanup handler for metrics
+    def on_closing():
+        # Save current session metrics before closing
+        if hasattr(state, 'metrics_display') and state.metrics_display:
+            state.metrics_display.save_current_session()
+        root_window.destroy()
+    
+    root_window.protocol("WM_DELETE_WINDOW", on_closing)
+    
     debug_console.log("Entering main Tkinter event loop.", level='INFO')
     root_window.mainloop()
     debug_console.log("Application has exited main event loop. Shutting down.", level='INFO')

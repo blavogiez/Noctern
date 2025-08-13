@@ -15,10 +15,11 @@ def toggle_status_bar():
     if not state.status_bar_frame:
         # If status bar frame doesn't exist, we need to create it
         from app.status import create_status_bar
-        status_bar_frame, status_label, gpu_status_label = create_status_bar(state.root)
+        status_bar_frame, status_label, gpu_status_label, metrics_display = create_status_bar(state.root)
         state.status_bar_frame = status_bar_frame
         state.status_label = status_label
         state.gpu_status_label = gpu_status_label
+        state.metrics_display = metrics_display
         
         # Update the status with current file info if there's an active tab
         from app import status_utils

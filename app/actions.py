@@ -328,10 +328,18 @@ def on_tab_changed(event=None):
     current_tab = state.get_current_tab()
     if current_tab is None:
         # No active tab, nothing to do
+        # Update metrics display for no file
+        if hasattr(state, 'metrics_display') and state.metrics_display:
+            state.metrics_display.set_current_file(None)
         return
         
     tab_name = os.path.basename(current_tab.file_path) if current_tab and current_tab.file_path else "Untitled"
     debug_console.log(f"Active tab changed to: '{tab_name}'.", level='ACTION')
+    
+    # Update metrics tracking for the new file
+    if hasattr(state, 'metrics_display') and state.metrics_display:
+        state.metrics_display.save_current_session()  # Save previous session
+        state.metrics_display.set_current_file(current_tab.file_path)
     
     # Load LLM history and prompts for the current file
     llm_service.load_prompt_history_for_current_file()

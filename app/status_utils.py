@@ -44,5 +44,14 @@ def update_status_bar_text():
             state.status_label.config(text=f"{current_tab.file_path} | {word_count_text}")
         else:
             state.status_label.config(text=f"Untitled | {word_count_text}")
+            
+        # Update metrics display with word count
+        if hasattr(state, 'metrics_display') and state.metrics_display:
+            # Extract just the word count number for metrics
+            try:
+                word_count_num = int(word_count_text.split()[0])
+                state.metrics_display.update_word_count(word_count_num)
+            except (ValueError, IndexError):
+                pass
     else:
         state.status_label.config(text="...")

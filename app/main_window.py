@@ -233,14 +233,16 @@ def setup_gui():
     show_status_bar = app_config.get_bool(state._app_config.get("show_status_bar", "True"))
     
     if show_status_bar:
-        status_bar_frame, status_label, gpu_status_label = create_status_bar(state.root)
+        status_bar_frame, status_label, gpu_status_label, metrics_display = create_status_bar(state.root)
         state.status_bar_frame = status_bar_frame
         state.status_label = status_label
         state.gpu_status_label = gpu_status_label
+        state.metrics_display = metrics_display
     else:
         # Initialize variables to None if status bar is not shown
         state.status_bar_frame = None
         state.status_label = None
+        state.metrics_display = None
         state.gpu_status_label = None
     
     # Initialize visibility tracking variables with saved settings
