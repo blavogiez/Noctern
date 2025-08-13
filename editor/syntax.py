@@ -14,43 +14,47 @@ MAX_CACHE_SIZE = 15           # Reduced cache size
 DEBOUNCE_DELAY = 100          # Faster debounce for better responsiveness
 VERY_LARGE_FILE_THRESHOLD = 10000  # Lines for extreme optimizations
 
-# Enhanced color scheme for better LaTeX syntax highlighting
+# Enhanced color scheme with high visibility colors
 COLORS = {
-    # Document structure
-    'documentclass': '#8E24AA',     # Purple for document class
-    'package': '#5E35B1',           # Deep purple for packages
-    'section': '#1565C0',           # Blue for sections (keeping original)
-    'subsection': '#1976D2',        # Lighter blue for subsections
-    'title_commands': '#AD1457',    # Pink for title/author/date
+    # Document structure - More vibrant purples
+    'documentclass': '#9C27B0',     # Bright purple for document class
+    'package': '#673AB7',           # Deep violet for packages
+    'section': '#0D47A1',           # Deep blue for sections
+    'subsection': '#1565C0',        # Medium blue for subsections
+    'title_commands': '#C2185B',    # Bright pink for title/author/date
     
-    # Environments
-    'environment': '#2E7D32',       # Green for begin/end environments
-    'list_env': '#388E3C',          # Lighter green for itemize/enumerate
-    'math_env': '#C73E1D',          # Red for math environments (keeping original)
-    'figure_env': '#F57C00',        # Orange for figure/table environments
+    # Environments - More visible greens
+    'environment': '#2E7D32',       # Forest green for begin/end environments
+    'list_env': '#43A047',          # Bright green for itemize/enumerate
+    'math_env': '#D32F2F',          # Bright red for math environments
+    'figure_env': '#FF8F00',        # Bright amber for figure/table environments
     
-    # Commands and text formatting
-    'command': '#2E86AB',           # Blue for general commands (keeping original)
-    'text_format': '#D84315',       # Dark orange for textbf, textit, etc.
-    'font_size': '#6A1B9A',         # Purple for font size commands
-    'geometry': '#795548',          # Brown for geometry and layout
+    # Commands and text formatting - Enhanced visibility
+    'command': '#1976D2',           # Bright blue for general commands
+    'text_format': '#E65100',       # Bright orange for textbf, textit, etc.
+    'font_size': '#7B1FA2',         # Bright purple for font size commands
+    'geometry': '#5D4037',          # Dark brown for geometry and layout
     
-    # References and citations
-    'ref_cite': '#00796B',          # Teal for references and citations
-    'label': '#004D40',             # Dark teal for labels
-    'hyperref': '#1565C0',          # Blue for hyperref commands
+    # References and citations - Enhanced teals
+    'ref_cite': '#00838F',          # Bright teal for references and citations
+    'label': '#006064',             # Dark cyan for labels
+    'hyperref': '#0277BD',          # Light blue for hyperref commands
     
-    # Math elements
-    'math': '#C73E1D',              # Red for inline math (keeping original)
-    'math_symbols': '#E91E63',      # Pink for special math symbols
+    # Math elements - Vibrant reds and pinks
+    'math': '#D32F2F',              # Bright red for inline math
+    'math_symbols': '#E91E63',      # Hot pink for special math symbols
     
-    # Basic elements
-    'comment': '#7D8491',           # Gray for comments (keeping original)
-    'number': '#E74C3C',            # Red for numbers (keeping original)
-    'bracket': '#E67E22',           # Orange for brackets (keeping original)
-    'string': '#689F38',            # Green for strings in braces
+    # Text content - New additions
+    'proper_names': '#8E24AA',      # Purple for proper names (Jean Blanc, etc.)
+    'braced_content': '#2E7D32',    # Forest green for content in braces {}
     
-    # Special characters
+    # Basic elements - Enhanced visibility
+    'comment': '#616161',           # Darker gray for better contrast
+    'number': '#F44336',            # Bright red for numbers
+    'bracket': '#FF9800',           # Bright orange for brackets
+    'string': '#558B2F',            # Dark green for general strings
+    
+    # Special characters - High contrast
     'special_chars': '#FF5722',     # Red-orange for special characters
     'units': '#3F51B5'              # Indigo for units and measurements
 }
@@ -89,11 +93,14 @@ PATTERNS = {
     'label': re.compile(r'\\label\{[^}]*\}', re.MULTILINE),
     'units': re.compile(r'\\(?:si|SI|unit|num|ang|celsius|degree)\{[^}]*\}', re.MULTILINE),
     
+    # Text content patterns (before general patterns)
+    'proper_names': re.compile(r'(?<!\w)[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+(?!\w)', re.MULTILINE),
+    'braced_content': re.compile(r'\{[^{}]*\}', re.MULTILINE),
+    
     # General patterns (lower priority)
     'environment': re.compile(r'\\(?:begin|end)\{[^}]+\}', re.MULTILINE),
     'number': re.compile(r'(?<!\w)\d+(?:\.\d+)?(?!\w)', re.MULTILINE),
     'brackets': re.compile(r'[{}\[\]()]', re.MULTILINE),
-    'string': re.compile(r'\{[^{}]*\}', re.MULTILINE),
     
     # General commands (lowest priority - catch-all)
     'command': re.compile(r'\\[a-zA-Z@]+(?![a-zA-Z@])', re.MULTILINE)
@@ -297,7 +304,8 @@ def _highlight_content_range_minimal(editor, content, start_idx, line_offset):
             'subsection': PATTERNS['subsection'], # Subsections too
             'comment': PATTERNS['comment'],      # Comments are visually important
             'math': PATTERNS['math'],            # Math expressions stand out
-            'documentclass': PATTERNS['documentclass'] # Document structure
+            'documentclass': PATTERNS['documentclass'], # Document structure
+            'proper_names': PATTERNS['proper_names'] # Proper names for readability
         }
         
         for name, pattern in minimal_patterns.items():
@@ -432,6 +440,10 @@ def _setup_tags(editor, normal_font, bold_font):
         "math": (COLORS['math'], normal_font),
         "math_symbols": (COLORS['math_symbols'], normal_font),
         
+        # Text content
+        "proper_names": (COLORS['proper_names'], bold_font),
+        "braced_content": (COLORS['braced_content'], normal_font),
+        
         # Basic elements
         "comment": (COLORS['comment'], normal_font),
         "number": (COLORS['number'], normal_font),
@@ -454,6 +466,7 @@ def _clear_tags(editor):
         'command', 'text_format', 'font_size', 'geometry',
         'ref_cite', 'label', 'hyperref',
         'math', 'math_symbols',
+        'proper_names', 'braced_content',
         'comment', 'number', 'bracket', 'string',
         'special_chars', 'units'
     ]
@@ -471,6 +484,7 @@ def _clear_tags_in_range(editor, start_idx, end_idx):
         'command', 'text_format', 'font_size', 'geometry',
         'ref_cite', 'label', 'hyperref',
         'math', 'math_symbols',
+        'proper_names', 'braced_content',
         'comment', 'number', 'bracket', 'string',
         'special_chars', 'units'
     ]
