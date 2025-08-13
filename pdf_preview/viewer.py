@@ -264,9 +264,15 @@ class PDFPreviewViewer:
         
         # Create layout for all pages without rendering them
         for page_num in range(1, self.total_pages + 1):
+            # Get actual dimensions for each page (in case they differ)
+            page_width, page_height = self._get_page_dimensions(page_num)
+            if not page_width or not page_height:
+                # Fallback to sample dimensions if individual page dimensions fail
+                page_width, page_height = sample_width, sample_height
+            
             # Calculate display dimensions
-            disp_w = int(sample_width * self.zoom_level)
-            disp_h = int(sample_height * self.zoom_level)
+            disp_w = int(page_width * self.zoom_level)
+            disp_h = int(page_height * self.zoom_level)
             
             # Store layout information
             self.page_layouts[page_num] = {
@@ -310,7 +316,10 @@ class PDFPreviewViewer:
             if HAS_FITZ and self.pdf_doc:  # PyMuPDF
                 page = self.pdf_doc[page_num - 1]
                 rect = page.rect
-                return rect.width, rect.height
+                # Convert from PDF points to pixels at our render DPI
+                width_px = rect.width * self.RENDER_DPI / 72.0
+                height_px = rect.height * self.RENDER_DPI / 72.0
+                return width_px, height_px
             else:  # Fallback to pdf2image
                 from pdf2image import convert_from_path
                 images = convert_from_path(self.pdf_path, dpi=self.RENDER_DPI, first_page=page_num, last_page=page_num)
@@ -412,16 +421,11 @@ class PDFPreviewViewer:
         img = self._get_cached_page(page_num)
         
         if img:
-            # Calculate display dimensions
+            # Calculate display dimensions based on actual image size
             disp_w = int(img.width * self.zoom_level)
             disp_h = int(img.height * self.zoom_level)
             
-            # Resize image for display
-            if disp_w != layout['width'] or disp_h != layout['height']:
-                # Update layout if dimensions changed due to zoom
-                layout['width'] = disp_w
-                layout['height'] = disp_h
-                
+            # Always use the actual image dimensions for display
             display_img = img.resize((disp_w, disp_h), Image.Resampling.LANCZOS)
             photo = ImageTk.PhotoImage(display_img)
             
@@ -431,6 +435,34 @@ class PDFPreviewViewer:
             
             # Store photo reference to prevent garbage collection
             setattr(self.canvas, f"photo_{page_num}", photo)
+            
+            # Update layout to reflect actual dimensions (important for scroll region)
+            if disp_w != layout['width'] or disp_h != layout['height']:
+                layout['width'] = disp_w
+                layout['height'] = disp_h
+                # Update scroll region if this page affects max width
+                self._update_scroll_region()
+    
+    def _update_scroll_region(self):
+        """Update the canvas scroll region based on current page layouts."""
+        if not self.page_layouts:
+            return
+            
+        max_width = 0
+        total_height = 0
+        
+        for page_num in sorted(self.page_layouts.keys()):
+            layout = self.page_layouts[page_num]
+            page_right = 10 + layout['width']  # 10px margin + page width
+            page_bottom = layout['y_offset'] + layout['height']
+            
+            if page_right > max_width:
+                max_width = page_right
+            if page_bottom > total_height:
+                total_height = page_bottom
+                
+        self.total_height = total_height + 10  # Add bottom margin
+        self.canvas.configure(scrollregion=(0, 0, max_width + 10, self.total_height))
             
     def _on_canvas_configure(self, event=None):
         """Handle canvas resize events."""
