@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rm:*)",
+      "Bash(python -m pytest \"C:\\Users\\lab\\Documents\\BUT1\\AutomaTeX\\tests\\test_syntax_simple.py\" -v)",
+      "Bash(python -m pytest \"C:\\Users\\lab\\Documents\\BUT1\\AutomaTeX\\tests\\test_syntax_performance.py\" -v -s)",
+      "Bash(python -m pytest \"C:\\Users\\lab\\Documents\\BUT1\\AutomaTeX\\tests\\test_syntax_performance.py::TestSyntaxPerformance::test_first_highlight_performance\" -v -s)",
+      "Bash(python test_zoom_compatibility.py:*)",
+      "Bash(python test:*)",
+      "Bash(python -m pytest tests/ -v)",
+      "Bash(python -m pytest tests/test_error_refresh_integration.py -v)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
