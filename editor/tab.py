@@ -27,6 +27,7 @@ class LineNumbers(tk.Canvas):
         self._last_total_lines = 0
         self._last_width = 40
         self._rendered_numbers = {}  # y_position -> line_number for incremental updates
+        self._last_content_hash = ""
 
     def update_theme(self, text_color, bg_color):
         self.text_color = text_color
@@ -82,16 +83,25 @@ class LineNumbers(tk.Canvas):
             # Editor might be destroyed
             pass
     
+    def force_update(self):
+        """Force an immediate update of the line numbers."""
+        # Reset the cache to ensure a full redraw
+        self._last_viewport = (0, 0)
+        self._last_total_lines = 0
+        self.redraw()
+    
     def _should_skip_redraw(self, current_viewport, total_lines):
         """Determine if redraw can be skipped based on viewport changes."""
         old_start, old_total = self._last_viewport[0], self._last_total_lines
         new_start, _ = current_viewport
         
-        # Skip if viewport hasn't moved significantly
-        viewport_threshold = max(5, (current_viewport[1] - current_viewport[0]) * 0.1)
-        
-        return (abs(new_start - old_start) < viewport_threshold and 
-                total_lines == old_total)
+        # Always redraw if line count changed
+        if total_lines != old_total:
+            return False
+            
+        # For scrolling, we need to be more sensitive
+        # Even small viewport changes should trigger a redraw
+        return new_start == old_start
     
     def _redraw_viewport_optimized(self, first_visible_line, required_width):
         """Optimized redraw for large files - only visible area."""
@@ -185,9 +195,17 @@ class EditorTab(ttk.Frame):
         def sync_scroll_and_redraw(*args):
             self.scrollbar.set(*args)
             self.line_numbers.yview_moveto(self.editor.yview()[0])
-            self.line_numbers.redraw()
+            # Force update of line numbers when scrolling for perfect accuracy
+            self.line_numbers.force_update()
 
         self.editor.config(yscrollcommand=sync_scroll_and_redraw)
+        
+        # Bind to scrollbar events for immediate updates
+        self.scrollbar.bind("<ButtonRelease-1>", lambda e: self.line_numbers.force_update())
+        self.scrollbar.bind("<B1-Motion>", lambda e: self.line_numbers.force_update())
+        
+        # Bind to mousewheel events for immediate updates
+        self.editor.bind("<MouseWheel>", lambda e: self.line_numbers.force_update())
         
         self.editor.bind("<KeyRelease>", self.on_key_release)
         self.editor.bind("<Configure>", self.schedule_heavy_updates)
@@ -211,6 +229,8 @@ class EditorTab(ttk.Frame):
     def on_key_release(self, event=None):
         self.update_tab_title()
         self._schedule_smart_updates(event, 'keyrelease')
+        # Ensure line numbers are updated instantly
+        self.line_numbers.redraw()
 
     def schedule_heavy_updates(self, event=None):
         """Legacy method - redirects to smart updates."""
@@ -226,6 +246,8 @@ class EditorTab(ttk.Frame):
                 suppress_monaco_updates(self.editor, 30)  # Very short suppression
                 # Immediate highlighting update for responsiveness
                 apply_monaco_highlighting(self.editor)
+                # Always update line numbers on key release for instant feedback
+                self.line_numbers.redraw()
                 
             elif event_type == 'configure':
                 # For viewport changes, just redraw line numbers
