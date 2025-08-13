@@ -12,6 +12,12 @@ import threading
 import time
 from utils import debug_console
 
+try:
+    import fitz  # PyMuPDF
+    HAS_FITZ = True
+except ImportError:
+    HAS_FITZ = False
+
 # Import the new navigator component
 from pdf_preview.navigator import PDFTextNavigator
 from pdf_preview.sync import PDFSyncManager
@@ -37,12 +43,16 @@ class PDFPreviewViewer:
         self.zoom_level = 0.7  # Start with a smaller zoom level for better initial view
         
         # Caching and performance
-        self.page_images = {}  # Cache for page images
-        self.page_photos = {}  # Cache for PhotoImage objects
+        self.page_cache = {}  # LRU cache for rendered pages
         self.page_layouts = {}  # Layout information for each page
         self.total_height = 0
         self.render_thread = None
+        self.pdf_doc = None  # Store PDF document reference
+        self.total_pages = 0
         self.RENDER_DPI = 150
+        self.MAX_CACHE_SIZE = 8  # Maximum cached pages
+        self.visible_pages = set()  # Currently visible page numbers
+        self.cache_order = []  # LRU tracking
         
         # Status tracking
         self.last_compilation_time = None
@@ -132,14 +142,17 @@ class PDFPreviewViewer:
     def _on_mouse_wheel(self, event):
         """Handle mouse wheel scrolling."""
         self.canvas.yview_scroll(-1 * (event.delta // 120), "units")
+        self.canvas.after_idle(self._update_visible_pages)
         
     def _on_mouse_wheel_up(self, event):
         """Handle mouse wheel up scrolling (Linux)."""
         self.canvas.yview_scroll(-1, "units")
+        self.canvas.after_idle(self._update_visible_pages)
         
     def _on_mouse_wheel_down(self, event):
         """Handle mouse wheel down scrolling (Linux)."""
         self.canvas.yview_scroll(1, "units")
+        self.canvas.after_idle(self._update_visible_pages)
     
     def _on_zoom(self, event):
         """Handle zoom with mouse wheel."""
@@ -174,9 +187,12 @@ class PDFPreviewViewer:
     
     def _clear_caches(self):
         """Clear all page caches."""
-        self.page_images.clear()
-        self.page_photos.clear()
+        self.page_cache.clear()
         self.page_layouts.clear()
+        self.cache_order.clear()
+        self.visible_pages.clear()
+        if self.pdf_doc:
+            self.pdf_doc = None
     
     def load_pdf(self, pdf_path):
         """
@@ -205,54 +221,52 @@ class PDFPreviewViewer:
         self.render_thread.start()
     
     def _render_all_pages(self):
-        """Render all pages of the PDF in a separate thread."""
+        """Initialize PDF document and get page count in a separate thread."""
         try:
-            from pdf2image import convert_from_path
-            images = convert_from_path(self.pdf_path, dpi=self.RENDER_DPI)
-            
-            # Store images in cache
-            for i, img in enumerate(images):
-                self.page_images[i + 1] = img
-                
-            # Update UI in main thread
-            self.parent.after(0, self._display_pages, len(images))
+            if HAS_FITZ:
+                self.pdf_doc = fitz.open(self.pdf_path)
+                self.total_pages = len(self.pdf_doc)
+                # Update UI in main thread
+                self.parent.after(0, self._initialize_layout)
+            else:
+                raise ImportError("PyMuPDF not available")
+        except (ImportError, Exception):
+            # Fallback to pdf2image if PyMuPDF not available
+            try:
+                from pdf2image import convert_from_path
+                images = convert_from_path(self.pdf_path, dpi=self.RENDER_DPI, first_page=1, last_page=1)
+                if images:
+                    # Get total page count without loading all pages
+                    from pdf2image.pdf2image import pdfinfo_from_path
+                    info = pdfinfo_from_path(self.pdf_path)
+                    self.total_pages = info.get('Pages', 1)
+                    self.parent.after(0, self._initialize_layout)
+            except Exception as fallback_e:
+                debug_console.log(f"Error with fallback PDF loading: {fallback_e}", level='ERROR')
+                self.parent.after(0, self._create_placeholder)
         except Exception as e:
-            debug_console.log(f"Error rendering PDF: {e}", level='ERROR')
+            debug_console.log(f"Error loading PDF: {e}", level='ERROR')
             self.parent.after(0, self._create_placeholder)
     
-    def _display_pages(self, num_pages):
-        """Display all rendered pages on the canvas."""
+    def _initialize_layout(self):
+        """Initialize the layout with placeholder rectangles for all pages."""
         self.canvas.delete("all")
         self.page_layouts.clear()
-        self.page_photos.clear()
         
+        # Get sample page dimensions
+        sample_width, sample_height = self._get_page_dimensions(1)
+        if not sample_width or not sample_height:
+            self._create_placeholder()
+            return
+            
         y_offset = 10
         max_width = 0
         
-        # Display each page
-        for page_num in range(1, num_pages + 1):
-            if page_num not in self.page_images:
-                continue
-                
-            img = self.page_images[page_num]
-            w, h = img.size
-            
+        # Create layout for all pages without rendering them
+        for page_num in range(1, self.total_pages + 1):
             # Calculate display dimensions
-            disp_w = int(w * self.zoom_level)
-            disp_h = int(h * self.zoom_level)
-            
-            if disp_w == 0 or disp_h == 0:
-                continue
-                
-            # Resize image for display
-            display_img = img.resize((disp_w, disp_h), Image.Resampling.LANCZOS)
-            photo = ImageTk.PhotoImage(display_img)
-            
-            # Store photo to prevent garbage collection
-            self.page_photos[page_num] = photo
-            
-            # Draw image on canvas
-            self.canvas.create_image(10, y_offset, anchor="nw", image=photo)
+            disp_w = int(sample_width * self.zoom_level)
+            disp_h = int(sample_height * self.zoom_level)
             
             # Store layout information
             self.page_layouts[page_num] = {
@@ -260,6 +274,12 @@ class PDFPreviewViewer:
                 'height': disp_h,
                 'width': disp_w
             }
+            
+            # Create placeholder rectangle
+            self.canvas.create_rectangle(
+                10, y_offset, 10 + disp_w, y_offset + disp_h,
+                fill="white", outline="gray", tags=f"page_{page_num}"
+            )
             
             # Update offset and width
             y_offset += disp_h + 10
@@ -275,7 +295,203 @@ class PDFPreviewViewer:
         
         # Update status
         self._update_status_label()
-    
+        
+        # Bind scroll events to trigger lazy loading
+        self.canvas.bind("<Configure>", self._on_canvas_configure)
+        self.canvas.bind("<Button-1>", self._on_canvas_scroll)
+        self.canvas.bind("<B1-Motion>", self._on_canvas_scroll)
+        
+        # Load initial visible pages
+        self._update_visible_pages()
+        
+    def _get_page_dimensions(self, page_num):
+        """Get dimensions of a specific page without fully rendering it."""
+        try:
+            if HAS_FITZ and self.pdf_doc:  # PyMuPDF
+                page = self.pdf_doc[page_num - 1]
+                rect = page.rect
+                return rect.width, rect.height
+            else:  # Fallback to pdf2image
+                from pdf2image import convert_from_path
+                images = convert_from_path(self.pdf_path, dpi=self.RENDER_DPI, first_page=page_num, last_page=page_num)
+                if images:
+                    return images[0].size
+        except Exception as e:
+            debug_console.log(f"Error getting page dimensions: {e}", level='ERROR')
+        return None, None
+        
+    def _render_page(self, page_num):
+        """Render a specific page and return the PIL Image."""
+        try:
+            if HAS_FITZ and self.pdf_doc:  # PyMuPDF - faster rendering
+                page = self.pdf_doc[page_num - 1]
+                # Calculate zoom factor for desired DPI
+                zoom = self.RENDER_DPI / 72.0
+                mat = fitz.Matrix(zoom, zoom)
+                pix = page.get_pixmap(matrix=mat)
+                img_data = pix.tobytes("ppm")
+                from PIL import Image
+                import io
+                img = Image.open(io.BytesIO(img_data))
+                return img
+            else:  # Fallback to pdf2image
+                from pdf2image import convert_from_path
+                images = convert_from_path(self.pdf_path, dpi=self.RENDER_DPI, first_page=page_num, last_page=page_num)
+                if images:
+                    return images[0]
+        except Exception as e:
+            debug_console.log(f"Error rendering page {page_num}: {e}", level='ERROR')
+        return None
+        
+    def _get_cached_page(self, page_num):
+        """Get a page from cache or render it if not cached."""
+        # Check if page is in cache
+        if page_num in self.page_cache:
+            # Move to end of LRU list
+            self.cache_order.remove(page_num)
+            self.cache_order.append(page_num)
+            return self.page_cache[page_num]
+            
+        # Render the page
+        img = self._render_page(page_num)
+        if not img:
+            return None
+            
+        # Add to cache
+        self._add_to_cache(page_num, img)
+        return img
+        
+    def _add_to_cache(self, page_num, img):
+        """Add a page to the cache, evicting oldest if necessary."""
+        # Remove oldest pages if cache is full
+        while len(self.page_cache) >= self.MAX_CACHE_SIZE:
+            oldest_page = self.cache_order.pop(0)
+            del self.page_cache[oldest_page]
+            
+        # Add new page
+        self.page_cache[page_num] = img
+        self.cache_order.append(page_num)
+        
+    def _update_visible_pages(self):
+        """Update the set of visible pages and render them."""
+        if not self.page_layouts:
+            return
+            
+        # Get visible area
+        canvas_height = self.canvas.winfo_height()
+        scroll_top = self.canvas.canvasy(0)
+        scroll_bottom = scroll_top + canvas_height
+        
+        # Find visible pages
+        new_visible_pages = set()
+        for page_num, layout in self.page_layouts.items():
+            page_top = layout['y_offset']
+            page_bottom = page_top + layout['height']
+            
+            # Check if page overlaps with visible area (with buffer)
+            buffer = 200  # Load pages slightly outside viewport
+            if page_bottom >= scroll_top - buffer and page_top <= scroll_bottom + buffer:
+                new_visible_pages.add(page_num)
+                
+        # Render newly visible pages
+        for page_num in new_visible_pages - self.visible_pages:
+            self._render_visible_page(page_num)
+            
+        # Remove non-visible pages from display (but keep in cache)
+        for page_num in self.visible_pages - new_visible_pages:
+            self.canvas.delete(f"page_img_{page_num}")
+            
+        self.visible_pages = new_visible_pages
+        
+    def _render_visible_page(self, page_num):
+        """Render and display a specific visible page."""
+        if page_num not in self.page_layouts:
+            return
+            
+        layout = self.page_layouts[page_num]
+        img = self._get_cached_page(page_num)
+        
+        if img:
+            # Calculate display dimensions
+            disp_w = int(img.width * self.zoom_level)
+            disp_h = int(img.height * self.zoom_level)
+            
+            # Resize image for display
+            if disp_w != layout['width'] or disp_h != layout['height']:
+                # Update layout if dimensions changed due to zoom
+                layout['width'] = disp_w
+                layout['height'] = disp_h
+                
+            display_img = img.resize((disp_w, disp_h), Image.Resampling.LANCZOS)
+            photo = ImageTk.PhotoImage(display_img)
+            
+            # Remove placeholder and add image
+            self.canvas.delete(f"page_{page_num}")
+            image_id = self.canvas.create_image(10, layout['y_offset'], anchor="nw", image=photo, tags=f"page_img_{page_num}")
+            
+            # Store photo reference to prevent garbage collection
+            setattr(self.canvas, f"photo_{page_num}", photo)
+            
+    def _on_canvas_configure(self, event=None):
+        """Handle canvas resize events."""
+        self.canvas.after_idle(self._update_visible_pages)
+        
+    def _on_canvas_scroll(self, event=None):
+        """Handle canvas scroll events."""
+        self.canvas.after_idle(self._update_visible_pages)
+        
+    def _update_zoom(self):
+        """Update display after zoom change."""
+        if not self.page_layouts:
+            return
+            
+        # Get sample page dimensions
+        sample_width, sample_height = self._get_page_dimensions(1)
+        if not sample_width or not sample_height:
+            return
+            
+        # Clear current display
+        self.canvas.delete("all")
+        
+        # Update layouts and recreate placeholders
+        y_offset = 10
+        max_width = 0
+        
+        for page_num in range(1, self.total_pages + 1):
+            # Calculate new display dimensions
+            disp_w = int(sample_width * self.zoom_level)
+            disp_h = int(sample_height * self.zoom_level)
+            
+            # Update layout
+            self.page_layouts[page_num].update({
+                'y_offset': y_offset,
+                'height': disp_h,
+                'width': disp_w
+            })
+            
+            # Create placeholder rectangle
+            self.canvas.create_rectangle(
+                10, y_offset, 10 + disp_w, y_offset + disp_h,
+                fill="white", outline="gray", tags=f"page_{page_num}"
+            )
+            
+            y_offset += disp_h + 10
+            if disp_w > max_width:
+                max_width = disp_w
+                
+        # Update scroll region
+        self.total_height = y_offset
+        self.canvas.configure(scrollregion=(0, 0, max_width + 20, self.total_height))
+        
+        # Clear cache of scaled images (they need to be re-rendered at new zoom)
+        for page_num in list(self.page_cache.keys()):
+            del self.page_cache[page_num]
+        self.cache_order.clear()
+        self.visible_pages.clear()
+        
+        # Re-render visible pages
+        self._update_visible_pages()
+
     def _enable_toolbar(self):
         """Enable toolbar buttons."""
         for btn in [self.zoom_in_button, self.zoom_out_button]:
@@ -291,14 +507,14 @@ class PDFPreviewViewer:
         if self.zoom_level < 3.0:
             self.zoom_level *= 1.2
             self.zoom_label.configure(text=f"{int(self.zoom_level * 100)}%")
-            self._display_pages(len(self.page_images))
+            self._update_zoom()
     
     def zoom_out(self):
         """Zoom out on the PDF."""
         if self.zoom_level > 0.3:
             self.zoom_level /= 1.2
             self.zoom_label.configure(text=f"{int(self.zoom_level * 100)}%")
-            self._display_pages(len(self.page_images))
+            self._update_zoom()
     
     def previous_page(self):
         """Scroll to the previous page."""
@@ -448,9 +664,9 @@ class PDFPreviewViewer:
                 current_page = page_num
                 break
                 
-        if current_page and current_page in self.page_images:
-            # Get the original image
-            original_img = self.page_images[current_page]
+        if current_page:
+            # Get the original image from cache
+            original_img = self._get_cached_page(current_page)
             
             # Calculate the region to magnify
             # Convert canvas coordinates to image coordinates
