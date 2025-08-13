@@ -7,7 +7,6 @@ outline, the outline tree view, the editor notebook, and the console pane.
 import ttkbootstrap as ttk
 from tkinter.font import Font
 from app.custom_notebook import ClosableNotebook
-from pre_compiler.error_panel import ErrorPanel
 from editor.outline import Outline
 
 
@@ -51,11 +50,14 @@ def create_outline(parent, get_current_tab_callback):
 
 def create_error_panel(parent, on_goto_line=None):
     """
-    Creates the error panel widget.
+    Creates a simple placeholder for error panel (removed for performance).
     """
-    error_panel = ErrorPanel(parent, on_goto_line=on_goto_line)
-    parent.add(error_panel, weight=1)
-    return error_panel
+    placeholder_frame = ttk.Frame(parent)
+    placeholder_label = ttk.Label(placeholder_frame, text="Error checking disabled for better performance", 
+                                 foreground="#666", font=('Arial', 9))
+    placeholder_label.pack(pady=20)
+    parent.add(placeholder_frame, weight=1)
+    return placeholder_frame
 
 def create_notebook(parent):
     """

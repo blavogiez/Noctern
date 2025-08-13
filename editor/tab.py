@@ -200,6 +200,13 @@ class EditorTab(ttk.Frame):
 
         # Setup all editor shortcuts from the dedicated module
         setup_editor_shortcuts(self.editor)
+        
+        # Initialize Monaco-style optimization immediately
+        try:
+            from editor.monaco_optimizer import initialize_monaco_optimization
+            initialize_monaco_optimization(self.editor)
+        except ImportError:
+            pass
 
     def on_key_release(self, event=None):
         self.update_tab_title()
@@ -210,33 +217,25 @@ class EditorTab(ttk.Frame):
         self._schedule_smart_updates(event, 'configure')
     
     def _schedule_smart_updates(self, event=None, event_type='general'):
-        """Schedule updates using the optimized performance system."""
+        """Monaco-optimized update scheduling - ultra-fast."""
         try:
-            from app.performance_optimizer import schedule_optimized_update, UpdateType
+            from editor.monaco_optimizer import apply_monaco_highlighting, suppress_monaco_updates
             
-            # Determine which updates are needed based on event type
+            # Monaco-style: suppress rapid updates during typing
             if event_type == 'keyrelease':
-                # Text changes: need syntax, status bar, and possibly outline
-                update_types = {UpdateType.SYNTAX, UpdateType.STATUS}
+                suppress_monaco_updates(self.editor, 30)  # Very short suppression
+                # Immediate highlighting update for responsiveness
+                apply_monaco_highlighting(self.editor)
                 
-                # Only update outline for structural changes (sections, etc.)
-                if event and hasattr(event, 'char') and event.char in ['\\', '{', '}']:
-                    update_types.add(UpdateType.OUTLINE)
-                    
             elif event_type == 'configure':
-                # Viewport changes: mainly need line numbers
-                update_types = {UpdateType.LINE_NUMBERS}
+                # For viewport changes, just redraw line numbers
+                self.line_numbers.redraw()
                 
-            else:
-                # General updates: everything
-                update_types = {UpdateType.ALL}
-            
-            schedule_optimized_update(self.editor, update_types)
+            # Skip heavy outline updates unless truly needed
             
         except ImportError:
-            # Fallback to legacy system
-            if self._schedule_heavy_updates_callback:
-                self._schedule_heavy_updates_callback(event)
+            # Fallback to Monaco basics without optimizer module
+            pass
 
     def _on_key_press(self, event=None):
         """Marque le widget comme modifié lors des changements."""

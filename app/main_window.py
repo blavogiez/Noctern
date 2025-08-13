@@ -3,6 +3,7 @@ This module is responsible for setting up the main graphical user interface (GUI
 of the AutomaTeX application.
 """
 import os
+import time
 import ttkbootstrap as ttk
 
 from app import state, actions, config as app_config, theme as interface_theme
@@ -12,8 +13,8 @@ from app.panes import create_main_paned_window, create_left_pane, create_outline
 from app.status import create_status_bar, start_gpu_status_loop
 from app.shortcuts import bind_global_shortcuts
 from utils import debug_console, screen as screen_utils
-from pre_compiler.checker import Checker
 from editor import syntax as editor_syntax
+from editor.monaco_optimizer import initialize_monaco_optimization, apply_monaco_highlighting, suppress_monaco_updates
 from pdf_preview.interface import PDFPreviewInterface
 
 def _apply_startup_window_settings(window, config):
@@ -53,7 +54,7 @@ def setup_gui():
     """
     state._app_config = app_config.load_config()
     state.zoom_manager = ZoomManager(state)
-    state.checker = Checker()
+    # Removed pre-compiler checker for performance
 
     state.root = ttk.Window(themename="litera")
     
@@ -138,19 +139,16 @@ def setup_gui():
     last_update_time = 0
     update_pending = False
 
-    def check_document_and_highlight(event=None):
-        nonlocal last_update_time, update_pending
+    def apply_monaco_updates(event=None):
+        nonlocal update_pending
         
         current_tab = state.get_current_tab()
         if current_tab and current_tab.editor:
-            editor_syntax.apply_syntax_highlighting(current_tab.editor)
-            state.outline.update_outline(current_tab.editor) # Update outline
-            content = current_tab.editor.get("1.0", "end-1c")
-            errors = state.checker.check(content, current_tab.file_path)
-            errors.sort(key=lambda e: e.get('line', 0))
-            state.error_panel.update_errors(errors)
-            # Force the update of the UI
-            state.root.update_idletasks()
+            # Monaco-style ultra-fast differential updates
+            apply_monaco_highlighting(current_tab.editor)
+            # Only update outline occasionally, not every keystroke
+            if time.time() - last_update_time > 1.0:  # Max once per second
+                state.outline.update_outline(current_tab.editor)
             
         # Reset the pending flag
         update_pending = False
@@ -158,33 +156,33 @@ def setup_gui():
     def on_text_modified(event):
         nonlocal last_update_time, update_pending
         
-        # Log to debug
+        # Ultra-fast event handling - Monaco style
         current_tab = state.get_current_tab()
-        if current_tab and current_tab.file_path:
-            debug_console.log(f"Text modified in tab: {os.path.basename(current_tab.file_path)}", level='TRACE')
-        
-        # Check if the event is from the current tab
         if not current_tab or event.widget != current_tab.editor:
             return None
             
+        # Suppress updates during rapid typing
+        suppress_monaco_updates(current_tab.editor, 50)
+        
         # Set the modified flag to False to avoid infinite loop
         current_tab.editor.edit_modified(False)
-        debug_console.log(f"Reset edit_modified flag for tab: {os.path.basename(current_tab.file_path) if current_tab.file_path else 'Untitled'}", level='TRACE')
         
-        # Trigger PDF preview update
-        if hasattr(state, 'pdf_preview_interface') and state.pdf_preview_interface:
-            state.pdf_preview_interface.on_editor_content_change()
+        # Ultra-lightweight PDF preview trigger (only occasionally)
+        current_time = time.time()
+        if current_time - last_update_time > 0.5:  # Max twice per second
+            if hasattr(state, 'pdf_preview_interface') and state.pdf_preview_interface:
+                state.pdf_preview_interface.on_editor_content_change()
+            last_update_time = current_time
         
-        # If an update is already pending, skip this one
+        # Skip if update already pending
         if update_pending:
-            debug_console.log(f"Skipping update for tab: {os.path.basename(current_tab.file_path) if current_tab.file_path else 'Untitled'} - update already pending", level='TRACE')
             return None
             
-        # Set the pending flag
         update_pending = True
         
-        # Schedule the update
-        state.root.after(100, check_document_and_highlight)
+        # Ultra-fast debouncing - Monaco responsive
+        delay = 30  # Extremely fast response like Monaco
+        state.root.after(delay, apply_monaco_updates)
         return None
 
     def bind_text_modified_event(tab):
@@ -202,8 +200,10 @@ def setup_gui():
         current_tab = state.get_current_tab()
         if current_tab:
             bind_text_modified_event(current_tab)
-            # Always check document when tab changes
-            state.root.after(50, check_document_and_highlight)
+            # Initialize Monaco optimization for new tab
+            initialize_monaco_optimization(current_tab.editor)
+            # Apply syntax highlighting when tab changes
+            state.root.after(20, apply_monaco_updates)
             
             # Load existing PDF for the tab if it exists
             if hasattr(state, 'pdf_preview_interface') and state.pdf_preview_interface:
@@ -222,7 +222,11 @@ def setup_gui():
     
     actions.load_session()
     # Schedule an initial error check after loading session
-    state.root.after(200, check_document_and_highlight)
+    # Initialize first tab with Monaco optimization
+    first_tab = state.get_current_tab()
+    if first_tab and first_tab.editor:
+        initialize_monaco_optimization(first_tab.editor)
+    state.root.after(100, apply_monaco_updates)
     state.root.protocol("WM_DELETE_WINDOW", actions.on_close_request)
     
     # Create the status bar according to user preferences

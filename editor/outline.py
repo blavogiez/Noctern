@@ -1,5 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
+import time
+import hashlib
 from utils import debug_console
 
 class Outline:
@@ -38,6 +40,11 @@ class Outline:
         # When clicking on a section
         self.tree.bind("<<TreeviewSelect>>", self._on_click_section)
         self.tree.bind("<Button-1>", self._on_single_click)
+        
+        # Monaco-style optimization cache
+        self._last_content_hash = None
+        self._last_update_time = 0
+        self._update_cooldown = 1.0  # Minimum 1 second between updates
         
     def _configure_styles(self):
         """Configure the styles for the outline Treeview and title."""
@@ -185,46 +192,134 @@ class Outline:
                 self._add_to_tree(item_id, children, prefix=number)
 
     def update_outline(self, editor_widget):
-        """Update outline with editor content using intelligent caching."""
-        # Ensure styles are applied
-        self._configure_styles()
-        
+        """Monaco-style ultra-fast outline updates with aggressive caching."""
         if not editor_widget:
             self.tree.delete(*self.tree.get_children())
             return
         
-        # Try to use performance optimizer cache
+        # Monaco-style: Skip update if too frequent
+        current_time = time.time()
+        if current_time - self._last_update_time < self._update_cooldown:
+            return  # Skip this update - too frequent
+        
         try:
-            from app.performance_optimizer import _performance_optimizer
-            
-            # Get content and check cache
+            # Ultra-fast content hash check
             content = editor_widget.get("1.0", tk.END)
             if not content.strip():
                 self.tree.delete(*self.tree.get_children())
+                self._last_content_hash = None
                 return
             
-            content_hash = _performance_optimizer.content_cache.get_content_hash(content)
-            cached_sections = _performance_optimizer.content_cache.get_cached_outline(content_hash)
+            # Quick content hash using only first 1000 chars + length
+            # Monaco-style: avoid hashing entire content
+            content_sample = content[:1000] + str(len(content))
+            content_hash = hashlib.md5(content_sample.encode('utf-8', errors='ignore')).hexdigest()[:16]
             
-            if cached_sections is not None:
-                # Use cached outline
-                self.tree.delete(*self.tree.get_children())
-                self._add_to_tree("", cached_sections)
-                return
+            # Skip update if content hasn't changed
+            if content_hash == self._last_content_hash:
+                return  # No change - skip expensive update
             
-            # Generate new outline and cache it
-            sections = self._find_sections(content)
-            _performance_optimizer.content_cache.cache_outline(content_hash, sections)
+            # Only update if we see section-related changes
+            if self._last_content_hash and not self._has_structural_changes(content):
+                return  # No structural changes - keep current outline
+                
+            self._last_content_hash = content_hash
+            self._last_update_time = current_time
             
-            # Clear tree and add new sections
+            # Find sections efficiently
+            sections = self._find_sections_fast(content)
+            
+            # Update tree
             self.tree.delete(*self.tree.get_children())
             self._add_to_tree("", sections)
             
-        except ImportError:
-            # Fallback to original implementation
-            self.tree.delete(*self.tree.get_children())
-            content = editor_widget.get("1.0", tk.END)
-            if not content.strip():
-                return
-            sections = self._find_sections(content)
-            self._add_to_tree("", sections)
+        except tk.TclError:
+            # Widget might be destroyed
+            pass
+    
+    def _has_structural_changes(self, content):
+        """Quick check if content has structural changes (sections added/removed)."""
+        # Count sections quickly
+        section_count = content.count('\\section{') + content.count('\\subsection{') + content.count('\\subsubsection{')
+        
+        # Store previous count for comparison
+        if not hasattr(self, '_last_section_count'):
+            self._last_section_count = 0
+        
+        has_changes = section_count != self._last_section_count
+        self._last_section_count = section_count
+        return has_changes
+    
+    def _find_sections_fast(self, content):
+        """Ultra-fast section finding - Monaco optimized."""
+        sections = []
+        lines = content.split('\n')
+        
+        # Only check lines that might contain sections
+        for line_num, line in enumerate(lines):
+            line_stripped = line.strip()
+            
+            # Quick checks first
+            if not line_stripped or not line_stripped.startswith('\\'):
+                continue
+                
+            # Fast section detection
+            if line_stripped.startswith('\\section{'):
+                title = self._extract_title_fast(line_stripped, '\\section{')
+                if title:
+                    sections.append(("section", title, line_num + 1, []))
+            elif line_stripped.startswith('\\subsection{'):
+                title = self._extract_title_fast(line_stripped, '\\subsection{')
+                if title:
+                    sections.append(("subsection", title, line_num + 1, []))
+            elif line_stripped.startswith('\\subsubsection{'):
+                title = self._extract_title_fast(line_stripped, '\\subsubsection{')
+                if title:
+                    sections.append(("subsubsection", title, line_num + 1, []))
+        
+        return self._organize_sections_fast(sections)
+    
+    def _extract_title_fast(self, line, prefix):
+        """Fast title extraction without regex."""
+        try:
+            start = line.find(prefix)
+            if start == -1:
+                return None
+            
+            start += len(prefix)
+            end = line.find('}', start)
+            
+            if end == -1:
+                return None
+                
+            title = line[start:end].strip()
+            return title[:50] if title else None  # Limit title length
+            
+        except (IndexError, ValueError):
+            return None
+    
+    def _organize_sections_fast(self, sections):
+        """Fast organization of sections into hierarchical structure."""
+        if not sections:
+            return []
+            
+        result = []
+        stack = [(result, "")]  # (current_list, section_type)
+        
+        for section_type, title, line_num, _ in sections:
+            # Maintain proper hierarchy
+            if section_type == "section":
+                stack = [(result, "")]
+            elif section_type == "subsection":
+                # Keep up to section level
+                stack = [item for item in stack if item[1] in ["", "section"]]
+            elif section_type == "subsubsection":
+                # Keep up to subsection level  
+                stack = [item for item in stack if item[1] in ["", "section", "subsection"]]
+            
+            # Add to current list
+            new_item = (title, line_num, [])
+            stack[-1][0].append(new_item)
+            stack.append((new_item[2], section_type))
+        
+        return result

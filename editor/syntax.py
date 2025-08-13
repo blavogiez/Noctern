@@ -7,11 +7,12 @@ from collections import defaultdict
 from editor.tab import EditorTab
 from utils import debug_console
 
-# Performance thresholds
-LARGE_FILE_THRESHOLD = 5000  # Lines
-VIEWPORT_BUFFER_LINES = 100  # Extra lines around viewport
-MAX_CACHE_SIZE = 20          # Max cached documents
-DEBOUNCE_DELAY = 150         # ms
+# Performance thresholds (Monaco-inspired)
+LARGE_FILE_THRESHOLD = 2000   # Lines (reduced for earlier optimization)
+VIEWPORT_BUFFER_LINES = 50    # Reduced buffer for better performance
+MAX_CACHE_SIZE = 15           # Reduced cache size
+DEBOUNCE_DELAY = 100          # Faster debounce for better responsiveness
+VERY_LARGE_FILE_THRESHOLD = 10000  # Lines for extreme optimizations
 
 # Simplified color scheme
 COLORS = {
@@ -111,7 +112,7 @@ _viewport_trackers = weakref.WeakKeyDictionary()
 _pending_updates = weakref.WeakKeyDictionary()
 
 def apply_syntax_highlighting(editor):
-    """High-performance syntax highlighting with caching and viewport optimization."""
+    """Monaco-inspired high-performance syntax highlighting with intelligent optimization."""
     if not editor:
         return
         
@@ -120,6 +121,14 @@ def apply_syntax_highlighting(editor):
         return
 
     try:
+        # Get content info efficiently
+        line_count = int(editor.index("end-1c").split('.')[0])
+        
+        # Skip highlighting for very large files to maintain responsiveness
+        if line_count > VERY_LARGE_FILE_THRESHOLD:
+            _setup_minimal_tags(editor)
+            return
+            
         # Get font configuration
         base_font = current_tab.editor_font
         try:
@@ -134,13 +143,12 @@ def apply_syntax_highlighting(editor):
         # Configure tags once
         _setup_tags(editor, normal_font, bold_font)
         
-        # Get content and check for large files
-        content = editor.get("1.0", tk.END)
-        line_count = int(editor.index("end-1c").split('.')[0])
-        
+        # Use viewport-only highlighting for large files
         if line_count > LARGE_FILE_THRESHOLD:
-            _highlight_large_file(editor, content)
+            _highlight_large_file_viewport_only(editor)
         else:
+            # Use caching for smaller files
+            content = editor.get("1.0", tk.END)
             _highlight_with_cache(editor, content)
             
     except tk.TclError:
@@ -171,6 +179,84 @@ def apply_syntax_highlighting_incremental(editor, start_line=None, end_line=None
             apply_syntax_highlighting(editor)
             
     except tk.TclError:
+        pass
+
+def _setup_minimal_tags(editor):
+    """Setup minimal tags for very large files with no highlighting."""
+    try:
+        # Just set up basic font for very large files
+        current_tab = editor.master
+        if isinstance(current_tab, EditorTab):
+            base_font = current_tab.editor_font
+            try:
+                font_family = base_font.cget("family")
+                font_size = base_font.cget("size")
+                editor.config(font=(font_family, font_size))
+            except tk.TclError:
+                pass
+    except tk.TclError:
+        pass
+
+def _highlight_large_file_viewport_only(editor):
+    """Ultra-optimized highlighting for large files - viewport only."""
+    if editor not in _viewport_trackers:
+        _viewport_trackers[editor] = ViewportTracker(editor)
+    
+    tracker = _viewport_trackers[editor]
+    visible_start, visible_end = tracker.get_viewport()
+    
+    try:
+        # Clear only visible area tags  
+        _clear_tags_in_range(editor, visible_start, visible_end)
+        
+        # Get visible content only
+        visible_content = editor.get(visible_start, visible_end)
+        if not visible_content.strip():
+            return
+            
+        # Calculate line offset for positioning
+        start_line_num = int(visible_start.split('.')[0])
+        
+        # Apply minimal highlighting patterns for performance
+        _highlight_content_range_minimal(editor, visible_content, visible_start, start_line_num - 1)
+        
+    except tk.TclError:
+        pass
+
+def _highlight_content_range_minimal(editor, content, start_idx, line_offset):
+    """Minimal highlighting for large files - only essential patterns."""
+    try:
+        # Only highlight the most important elements for large files
+        minimal_patterns = {
+            'section': PATTERNS['section'],  # Sections are important for navigation
+            'comment': PATTERNS['comment']   # Comments are visually important
+        }
+        
+        for name, pattern in minimal_patterns.items():
+            for match in pattern.finditer(content):
+                start_char = match.start()
+                end_char = match.end()
+                
+                # Convert content positions to editor positions
+                content_before_match = content[:start_char]
+                newlines_before = content_before_match.count('\n')
+                last_newline_pos = content_before_match.rfind('\n')
+                char_in_line = start_char - last_newline_pos - 1 if last_newline_pos >= 0 else start_char
+                
+                match_start_line = line_offset + newlines_before + 1
+                start_pos = f"{match_start_line}.{char_in_line}"
+                
+                content_match = content[start_char:end_char]
+                match_newlines = content_match.count('\n')
+                if match_newlines == 0:
+                    end_pos = f"{match_start_line}.{char_in_line + len(content_match)}"
+                else:
+                    last_line_content = content_match.split('\n')[-1]
+                    end_pos = f"{match_start_line + match_newlines}.{len(last_line_content)}"
+                
+                editor.tag_add(name, start_pos, end_pos)
+                
+    except (tk.TclError, ValueError, IndexError):
         pass
 
 def _highlight_large_file(editor, content):
