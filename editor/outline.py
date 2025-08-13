@@ -185,21 +185,46 @@ class Outline:
                 self._add_to_tree(item_id, children, prefix=number)
 
     def update_outline(self, editor_widget):
-        """Update outline with editor content."""
+        """Update outline with editor content using intelligent caching."""
         # Ensure styles are applied
         self._configure_styles()
         
         if not editor_widget:
+            self.tree.delete(*self.tree.get_children())
             return
         
-        # Clear the tree
-        self.tree.delete(*self.tree.get_children())
-        
-        # Get content
-        content = editor_widget.get("1.0", tk.END)
-        if not content.strip():
-            return
-        
-        # Find sections and add them
-        sections = self._find_sections(content)
-        self._add_to_tree("", sections)
+        # Try to use performance optimizer cache
+        try:
+            from app.performance_optimizer import _performance_optimizer
+            
+            # Get content and check cache
+            content = editor_widget.get("1.0", tk.END)
+            if not content.strip():
+                self.tree.delete(*self.tree.get_children())
+                return
+            
+            content_hash = _performance_optimizer.content_cache.get_content_hash(content)
+            cached_sections = _performance_optimizer.content_cache.get_cached_outline(content_hash)
+            
+            if cached_sections is not None:
+                # Use cached outline
+                self.tree.delete(*self.tree.get_children())
+                self._add_to_tree("", cached_sections)
+                return
+            
+            # Generate new outline and cache it
+            sections = self._find_sections(content)
+            _performance_optimizer.content_cache.cache_outline(content_hash, sections)
+            
+            # Clear tree and add new sections
+            self.tree.delete(*self.tree.get_children())
+            self._add_to_tree("", sections)
+            
+        except ImportError:
+            # Fallback to original implementation
+            self.tree.delete(*self.tree.get_children())
+            content = editor_widget.get("1.0", tk.END)
+            if not content.strip():
+                return
+            sections = self._find_sections(content)
+            self._add_to_tree("", sections)

@@ -13,7 +13,7 @@ from editor.image_preview import ImagePreview
 from editor.shortcuts import setup_editor_shortcuts # Correct import
 
 class LineNumbers(tk.Canvas):
-    """A canvas for displaying line numbers next to a text editor."""
+    """Optimized line numbers canvas with caching and viewport-based rendering."""
     def __init__(self, master, editor_widget, font, **kwargs):
         super().__init__(master, **kwargs)
         self.editor = editor_widget
@@ -21,6 +21,12 @@ class LineNumbers(tk.Canvas):
         self.text_color = "#6a737d"
         self.bg_color = "#f0f0f0"
         self.config(width=40, bg=self.bg_color, highlightthickness=0, bd=0)
+        
+        # Performance optimization caches
+        self._last_viewport = (0, 0)
+        self._last_total_lines = 0
+        self._last_width = 40
+        self._rendered_numbers = {}  # y_position -> line_number for incremental updates
 
     def update_theme(self, text_color, bg_color):
         self.text_color = text_color
@@ -29,24 +35,134 @@ class LineNumbers(tk.Canvas):
         self.redraw()
 
     def redraw(self, *args):
+        """Optimized redraw with viewport detection and incremental updates."""
+        try:
+            if not self.editor or not self.winfo_exists():
+                return
+            
+            # Get current viewport and document stats
+            first_visible_line = self.editor.index("@0,0")
+            last_char = self.editor.index("end-1c")
+            last_line_num = int(last_char.split('.')[0]) if last_char != "1.0" or self.editor.get("1.0", "1.end") else 0
+            
+            if last_line_num == 0:
+                self.delete("all")
+                return
+            
+            # Parse current viewport
+            first_line_num = int(first_visible_line.split('.')[0])
+            current_viewport = (first_line_num, last_line_num)
+            
+            # Check if we can skip expensive operations
+            if self._should_skip_redraw(current_viewport, last_line_num):
+                return
+            
+            # Calculate required width
+            max_digits = len(str(last_line_num))
+            required_width = self.font.measure("0" * max_digits) + 10
+            
+            # Only resize if significantly different
+            if abs(self.winfo_width() - required_width) > 5:
+                self.config(width=required_width)
+                self._last_width = required_width
+            else:
+                required_width = self._last_width
+            
+            # For large files (>2000 lines), use optimized rendering
+            if last_line_num > 2000:
+                self._redraw_viewport_optimized(first_visible_line, required_width)
+            else:
+                self._redraw_standard(first_visible_line, last_line_num, required_width)
+            
+            # Update cache
+            self._last_viewport = current_viewport
+            self._last_total_lines = last_line_num
+            
+        except tk.TclError:
+            # Editor might be destroyed
+            pass
+    
+    def _should_skip_redraw(self, current_viewport, total_lines):
+        """Determine if redraw can be skipped based on viewport changes."""
+        old_start, old_total = self._last_viewport[0], self._last_total_lines
+        new_start, _ = current_viewport
+        
+        # Skip if viewport hasn't moved significantly
+        viewport_threshold = max(5, (current_viewport[1] - current_viewport[0]) * 0.1)
+        
+        return (abs(new_start - old_start) < viewport_threshold and 
+                total_lines == old_total)
+    
+    def _redraw_viewport_optimized(self, first_visible_line, required_width):
+        """Optimized redraw for large files - only visible area."""
         self.delete("all")
-        if not self.editor or not self.winfo_exists(): return
+        self._rendered_numbers.clear()
         
-        first_visible_line = self.editor.index("@0,0")
-        last_char = self.editor.index("end-1c")
-        last_line_num = int(last_char.split('.')[0]) if last_char != "1.0" or self.editor.get("1.0", "1.end") else 0
+        # Get visible area bounds
+        try:
+            canvas_height = self.winfo_height()
+            line_height = self.font.metrics("linespace")
+            max_visible_lines = min(100, canvas_height // line_height + 5)  # Safety limit
+            
+            current_line = first_visible_line
+            lines_drawn = 0
+            
+            while lines_drawn < max_visible_lines:
+                try:
+                    dline = self.editor.dlineinfo(current_line)
+                    if not dline:
+                        break
+                        
+                    y = dline[1]
+                    if y > canvas_height + 50:  # Off-screen buffer
+                        break
+                        
+                    line_num_str = current_line.split(".")[0]
+                    self.create_text(required_width - 5, y, anchor="ne", 
+                                   text=line_num_str, font=self.font, fill=self.text_color)
+                    
+                    self._rendered_numbers[y] = line_num_str
+                    current_line = self.editor.index(f"{current_line}+1line")
+                    lines_drawn += 1
+                    
+                except tk.TclError:
+                    break
+                    
+        except tk.TclError:
+            pass
+    
+    def _redraw_standard(self, first_visible_line, last_line_num, required_width):
+        """Standard redraw for smaller files."""
+        self.delete("all")
+        self._rendered_numbers.clear()
         
-        max_digits = len(str(last_line_num)) if last_line_num > 0 else 1
-        required_width = self.font.measure("0" * max_digits) + 10
-        if abs(self.winfo_width() - required_width) > 2: self.config(width=required_width)
-
         current_line = first_visible_line
-        while dline := self.editor.dlineinfo(current_line):
-            y = dline[1]
-            line_num_str = current_line.split(".")[0]
-            self.create_text(required_width - 5, y, anchor="ne", text=line_num_str, font=self.font, fill=self.text_color)
-            current_line = self.editor.index(f"{current_line}+1line")
-            if int(current_line.split('.')[0]) > last_line_num + 1: break
+        while True:
+            try:
+                dline = self.editor.dlineinfo(current_line)
+                if not dline:
+                    break
+                    
+                y = dline[1]
+                line_num_str = current_line.split(".")[0]
+                self.create_text(required_width - 5, y, anchor="ne", 
+                               text=line_num_str, font=self.font, fill=self.text_color)
+                
+                self._rendered_numbers[y] = line_num_str
+                current_line = self.editor.index(f"{current_line}+1line")
+                
+                if int(current_line.split('.')[0]) > last_line_num + 1:
+                    break
+                    
+            except tk.TclError:
+                break
+    
+    def force_redraw(self):
+        """Force complete redraw, ignoring cache."""
+        self._last_viewport = (0, 0)
+        self._last_total_lines = 0
+        self._rendered_numbers.clear()
+        self.redraw()
 
 class EditorTab(ttk.Frame):
     """Represents a single editable tab."""
@@ -87,11 +203,40 @@ class EditorTab(ttk.Frame):
 
     def on_key_release(self, event=None):
         self.update_tab_title()
-        self.schedule_heavy_updates(event)
+        self._schedule_smart_updates(event, 'keyrelease')
 
     def schedule_heavy_updates(self, event=None):
-        if self._schedule_heavy_updates_callback:
-            self._schedule_heavy_updates_callback(event)
+        """Legacy method - redirects to smart updates."""
+        self._schedule_smart_updates(event, 'configure')
+    
+    def _schedule_smart_updates(self, event=None, event_type='general'):
+        """Schedule updates using the optimized performance system."""
+        try:
+            from app.performance_optimizer import schedule_optimized_update, UpdateType
+            
+            # Determine which updates are needed based on event type
+            if event_type == 'keyrelease':
+                # Text changes: need syntax, status bar, and possibly outline
+                update_types = {UpdateType.SYNTAX, UpdateType.STATUS}
+                
+                # Only update outline for structural changes (sections, etc.)
+                if event and hasattr(event, 'char') and event.char in ['\\', '{', '}']:
+                    update_types.add(UpdateType.OUTLINE)
+                    
+            elif event_type == 'configure':
+                # Viewport changes: mainly need line numbers
+                update_types = {UpdateType.LINE_NUMBERS}
+                
+            else:
+                # General updates: everything
+                update_types = {UpdateType.ALL}
+            
+            schedule_optimized_update(self.editor, update_types)
+            
+        except ImportError:
+            # Fallback to legacy system
+            if self._schedule_heavy_updates_callback:
+                self._schedule_heavy_updates_callback(event)
 
     def _on_key_press(self, event=None):
         """Marque le widget comme modifié lors des changements."""

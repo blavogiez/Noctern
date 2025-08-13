@@ -42,8 +42,8 @@ def style_selected_text(event=None):
 
 def perform_heavy_updates():
     """
-    Executes computationally intensive updates for the active editor tab.
-    This function is debounced.
+    LEGACY: Executes computationally intensive updates for the active editor tab.
+    Now redirects to optimized performance system.
     """
     state.heavy_update_timer_id = None
     
@@ -55,47 +55,21 @@ def perform_heavy_updates():
         debug_console.log("Heavy update skipped: No active editor tab.", level='DEBUG')
         return
 
-
-    tab_name = os.path.basename(current_tab.file_path) if current_tab.file_path else "Untitled"
-    debug_console.log(f"Initiating heavy updates for tab: '{tab_name}'.", level='TRACE')
-    
-    editor_syntax.apply_syntax_highlighting(current_tab.editor)
-    if state.outline:
-        state.outline.update_outline(current_tab.editor)
-
-    if not state._temporary_status_active:
-        from app import status_utils
-        status_utils.update_status_bar_text()
-
-    if current_tab.line_numbers:
-        current_tab.line_numbers.redraw()
+    # Use optimized performance system
+    from app.performance_optimizer import schedule_optimized_update, UpdateType
+    schedule_optimized_update(current_tab.editor, {UpdateType.ALL}, force=True)
 
 def schedule_heavy_updates(_=None):
     """
-    Schedules the `perform_heavy_updates` function to run after a delay.
-    This function acts as a debouncer.
+    Schedules heavy updates using the optimized performance system.
     """
-    if state.root and state.heavy_update_timer_id is not None:
-        state.root.after_cancel(state.heavy_update_timer_id)
-    
     current_tab = state.get_current_tab()
-    if state.root and current_tab:
-        current_delay = state.HEAVY_UPDATE_DELAY_NORMAL
-        try:
-            last_line_index_str = current_tab.editor.index("end-1c")
-            total_lines = 0
-            if last_line_index_str:
-                total_lines = int(last_line_index_str.split(".")[0])
-                if total_lines == 1 and not current_tab.editor.get("1.0", "1.end").strip():
-                    total_lines = 0
-            
-            if total_lines > state.LARGE_FILE_LINE_THRESHOLD:
-                current_delay = state.HEAVY_UPDATE_DELAY_LARGE_FILE
-        except TclError:
-            debug_console.log("Error determining total lines for heavy update delay.", level='WARNING')
-            pass
+    if not current_tab:
+        return
         
-        state.heavy_update_timer_id = state.root.after(current_delay, perform_heavy_updates)
+    # Use optimized scheduling system
+    from app.performance_optimizer import schedule_optimized_update, UpdateType
+    schedule_optimized_update(current_tab.editor, {UpdateType.ALL})
 
 def paste_image(event=None):
     """
