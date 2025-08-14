@@ -144,8 +144,9 @@ def setup_gui():
         
         current_tab = state.get_current_tab()
         if current_tab and current_tab.editor:
-            # Monaco-style ultra-fast differential updates
-            apply_monaco_highlighting(current_tab.editor)
+            # ULTRA-FAST differential highlighting - no debouncing needed!
+            from editor import syntax as editor_syntax
+            editor_syntax.apply_differential_syntax_highlighting(current_tab.editor)
             # Only update outline occasionally, not every keystroke
             if time.time() - last_update_time > 1.0:  # Max once per second
                 state.outline.update_outline(current_tab.editor)
@@ -180,8 +181,8 @@ def setup_gui():
             
         update_pending = True
         
-        # Ultra-fast debouncing - Monaco responsive
-        delay = 30  # Extremely fast response like Monaco
+        # Ultra-fast debouncing - differential highlighting is so fast we can be responsive
+        delay = 50  # Very short delay since we only process changed lines
         state.root.after(delay, apply_monaco_updates)
         return None
 

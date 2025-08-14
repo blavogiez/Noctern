@@ -231,21 +231,20 @@ class EditorTab(ttk.Frame):
         self._schedule_smart_updates(event, 'keyrelease')
         # Ensure line numbers are updated instantly
         self.line_numbers.redraw()
+        # Note: syntax highlighting is already handled in _schedule_smart_updates
 
     def schedule_heavy_updates(self, event=None):
         """Legacy method - redirects to smart updates."""
         self._schedule_smart_updates(event, 'configure')
     
     def _schedule_smart_updates(self, event=None, event_type='general'):
-        """Monaco-optimized update scheduling - ultra-fast."""
+        """ULTRA-FAST differential syntax highlighting - maximum performance."""
         try:
-            from editor.monaco_optimizer import apply_monaco_highlighting, suppress_monaco_updates
+            from editor import syntax as editor_syntax
             
-            # Monaco-style: suppress rapid updates during typing
             if event_type == 'keyrelease':
-                suppress_monaco_updates(self.editor, 30)  # Very short suppression
-                # Immediate highlighting update for responsiveness
-                apply_monaco_highlighting(self.editor)
+                # DIFFERENTIAL HIGHLIGHTING: Only recolor changed lines
+                editor_syntax.apply_differential_syntax_highlighting(self.editor)
                 # Always update line numbers on key release for instant feedback
                 self.line_numbers.redraw()
                 
@@ -256,12 +255,21 @@ class EditorTab(ttk.Frame):
             # Skip heavy outline updates unless truly needed
             
         except ImportError:
-            # Fallback to Monaco basics without optimizer module
+            # Fallback without syntax highlighting
             pass
 
     def _on_key_press(self, event=None):
         """Marque le widget comme modifié lors des changements."""
         self.editor.edit_modified(True)
+
+    def _schedule_syntax_update(self):
+        """Schedule syntax highlighting update with smart debouncing."""
+        try:
+            from editor import syntax as editor_syntax
+            editor_syntax.schedule_syntax_update(self.editor, debounce=True, smart=True)
+        except ImportError:
+            # Fallback if syntax module is not available
+            pass
 
     def get_content(self):
         return self.editor.get("1.0", tk.END)
@@ -290,6 +298,13 @@ class EditorTab(ttk.Frame):
         self.last_saved_content = self.get_content()
         self.update_tab_title()
         self.editor.edit_reset()
+        
+        # Initialize syntax highlighting for the loaded file
+        try:
+            from editor import syntax as editor_syntax
+            editor_syntax.initialize_syntax_highlighting(self.editor)
+        except ImportError:
+            pass
 
     def save_file(self, new_path=None):
         if new_path: self.file_path = new_path

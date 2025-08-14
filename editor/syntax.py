@@ -11,7 +11,8 @@ from utils import debug_console
 LARGE_FILE_THRESHOLD = 2000   # Lines (reduced for earlier optimization)
 VIEWPORT_BUFFER_LINES = 50    # Reduced buffer for better performance
 MAX_CACHE_SIZE = 15           # Reduced cache size
-DEBOUNCE_DELAY = 100          # Faster debounce for better responsiveness
+DEBOUNCE_DELAY = 500          # Longer debounce for better performance
+QUICK_DEBOUNCE_DELAY = 150    # Quick debounce for simple changes
 VERY_LARGE_FILE_THRESHOLD = 10000  # Lines for extreme optimizations
 
 # Enhanced color scheme with high visibility colors
@@ -182,6 +183,91 @@ class ViewportTracker:
 _syntax_cache = SyntaxCache()
 _viewport_trackers = weakref.WeakKeyDictionary()
 _pending_updates = weakref.WeakKeyDictionary()
+_line_trackers = weakref.WeakKeyDictionary()  # Track line changes for differential highlighting
+
+class LineTracker:
+    """Ultra-fast line change tracking for differential highlighting."""
+    
+    def __init__(self, editor):
+        self.editor_ref = weakref.ref(editor)
+        self.line_cache = {}  # line_num -> (content_hash, last_highlighted)
+        self.last_cursor_line = 1
+        self.last_total_lines = 0
+        
+    def get_changed_lines(self):
+        """Get only the lines that actually changed - ultra efficient."""
+        editor = self.editor_ref()
+        if not editor:
+            return set()
+            
+        try:
+            # Get current cursor position for focused change detection
+            cursor_pos = editor.index(tk.INSERT)
+            current_cursor_line = int(cursor_pos.split('.')[0])
+            
+            # For single character changes, only check current line + context
+            if abs(current_cursor_line - self.last_cursor_line) <= 1:
+                changed_lines = self._check_focused_lines(editor, current_cursor_line)
+            else:
+                # Cursor moved significantly or larger change
+                changed_lines = self._check_range_lines(editor, 
+                    min(self.last_cursor_line, current_cursor_line) - 1,
+                    max(self.last_cursor_line, current_cursor_line) + 1)
+            
+            self.last_cursor_line = current_cursor_line
+            return changed_lines
+            
+        except tk.TclError:
+            return set()
+    
+    def _check_focused_lines(self, editor, focus_line):
+        """Check only the focused line and immediate context."""
+        changed = set()
+        
+        # Check only current line and neighbors for maximum performance
+        for line_num in range(max(1, focus_line - 1), focus_line + 2):
+            try:
+                line_content = editor.get(f"{line_num}.0", f"{line_num}.end")
+                content_hash = hash(line_content)
+                
+                if line_num not in self.line_cache or self.line_cache[line_num][0] != content_hash:
+                    changed.add(line_num)
+                    self.line_cache[line_num] = (content_hash, True)
+                    
+            except tk.TclError:
+                break
+                
+        return changed
+    
+    def _check_range_lines(self, editor, start_line, end_line):
+        """Check a specific range of lines efficiently."""
+        changed = set()
+        
+        try:
+            total_lines = int(editor.index("end-1c").split('.')[0])
+            start_line = max(1, start_line)
+            end_line = min(total_lines, end_line)
+            
+            for line_num in range(start_line, end_line + 1):
+                try:
+                    line_content = editor.get(f"{line_num}.0", f"{line_num}.end")
+                    content_hash = hash(line_content)
+                    
+                    if line_num not in self.line_cache or self.line_cache[line_num][0] != content_hash:
+                        changed.add(line_num)
+                        self.line_cache[line_num] = (content_hash, True)
+                        
+                except tk.TclError:
+                    continue
+                    
+        except tk.TclError:
+            pass
+            
+        return changed
+    
+    def invalidate_cache(self):
+        """Clear the line cache for full refresh."""
+        self.line_cache.clear()
 
 def apply_syntax_highlighting(editor):
     """Monaco-inspired high-performance syntax highlighting with intelligent optimization."""
@@ -494,8 +580,8 @@ def _clear_tags_in_range(editor, start_idx, end_idx):
         except tk.TclError:
             pass
 
-def schedule_syntax_update(editor, debounce=True):
-    """Schedule syntax highlighting update with debouncing."""
+def schedule_syntax_update(editor, debounce=True, smart=True):
+    """Schedule syntax highlighting update with intelligent debouncing."""
     if not editor:
         return
         
@@ -506,12 +592,25 @@ def schedule_syntax_update(editor, debounce=True):
         except (tk.TclError, ValueError):
             pass
     
-    if debounce:
-        # Schedule debounced update
-        timer_id = editor.after(DEBOUNCE_DELAY, lambda: apply_syntax_highlighting(editor))
-        _pending_updates[editor] = timer_id
-    else:
+    if not debounce:
         apply_syntax_highlighting(editor)
+        return
+    
+    # Smart debouncing: choose delay based on file size and change context
+    delay = DEBOUNCE_DELAY
+    if smart:
+        try:
+            line_count = int(editor.index("end-1c").split('.')[0])
+            if line_count < 100:
+                delay = QUICK_DEBOUNCE_DELAY  # Quick refresh for small files
+            elif line_count > LARGE_FILE_THRESHOLD:
+                delay = DEBOUNCE_DELAY * 2    # Slower refresh for large files
+        except tk.TclError:
+            pass
+    
+    # Schedule debounced update
+    timer_id = editor.after(delay, lambda: apply_syntax_highlighting(editor))
+    _pending_updates[editor] = timer_id
 
 def on_viewport_changed(editor):
     """Handle viewport changes for large files."""
@@ -534,6 +633,148 @@ def clear_syntax_highlighting(editor):
                 del _pending_updates[editor]
             except (tk.TclError, ValueError, KeyError):
                 pass
+
+def apply_differential_syntax_highlighting(editor):
+    """ULTRA-PERFORMANT differential highlighting - only changed lines."""
+    if not editor:
+        return
+        
+    # Get or create line tracker for this editor
+    if editor not in _line_trackers:
+        _line_trackers[editor] = LineTracker(editor)
+    
+    tracker = _line_trackers[editor]
+    changed_lines = tracker.get_changed_lines()
+    
+    if not changed_lines:
+        return  # Nothing changed, no work needed!
+    
+    try:
+        # Setup fonts once
+        current_tab = editor.master
+        if isinstance(current_tab, EditorTab):
+            base_font = current_tab.editor_font
+            try:
+                font_family = base_font.cget("family")
+                font_size = base_font.cget("size")
+                normal_font = (font_family, font_size)
+                bold_font = (font_family, font_size, "bold")
+            except tk.TclError:
+                normal_font = ("Consolas", 12)
+                bold_font = ("Consolas", 12, "bold")
+        else:
+            normal_font = ("Consolas", 12)
+            bold_font = ("Consolas", 12, "bold")
+        
+        # Configure tags only once if not already done
+        _setup_tags(editor, normal_font, bold_font)
+        
+        # Highlight ONLY the changed lines - maximum efficiency
+        for line_num in changed_lines:
+            _highlight_single_line_ultra_fast(editor, line_num)
+            
+    except tk.TclError:
+        pass
+
+def _highlight_single_line_ultra_fast(editor, line_num):
+    """Highlight a single line with optimized patterns - ultra fast."""
+    try:
+        line_start = f"{line_num}.0"
+        line_end = f"{line_num}.end"
+        line_content = editor.get(line_start, line_end)
+        
+        if not line_content.strip():
+            return  # Empty line, nothing to do
+        
+        # Clear existing tags for this line only
+        _clear_tags_single_line(editor, line_start, line_end)
+        
+        # Apply only relevant patterns based on line content - smart optimization
+        _apply_smart_patterns_to_line(editor, line_content, line_start, line_num)
+        
+    except tk.TclError:
+        pass
+
+def _clear_tags_single_line(editor, line_start, line_end):
+    """Clear tags for a single line only."""
+    tags = ['documentclass', 'package', 'section', 'subsection', 'title_commands',
+            'environment', 'list_env', 'math_env', 'figure_env',
+            'command', 'text_format', 'font_size', 'geometry',
+            'ref_cite', 'label', 'hyperref', 'math', 'math_symbols',
+            'proper_names', 'braced_content', 'comment', 'number', 'bracket', 'string',
+            'special_chars', 'units']
+    
+    for tag in tags:
+        try:
+            editor.tag_remove(tag, line_start, line_end)
+        except tk.TclError:
+            continue
+
+def _apply_smart_patterns_to_line(editor, line_content, line_start, line_num):
+    """Apply only relevant patterns to a line - context-aware optimization."""
+    
+    # Quick pre-filtering based on line content - avoid unnecessary regex
+    has_backslash = '\\' in line_content
+    has_percent = '%' in line_content
+    has_math = '$' in line_content
+    has_braces = '{' in line_content or '}' in line_content
+    
+    # Comments first (highest priority)
+    if has_percent:
+        _apply_pattern_to_line(editor, PATTERNS['comment'], 'comment', line_content, line_start, line_num)
+    
+    # Only check LaTeX patterns if backslash present
+    if has_backslash:
+        # Check specific patterns based on context
+        if 'section' in line_content:
+            _apply_pattern_to_line(editor, PATTERNS['section'], 'section', line_content, line_start, line_num)
+            _apply_pattern_to_line(editor, PATTERNS['subsection'], 'subsection', line_content, line_start, line_num)
+        
+        if 'documentclass' in line_content:
+            _apply_pattern_to_line(editor, PATTERNS['documentclass'], 'documentclass', line_content, line_start, line_num)
+        
+        if 'usepackage' in line_content:
+            _apply_pattern_to_line(editor, PATTERNS['package'], 'package', line_content, line_start, line_num)
+        
+        if 'textbf' in line_content or 'textit' in line_content:
+            _apply_pattern_to_line(editor, PATTERNS['text_format'], 'text_format', line_content, line_start, line_num)
+        
+        if 'begin' in line_content or 'end' in line_content:
+            _apply_pattern_to_line(editor, PATTERNS['environment'], 'environment', line_content, line_start, line_num)
+            _apply_pattern_to_line(editor, PATTERNS['list_env'], 'list_env', line_content, line_start, line_num)
+            _apply_pattern_to_line(editor, PATTERNS['math_env'], 'math_env', line_content, line_start, line_num)
+            _apply_pattern_to_line(editor, PATTERNS['figure_env'], 'figure_env', line_content, line_start, line_num)
+        
+        # General command pattern (only if not caught by specific patterns above)
+        _apply_pattern_to_line(editor, PATTERNS['command'], 'command', line_content, line_start, line_num)
+    
+    # Math patterns
+    if has_math:
+        _apply_pattern_to_line(editor, PATTERNS['math'], 'math', line_content, line_start, line_num)
+    
+    # Proper names (only if has uppercase letters)
+    if any(c.isupper() for c in line_content):
+        _apply_pattern_to_line(editor, PATTERNS['proper_names'], 'proper_names', line_content, line_start, line_num)
+    
+    # Numbers (only if has digits)
+    if any(c.isdigit() for c in line_content):
+        _apply_pattern_to_line(editor, PATTERNS['number'], 'number', line_content, line_start, line_num)
+
+def _apply_pattern_to_line(editor, pattern, tag_name, line_content, line_start, line_num):
+    """Apply a specific pattern to a single line."""
+    try:
+        for match in pattern.finditer(line_content):
+            start_idx = f"{line_num}.{match.start()}"
+            end_idx = f"{line_num}.{match.end()}"
+            editor.tag_add(tag_name, start_idx, end_idx)
+    except tk.TclError:
+        pass
+
+def initialize_syntax_highlighting(editor):
+    """Initialize syntax highlighting for a new file - clear cache and do full highlighting."""
+    if editor in _line_trackers:
+        _line_trackers[editor].invalidate_cache()
+    apply_syntax_highlighting(editor)
 
 def refresh_syntax_highlighting(editor):
     """Refresh syntax highlighting."""
