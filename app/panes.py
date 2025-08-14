@@ -49,16 +49,68 @@ def create_outline(parent, get_current_tab_callback, config_settings=None):
     parent.add(outline.get_widget(), weight=1) # Add the widget to the pane
     return outline
 
+def create_debug_panel(parent, on_goto_line=None):
+    """
+    Creates the TeXstudio-style debug panel with error display and version comparison.
+    
+    Args:
+        parent: The parent widget for the debug panel
+        on_goto_line: Callback for navigation to a specific line
+        
+    Returns:
+        tuple: (debug_coordinator, debug_panel_widget)
+    """
+    try:
+        from utils import debug_console
+        debug_console.log("Creating TeXstudio-style debug panel", level='INFO')
+        
+        from debug_system.texstudio_debug_coordinator import TeXstudioDebugCoordinatorFactory
+        
+        # Create the coordinator and panel
+        coordinator, debug_panel = TeXstudioDebugCoordinatorFactory.create_default_coordinator(
+            parent_window=parent,
+            on_goto_line=on_goto_line
+        )
+        
+        # Add the panel to the parent
+        parent.add(debug_panel, weight=1)
+        
+        debug_console.log("TeXstudio debug panel created successfully", level='SUCCESS')
+        return coordinator, debug_panel
+        
+    except Exception as e:
+        # Fallback to simple error panel if TeXstudio system fails
+        from utils import debug_console
+        debug_console.log(f"Failed to create TeXstudio debug panel: {e}", level='ERROR')
+        return create_error_panel_fallback(parent, on_goto_line)
+
+def create_error_panel_fallback(parent, on_goto_line=None):
+    """
+    Fallback vers l'ancien error panel si le nouveau système échoue.
+    """
+    try:
+        from pre_compiler.error_panel import ErrorPanel
+        error_panel = ErrorPanel(parent, on_goto_line)
+        parent.add(error_panel, weight=1)
+        return None, error_panel
+    except ImportError:
+        # Dernier recours : placeholder simple
+        placeholder_frame = ttk.Frame(parent)
+        placeholder_label = ttk.Label(
+            placeholder_frame, 
+            text="Debug system unavailable", 
+            foreground="#666", 
+            font=('Arial', 9)
+        )
+        placeholder_label.pack(pady=20)
+        parent.add(placeholder_frame, weight=1)
+        return None, placeholder_frame
+
+# Maintenir la compatibilité
 def create_error_panel(parent, on_goto_line=None):
-    """
-    Creates a simple placeholder for error panel (removed for performance).
-    """
-    placeholder_frame = ttk.Frame(parent)
-    placeholder_label = ttk.Label(placeholder_frame, text="Error checking disabled for better performance", 
-                                 foreground="#666", font=('Arial', 9))
-    placeholder_label.pack(pady=20)
-    parent.add(placeholder_frame, weight=1)
-    return placeholder_frame
+    """Alias pour compatibilité."""
+    coordinator, panel = create_debug_panel(parent, on_goto_line)
+    return panel
 
 def create_notebook(parent):
     """

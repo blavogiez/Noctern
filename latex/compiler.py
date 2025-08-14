@@ -146,11 +146,11 @@ def compile_latex(event=None):
             debug_console.log(f"Error saving temporary file for compilation: {e}", level='ERROR')
             return
 
-    # Create cache directory for successful compilations
-    base_name = os.path.splitext(file_name)[0]
-    cache_directory = os.path.join(source_directory, f"{base_name}.cache")
-    os.makedirs(cache_directory, exist_ok=True)
-    cached_tex_path = os.path.join(cache_directory, f"{base_name}_last_successful.tex")
+    # Create output directory for cached successful compilations
+    # This matches the existing cache mechanism used by the debug system
+    output_directory = "output"
+    os.makedirs(output_directory, exist_ok=True)
+    cached_tex_path = os.path.join(output_directory, f"cached_{file_name}")
 
     # Compile in the source directory
     try:
@@ -163,11 +163,33 @@ def compile_latex(event=None):
         log_file_path = os.path.join(source_directory, file_name.replace(".tex", ".log"))
         pdf_output_path = os.path.join(source_directory, file_name.replace(".tex", ".pdf"))
 
+        # Get log content for both success and failure cases
+        log_content = ""
+        try:
+            with open(log_file_path, 'r', encoding='utf-8', errors='ignore') as f_log:
+                log_content = f_log.read()
+        except FileNotFoundError:
+            debug_console.log("Log file not found, proceeding with empty log.", level='WARNING')
+
         if result.returncode == 0:
             messagebox.showinfo("✅ Compilation Successful", "LaTeX document compiled successfully to PDF.")
             debug_console.log("LaTeX compilation successful.", level='SUCCESS')
             
-            # Cache successful compilation
+            # Store successful version in the new debug system
+            try:
+                from app import state
+                if hasattr(state, 'debug_coordinator') and state.debug_coordinator:
+                    state.debug_coordinator.handle_compilation_result(
+                        success=True,
+                        log_content=log_content,
+                        file_path=current_tab.file_path or tex_file_path,
+                        current_content=editor_content
+                    )
+                    debug_console.log("Compilation result handled by debug system", level='INFO')
+            except Exception as e:
+                debug_console.log(f"Error handling compilation result in debug system: {e}", level='WARNING')
+            
+            # Cache successful compilation (legacy - for existing diff mechanism)
             try:
                 shutil.copy2(tex_file_path, cached_tex_path)
                 debug_console.log(f"Cached successful version to {cached_tex_path}", level='INFO')
@@ -176,76 +198,34 @@ def compile_latex(event=None):
             
             hide_console()
         else:
-            messagebox.showerror("❌ LaTeX Compilation Failed", "Compilation failed. Analyzing errors...")
-            debug_console.log("LaTeX compilation failed. Analyzing errors.", level='ERROR')
+            messagebox.showerror("❌ LaTeX Compilation Failed", "Compilation failed. Check debug panel for details.")
+            debug_console.log("LaTeX compilation failed. Updating debug panel.", level='ERROR')
             
-            # Analyze compilation errors with diff
-            if os.path.exists(cached_tex_path):
-                debug_console.log("Cached version found. Analyzing diff.", level='INFO')
+            # Handle compilation failure with new debug system
+            try:
+                from app import state
+                if hasattr(state, 'debug_coordinator') and state.debug_coordinator:
+                    state.debug_coordinator.handle_compilation_result(
+                        success=False,
+                        log_content=log_content,
+                        file_path=current_tab.file_path or tex_file_path,
+                        current_content=editor_content
+                    )
+                    debug_console.log("Compilation errors handled by TeXstudio debug system", level='INFO')
+                else:
+                    # Fallback to old console display if debug system not available
+                    error_summary = error_parser.parse_log_file(log_content)
+                    show_console(error_summary)
+                    debug_console.log("Used fallback error display", level='WARNING')
+            except Exception as e:
+                debug_console.log(f"Error handling compilation failure in debug system: {e}", level='ERROR')
+                # Final fallback
                 try:
-                    with open(cached_tex_path, 'r', encoding='utf-8') as f_good:
-                        good_code = f_good.readlines()
-                    with open(tex_file_path, 'r', encoding='utf-8') as f_bad:
-                        bad_code = f_bad.readlines()
-                    
-                    log_content = ""
-                    try:
-                        with open(log_file_path, 'r', encoding='utf-8', errors='ignore') as f_log:
-                            log_content = f_log.read()
-                    except FileNotFoundError:
-                        debug_console.log("Log file not found, proceeding with empty log.", level='WARNING')
-
-                    # Create diff
-                    import difflib
-                    diff = difflib.unified_diff(good_code, bad_code, fromfile=os.path.basename(cached_tex_path), tofile='current.tex', lineterm='')
-                    diff_content = '\n'.join(diff)
-
-                    if diff_content.strip():
-                        # Call the debug analysis function
-                        from llm import latex_debug
-                        latex_debug.analyze_compilation_diff(diff_content, log_content)
-                    else:
-                        # If there's no diff, just show the standard log
-                        error_summary = error_parser.parse_log_file(log_content)
-                        show_console(error_summary)
-                except Exception as e:
-                    debug_console.log(f"Error during diff analysis: {e}", level='ERROR')
-                    # Fallback to old method
-                    try:
-                        with open(log_file_path, 'r', encoding='utf-8', errors='ignore') as f_log:
-                            log_content = f_log.read()
-                        error_summary = error_parser.parse_log_file(log_content)
-                        show_console(error_summary)
-                    except Exception as e2:
-                        debug_console.log(f"Error reading log file: {e2}", level='ERROR')
-                        show_console(f"Error reading log file: {e2}")
-            else:
-                # Fallback if no cached version exists
-                debug_console.log("No cached version found. Analyzing full file.", level='INFO')
-                try:
-                    with open(tex_file_path, 'r', encoding='utf-8') as f_bad:
-                        bad_code = f_bad.read()
-                    
-                    log_content = ""
-                    try:
-                        with open(log_file_path, 'r', encoding='utf-8', errors='ignore') as f_log:
-                            log_content = f_log.read()
-                    except FileNotFoundError:
-                        debug_console.log("Log file not found, proceeding with empty log.", level='WARNING')
-
-                    # Call the debug analysis function with full file
-                    from llm import latex_debug
-                    latex_debug.analyze_compilation_diff(bad_code, log_content)
-                except Exception as e:
-                    debug_console.log(f"Error during full file analysis: {e}", level='ERROR')
-                    try:
-                        with open(log_file_path, 'r', encoding='utf-8', errors='ignore') as f_log:
-                            log_content = f_log.read()
-                        error_summary = error_parser.parse_log_file(log_content)
-                        show_console(error_summary)
-                    except Exception as e2:
-                        debug_console.log(f"Error reading log file: {e2}", level='ERROR')
-                        show_console(f"Error reading log file: {e2}")
+                    error_summary = error_parser.parse_log_file(log_content)
+                    show_console(error_summary)
+                except Exception as e2:
+                    debug_console.log(f"Error in fallback error display: {e2}", level='ERROR')
+                    show_console(f"Error processing compilation log: {e2}")
     except FileNotFoundError:
         messagebox.showerror("Error", "`pdflatex` command not found. Please ensure LaTeX is installed and in your system's PATH.")
         debug_console.log("pdflatex command not found.", level='ERROR')

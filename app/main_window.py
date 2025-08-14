@@ -9,7 +9,7 @@ import ttkbootstrap as ttk
 from app import state, actions, config as app_config, theme as interface_theme
 from app.zoom import ZoomManager
 from app.topbar import create_top_buttons_frame
-from app.panes import create_main_paned_window, create_left_pane, create_outline, create_error_panel, create_notebook, create_console_pane, create_pdf_preview_pane
+from app.panes import create_main_paned_window, create_left_pane, create_outline, create_debug_panel, create_notebook, create_console_pane, create_pdf_preview_pane
 from app.status import create_status_bar, start_gpu_status_loop
 from app.shortcuts import bind_global_shortcuts
 from utils import debug_console, screen as screen_utils
@@ -112,7 +112,13 @@ def setup_gui():
         except ttk.TclError as e:
             debug_console.log(f"Error navigating to line: {e}", level='ERROR')
 
-    state.error_panel = create_error_panel(left_pane, on_goto_line=go_to_line)
+    # Créer le nouveau système de debug ultra-rapide
+    debug_coordinator, debug_panel = create_debug_panel(left_pane, on_goto_line=go_to_line)
+    state.debug_coordinator = debug_coordinator
+    state.debug_panel = debug_panel
+    
+    # Maintenir la compatibilité avec l'ancien nom
+    state.error_panel = debug_panel
     state.notebook = create_notebook(state.main_pane)
     
     # Create PDF preview pane

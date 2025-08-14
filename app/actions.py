@@ -10,6 +10,7 @@ by interacting with the state, UI components, and various backend services.
 import os
 import json
 import sys
+import tkinter as tk
 import ttkbootstrap as ttk
 from tkinter import TclError
 from ttkbootstrap.dialogs import Messagebox
@@ -55,6 +56,14 @@ def perform_heavy_updates():
         debug_console.log("Heavy update skipped: No active editor tab.", level='DEBUG')
         return
 
+    # Update debug system with current document
+    if hasattr(state, 'debug_coordinator') and state.debug_coordinator and current_tab.file_path:
+        try:
+            content = current_tab.editor.get("1.0", tk.END)
+            state.debug_coordinator.set_current_document(current_tab.file_path, content)
+        except Exception as e:
+            debug_console.log(f"Error updating debug system: {e}", level='WARNING')
+    
     # Use optimized performance system
     from app.performance_optimizer import schedule_optimized_update, UpdateType
     schedule_optimized_update(current_tab.editor, {UpdateType.ALL}, force=True)

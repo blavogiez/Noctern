@@ -14,7 +14,10 @@
       "Bash(python:*)",
       "Bash(timeout:*)",
       "Bash(powershell:*)",
-      "Bash(move:*)"
+      "Bash(move:*)",
+      "Bash(mkdir:*)",
+      "Bash(mv:*)",
+      "Bash(pdflatex:*)"
     ],
     "deny": [],
     "ask": [],

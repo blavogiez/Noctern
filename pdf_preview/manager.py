@@ -107,12 +107,11 @@ class PDFPreviewManager:
             self.compilation_status = "Compilable"
             pdf_path = os.path.join(source_directory, file_name.replace(".tex", ".pdf"))
             
-            # Cache successful compilation
+            # Cache successful compilation using the same mechanism as the debug system
             try:
-                base_name = os.path.splitext(file_name)[0]
-                cache_directory = os.path.join(source_directory, f"{base_name}.cache")
-                os.makedirs(cache_directory, exist_ok=True)
-                cached_tex_path = os.path.join(cache_directory, f"{base_name}_last_successful.tex")
+                output_directory = "output"
+                os.makedirs(output_directory, exist_ok=True)
+                cached_tex_path = os.path.join(output_directory, f"cached_{file_name}")
                 tex_file_path = os.path.join(source_directory, file_name)
                 shutil.copy2(tex_file_path, cached_tex_path)
                 debug_console.log(f"Auto-compilation: Cached successful version to {cached_tex_path}", level='INFO')
@@ -130,6 +129,9 @@ class PDFPreviewManager:
             if self.viewer:
                 self.viewer.set_compilation_status("Not compilable", self.last_compilation_time)
             self._stop_status_updates()
+            
+            # Send compilation errors to the debug system
+            self._handle_compilation_failure(source_directory, file_name)
         
         self._update_status_label()
 
@@ -179,6 +181,60 @@ class PDFPreviewManager:
             self.compilation_status = "Compilable"
             self.viewer.set_compilation_status("Compilable", self.last_compilation_time)
             self._start_status_updates()
+
+    def _handle_compilation_failure(self, source_directory, file_name):
+        """
+        Handle compilation failure by sending errors to the debug system.
+        
+        Args:
+            source_directory: Directory where compilation was attempted
+            file_name: Name of the .tex file that failed to compile
+        """
+        try:
+            # Get current tab info
+            current_tab = self.get_current_tab()
+            if not current_tab:
+                debug_console.log("No current tab for error handling", level='WARNING')
+                return
+            
+            # Read log file
+            log_file_path = os.path.join(source_directory, file_name.replace(".tex", ".log"))
+            log_content = ""
+            
+            if os.path.exists(log_file_path):
+                try:
+                    with open(log_file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                        log_content = f.read()
+                    debug_console.log(f"Auto-compilation: Read log file {log_file_path} ({len(log_content)} chars)", level='DEBUG')
+                except Exception as e:
+                    debug_console.log(f"Auto-compilation: Error reading log file: {e}", level='ERROR')
+                    return
+            else:
+                debug_console.log(f"Auto-compilation: Log file not found: {log_file_path}", level='WARNING')
+                return
+            
+            # Get current file content
+            current_content = current_tab.editor.get("1.0", "end-1c")
+            file_path = current_tab.file_path or os.path.join(source_directory, file_name)
+            
+            # Send to debug system
+            try:
+                from app import state
+                if hasattr(state, 'debug_coordinator') and state.debug_coordinator:
+                    debug_console.log("Auto-compilation: Sending errors to debug system", level='INFO')
+                    state.debug_coordinator.handle_compilation_result(
+                        success=False,
+                        log_content=log_content,
+                        file_path=file_path,
+                        current_content=current_content
+                    )
+                else:
+                    debug_console.log("Auto-compilation: Debug coordinator not available", level='WARNING')
+            except Exception as e:
+                debug_console.log(f"Auto-compilation: Error sending to debug system: {e}", level='ERROR')
+                
+        except Exception as e:
+            debug_console.log(f"Auto-compilation: Error in _handle_compilation_failure: {e}", level='ERROR')
 
     def set_auto_refresh(self, enabled):
         self.auto_refresh_enabled = enabled
