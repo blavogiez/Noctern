@@ -69,6 +69,15 @@ class CriticalErrorParser(IErrorParser):
                 suggestion = self._get_suggestion_for_pattern(pattern, match)
                 break
         
+        # Special handling for "File ended while scanning" errors
+        if "File ended while scanning use of" in error_text:
+            # Try to extract the command that wasn't closed
+            command_match = re.search(r'File ended while scanning use of \\(\w+)', error_text)
+            if command_match:
+                command = command_match.group(1)
+                message = f"Unclosed command \\{command} - missing closing brace"
+                suggestion = f"Add '}}' to close the \\{command} command"
+        
         # Get context from next lines
         context = self._extract_context(context_lines, line_index)
         

@@ -51,7 +51,7 @@ def create_outline(parent, get_current_tab_callback, config_settings=None):
 
 def create_debug_panel(parent, on_goto_line=None):
     """
-    Creates the TeXstudio-style debug panel with error display and version comparison.
+    Creates the ultimate debug panel with AI analysis, quick fixes, and advanced features.
     
     Args:
         parent: The parent widget for the debug panel
@@ -62,12 +62,12 @@ def create_debug_panel(parent, on_goto_line=None):
     """
     try:
         from utils import debug_console
-        debug_console.log("Creating TeXstudio-style debug panel", level='INFO')
+        debug_console.log("Creating ultimate debug panel", level='INFO')
         
-        from debug_system.texstudio_debug_coordinator import TeXstudioDebugCoordinatorFactory
+        from debug_system.ultimate_debug_coordinator import UltimateDebugCoordinatorFactory
         
-        # Create the coordinator and panel
-        coordinator, debug_panel = TeXstudioDebugCoordinatorFactory.create_default_coordinator(
+        # Create the ultimate coordinator and panel
+        coordinator, debug_panel = UltimateDebugCoordinatorFactory.create_ultimate_coordinator(
             parent_window=parent,
             on_goto_line=on_goto_line
         )
@@ -75,14 +75,27 @@ def create_debug_panel(parent, on_goto_line=None):
         # Add the panel to the parent
         parent.add(debug_panel, weight=1)
         
-        debug_console.log("TeXstudio debug panel created successfully", level='SUCCESS')
+        debug_console.log("Ultimate debug panel created successfully", level='SUCCESS')
         return coordinator, debug_panel
         
     except Exception as e:
-        # Fallback to simple error panel if TeXstudio system fails
+        # Fallback to TeXstudio system if ultimate fails
         from utils import debug_console
-        debug_console.log(f"Failed to create TeXstudio debug panel: {e}", level='ERROR')
-        return create_error_panel_fallback(parent, on_goto_line)
+        debug_console.log(f"Failed to create ultimate debug panel, falling back: {e}", level='WARNING')
+        
+        try:
+            from debug_system.texstudio_debug_coordinator import TeXstudioDebugCoordinatorFactory
+            
+            coordinator, debug_panel = TeXstudioDebugCoordinatorFactory.create_default_coordinator(
+                parent_window=parent,
+                on_goto_line=on_goto_line
+            )
+            parent.add(debug_panel, weight=1)
+            return coordinator, debug_panel
+            
+        except Exception as e2:
+            debug_console.log(f"Fallback also failed: {e2}", level='ERROR')
+            return create_error_panel_fallback(parent, on_goto_line)
 
 def create_error_panel_fallback(parent, on_goto_line=None):
     """

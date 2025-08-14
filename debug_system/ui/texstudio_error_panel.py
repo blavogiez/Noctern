@@ -27,7 +27,7 @@ class TeXstudioErrorListWidget(ttk.Treeview, IErrorDisplay):
     """TeXstudio-style error list widget."""
     
     def __init__(self, parent, on_error_click: Optional[Callable[[LaTeXError], None]] = None):
-        super().__init__(parent, columns=('severity', 'line', 'message'), show='tree headings', height=8)
+        super().__init__(parent, columns=('severity', 'line', 'message', 'error_index'), show='tree headings', height=8)
         
         self.on_error_click = on_error_click
         self.errors: List[LaTeXError] = []
@@ -37,11 +37,14 @@ class TeXstudioErrorListWidget(ttk.Treeview, IErrorDisplay):
         self.heading('severity', text='Severity', anchor='w')
         self.heading('line', text='Line', anchor='w')
         self.heading('message', text='Message', anchor='w')
+        # Hide error_index column - it's only for internal use
+        self.heading('error_index', text='')
         
         self.column('#0', width=50, minwidth=40)
         self.column('severity', width=80, minwidth=60)
         self.column('line', width=60, minwidth=50)
         self.column('message', width=400, minwidth=300)
+        self.column('error_index', width=0, minwidth=0, stretch=False)  # Hidden column
         
         # Configure tags for different error types
         self.tag_configure('error', foreground='#d32f2f')
@@ -70,11 +73,9 @@ class TeXstudioErrorListWidget(ttk.Treeview, IErrorDisplay):
                                 text=icon,
                                 values=(error.severity, 
                                        str(error.line_number) if error.line_number > 0 else '',
-                                       error.message),
+                                       error.message,
+                                       str(i)),  # error_index in the values
                                 tags=(error.severity.lower(),))
-            
-            # Store error reference
-            self.set(item_id, 'error_index', str(i))
     
     def clear_errors(self):
         """Clear all errors from display."""
@@ -232,9 +233,9 @@ class TeXstudioErrorPanel(ttk.Frame):
                 self.status_label.configure(text="No differences found", foreground='#2e7d32')
                 return
             
-            # Trigger existing LLM analysis
-            self.diff_service.trigger_existing_llm_analysis(diff_content)
-            self.status_label.configure(text="Analysis requested", foreground='#2e7d32')
+            # Display diff in viewer window
+            self.diff_service.trigger_diff_display(diff_content, self.winfo_toplevel())
+            self.status_label.configure(text="Diff displayed", foreground='#2e7d32')
             
         except Exception as e:
             debug_console.log(f"Error during comparison: {e}", level='ERROR')
@@ -242,12 +243,31 @@ class TeXstudioErrorPanel(ttk.Frame):
     
     def _on_error_selected(self, error: LaTeXError):
         """Handle error selection for navigation."""
-        if self.on_goto_line and error.line_number > 0:
-            try:
+        if not self.on_goto_line:
+            debug_console.log("No goto_line callback available", level='WARNING')
+            return
+            
+        try:
+            if error.line_number > 0:
+                # Navigate to specific line
                 self.on_goto_line(error.line_number)
                 debug_console.log(f"Navigated to line {error.line_number}", level='INFO')
-            except Exception as e:
-                debug_console.log(f"Error navigating to line {error.line_number}: {e}", level='WARNING')
+            elif error.line_number == -1:
+                # For "end of file" errors, navigate to the last line
+                # We need to get current tab to find the last line
+                from app import state
+                current_tab = state.get_current_tab()
+                if current_tab and hasattr(current_tab, 'editor'):
+                    # Get total number of lines
+                    last_line = int(current_tab.editor.index('end-1c').split('.')[0])
+                    self.on_goto_line(last_line)
+                    debug_console.log(f"Navigated to end of file (line {last_line}) for end-of-file error", level='INFO')
+                else:
+                    debug_console.log("Cannot navigate to end of file: no active editor", level='WARNING')
+            else:
+                debug_console.log(f"Cannot navigate: invalid line number {error.line_number}", level='WARNING')
+        except Exception as e:
+            debug_console.log(f"Error navigating to line {error.line_number}: {e}", level='WARNING')
     
     def clear_display(self):
         """Clear the error display."""

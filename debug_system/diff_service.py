@@ -119,21 +119,27 @@ class DiffAnalysisService:
         debug_console.log("Differences found - diff generated", level='INFO')
         return True, diff_content, last_content
     
-    def trigger_existing_llm_analysis(self, diff_content: str, log_content: str = ""):
+    def trigger_diff_display(self, diff_content: str, parent_window=None):
         """
-        Log diff analysis - LLM analysis disabled to avoid conflicts.
-        The TeXstudio-style debug panel handles error display directly.
+        Display diff content in a viewer window.
+        Replaces the old LLM analysis with a simple diff viewer.
         """
         if not diff_content.strip():
-            debug_console.log("No diff content to analyze", level='DEBUG')
+            debug_console.log("No diff content to display", level='DEBUG')
             return
         
-        # Log the diff for debugging purposes
-        debug_console.log("Diff analysis available but LLM analysis disabled to avoid UI conflicts", level='INFO')
-        debug_console.log(f"Diff summary: {len(diff_content.splitlines())} lines changed", level='INFO')
-        
-        # Note: The TeXstudio error panel now handles error display directly
-        # without needing the old LLM dialog system
+        try:
+            from debug_system.ui.diff_viewer import DiffViewerFactory
+            
+            debug_console.log("Opening diff viewer window", level='INFO')
+            debug_console.log(f"Diff summary: {len(diff_content.splitlines())} lines changed", level='INFO')
+            
+            # Create and show diff viewer
+            diff_viewer = DiffViewerFactory.create_simple_viewer(parent_window)
+            diff_viewer.show_diff(diff_content, "Compare with Last Successful Version")
+            
+        except Exception as e:
+            debug_console.log(f"Error displaying diff: {e}", level='ERROR')
 
 class DiffServiceFactory:
     """Factory for creating diff service instances."""
