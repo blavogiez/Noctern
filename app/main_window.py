@@ -99,7 +99,7 @@ def setup_gui():
     state.main_pane = create_main_paned_window(state.vertical_pane)
     left_pane = create_left_pane(state.main_pane)
     
-    state.outline = create_outline(left_pane, state.get_current_tab)
+    state.outline = create_outline(left_pane, state.get_current_tab, state._app_config)
     
     def go_to_line(line_number):
         current_tab = state.get_current_tab()

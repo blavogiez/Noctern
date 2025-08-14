@@ -33,18 +33,19 @@ def create_left_pane(parent):
     parent.add(left_pane, weight=1)
     return left_pane
 
-def create_outline(parent, get_current_tab_callback):
+def create_outline(parent, get_current_tab_callback, config_settings=None):
     """
     Creates the outline manager and its widget.
 
     Args:
         parent (tk.Widget): The parent widget for the treeview.
         get_current_tab_callback (callable): A function to get the current editor tab.
+        config_settings (dict): Configuration settings for font customization.
 
     Returns:
         Outline: The configured Outline object.
     """
-    outline = Outline(parent, get_current_tab_callback)
+    outline = Outline(parent, get_current_tab_callback, config_settings)
     parent.add(outline.get_widget(), weight=1) # Add the widget to the pane
     return outline
 

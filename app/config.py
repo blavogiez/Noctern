@@ -18,6 +18,9 @@ DEFAULT_VALUES = {
     "window_state": "Normal",
     "theme": "flatly",
     "font_size": "12",
+    "treeview_font_family": "Segoe UI",
+    "treeview_font_size": "10",
+    "treeview_row_height": "30",
     "model_completion": "default",
     "model_generation": "default",
     "model_rephrase": "default",
@@ -97,3 +100,44 @@ def save_config(settings_dict):
 def get_bool(value_str):
     """Helper to convert string from config to boolean."""
     return value_str.lower() in ['true', '1', 't', 'y', 'yes']
+
+def get_treeview_font_settings(config_dict):
+    """Helper to get treeview font settings from config with validation."""
+    import tkinter.font as tkFont
+    
+    # Get values with defaults
+    font_family = config_dict.get("treeview_font_family", "Segoe UI")
+    font_size = config_dict.get("treeview_font_size", "10")
+    row_height = config_dict.get("treeview_row_height", "30")
+    
+    # Validate and convert font size
+    try:
+        font_size = max(8, min(18, int(font_size)))  # Clamp between 8-18
+    except (ValueError, TypeError):
+        font_size = 10
+    
+    # Validate and convert row height  
+    try:
+        row_height = max(20, min(50, int(row_height)))  # Clamp between 20-50
+    except (ValueError, TypeError):
+        row_height = 30
+    
+    # Validate font family exists
+    try:
+        available_fonts = tkFont.families()
+        if font_family not in available_fonts:
+            # Fallback to common system fonts
+            for fallback in ["Segoe UI", "Arial", "Helvetica", "DejaVu Sans"]:
+                if fallback in available_fonts:
+                    font_family = fallback
+                    break
+            else:
+                font_family = "TkDefaultFont"
+    except:
+        font_family = "Segoe UI"
+    
+    return {
+        "family": font_family,
+        "size": font_size, 
+        "row_height": row_height
+    }

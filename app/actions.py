@@ -430,7 +430,7 @@ def apply_theme(theme_name=None, event=None):
     
     new_theme, new_settings = interface_theme.apply_theme(
         theme_name, state.root, state.main_pane, state.tabs, perform_heavy_updates, state.console_output,
-        state.status_bar_frame, state.status_label, state.gpu_status_label
+        state.status_bar_frame, state.status_label, state.gpu_status_label, state._app_config
     )
     state.current_theme = new_theme
     state._theme_settings = new_settings

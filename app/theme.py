@@ -6,6 +6,7 @@ including editor elements and custom widgets.
 
 import ttkbootstrap as ttk
 from tkinter.font import Font
+from app.config import get_treeview_font_settings
 
 def get_theme_colors(style, theme_name):
     """
@@ -72,13 +73,24 @@ def get_theme_colors(style, theme_name):
             "notebook_bg": colors.light, "notebook_tab_bg": "#f0f0f0", "notebook_active_tab_bg": colors.primary, "notebook_active_tab_fg": colors.light
         }
 
-def apply_theme(theme_name, root_window, main_paned_window, open_tabs_dict, perform_heavy_updates_callback, console_widget, status_bar_frame=None, status_label=None, gpu_status_label=None):
+def apply_theme(theme_name, root_window, main_paned_window, open_tabs_dict, perform_heavy_updates_callback, console_widget, status_bar_frame=None, status_label=None, gpu_status_label=None, config_settings=None):
     style = root_window.style
     
     base_theme = "litera" if theme_name == "original" else theme_name
     style.theme_use(base_theme)
     
     theme_settings = get_theme_colors(style, theme_name)
+    
+    # Get validated font settings from config
+    if config_settings:
+        font_settings = get_treeview_font_settings(config_settings)
+        treeview_font_family = font_settings["family"]
+        treeview_font_size = font_settings["size"]
+        treeview_row_height = font_settings["row_height"]
+    else:
+        treeview_font_family = "Segoe UI"
+        treeview_font_size = 10
+        treeview_row_height = 30
 
     # --- Global Style Configurations ---
     style.configure("TFrame", background=theme_settings["root_bg"])
@@ -109,15 +121,15 @@ def apply_theme(theme_name, root_window, main_paned_window, open_tabs_dict, perf
                     background=theme_settings["treeview_bg"], 
                     foreground=theme_settings["treeview_fg"], 
                     fieldbackground=theme_settings["treeview_bg"],
-                    font=("Arial", 10), # Use Arial font for better readability
-                    rowheight=28) # Consistent row height
+                    font=(treeview_font_family, treeview_font_size), 
+                    rowheight=treeview_row_height)
     style.map("Treeview", 
               background=[("selected", theme_settings["sel_bg"])], 
               foreground=[("selected", theme_settings["sel_fg"])])
     style.configure("Treeview.Heading", 
                     background=theme_settings["treeview_heading_bg"], 
                     foreground=theme_settings["fg_color"],
-                    font=("Arial", 11, "bold"))
+                    font=(treeview_font_family, treeview_font_size + 1, "bold"))
 
     # --- Notebook (Tabs) Configurations ---
     style.configure("TNotebook", background=theme_settings["notebook_bg"])

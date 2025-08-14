@@ -1,0 +1,22 @@
+# Example settings.conf entries for customizing treeview fonts:
+
+[Settings]
+# ... other settings ...
+
+# Treeview font customization
+treeview_font_family = Segoe UI
+treeview_font_size = 11
+treeview_row_height = 32
+
+# Alternative examples:
+# treeview_font_family = Arial
+# treeview_font_size = 10  
+# treeview_row_height = 28
+
+# Notes:
+# - Font size: between 8-18 (automatically clamped)
+# - Row height: between 20-50 pixels (automatically clamped)
+# - Font family: will fallback to system defaults if not available
+# - Common Windows fonts: Segoe UI, Arial, Calibri, Tahoma
+# - Common macOS fonts: SF Pro Display, Helvetica, Arial
+# - Common Linux fonts: DejaVu Sans, Liberation Sans, Arial

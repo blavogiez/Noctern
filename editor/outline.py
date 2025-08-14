@@ -3,13 +3,14 @@ from tkinter import ttk
 import time
 import hashlib
 from utils import debug_console
+from app.config import get_treeview_font_settings
 
 class Outline:
     """
     Simple document outline manager.
     Displays sections with arrows and allows navigation.
     """
-    def __init__(self, parent_frame, get_current_tab_callback):
+    def __init__(self, parent_frame, get_current_tab_callback, config_settings=None):
         # Create a frame to contain the title and treeview
         self.frame = ttk.Frame(parent_frame)
         self.frame.pack(fill="both", expand=True)
@@ -34,6 +35,9 @@ class Outline:
         # Callback to get current tab
         self.get_current_tab_callback = get_current_tab_callback
         
+        # Store config settings for font configuration
+        self.config_settings = config_settings
+        
         # Configure styles
         self._configure_styles()
         
@@ -44,22 +48,36 @@ class Outline:
         # Monaco-style optimization cache
         self._last_content_hash = None
         self._last_update_time = 0
-        self._update_cooldown = 1.0  # Minimum 1 second between updates
+        self._update_cooldown = 0.3  # Reduced to 300ms for more responsive updates
+        self._last_section_hash = None  # Hash of just section lines for better change detection
+        self._bound_editor = None  # Track which editor we're bound to
+        self._update_scheduled = False  # Prevent multiple scheduled updates
         
     def _configure_styles(self):
         """Configure the styles for the outline Treeview and title."""
+        # Get validated font settings from config
+        if self.config_settings:
+            font_settings = get_treeview_font_settings(self.config_settings)
+            treeview_font_family = font_settings["family"]
+            treeview_font_size = font_settings["size"]
+            treeview_row_height = font_settings["row_height"]
+        else:
+            treeview_font_family = "Segoe UI"
+            treeview_font_size = 10
+            treeview_row_height = 30
+        
         # Style for the Treeview
         style = ttk.Style()
         style.configure("NoPlus.Treeview", 
-                       rowheight=28,  # Increased row height for better readability
-                       font=("Arial", 10))  # Use a cleaner font
+                       rowheight=treeview_row_height,  
+                       font=(treeview_font_family, treeview_font_size))
         # Hide + and - symbols
         style.layout("NoPlus.Treeview", [('Treeview.treearea', {'sticky': 'nswe'})])
         
         # Style for the title
         title_style = ttk.Style()
         title_style.configure("Title.TLabel", 
-                             font=("Arial", 11, "bold"),  # Bold title with better font
+                             font=(treeview_font_family, treeview_font_size + 1, "bold"),
                              foreground=title_style.lookup("TLabel", "foreground"))  # Use theme's foreground color
 
     def get_widget(self):
@@ -67,7 +85,7 @@ class Outline:
         return self.frame
 
     def _on_click_section(self, event):
-        """Navigate to selected section in the editor."""
+        """Navigate to selected section in the editor using dynamic search."""
         current_tab = self.get_current_tab_callback()
         if not current_tab or not hasattr(current_tab, 'editor'):
             return
@@ -76,14 +94,38 @@ class Outline:
         if not selected:
             return
 
-        # Get line number
-        values = self.tree.item(selected[0], "values")
-        if values:
-            line_number = values[0]
-            editor = current_tab.editor
-            editor.yview(f"{line_number}.0")
-            editor.mark_set("insert", f"{line_number}.0")
-            editor.focus()
+        # Get section title from the selected item
+        item_id = selected[0]
+        section_title = self._get_section_info_from_item(item_id)
+        
+        if not section_title:
+            return
+            
+        # Get current content from editor
+        editor = current_tab.editor
+        try:
+            content = editor.get("1.0", tk.END)
+            
+            # Find the section dynamically in current content
+            line_number = self._find_section_in_content(content, section_title)
+            
+            if line_number:
+                # Navigate to the found line
+                editor.yview(f"{line_number}.0")
+                editor.mark_set("insert", f"{line_number}.0")
+                editor.focus()
+            else:
+                # Fallback to original behavior if dynamic search fails
+                values = self.tree.item(item_id, "values")
+                if values:
+                    fallback_line = values[0]
+                    editor.yview(f"{fallback_line}.0")
+                    editor.mark_set("insert", f"{fallback_line}.0")
+                    editor.focus()
+                    
+        except tk.TclError:
+            # Widget might be destroyed
+            pass
 
     def _on_single_click(self, event):
         """Open/close sections when clicked."""
@@ -173,6 +215,120 @@ class Outline:
         
         return result
 
+    def bind_to_editor(self, editor_widget):
+        """Bind outline updates to editor events for real-time updates."""
+        if self._bound_editor == editor_widget:
+            return  # Already bound
+            
+        # Unbind from previous editor if any
+        if self._bound_editor:
+            try:
+                self._bound_editor.unbind("<<Modified>>", self._editor_modified_tag)
+            except (tk.TclError, AttributeError):
+                pass
+        
+        # Bind to new editor
+        self._bound_editor = editor_widget
+        if editor_widget:
+            # Generate a unique tag for this binding
+            self._editor_modified_tag = f"outline_update_{id(self)}"
+            editor_widget.bind("<<Modified>>", self._on_editor_modified, add='+')
+            editor_widget.bind("<KeyRelease>", self._on_key_release, add='+')
+
+    def _on_editor_modified(self, event):
+        """Handle editor modification events."""
+        if self._update_scheduled:
+            return
+        
+        # Schedule update with delay to avoid rapid fire updates
+        self._update_scheduled = True
+        if hasattr(self, 'frame') and self.frame.winfo_exists():
+            self.frame.after(300, self._delayed_update)
+
+    def _on_key_release(self, event):
+        """Handle key release events for more responsive section detection."""
+        # Only trigger on potential section-related keys
+        if event.keysym in ['braceright', 'Return', 'BackSpace', 'Delete']:
+            # Check if we're potentially in a section context
+            try:
+                editor = event.widget
+                cursor_pos = editor.index(tk.INSERT)
+                line_start = f"{cursor_pos.split('.')[0]}.0"
+                line_end = f"{cursor_pos.split('.')[0]}.end"
+                current_line = editor.get(line_start, line_end).strip()
+                
+                # If current line contains section-related LaTeX commands, force immediate update
+                if ('\\section{' in current_line or '\\subsection{' in current_line or 
+                    '\\subsubsection{' in current_line):
+                    self.force_update(editor)
+                else:
+                    self._on_editor_modified(event)
+            except (tk.TclError, AttributeError):
+                self._on_editor_modified(event)
+
+    def _delayed_update(self):
+        """Perform delayed outline update."""
+        self._update_scheduled = False
+        current_tab = self.get_current_tab_callback()
+        if current_tab and hasattr(current_tab, 'editor'):
+            self.update_outline(current_tab.editor)
+
+    def force_update(self, editor_widget=None):
+        """Force immediate outline update, bypassing cooldowns."""
+        if not editor_widget:
+            current_tab = self.get_current_tab_callback()
+            if current_tab and hasattr(current_tab, 'editor'):
+                editor_widget = current_tab.editor
+        
+        if editor_widget:
+            # Reset cooldown and force update
+            self._last_update_time = 0
+            self._last_content_hash = None
+            self._last_section_hash = None
+            self.update_outline(editor_widget)
+
+    def _get_section_info_from_item(self, item_id):
+        """Extract section type and title from a treeview item."""
+        text = self.tree.item(item_id, "text")
+        
+        # Remove arrow and numbering to get clean title
+        if text.startswith("▶") or text.startswith("▼"):
+            text = text[1:].strip()
+        
+        # Remove numbering (e.g., "1.2.3 Title" -> "Title")
+        # Look for pattern: numbers followed by dots, then space, then title
+        import re
+        match = re.match(r'^[\d\.]+\s+(.+)$', text)
+        if match:
+            title = match.group(1).strip()
+        else:
+            title = text.strip()
+            
+        return title
+
+    def _find_section_in_content(self, content, title):
+        """Find the current line number of a section by its title in the editor content."""
+        lines = content.split("\n")
+        
+        # Normalize the search title (remove extra spaces, convert to lower for comparison)
+        normalized_title = ' '.join(title.split()).lower()
+        
+        for line_num, line in enumerate(lines):
+            line_stripped = line.strip()
+            
+            # Check for section commands
+            for command in ["\\section{", "\\subsection{", "\\subsubsection{"]:
+                if line_stripped.startswith(command):
+                    # Extract title from the line
+                    line_title = self._extract_title_fast(line_stripped, command)
+                    if line_title:
+                        # Normalize the line title for comparison
+                        normalized_line_title = ' '.join(line_title.split()).lower()
+                        if normalized_line_title == normalized_title:
+                            return line_num + 1  # +1 for 1-based indexing
+        
+        return None
+
     def _add_to_tree(self, parent_id, items, prefix=""):
         """Add items to the Treeview."""
         for i, (title, line_num, children) in enumerate(items):
@@ -197,6 +353,9 @@ class Outline:
             self.tree.delete(*self.tree.get_children())
             return
         
+        # Ensure we're bound to this editor for real-time updates
+        self.bind_to_editor(editor_widget)
+        
         # Monaco-style: Skip update if too frequent
         current_time = time.time()
         if current_time - self._last_update_time < self._update_cooldown:
@@ -210,18 +369,18 @@ class Outline:
                 self._last_content_hash = None
                 return
             
-            # Quick content hash using only first 1000 chars + length
-            # Monaco-style: avoid hashing entire content
-            content_sample = content[:1000] + str(len(content))
+            # Check for structural changes first (most important)
+            if not self._has_structural_changes(content):
+                return  # No structural changes - keep current outline
+            
+            # Quick content hash using section-relevant parts + length
+            # Include areas where sections are likely to appear
+            content_sample = content[:2000] + content[-1000:] + str(len(content))
             content_hash = hashlib.md5(content_sample.encode('utf-8', errors='ignore')).hexdigest()[:16]
             
-            # Skip update if content hasn't changed
+            # Skip update if content hasn't changed (backup check)
             if content_hash == self._last_content_hash:
                 return  # No change - skip expensive update
-            
-            # Only update if we see section-related changes
-            if self._last_content_hash and not self._has_structural_changes(content):
-                return  # No structural changes - keep current outline
                 
             self._last_content_hash = content_hash
             self._last_update_time = current_time
@@ -238,16 +397,26 @@ class Outline:
             pass
     
     def _has_structural_changes(self, content):
-        """Quick check if content has structural changes (sections added/removed)."""
-        # Count sections quickly
-        section_count = content.count('\\section{') + content.count('\\subsection{') + content.count('\\subsubsection{')
+        """Quick check if content has structural changes (sections added/removed/modified)."""
+        # Extract just the section lines for comparison
+        lines = content.split('\n')
+        section_lines = []
         
-        # Store previous count for comparison
-        if not hasattr(self, '_last_section_count'):
-            self._last_section_count = 0
+        for line in lines:
+            line_stripped = line.strip()
+            if (line_stripped.startswith('\\section{') or 
+                line_stripped.startswith('\\subsection{') or 
+                line_stripped.startswith('\\subsubsection{')):
+                section_lines.append(line_stripped)
         
-        has_changes = section_count != self._last_section_count
-        self._last_section_count = section_count
+        # Create hash of section lines only
+        section_content = '\n'.join(section_lines)
+        section_hash = hashlib.md5(section_content.encode('utf-8', errors='ignore')).hexdigest()[:16]
+        
+        # Compare with last known section hash
+        has_changes = section_hash != self._last_section_hash
+        self._last_section_hash = section_hash
+        
         return has_changes
     
     def _find_sections_fast(self, content):
