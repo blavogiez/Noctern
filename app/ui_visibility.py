@@ -29,17 +29,36 @@ def toggle_status_bar():
         from app.status import start_gpu_status_loop
         start_gpu_status_loop(state.gpu_status_label, state.root)
         debug_console.log("Status bar created and shown.", level='INFO')
+        # Show temporary feedback to user
+        from app import status_utils
+        if state.status_label:
+            from app.statusbar import show_temporary_status_message
+            show_temporary_status_message(
+                "Status bar enabled", 2000, 
+                state.status_label, state.root, 
+                status_utils.update_status_bar_text
+            )
     else:
         # Check if the status bar is currently packed
         if state.status_bar_frame.winfo_viewable():
             state.status_bar_frame.pack_forget()
             debug_console.log("Status bar hidden.", level='INFO')
+            # Show temporary feedback in debug console since status bar is hidden
+            debug_console.log("Status bar disabled by user", level='INFO')
         else:
             state.status_bar_frame.pack(side="bottom", fill="x")
             debug_console.log("Status bar shown.", level='INFO')
             # Update status when showing
             from app import status_utils
             status_utils.update_status_bar_text()
+            # Show temporary feedback to user
+            if state.status_label:
+                from app.statusbar import show_temporary_status_message
+                show_temporary_status_message(
+                    "Status bar enabled", 2000, 
+                    state.status_label, state.root, 
+                    status_utils.update_status_bar_text
+                )
 
 
 def is_status_bar_visible():

@@ -99,8 +99,15 @@ def apply_theme(theme_name, root_window, main_paned_window, open_tabs_dict, perf
     )
 
     # --- Button Configurations ---
-    style.configure("TButton", background=theme_settings["button_bg"], foreground=theme_settings["button_fg"], borderwidth=1, focusthickness=0)
-    style.map("TButton", background=[("active", theme_settings["sel_bg"])])
+    style.configure("TButton", 
+                    background=theme_settings["button_bg"], 
+                    foreground=theme_settings["button_fg"], 
+                    borderwidth=1, 
+                    focusthickness=0,
+                    relief="flat")
+    style.map("TButton", 
+              background=[("active", theme_settings["sel_bg"]), ("pressed", theme_settings["sel_bg"])],
+              relief=[("pressed", "sunken"), ("active", "raised")])
 
     # --- Treeview (Outline) Configurations ---
     # Redefine the Treeview item layout to completely remove the indicator space
@@ -124,11 +131,26 @@ def apply_theme(theme_name, root_window, main_paned_window, open_tabs_dict, perf
                     font=("Segoe UI", 9))
 
     # --- Notebook (Tabs) Configurations ---
-    style.configure("TNotebook", background=theme_settings["notebook_bg"])
-    style.configure("TNotebook.Tab", background=theme_settings["notebook_tab_bg"], foreground=theme_settings["fg_color"])
-    style.map("TNotebook.Tab", background=[("selected", theme_settings["notebook_active_tab_bg"])], foreground=[("selected", theme_settings["notebook_active_tab_fg"])])
-    style.configure("Closable.TNotebook.Tab", background=theme_settings["notebook_tab_bg"], foreground=theme_settings["fg_color"])
-    style.map("Closable.TNotebook.Tab", background=[("selected", theme_settings["notebook_active_tab_bg"])], foreground=[("selected", theme_settings["notebook_active_tab_fg"])])
+    style.configure("TNotebook", 
+                    background=theme_settings["notebook_bg"],
+                    borderwidth=1,
+                    relief="flat")
+    style.configure("TNotebook.Tab", 
+                    background=theme_settings["notebook_tab_bg"], 
+                    foreground=theme_settings["fg_color"],
+                    padding=(12, 8),
+                    borderwidth=1)
+    style.map("TNotebook.Tab", 
+              background=[("selected", theme_settings["notebook_active_tab_bg"]), ("active", theme_settings["sel_bg"])], 
+              foreground=[("selected", theme_settings["notebook_active_tab_fg"])])
+    style.configure("Closable.TNotebook.Tab", 
+                    background=theme_settings["notebook_tab_bg"], 
+                    foreground=theme_settings["fg_color"],
+                    padding=(12, 8),
+                    borderwidth=1)
+    style.map("Closable.TNotebook.Tab", 
+              background=[("selected", theme_settings["notebook_active_tab_bg"]), ("active", theme_settings["sel_bg"])], 
+              foreground=[("selected", theme_settings["notebook_active_tab_fg"])])
 
     # --- Status Bar ---
     if status_bar_frame and status_label and gpu_status_label:

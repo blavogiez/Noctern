@@ -20,20 +20,23 @@ def open_settings_window(root):
         root (tk.Tk): The root Tkinter window of the application.
     """
     settings_win = tk.Toplevel(root)
-    settings_win.title("Settings")
+    settings_win.title("AutomaTeX Settings")
     settings_win.transient(root)
     settings_win.grab_set()
     settings_win.resizable(False, False)
+    
+    # Set minimum window size for better proportions
+    settings_win.minsize(520, 600)
 
-    main_frame = ttk.Frame(settings_win, padding=20)
+    main_frame = ttk.Frame(settings_win, padding=24)
     main_frame.pack(fill="both", expand=True)
 
     # --- Load Current Config ---
     current_config = app_config.load_config()
 
     # --- Display Settings ---
-    display_frame = ttk.LabelFrame(main_frame, text="Display Settings", padding=10)
-    display_frame.pack(fill="x", expand=True, pady=10)
+    display_frame = ttk.LabelFrame(main_frame, text="Display Settings", padding=16)
+    display_frame.pack(fill="x", expand=True, pady=12)
     
     # Monitor Settings
     monitors = screen.get_monitors()
@@ -74,8 +77,8 @@ def open_settings_window(root):
     display_frame.columnconfigure(1, weight=1)
 
     # --- LLM Configuration ---
-    llm_frame = ttk.LabelFrame(main_frame, text="LLM Configuration", padding=10)
-    llm_frame.pack(fill="x", expand=True, pady=10)
+    llm_frame = ttk.LabelFrame(main_frame, text="LLM Configuration", padding=16)
+    llm_frame.pack(fill="x", expand=True, pady=12)
 
     available_models = api_client.get_available_models()
     if not available_models:
@@ -128,8 +131,8 @@ def open_settings_window(root):
     llm_frame.columnconfigure(1, weight=1)
 
     # --- API Settings ---
-    api_frame = ttk.LabelFrame(main_frame, text="API Settings", padding=10)
-    api_frame.pack(fill="x", expand=True, pady=10)
+    api_frame = ttk.LabelFrame(main_frame, text="API Settings", padding=16)
+    api_frame.pack(fill="x", expand=True, pady=12)
 
     ttk.Label(api_frame, text="Google Gemini API Key:").grid(row=0, column=0, sticky="w", padx=5, pady=5)
     gemini_api_key_var = tk.StringVar(value=current_config.get("gemini_api_key", ""))
@@ -168,7 +171,7 @@ def open_settings_window(root):
 
     # --- Save and Cancel Buttons ---
     button_frame = ttk.Frame(main_frame)
-    button_frame.pack(fill="x", pady=(20, 0))
+    button_frame.pack(fill="x", pady=(24, 0))
     button_frame.columnconfigure(0, weight=1)
     button_frame.columnconfigure(1, weight=1)
 
@@ -191,8 +194,11 @@ def open_settings_window(root):
         from tkinter import messagebox
         messagebox.showinfo("Settings Saved", "Your new settings have been saved. Some changes may require a restart to take effect.", parent=root)
 
-    ttk.Button(button_frame, text="Save", command=save_and_close).grid(row=0, column=0, padx=5, sticky="e")
-    ttk.Button(button_frame, text="Cancel", command=settings_win.destroy).grid(row=0, column=1, padx=5, sticky="w")
+    save_btn = ttk.Button(button_frame, text="Save Settings", command=save_and_close, bootstyle="success")
+    save_btn.grid(row=0, column=0, padx=8, sticky="e")
+    
+    cancel_btn = ttk.Button(button_frame, text="Cancel", command=settings_win.destroy, bootstyle="secondary")
+    cancel_btn.grid(row=0, column=1, padx=8, sticky="w")
 
     display_frame.columnconfigure(1, weight=1)
     llm_frame.columnconfigure(1, weight=1)

@@ -40,10 +40,14 @@ def _apply_startup_window_settings(window, config):
         window.geometry(f"+{x}+{y}")
         window.attributes("-fullscreen", True)
     else: # Normal
-        width, height = 1200, 800
+        # Use better default sizing for modern screens
+        min_width, min_height = 1400, 900
+        width = min(min_width, int(selected_monitor.width * 0.8))
+        height = min(min_height, int(selected_monitor.height * 0.8))
         x += (selected_monitor.width - width) // 2
         y += (selected_monitor.height - height) // 2
         window.geometry(f"{width}x{height}+{x}+{y}")
+        window.minsize(1200, 700)
 
 def setup_gui():
     """Initialize and setup main graphical user interface."""

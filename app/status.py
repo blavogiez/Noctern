@@ -28,7 +28,7 @@ def create_status_bar(root):
             - metrics_display (MetricsStatusDisplay): The metrics status display instance.
     """
     # Create the main frame for the status bar, packed at the bottom of the root window.
-    status_bar_frame = ttk.Frame(root, padding=(5, 3))
+    status_bar_frame = ttk.Frame(root, padding=(8, 4), relief="flat", borderwidth=1)
     status_bar_frame.pack(side="bottom", fill="x")
 
     # Label for general status messages and word count. It expands to fill available space.
@@ -40,7 +40,7 @@ def create_status_bar(root):
 
     # Add vertical separator between metrics and GPU status
     separator = ttk.Separator(status_bar_frame, orient='vertical')
-    separator.pack(side="left", fill='y', padx=10)
+    separator.pack(side="left", fill='y', padx=12)
 
     # Label specifically for GPU status, aligned to the right.
     gpu_status_label = ttk.Label(status_bar_frame, text="GPU: N/A", anchor="e")
