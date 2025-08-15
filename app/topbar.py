@@ -25,12 +25,12 @@ def create_top_buttons_frame(root):
     Creates and populates the top bar frame with buttons and menus for application control.
     This version uses .place() for layout to allow for hover animations.
     """
-    top_frame = ttk.Frame(root, height=50, relief="flat", borderwidth=1)
-    top_frame.pack(fill="x", padx=8, pady=(8,12))
+    top_frame = ttk.Frame(root, height=55, relief="flat", borderwidth=1)
+    top_frame.pack(fill="x", padx=8, pady=(8,0))
 
     # --- Animation Constants ---
-    Y_POS = 8
-    Y_HOVER = 5
+    Y_POS = 5
+    Y_HOVER = 3
     BUTTON_PADDING = 8
     
     # --- Button Creation and Placement ---
