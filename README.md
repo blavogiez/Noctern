@@ -1,72 +1,77 @@
 <div align="center">
-  <img src="resources/icons/app_icon.png" alt="AutomaTeX Logo" width="128" height="128">
+  <img src="resources/icons/app_icon.svg" alt="AutomaTeX Logo" width="128" height="128">
   
   # AutomaTeX
   
-  **Une expérience LaTeX moderne et assistée par l'IA**
+  **Modern AI-Assisted LaTeX Editor**
   
   [![Python](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org/)
   [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
   [![Platform](https://img.shields.io/badge/platform-windows%20%7C%20macos%20%7C%20linux-lightgrey)](#)
+  [![Release](https://img.shields.io/github/v/release/your-username/AutomaTeX)](https://github.com/your-username/AutomaTeX/releases)
   
-  [Fonctionnalités](#-fonctionnalités) •
+  [Features](#-features) •
   [Installation](#-installation) •
-  [Démarrage rapide](#-démarrage-rapide) •
-  [Raccourcis](#-raccourcis-clavier)
+  [Quick Start](#-quick-start) •
+  [Documentation](#-documentation)
 </div>
 
 ---
 
-## 🌟 Présentation
+## 🌟 Overview
 
-AutomaTeX est un éditeur LaTeX moderne conçu pour simplifier votre workflow d'écriture tout en préservant la puissance de LaTeX. Il combine l'ergonomie d'un éditeur contemporain avec des outils d'IA locaux pour vous permettre de vous concentrer sur ce qui compte vraiment : **votre contenu**.
+AutomaTeX is a modern LaTeX editor designed to streamline your writing workflow while preserving LaTeX's power. It combines the ergonomics of contemporary editors with local AI tools, allowing you to focus on what truly matters: **your content**.
 
-> 🎓 *Né de la frustration d'un étudiant face à la verbosité de LaTeX, AutomaTeX est un projet personnel qui vise à lisser les aspérités de l'expérience LaTeX.*
+**Key Benefits:**
+- 🔒 **Privacy-First**: All AI processing happens locally
+- ⚡ **Fast & Responsive**: Optimized performance for large documents  
+- 🎯 **Intuitive**: Minimal learning curve for LaTeX beginners
+- 🔧 **Extensible**: Modular architecture for easy customization
 
 ---
 
-## ✨ Fonctionnalités
+## ✨ Features
 
 <div align="center">
   <table>
     <tr>
       <td width="50%" valign="top">
-        <h3>🤖 IA Locale</h3>
+        <h3>🤖 Local AI</h3>
         <ul>
-          <li>Complétion et génération de texte</li>
-          <li>Reformulation intelligente</li>
-          <li>Traduction de documents</li>
-          <li>Tout s'exécute localement avec Ollama</li>
+          <li>Text completion and generation</li>
+          <li>Intelligent rephrasing</li>
+          <li>Document translation</li>
+          <li>All processing with Ollama</li>
         </ul>
       </td>
       <td width="50%" valign="top">
-        <h3>🖼️ Gestion Intelligente</h3>
+        <h3>🖼️ Smart Management</h3>
         <ul>
-          <li>Collage d'images avec code LaTeX automatique</li>
-          <li>Organisation automatique des fichiers</li>
-          <li>Nettoyage des fichiers inutilisés</li>
-          <li>Aperçu intégré du PDF</li>
+          <li>Image paste with automatic LaTeX code</li>
+          <li>Automatic file organization</li>
+          <li>Unused file cleanup</li>
+          <li>Integrated PDF preview</li>
         </ul>
       </td>
     </tr>
     <tr>
       <td width="50%" valign="top">
-        <h3>⌨️ Expérience Optimisée</h3>
+        <h3>⌨️ Optimized Experience</h3>
         <ul>
-          <li>Interface claire avec thèmes clair/sombre</li>
-          <li>Surlignage syntaxique</li>
-          <li>Navigation par plan du document</li>
-          <li>Recherche rapide (Ctrl+F)</li>
-          <li>Raccourcis clavier intuitifs</li>
+          <li>Clean interface with light/dark themes</li>
+          <li>Syntax highlighting</li>
+          <li>Document outline navigation</li>
+          <li>Fast search (Ctrl+F)</li>
+          <li>Intuitive keyboard shortcuts</li>
         </ul>
       </td>
       <td width="50%" valign="top">
-        <h3>🔒 Respect de la vie privée</h3>
+        <h3>🔒 Privacy Focused</h3>
         <ul>
-          <li>Aucune donnée ne quitte votre machine</li>
-          <li>Modèles d'IA exécutés localement</li>
-          <li>Gratuit et open-source</li>
-          <li>Pas de compte requis</li>
+          <li>No data leaves your machine</li>
+          <li>AI models run locally</li>
+          <li>Free and open-source</li>
+          <li>No account required</li>
         </ul>
       </td>
     </tr>
@@ -77,27 +82,27 @@ AutomaTeX est un éditeur LaTeX moderne conçu pour simplifier votre workflow d'
 
 ## 🚀 Installation
 
-### 📋 Prérequis
+### 📋 Prerequisites
 
 <div align="center">
   <table>
     <tr>
-      <th>Outil</th>
+      <th>Tool</th>
       <th>Description</th>
-      <th>Lien</th>
+      <th>Download</th>
     </tr>
     <tr>
       <td><b>Python 3.8+</b></td>
-      <td>Langage principal de l'application</td>
+      <td>Application runtime</td>
       <td>
         <a href="https://www.python.org/downloads/">
-          <img src="https://img.shields.io/badge/Télécharger-Python-blue?style=for-the-badge&logo=python" alt="Télécharger Python">
+          <img src="https://img.shields.io/badge/Download-Python-blue?style=for-the-badge&logo=python" alt="Download Python">
         </a>
       </td>
     </tr>
     <tr>
-      <td><b>Distribution LaTeX</b></td>
-      <td>Pour compiler les documents</td>
+      <td><b>LaTeX Distribution</b></td>
+      <td>Document compilation</td>
       <td>
         <a href="https://miktex.org/download">
           <img src="https://img.shields.io/badge/Windows-MiKTeX-orange?style=for-the-badge&logo=windows" alt="MiKTeX">
@@ -112,268 +117,157 @@ AutomaTeX est un éditeur LaTeX moderne conçu pour simplifier votre workflow d'
     </tr>
     <tr>
       <td><b>Ollama</b></td>
-      <td>Moteur d'IA local</td>
+      <td>Local AI engine</td>
       <td>
         <a href="https://ollama.com/">
-          <img src="https://img.shields.io/badge/Télécharger-Ollama-FF6B35?style=for-the-badge&logo=ollama" alt="Télécharger Ollama">
+          <img src="https://img.shields.io/badge/Download-Ollama-FF6B35?style=for-the-badge&logo=ollama" alt="Download Ollama">
         </a>
       </td>
     </tr>
   </table>
 </div>
 
-### 📦 Dépendances Python
+### 🛠️ Installation Steps
 
-L'application utilise plusieurs bibliothèques Python :
+```bash
+# Clone the repository
+git clone https://github.com/your-username/AutomaTeX.git
+cd AutomaTeX
 
-- `ttkbootstrap` - Interface utilisateur moderne
-- `pdf2image` - Conversion PDF vers images
-- `Pillow` - Traitement d'images
-- `PyPDF2` - Manipulation de PDFs
-- `pdfplumber` - Extraction de texte depuis les PDFs
+# Install Python dependencies
+pip install -r requirements.txt
 
-### 🛠️ Installation pas à pas
+# Download AI models (recommended)
+ollama pull mistral
+ollama pull codellama:7b-instruct
 
-1. **Cloner le dépôt**
-   ```bash
-   git clone https://github.com/your-username/AutomaTeX.git
-   cd AutomaTeX
-   ```
-
-2. **Installer les dépendances Python**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Télécharger les modèles d'IA**
-   ```bash
-   # Modèles recommandés
-   ollama pull mistral
-   ollama pull codellama:7b-instruct
-   ```
-
-4. **Lancer l'application**
-   ```bash
-   python main.py
-   ```
+# Launch the application
+python main.py
+```
 
 ---
 
-## 🏁 Démarrage rapide
+## 🏁 Quick Start
+
+1. **Create New Document** → File → New
+2. **Write Content** → Use the editor
+3. **Use AI** → Ctrl+Shift+G to generate text
+4. **Compile** → Click "Compile" button
+5. **View PDF** → PDF opens automatically
+
+---
+
+## ⌨️ Keyboard Shortcuts
 
 <div align="center">
   <table>
     <tr>
-      <th>Étape</th>
-      <th>Action</th>
-      <th>Résultat</th>
-    </tr>
-    <tr>
-      <td>1</td>
-      <td>Créer un nouveau document</td>
-      <td>Fichier → Nouveau</td>
-    </tr>
-    <tr>
-      <td>2</td>
-      <td>Écrire du contenu</td>
-      <td>Utiliser l'éditeur</td>
-    </tr>
-    <tr>
-      <td>3</td>
-      <td>Utiliser l'IA</td>
-      <td>Ctrl+Shift+G pour générer du texte</td>
-    </tr>
-    <tr>
-      <td>4</td>
-      <td>Compiler</td>
-      <td>Cliquer sur "Compiler"</td>
-    </tr>
-    <tr>
-      <td>5</td>
-      <td>Voir le PDF</td>
-      <td>Le PDF s'ouvre automatiquement</td>
-    </tr>
-  </table>
-</div>
-
----
-
-## ⌨️ Raccourcis clavier
-
-<div align="center">
-  <table>
-    <tr>
-      <th>Fonction</th>
-      <th>Raccourci</th>
+      <th>Function</th>
+      <th>Shortcut</th>
       <th>Description</th>
     </tr>
     <tr>
-      <td><b>Recherche</b></td>
+      <td><b>Search</b></td>
       <td><kbd>Ctrl</kbd> + <kbd>F</kbd></td>
-      <td>Ouvre la barre de recherche</td>
+      <td>Open search bar</td>
     </tr>
     <tr>
-      <td><b>Complétion IA</b></td>
+      <td><b>AI Completion</b></td>
       <td><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>C</kbd></td>
-      <td>Complète la phrase en cours</td>
+      <td>Complete current sentence</td>
     </tr>
     <tr>
-      <td><b>Génération IA</b></td>
+      <td><b>AI Generation</b></td>
       <td><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>G</kbd></td>
-      <td>Génère du texte à partir d'une instruction</td>
+      <td>Generate text from prompt</td>
     </tr>
     <tr>
-      <td><b>Reformulation</b></td>
-      <td>Sélection + <kbd>Ctrl</kbd> + <kbd>R</kbd></td>
-      <td>Reformule le texte sélectionné</td>
+      <td><b>Rephrase</b></td>
+      <td>Selection + <kbd>Ctrl</kbd> + <kbd>R</kbd></td>
+      <td>Rephrase selected text</td>
     </tr>
     <tr>
-      <td><b>Coller image</b></td>
+      <td><b>Paste Image</b></td>
       <td><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>V</kbd></td>
-      <td>Colle une image du presse-papier</td>
+      <td>Paste image from clipboard</td>
     </tr>
     <tr>
-      <td><b>Zoom +</b></td>
+      <td><b>Zoom In</b></td>
       <td><kbd>Ctrl</kbd> + <kbd>+</kbd></td>
-      <td>Agrandit la taille du texte</td>
+      <td>Increase text size</td>
     </tr>
     <tr>
-      <td><b>Zoom -</b></td>
+      <td><b>Zoom Out</b></td>
       <td><kbd>Ctrl</kbd> + <kbd>-</kbd></td>
-      <td>Réduit la taille du texte</td>
+      <td>Decrease text size</td>
     </tr>
     <tr>
-      <td><b>Compiler</b></td>
-      <td>Bouton "Compiler"</td>
-      <td>Compile le document LaTeX</td>
+      <td><b>Compile</b></td>
+      <td>Compile Button</td>
+      <td>Compile LaTeX document</td>
     </tr>
   </table>
 </div>
 
 ---
 
-## 📚 Guide utilisateur
+## 📚 Documentation
 
-### 🤖 Configuration des modèles d'IA
+### 🤖 AI Configuration
 
-1. Allez dans **Paramètres** → **Gérer les modèles**
-2. Sélectionnez les modèles pour chaque tâche :
-   - **Complétion** : Modèle pour compléter les phrases
-   - **Génération** : Modèle pour générer du texte
-   - **Reformulation** : Modèle pour reformuler
-   - **Débogage** : Modèle pour corriger les erreurs
-   - **Style** : Modèle pour améliorer le style
+Configure AI models in **Settings** → **Manage Models**:
+- **Completion**: Model for sentence completion
+- **Generation**: Model for text generation  
+- **Rephrase**: Model for text rephrasing
+- **Debug**: Model for error correction
+- **Style**: Model for style improvement
 
-### 🔍 Utilisation de la recherche
+### 🖼️ Image Management
 
-1. Appuyez sur <kbd>Ctrl</kbd> + <kbd>F</kbd> pour ouvrir la barre de recherche
-2. Saisissez le terme à rechercher dans le champ de texte
-3. Les correspondances seront automatiquement mises en surbrillance
-4. Utilisez les boutons « Précédent » et « Suivant » pour naviguer
-5. Appuyez sur <kbd>Échap</kbd> pour fermer la barre de recherche
-
-### 🖼️ Utilisation du collage d'images
-
-1. Copiez une image dans votre presse-papier
-2. Appuyez sur <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>V</kbd>
-3. L'image est automatiquement :
-   - Sauvegardée dans `figures/section/sous-section/`
-   - Renommée de façon séquentielle (`fig_1.png`, `fig_2.png`, etc.)
-   - Insérée avec le code LaTeX approprié
-
-### 🌍 Traduction de documents
-
-1. Cliquez sur le bouton **Traduire**
-2. Sélectionnez la langue cible
-3. Le document traduit est sauvegardé avec un préfixe (`fr_document.tex`)
+Copy an image and press <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>V</kbd>:
+- Automatically saved to `figures/section/subsection/`
+- Sequential naming (`fig_1.png`, `fig_2.png`, etc.)
+- LaTeX code inserted automatically
 
 ---
 
-## 🧠 Philosophie du projet
+## 🛠️ Development
 
-<div align="center">
-  <blockquote>
-    <p>
-      "AutomaTeX n'est pas destiné à remplacer votre connaissance de LaTeX, mais à l'augmenter."
-    </p>
-  </blockquote>
-</div>
+### Architecture
 
-Ce projet est né d'une frustration personnelle : LaTeX est puissant mais verbeux. AutomaTeX vise à préserver cette puissance tout en éliminant les tâches fastidieuses.
+AutomaTeX follows a modular architecture:
+- **app/**: GUI components and state management
+- **editor/**: Text editing and syntax highlighting
+- **latex/**: Compilation and translation services
+- **llm/**: AI service integration
+- **pdf_preview/**: Integrated PDF viewer
 
-### 🔬 Principes directeurs
+### Contributing
 
-- **Local-first** : Vos données restent chez vous
-- **Intuitif** : Interface pensée pour la productivité
-- **Extensible** : Architecture modulaire
-- **Gratuit** : Pas de frais cachés ou d'abonnement
-
----
-
-## 🛠️ Leçons apprises
-
-### ⚡ Performance vs. Complexité
-
-Au début, j'ai tenté d'implémenter un système de vérification en temps réel qui analyserait le texte à chaque frappe. Résultat : un éditeur inutilisable avec plus de 300ms de latence par frappe.
-
-Solution : un système de mise à jour différée qui préserve la fluidité tout en offrant un feedback quasi instantané.
-
-### 🎯 L'IA au service de l'utilisateur
-
-L'IA n'est pas magique en soi. Ce qui fait la différence, c'est comment ses résultats sont présentés. L'interface interactive qui permet d'accepter, rejeter ou reformuler une suggestion en un seul clic transforme l'IA d'une boîte noire en un véritable assistant.
-
----
-
-## 🗺️ Feuille de route
-
-<div align="center">
-  <table>
-    <tr>
-      <th>Fonctionnalité</th>
-      <th>Status</th>
-      <th>Priorité</th>
-    </tr>
-    <tr>
-      <td>Arborescence de fichiers</td>
-      <td>À venir</td>
-      <td>Haute</td>
-    </tr>
-    <tr>
-      <td>Support LSP</td>
-      <td>À venir</td>
-      <td>Moyenne</td>
-    </tr>
-    <tr>
-      <td>Raccourcis Vim/Emacs</td>
-      <td>À venir</td>
-      <td>Basse</td>
-    </tr>
-    <tr>
-      <td>Intégration Git</td>
-      <td>À venir</td>
-      <td>Moyenne</td>
-    </tr>
-  </table>
-</div>
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ---
 
 ## 📄 License
 
-Ce projet est sous licence MIT. Voir le fichier [LICENSE](LICENSE) pour plus de détails.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
 <div align="center">
-  <h3>🚀 Prêt à transformer votre expérience LaTeX ?</h3>
+  <h3>🚀 Ready to transform your LaTeX experience?</h3>
   <p>
     <a href="#-installation">
-      <img src="https://img.shields.io/badge/Commencer-maintenant-4CAF50?style=for-the-badge&logo=rocket" alt="Commencer">
+      <img src="https://img.shields.io/badge/Get%20Started-Now-4CAF50?style=for-the-badge&logo=rocket" alt="Get Started">
     </a>
     <a href="https://github.com/your-username/AutomaTeX/issues">
-      <img src="https://img.shields.io/badge/Signaler%20un%20bug-rouge?style=for-the-badge&logo=github" alt="Signaler un bug">
+      <img src="https://img.shields.io/badge/Report%20Bug-red?style=for-the-badge&logo=github" alt="Report Bug">
     </a>
   </p>
   
-  *Développé avec ❤️ par un étudiant passionné*
+  *Made with ❤️ for the LaTeX community*
 </div>

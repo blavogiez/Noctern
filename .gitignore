@@ -1,19 +1,14 @@
 # =============================================================================
-# Fichiers de configuration et secrets - NE JAMAIS PARTAGER SUR GIT !
+# AutomaTeX - Professional .gitignore
 # =============================================================================
-# Ignore tous les fichiers nommés ".env" à la racine ou dans n'importe quel sous-dossier.
+
+# Configuration and secrets
 **/.env
-
-# Ignore les variations comme .env.local, .env.dev, .env.production
 **/.env.*
-
-# Ignore le fichier de configuration des paramètres
 settings.conf
 *.conf
 
-# =============================================================================
-# Caches et fichiers compilés Python
-# =============================================================================
+# Python build artifacts
 __pycache__/
 *.py[cod]
 *.pyo
@@ -21,47 +16,48 @@ __pycache__/
 build/
 dist/
 *.egg-info/
+.pytest_cache/
 
-# =============================================================================
-# Environnements virtuels
-# =============================================================================
+# Virtual environments
 env/
 venv/
 ENV/
 *.venv
-.env/
+.venv/
 
-# =============================================================================
-# Fichiers de projet et temporaires
-# =============================================================================
-.pytest_cache/
+# Development and debug files
 /output/
-/debug.png
-/e.png
+*.png
+*.jpg
+*.jpeg
+*.gif
 pip-log.txt
+debug_*.py
+test_*.py
+*_test.py
 
-# =============================================================================
-# Dossiers de cache spécifiques aux documents
-# =============================================================================
+# Document cache and temporary files
 *.cache/
 *.cache
 
-# =============================================================================
-# Configuration des IDEs
-# =============================================================================
+# IDE configuration
 .idea/
 .vscode/
+.claude/
 *.swp
+*.swo
+*~
 
-# =============================================================================
-# Fichiers système
-# =============================================================================
+# OS generated files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
-# =============================================================================
-# Fichiers de compilation LaTeX
-# =============================================================================
+# LaTeX compilation artifacts
 *.aux
 *.log
 *.out
@@ -77,3 +73,14 @@ Thumbs.db
 *.nav
 *.snm
 *.vrb
+*.figlist
+*.makefile
+*.fdblatexmk
+*.xdy
+
+# Application specific
+figures/
+sample_usage/
+docs/
+ideas/
+.automatex_versions/

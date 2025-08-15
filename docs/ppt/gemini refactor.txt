@@ -1,3 +1,0 @@
-GOOD ! NOW REFACTOR every python file. You can create files if needed. Give them clear naming. If the name is not clear enough rename them. Comment everything in english. The comments have to look like it is the final version. IT has to be formal but normal. If something is too compilcated make it easier. The python files must be in the same directory. At the end, the app MUST work the same way.
-
-					
