@@ -15,7 +15,7 @@ class CachedDiffGenerator(DiffGenerator):
     
     def __init__(self):
         """Initialize the diff generator with cache integration."""
-        self.output_directory = "output"
+        self.output_directory = None  # Will be set per file
         debug_console.log("Cached diff generator initialized", level='DEBUG')
     
     def analyze_current_vs_last_successful(self, file_path: str, current_content: str) -> Tuple[bool, Optional[str], Optional[str]]:
@@ -31,9 +31,12 @@ class CachedDiffGenerator(DiffGenerator):
             return False, None, None
         
         try:
-            # Get cached file path
+            # Get cached file path using file-specific cache directory in same directory as tex file
             file_name = os.path.basename(file_path)
-            cached_file_path = os.path.join(self.output_directory, f"cached_{file_name}")
+            tex_base_name = os.path.splitext(file_name)[0]
+            file_directory = os.path.dirname(file_path)
+            cache_directory = os.path.join(file_directory, f"{tex_base_name}.cache")
+            cached_file_path = os.path.join(cache_directory, f"{tex_base_name}_last_successful.tex")
             
             if not os.path.exists(cached_file_path):
                 debug_console.log(f"No cached version found at {cached_file_path}", level='INFO')

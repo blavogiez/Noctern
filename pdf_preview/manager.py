@@ -107,11 +107,12 @@ class PDFPreviewManager:
             self.compilation_status = "Compilable"
             pdf_path = os.path.join(source_directory, file_name.replace(".tex", ".pdf"))
             
-            # Cache successful compilation using the same mechanism as the debug system
+            # Cache successful compilation using existing cache directory in same directory as tex file
             try:
-                output_directory = "output"
-                os.makedirs(output_directory, exist_ok=True)
-                cached_tex_path = os.path.join(output_directory, f"cached_{file_name}")
+                tex_base_name = os.path.splitext(file_name)[0]
+                cache_directory = os.path.join(source_directory, f"{tex_base_name}.cache")
+                os.makedirs(cache_directory, exist_ok=True)
+                cached_tex_path = os.path.join(cache_directory, f"{tex_base_name}_last_successful.tex")
                 tex_file_path = os.path.join(source_directory, file_name)
                 shutil.copy2(tex_file_path, cached_tex_path)
                 debug_console.log(f"Auto-compilation: Cached successful version to {cached_tex_path}", level='INFO')

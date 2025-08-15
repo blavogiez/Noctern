@@ -146,11 +146,12 @@ def compile_latex(event=None):
             debug_console.log(f"Error saving temporary file for compilation: {e}", level='ERROR')
             return
 
-    # Create output directory for cached successful compilations
-    # This matches the existing cache mechanism used by the debug system
-    output_directory = "output"
-    os.makedirs(output_directory, exist_ok=True)
-    cached_tex_path = os.path.join(output_directory, f"cached_{file_name}")
+    # Use existing cache directory in the same directory as the tex file
+    tex_base_name = os.path.splitext(file_name)[0]
+    cache_directory = os.path.join(source_directory, f"{tex_base_name}.cache")
+    os.makedirs(cache_directory, exist_ok=True)
+    tex_base_name = os.path.splitext(file_name)[0]
+    cached_tex_path = os.path.join(cache_directory, f"{tex_base_name}_last_successful.tex")
 
     # Compile in the source directory
     try:
