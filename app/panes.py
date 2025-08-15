@@ -51,7 +51,7 @@ def create_outline(parent, get_current_tab_callback, config_settings=None):
 
 def create_debug_panel(parent, on_goto_line=None):
     """
-    Creates the ultimate debug panel with AI analysis, quick fixes, and advanced features.
+    Creates the debug panel with clean SOLID architecture.
     
     Args:
         parent: The parent widget for the debug panel
@@ -62,12 +62,12 @@ def create_debug_panel(parent, on_goto_line=None):
     """
     try:
         from utils import debug_console
-        debug_console.log("Creating ultimate debug panel", level='INFO')
+        debug_console.log("Creating debug panel", level='INFO')
         
-        from debug_system.ultimate_debug_coordinator import UltimateDebugCoordinatorFactory
+        from debug_system.simple_coordinator import create_debug_system
         
-        # Create the ultimate coordinator and panel
-        coordinator, debug_panel = UltimateDebugCoordinatorFactory.create_ultimate_coordinator(
+        # Create the debug system
+        coordinator, debug_panel = create_debug_system(
             parent_window=parent,
             on_goto_line=on_goto_line
         )
@@ -75,13 +75,13 @@ def create_debug_panel(parent, on_goto_line=None):
         # Add the panel to the parent
         parent.add(debug_panel, weight=1)
         
-        debug_console.log("Ultimate debug panel created successfully", level='SUCCESS')
+        debug_console.log("Debug panel created successfully", level='SUCCESS')
         return coordinator, debug_panel
         
     except Exception as e:
-        # Fallback to TeXstudio system if ultimate fails
+        # Fallback to TeXstudio system if main system fails
         from utils import debug_console
-        debug_console.log(f"Failed to create ultimate debug panel, falling back: {e}", level='WARNING')
+        debug_console.log(f"Failed to create debug panel, falling back: {e}", level='WARNING')
         
         try:
             from debug_system.texstudio_debug_coordinator import TeXstudioDebugCoordinatorFactory
