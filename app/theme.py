@@ -121,7 +121,7 @@ def apply_theme(theme_name, root_window, main_paned_window, open_tabs_dict, perf
     style.configure("Treeview.Heading", 
                     background=theme_settings["treeview_heading_bg"], 
                     foreground=theme_settings["fg_color"],
-                    font=(treeview_font_family, treeview_font_size + 1, "bold"))
+                    font=("Segoe UI", 9))
 
     # --- Notebook (Tabs) Configurations ---
     style.configure("TNotebook", background=theme_settings["notebook_bg"])

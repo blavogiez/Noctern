@@ -20,7 +20,7 @@ class StyleIntensityDialog(simpledialog.Dialog):
         container.pack(fill='both', expand=True)
 
         # --- Title and Description ---
-        title_label = ttk.Label(container, text="Style Intensity", font=("Helvetica", 12, "bold"))
+        title_label = ttk.Label(container, text="Style Intensity", font=("Segoe UI", 9))
         title_label.pack(pady=(0, 5))
         
         description_label = ttk.Label(
@@ -36,7 +36,7 @@ class StyleIntensityDialog(simpledialog.Dialog):
         slider_frame.pack(fill='x', expand=True, pady=5)
 
         # Define the label first to ensure it exists for the callback
-        self.value_label = ttk.Label(slider_frame, text=f"{self.intensity}", font=("Helvetica", 10, "bold"), width=2)
+        self.value_label = ttk.Label(slider_frame, text=f"{self.intensity}", font=("Segoe UI", 9), width=2)
 
         self.slider = ttk.Scale(
             slider_frame,

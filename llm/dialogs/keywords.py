@@ -32,7 +32,7 @@ def show_set_llm_keywords_dialog(root_window, theme_setting_getter_func, file_pa
     insert_bg = theme_setting_getter_func("editor_insert_bg", "#000000")
 
     # Add a label to explicitly state which file is being edited
-    file_label = ttk.Label(keyword_window, text=f"Editing keywords for: {os.path.basename(file_path)}", font=("Segoe UI", 10, "bold"))
+    file_label = ttk.Label(keyword_window, text=f"Editing keywords for: {os.path.basename(file_path)}", font=("Segoe UI", 9))
     file_label.pack(pady=(10, 0))
 
     ttk.Label(keyword_window, text="Enter keywords (one per line or comma-separated):").pack(pady=(10, 5))

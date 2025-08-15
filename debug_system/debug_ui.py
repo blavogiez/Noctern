@@ -24,10 +24,10 @@ class UltraFineTreeview(ttk.Treeview):
         widget_style = f"UltraFine{id(self)}.Treeview"
         style = ttk.Style()
         
-        # Force ultra-fine appearance
+        # Force ultra-fine appearance with unified font
         style.configure(widget_style,
-                       rowheight=12,
-                       font=('Segoe UI', 8),
+                       rowheight=14,
+                       font=('Segoe UI', 9),
                        background='white',
                        foreground='#333333',
                        fieldbackground='white',
@@ -36,7 +36,7 @@ class UltraFineTreeview(ttk.Treeview):
                        focuscolor='none')
         
         style.configure(widget_style + ".Heading",
-                       font=('Segoe UI', 8, 'normal'),
+                       font=('Segoe UI', 9),
                        background='#f5f5f5',
                        foreground='#666666',
                        borderwidth=0,
@@ -193,14 +193,13 @@ class AnalysisTab(ttk.Frame):
         
         self.analyze_btn = ttk.Button(
             header_frame,
-            text="Analyze with AI",
-            command=self._request_analysis,
-            style='Accent.TButton'
+            text="Analyze",
+            command=self._request_analysis
         )
         self.analyze_btn.pack(side='left')
         
-        self.status_label = ttk.Label(header_frame, text="Ready for analysis", foreground='#666')
-        self.status_label.pack(side='left', padx=(10, 0))
+        self.status_label = ttk.Label(header_frame, text="Ready", font=('Segoe UI', 9), foreground='#666')
+        self.status_label.pack(side='left', padx=(8, 0))
         
         # Main content area
         content_frame = ttk.Frame(self)
@@ -213,8 +212,8 @@ class AnalysisTab(ttk.Frame):
         self.explanation_text = tk.Text(
             exp_frame,
             wrap='word',
-            height=8,
-            font=('Segoe UI', 10),
+            height=6,
+            font=('Segoe UI', 9),
             bg='#f8f8f8',
             relief='flat',
             state='disabled'
@@ -232,8 +231,8 @@ class AnalysisTab(ttk.Frame):
         self.correction_text = tk.Text(
             self.correction_frame,
             wrap='none',
-            height=6,
-            font=('Consolas', 9),
+            height=4,
+            font=('Segoe UI', 9),
             bg='#f0f8ff',
             relief='flat',
             state='disabled'
@@ -251,15 +250,14 @@ class AnalysisTab(ttk.Frame):
         corr_h_scrollbar.pack(side='bottom', fill='x')
         self.correction_text.pack(side='left', fill='both', expand=True)
         
-        # Apply button
+        # Apply button with unified styling
         self.apply_btn = ttk.Button(
             self.correction_frame,
-            text="Apply Correction",
+            text="Apply",
             command=self._apply_correction,
-            style='Success.TButton',
             state='disabled'
         )
-        self.apply_btn.pack(pady=5)
+        self.apply_btn.pack(pady=3)
     
     def present_analysis(self, result: AnalysisResult):
         """Present analysis results to the user."""
@@ -340,7 +338,7 @@ class QuickFixTab(ttk.Frame):
         header_frame = ttk.Frame(self)
         header_frame.pack(fill='x', padx=2, pady=1)
         
-        title_label = ttk.Label(header_frame, text="Quick Fixes", font=('Segoe UI', 8, 'bold'))
+        title_label = ttk.Label(header_frame, text="Quick Fixes", font=('Segoe UI', 9))
         title_label.pack(side='left', padx=2)
         
         self.auto_fix_btn = ttk.Button(
@@ -493,8 +491,8 @@ class TabbedDebugUI(ttk.Frame, DebugUI):
         header_frame = ttk.Frame(self)
         header_frame.pack(fill='x', padx=2, pady=1)
         
-        # Fine title like Document outline
-        title_label = ttk.Label(header_frame, text="Debug Center", font=('Segoe UI', 8, 'bold'))
+        # Fine title consistent with app style
+        title_label = ttk.Label(header_frame, text="Debug Center", font=('Segoe UI', 9))
         title_label.pack(side='left', padx=3)
         
         # Minimal compare button
@@ -541,7 +539,7 @@ class TabbedDebugUI(ttk.Frame, DebugUI):
         self.status_frame = ttk.Frame(self)
         self.status_frame.pack(fill='x', padx=2, pady=1)
         
-        self.status_label = ttk.Label(self.status_frame, text="Ready", font=('Segoe UI', 7), foreground='#666')
+        self.status_label = ttk.Label(self.status_frame, text="Ready", font=('Segoe UI', 9), foreground='#666')
         self.status_label.pack(side='left', padx=2)
     
     def _apply_notebook_fine_styling(self):
@@ -557,9 +555,9 @@ class TabbedDebugUI(ttk.Frame, DebugUI):
                        borderwidth=0,
                        relief='flat')
         
-        # Ultra-fine tab styling  
+        # Ultra-fine tab styling with unified font
         style.configure(tab_style,
-                       font=('Segoe UI', 7),
+                       font=('Segoe UI', 9),
                        padding=[4, 2],
                        borderwidth=1)
         

@@ -84,9 +84,9 @@ class DebugDialog(tk.Toplevel):
         self.configure(bg=self.bg_color)
 
         style = ttk.Style(self)
-        style.configure("Debug.TButton", font=("Segoe UI", 11, "bold"), padding=12)
+        style.configure("Debug.TButton", font=("Segoe UI", 9), padding=12)
         style.configure("Small.TButton", font=("Segoe UI", 9), padding=8) # New smaller style
-        style.configure("Debug.TNotebook.Tab", font=("Segoe UI", 10, "bold"), padding=[12, 6])
+        style.configure("Debug.TNotebook.Tab", font=("Segoe UI", 9), padding=[12, 6])
         style.map("Debug.TNotebook.Tab",
                   background=[("selected", self.theme_getter("tab_selected_bg", "#d0d0d0"))],
                   foreground=[("selected", self.theme_getter("tab_selected_fg", "#000000"))])
@@ -109,7 +109,7 @@ class DebugDialog(tk.Toplevel):
         container = ttk.Frame(self.ai_frame)
         container.pack(expand=True, anchor="center")
 
-        title_label = ttk.Label(container, text="Ready to Fix?", font=("Segoe UI", 14, "bold"))
+        title_label = ttk.Label(container, text="Ready to Fix?", font=("Segoe UI", 9))
         title_label.pack(pady=(0, 5))
 
         info_label = ttk.Label(container, text="Click the button below to analyze the error in your added code.", wraplength=300, justify=tk.CENTER)
@@ -132,7 +132,7 @@ class DebugDialog(tk.Toplevel):
         progress.pack(pady=20)
         progress.start()
         
-        loading_label = ttk.Label(progress_frame, text="Contacting LLM...", font=("Segoe UI", 10, "italic"))
+        loading_label = ttk.Label(progress_frame, text="Contacting LLM...", font=("Segoe UI", 9))
         loading_label.pack()
 
         threading.Thread(target=self._fetch_ai_analysis, daemon=True).start()
@@ -170,7 +170,7 @@ class DebugDialog(tk.Toplevel):
         for widget in self.ai_frame.winfo_children():
             widget.destroy()
         
-        error_label = ttk.Label(self.ai_frame, text="Analysis Failed", font=("Segoe UI", 14, "bold"), foreground="red")
+        error_label = ttk.Label(self.ai_frame, text="Analysis Failed", font=("Segoe UI", 9), foreground="red")
         error_label.pack(pady=(10, 5), anchor="w")
         
         error_text = ttk.Label(self.ai_frame, text=error_message, wraplength=350, justify=tk.LEFT)
@@ -178,7 +178,7 @@ class DebugDialog(tk.Toplevel):
 
         # Removed the retry button for a simpler, less frustrating UX.
         # User can close dialog and re-trigger compilation to try again
-        info_label = ttk.Label(self.ai_frame, text="You can close this dialog and try compiling again.", font=("Segoe UI", 9, "italic"))
+        info_label = ttk.Label(self.ai_frame, text="You can close this dialog and try compiling again.", font=("Segoe UI", 9))
         info_label.pack(pady=(20, 0), anchor="w")
 
     def _update_ui_with_analysis(self):
@@ -191,7 +191,7 @@ class DebugDialog(tk.Toplevel):
         exp_frame = ttk.LabelFrame(self.ai_frame, text="Explanation", padding=15)
         exp_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
         
-        exp_text = tk.Text(exp_frame, wrap="word", bg=self.bg_color, fg=self.text_fg_color, font=("Segoe UI", 11), relief=tk.FLAT, height=8)
+        exp_text = tk.Text(exp_frame, wrap="word", bg=self.bg_color, fg=self.text_fg_color, font=("Segoe UI", 9), relief=tk.FLAT, height=8)
         exp_text.insert("1.0", self.ai_explanation)
         exp_text.config(state="disabled")
         exp_text.pack(fill=tk.BOTH, expand=True)
@@ -257,9 +257,9 @@ class DebugDialog(tk.Toplevel):
     def _colorize_diff(self, text_widget, diff_content):
         """Applies color tags to the diff content."""
         text_widget.config(state="normal")
-        text_widget.tag_configure("addition", foreground="#4CAF50", font=("Consolas", 10, "bold"))
-        text_widget.tag_configure("deletion", foreground="#F44336", font=("Consolas", 10, "bold"))
-        text_widget.tag_configure("header", foreground="#2196F3", font=("Consolas", 10, "italic"))
+        text_widget.tag_configure("addition", foreground="#4CAF50", font=("Consolas", 10))
+        text_widget.tag_configure("deletion", foreground="#F44336", font=("Consolas", 10))
+        text_widget.tag_configure("header", foreground="#2196F3", font=("Consolas", 10))
 
         for line in diff_content.splitlines(True):
             if line.startswith('+'):

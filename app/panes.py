@@ -113,7 +113,7 @@ def create_error_panel_fallback(parent, on_goto_line=None):
             placeholder_frame, 
             text="Debug system unavailable", 
             foreground="#666", 
-            font=('Arial', 9)
+            font=('Segoe UI', 9)
         )
         placeholder_label.pack(pady=20)
         parent.add(placeholder_frame, weight=1)
@@ -174,14 +174,14 @@ def create_pdf_preview_pane(parent):
     """
     preview_frame = ttk.Frame(parent)
     
-    # Header label
+    # Header label with unified styling
     header = ttk.Label(
         preview_frame, 
         text="PDF Preview", 
-        font=("Arial", 12, "bold"),
-        anchor="center"
+        font=("Segoe UI", 9),
+        anchor="w"
     )
-    header.pack(fill="x", padx=5, pady=5)
+    header.pack(fill="x", ipady=3, padx=(6, 6))
     
     # Separator
     separator = ttk.Separator(preview_frame, orient="horizontal")

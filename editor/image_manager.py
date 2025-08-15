@@ -202,12 +202,12 @@ def _prompt_for_image_deletion(image_path_to_delete, tex_file_path):
         image_label.pack()
         
         # Add preview indicator
-        preview_label = Label(preview_frame, text="Image Preview", font=("Arial", 8, "italic"))
+        preview_label = Label(preview_frame, text="Image Preview", font=("Segoe UI", 9))
         preview_label.pack()
     except Exception as e:
         # Show message when image cannot load
         no_preview_label = Label(preview_frame, text=f"Cannot preview image: {str(e)}", 
-                                font=("Arial", 8, "italic"))
+                                font=("Segoe UI", 9))
         no_preview_label.pack()
     
     # Create button frame

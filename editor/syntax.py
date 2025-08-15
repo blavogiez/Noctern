@@ -43,10 +43,10 @@ def highlight_full_document(editor):
                 font_family = base_font.cget("family")
                 font_size = base_font.cget("size")
                 normal_font = (font_family, font_size)
-                bold_font = (font_family, font_size, "bold")
+                bold_font = (font_family, font_size)
             except tk.TclError:
                 normal_font = ("Consolas", 12)
-                bold_font = ("Consolas", 12, "bold")
+                bold_font = ("Consolas", 12)
         else:
             normal_font = ("Consolas", 12)
             bold_font = ("Consolas", 12, "bold")

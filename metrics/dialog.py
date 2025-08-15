@@ -48,7 +48,7 @@ def open_metrics_dialog(parent):
     tree.insert("", tk.END, values=("Total", total_input, total_output, total_all), tags=("total_row",))
 
     # Style for total row
-    tree.tag_configure("total_row", font=("", 10, "bold"))
+    tree.tag_configure("total_row", font=("Segoe UI", 9))
 
     # Close button
     close_button = ttk.Button(dialog, text="Fermer", command=dialog.destroy)

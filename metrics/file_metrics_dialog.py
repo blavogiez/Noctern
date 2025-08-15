@@ -105,7 +105,7 @@ class FileMetricsDialog:
             row = i // 2
             col = (i % 2) * 2
             
-            ttk.Label(summary_frame, text=f"{label}:", font=("", 9, "bold")).grid(
+            ttk.Label(summary_frame, text=f"{label}:", font=("Segoe UI", 9)).grid(
                 row=row, column=col, sticky="w", padx=(0, 5), pady=2
             )
             

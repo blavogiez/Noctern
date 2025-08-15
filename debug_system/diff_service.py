@@ -154,7 +154,7 @@ class DiffViewer:
         title_label = ttk.Label(
             header_frame, 
             text="Comparison with Last Successful Version",
-            font=('Arial', 12, 'bold')
+            font=('Segoe UI', 9)
         )
         title_label.pack(side='left')
         
@@ -203,7 +203,7 @@ class DiffViewer:
         self.text_widget.tag_configure('added', foreground='#2e7d32', background='#e8f5e8')
         self.text_widget.tag_configure('removed', foreground='#d32f2f', background='#fdeaea')
         self.text_widget.tag_configure('context', foreground='#666666')
-        self.text_widget.tag_configure('header', foreground='#1976d2', font=('Consolas', 10, 'bold'))
+        self.text_widget.tag_configure('header', foreground='#1976d2', font=('Consolas', 10))
         
         # Info frame
         info_frame = ttk.Frame(self.diff_window)
@@ -212,7 +212,7 @@ class DiffViewer:
         info_label = ttk.Label(
             info_frame,
             text="Green = Added lines, Red = Removed lines, Blue = File headers",
-            font=('Arial', 9),
+            font=('Segoe UI', 9),
             foreground='#666'
         )
         info_label.pack()

@@ -74,10 +74,10 @@ class Outline:
         # Hide + and - symbols
         style.layout("NoPlus.Treeview", [('Treeview.treearea', {'sticky': 'nswe'})])
         
-        # Style for the title
+        # Style for the title with unified font
         title_style = ttk.Style()
         title_style.configure("Title.TLabel", 
-                             font=(treeview_font_family, treeview_font_size + 1, "bold"),
+                             font=("Segoe UI", 9),
                              foreground=title_style.lookup("TLabel", "foreground"))  # Use theme's foreground color
 
     def get_widget(self):

@@ -175,7 +175,7 @@ class PDFPreviewViewer:
         self.canvas.create_text(
             width // 2, height // 2,
             text="No PDF document loaded",
-            font=("Arial", 16),
+            font=("Segoe UI", 9),
             fill="lightgray"
         )
         
