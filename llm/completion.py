@@ -1,7 +1,6 @@
 """
-This module handles the logic for requesting text completion from a Large Language Model (LLM).
-It extracts context from the editor, constructs a prompt, and uses the centralized
-streaming service to integrate the generated text back into the editor.
+Handle logic for requesting text completion from Large Language Model (LLM).
+Extract context from editor, construct prompt, and use centralized streaming service to integrate generated text back into editor.
 """
 from tkinter import messagebox
 from llm import state as llm_state
@@ -13,11 +12,11 @@ from utils import debug_console
 
 def request_llm_to_complete_text():
     """
-    Initiates a streaming text completion request to the LLM.
+    Initiate streaming text completion request to LLM.
     """
     debug_console.log("LLM Text Completion request initiated.", level='ACTION')
     
-    # 1. Validate state and get editor
+    # Validate state and get editor
     if not callable(llm_state._active_editor_getter_func):
         messagebox.showerror("LLM Service Error", "LLM Service not fully initialized.")
         return
@@ -26,7 +25,7 @@ def request_llm_to_complete_text():
         messagebox.showerror("LLM Error", "No active editor found.")
         return
         
-    # 2. Prepare the prompt
+    # Prepare prompt
     active_file_path = llm_state._active_filepath_getter_func()
     editor_context = llm_utils.extract_editor_context(editor, lines_before_cursor=30, lines_after_cursor=0)
     

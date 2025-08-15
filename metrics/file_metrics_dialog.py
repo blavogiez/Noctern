@@ -1,7 +1,4 @@
-"""
-File-specific metrics visualization dialog.
-Shows productivity charts and session data for the current file.
-"""
+"""Visualize file-specific productivity metrics and session data."""
 
 import tkinter as tk
 from tkinter import ttk, messagebox
@@ -19,7 +16,7 @@ except ImportError:
 
 
 class FileMetricsDialog:
-    """Dialog for displaying file-specific productivity metrics."""
+    """Display file-specific productivity metrics in dialog."""
     
     def __init__(self, parent, file_path=None):
         self.parent = parent
@@ -31,7 +28,7 @@ class FileMetricsDialog:
             self.tracker = SessionTracker(file_path)
     
     def show_dialog(self):
-        """Show the metrics dialog."""
+        """Show metrics dialog."""
         if not self.file_path:
             tk.messagebox.showwarning(
                 "No File Selected", 
@@ -49,7 +46,7 @@ class FileMetricsDialog:
         self._load_and_display_data()
     
     def _create_widgets(self):
-        """Create the dialog widgets."""
+        """Create dialog widgets."""
         # Main notebook for tabs
         notebook = ttk.Notebook(self.dialog)
         notebook.pack(fill="both", expand=True, padx=10, pady=10)
@@ -64,7 +61,7 @@ class FileMetricsDialog:
         notebook.add(sessions_frame, text="Sessions")
         self._create_sessions_tab(sessions_frame)
         
-        # Charts tab (only if matplotlib is available)
+        # Charts tab if matplotlib available
         if MATPLOTLIB_AVAILABLE:
             charts_frame = ttk.Frame(notebook)
             notebook.add(charts_frame, text="Charts")
@@ -87,7 +84,7 @@ class FileMetricsDialog:
         ).pack(side="right", padx=(0, 5))
     
     def _create_overview_tab(self, parent):
-        """Create the overview tab with summary statistics."""
+        """Create overview tab with summary statistics."""
         # Summary frame
         summary_frame = ttk.LabelFrame(parent, text="File Summary", padding=10)
         summary_frame.pack(fill="x", padx=5, pady=5)
@@ -136,7 +133,7 @@ class FileMetricsDialog:
         scrollbar.pack(side="right", fill="y")
     
     def _create_sessions_tab(self, parent):
-        """Create the sessions tab with detailed session list."""
+        """Create sessions tab with detailed session list."""
         # Sessions treeview
         columns = ("Start Time", "Duration", "Words Typed", "Productivity", "Date")
         self.sessions_tree = ttk.Treeview(parent, columns=columns, show="headings")
@@ -162,7 +159,7 @@ class FileMetricsDialog:
         sessions_scrollbar.pack(side="right", fill="y", pady=5)
     
     def _create_charts_tab(self, parent):
-        """Create the charts tab with productivity visualizations."""
+        """Create charts tab with productivity visualizations."""
         if not MATPLOTLIB_AVAILABLE:
             ttk.Label(parent, text="Matplotlib not available. Install matplotlib to view charts.").pack(expand=True)
             return
@@ -186,7 +183,7 @@ class FileMetricsDialog:
             self._update_charts(sessions)
     
     def _update_overview(self, sessions):
-        """Update the overview tab with summary data."""
+        """Update overview tab with summary data."""
         if not sessions:
             for label in self.summary_labels.values():
                 label.config(text="No data")
@@ -218,7 +215,7 @@ class FileMetricsDialog:
         self._update_recent_activity(sessions)
     
     def _update_recent_activity(self, sessions):
-        """Update the recent activity table."""
+        """Update recent activity table."""
         # Clear existing items
         for item in self.activity_tree.get_children():
             self.activity_tree.delete(item)
@@ -259,7 +256,7 @@ class FileMetricsDialog:
             ))
     
     def _update_sessions_list(self, sessions):
-        """Update the sessions list."""
+        """Update sessions list."""
         # Clear existing items
         for item in self.sessions_tree.get_children():
             self.sessions_tree.delete(item)
@@ -279,7 +276,7 @@ class FileMetricsDialog:
             ))
     
     def _update_charts(self, sessions):
-        """Update the productivity charts."""
+        """Update productivity charts."""
         if not MATPLOTLIB_AVAILABLE:
             return
             
@@ -323,7 +320,7 @@ class FileMetricsDialog:
         self.canvas.draw()
     
     def _format_duration(self, seconds):
-        """Format duration in a human-readable format."""
+        """Format duration in human-readable format."""
         hours = int(seconds // 3600)
         minutes = int((seconds % 3600) // 60)
         secs = int(seconds % 60)
@@ -336,12 +333,12 @@ class FileMetricsDialog:
             return f"{secs}s"
     
     def _refresh_data(self):
-        """Refresh the displayed data."""
+        """Refresh displayed data."""
         if self.tracker:
             self._load_and_display_data()
 
 
 def show_file_metrics_dialog(parent, file_path=None):
-    """Show the file metrics dialog."""
+    """Show file metrics dialog."""
     dialog = FileMetricsDialog(parent, file_path)
     dialog.show_dialog()

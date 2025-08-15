@@ -1,6 +1,6 @@
 """
 Core debug system interfaces and data structures.
-Defines the contracts that all debug components must follow.
+Define contracts that all debug components must follow.
 """
 
 from abc import ABC, abstractmethod
@@ -10,9 +10,9 @@ from typing import List, Optional, Dict, Any
 
 @dataclass
 class LaTeXError:
-    """Represents a LaTeX compilation error with location and context information."""
+    """Represent LaTeX compilation error with location and context information."""
     line_number: int
-    severity: str  # 'Error', 'Warning', 'Info'
+    severity: str  # Store 'Error', 'Warning', 'Info'
     message: str
     suggestion: Optional[str] = None
     context: Optional[str] = None
@@ -25,10 +25,10 @@ class LaTeXError:
 
 @dataclass
 class QuickFix:
-    """Represents an automatic fix that can be applied to resolve an error."""
+    """Represent automatic fix that can be applied to resolve error."""
     title: str
     description: str
-    fix_type: str  # 'replace', 'insert', 'remove'
+    fix_type: str  # Store 'replace', 'insert', 'remove'
     target_line: Optional[int] = None
     old_text: Optional[str] = None
     new_text: Optional[str] = None

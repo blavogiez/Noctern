@@ -67,25 +67,24 @@ def handle_snippet_expansion(event):
     keyword = matches[-1] # The last word found is the most relevant potential keyword.
     all_snippets = snippet_manager.get_snippets() # Retrieve all defined snippets.
     
-    # Check if the extracted keyword exists in the list of defined snippets.
+    # Check if keyword exists in snippets
     if keyword in all_snippets:
         debug_console.log(f"Snippet keyword '{keyword}' detected. Attempting expansion.", level='ACTION')
-        # Calculate the exact starting position of the keyword within the editor.
-        # This is necessary to replace only the keyword, not the entire line.
+        # Calculate keyword start position for replacement
         keyword_position_in_line = text_before_cursor.rfind(keyword)
         keyword_start_index = f"{line_start_index} + {keyword_position_in_line} chars"
         
-        # Record the insertion point to find placeholders later
+        # Record insertion point for placeholder detection
         insertion_point = editor.index(keyword_start_index)
         
-        # Delete the keyword from the editor.
+        # Delete keyword from editor
         editor.delete(keyword_start_index, cursor_position)
-        # Insert the full snippet content in place of the keyword.
+        # Insert snippet content
         editor.insert(insertion_point, all_snippets[keyword])
         
-        # Check if the snippet contains placeholders
+        # Check for placeholders in snippet
         if '$' in all_snippets[keyword]:
-            # Create a placeholder manager for the text widget if it doesn't exist
+            # Create placeholder manager if needed
             if not hasattr(editor, 'placeholder_manager'):
                 editor.placeholder_manager = PlaceholderManager(editor)
             

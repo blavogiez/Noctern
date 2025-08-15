@@ -1,6 +1,6 @@
 """
-PDF Preview Viewer Component
-Handles the display and navigation of PDF documents with continuous scrolling.
+PDF Preview Viewer Component.
+Handle display and navigation of PDF documents with continuous scrolling.
 """
 
 import tkinter as tk
@@ -18,25 +18,21 @@ try:
 except ImportError:
     HAS_FITZ = False
 
-# Import the new navigator component
+# Import navigator component
 from pdf_preview.navigator import PDFTextNavigator
 from pdf_preview.sync import PDFSyncManager
-# Import the new circular magnifier component
+# Import circular magnifier component
 from pdf_preview.magnifier import CircularMagnifier
 
 
 class PDFPreviewViewer:
     """
-    A PDF preview viewer component that displays PDF documents with continuous scrolling.
+    PDF preview viewer component that displays PDF documents with continuous scrolling.
     """
     
     def __init__(self, parent, pdf_path=None):
         """
-        Initialize the PDF preview viewer.
-        
-        Args:
-            parent (tk.Widget): Parent widget to place the viewer in
-            pdf_path (str, optional): Path to the PDF file to display
+        Initialize PDF preview viewer.
         """
         self.parent = parent
         self.pdf_path = pdf_path

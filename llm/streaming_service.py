@@ -25,9 +25,9 @@ def start_streaming_request(editor, prompt, model_name, on_chunk, on_success, on
         It relies on the `_is_generation_cancelled` flag to stop.
         """
         try:
-            # The API client now has improved, frequent cancellation checks.
+            # API client provides improved, frequent cancellation checks
             for response in llm_api_client.request_llm_generation(prompt, model_name=model_name):
-                # The check is primarily inside the API client, but an extra one here doesn't hurt.
+                # Perform additional cancellation check for safety
                 if llm_state._is_generation_cancelled:
                     break
                 
@@ -56,7 +56,7 @@ def start_streaming_request(editor, prompt, model_name, on_chunk, on_success, on
             if not llm_state._is_generation_cancelled:
                 editor.after(0, on_error, error_msg)
         # NO finally block here to manage global state.
-        # The calling context is responsible for that.
+        # Calling context manages global state
 
     if progress_bar:
         progress_bar.pack(pady=2)

@@ -8,7 +8,7 @@ from app.config import get_treeview_font_settings
 class Outline:
     """
     Simple document outline manager.
-    Displays sections with arrows and allows navigation.
+    Display sections with arrows and allow navigation.
     """
     def __init__(self, parent_frame, get_current_tab_callback, config_settings=None):
         # Create a frame to contain the title and treeview
@@ -54,7 +54,7 @@ class Outline:
         self._update_scheduled = False  # Prevent multiple scheduled updates
         
     def _configure_styles(self):
-        """Configure the styles for the outline Treeview and title."""
+        """Configure styles for outline Treeview and title."""
         # Get validated font settings from config
         if self.config_settings:
             font_settings = get_treeview_font_settings(self.config_settings)
@@ -81,11 +81,11 @@ class Outline:
                              foreground=title_style.lookup("TLabel", "foreground"))  # Use theme's foreground color
 
     def get_widget(self):
-        """Returns the frame containing the title and Treeview widget."""
+        """Return frame containing title and Treeview widget."""
         return self.frame
 
     def _on_click_section(self, event):
-        """Navigate to selected section in the editor using dynamic search."""
+        """Navigate to selected section using dynamic search."""
         current_tab = self.get_current_tab_callback()
         if not current_tab or not hasattr(current_tab, 'editor'):
             return

@@ -1,8 +1,6 @@
 """
-This module manages the process of generating text using a Large Language Model (LLM).
-It provides the functionality to open a dialog for custom text generation requests,
-constructs the LLM prompt, and uses the centralized streaming service to handle the
-streaming response from the LLM.
+Manage process of generating text using Large Language Model (LLM).
+Provide functionality to open dialog for custom text generation requests, construct LLM prompt, and use centralized streaming service to handle streaming response from LLM.
 """
 from tkinter import messagebox
 from llm import state as llm_state
@@ -16,7 +14,7 @@ from utils import debug_console
 
 def open_generate_text_dialog(initial_prompt_text=None):
     """
-    Opens a dialog for custom LLM text generation.
+    Open dialog for custom LLM text generation.
     """
     debug_console.log("Opening LLM text generation dialog.", level='ACTION')
     
@@ -31,10 +29,10 @@ def open_generate_text_dialog(initial_prompt_text=None):
 
     def _on_generate_request(user_prompt, lines_before, lines_after, is_latex_mode):
         """
-        Callback executed when the user confirms a generation request from the dialog.
-        This function now prepares the prompt and calls the streaming service.
+        Callback executed when user confirms generation request from dialog.
+        Prepare prompt and call streaming service.
         """
-        # 1. Determine prompt template and model
+        # Determine prompt template and model
         if is_latex_mode:
             prompt_template = llm_state._global_default_prompts.get("generation_latex")
             model_name = llm_state.model_generation
@@ -77,7 +75,7 @@ def open_generate_text_dialog(initial_prompt_text=None):
             session_callbacks['on_chunk'](cleaned_chunk)
 
         def on_success(final_text):
-            # The 'final_text' from the streaming service already handles deepseek stripping
+            # Streaming service already handles deepseek stripping
             final_cleaned_text = llm_utils.clean_full_llm_response(final_text)
             session_callbacks['on_success'](final_cleaned_text)
             _update_history_response_and_save(user_prompt, final_cleaned_text)

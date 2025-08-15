@@ -1,7 +1,6 @@
 """
-This module manages the application's visual themes using ttkbootstrap,
-providing functions to apply a chosen theme to all relevant GUI components,
-including editor elements and custom widgets.
+Manage application visual themes using ttkbootstrap.
+Provide functions to apply chosen theme to all relevant GUI components including editor elements and custom widgets.
 """
 
 import ttkbootstrap as ttk
@@ -10,14 +9,7 @@ from app.config import get_treeview_font_settings
 
 def get_theme_colors(style, theme_name):
     """
-    Returns a dictionary of color settings derived from the current ttkbootstrap theme.
-
-    Args:
-        style (ttk.Style): The ttkbootstrap style object.
-        theme_name (str): The name of the current theme (e.g., "litera", "darkly").
-
-    Returns:
-        dict: A dictionary of color settings for the application.
+    Return dictionary of color settings derived from current ttkbootstrap theme.
     """
     colors = style.colors
 

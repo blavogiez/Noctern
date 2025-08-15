@@ -65,5 +65,5 @@ class StyleIntensityDialog(simpledialog.Dialog):
         We update the global state with the final chosen value.
         """
         llm_state.last_style_intensity = self.intensity
-        # The result of the dialog is the value of self.intensity
+        # Set dialog result to intensity value
         self.result = self.intensity

@@ -38,7 +38,7 @@ def update_word_count(editor, status_label):
     content = re.sub(r"%.*?\n", "", content) 
     # 2. Remove LaTeX commands (e.g., \section{}, \includegraphics[]{}).
     # This regex matches \ followed by one or more letters/symbols, optionally followed by
-    # square brackets (for optional arguments) and curly braces (for mandatory arguments).
+    # Match square brackets for optional arguments and curly braces for mandatory arguments
     content = re.sub(r"\\[a-zA-Z@]+(?:\\[^\\]*\\)?(?:\{[^}]*\})?", "", content)
     # 3. Replace remaining LaTeX structural characters (brackets, braces, asterisks) with spaces.
     # This helps in correctly splitting words that might be adjacent to these characters.

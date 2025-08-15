@@ -1,7 +1,4 @@
-"""
-PDF Preview Interface Integration
-Handles the integration of the PDF preview into the main application interface.
-"""
+"""Integrate PDF preview functionality into main application interface."""
 
 import tkinter as tk
 import ttkbootstrap as ttk
@@ -12,22 +9,14 @@ from utils import debug_console
 
 
 class PDFPreviewInterface:
-    """
-    Manages the integration of PDF preview functionality into the main application interface.
-    """
+    """Manage PDF preview integration with main application interface."""
     
     def __init__(self, root_window, get_current_tab_func):
-        """
-        Initialize the PDF preview interface.
-        
-        Args:
-            root_window (tk.Tk): The main application window
-            get_current_tab_func (callable): Function to get the current editor tab
-        """
+        """Initialize PDF preview interface with window and tab references."""
         self.root_window = root_window
         self.get_current_tab = get_current_tab_func
         
-        # Initialize components
+        # Setup PDF preview component instances
         self.preview_manager = PDFPreviewManager(root_window, get_current_tab_func)
         self.sync_manager = PDFSyncManager()
         

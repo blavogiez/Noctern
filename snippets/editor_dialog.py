@@ -1,8 +1,4 @@
-"""
-This module defines the `SnippetEditorDialog` class, a comprehensive Tkinter dialog
-for managing user-defined code snippets. It allows users to view, create, edit,
-and delete snippets through a graphical interface.
-"""
+"""Define SnippetEditorDialog class for managing user-defined code snippets."""
 
 import tkinter as tk
 from tkinter import ttk, messagebox
@@ -10,40 +6,24 @@ import re
 from utils import debug_console
 
 class SnippetEditorDialog(tk.Toplevel):
-    """
-    A full-featured dialog for viewing, creating, editing, and deleting code snippets.
-
-    This dialog provides a user-friendly interface with a resizable layout, featuring
-    a list of snippet keywords on the left and an editor panel on the right for
-    modifying the selected snippet's keyword and content. It operates by interacting
-    with a provided save callback function to persist changes.
-    """
+    """Full-featured dialog for viewing, creating, editing and deleting code snippets."""
     def __init__(self, parent, theme_settings, current_snippets, save_callback):
-        """
-        Initializes the SnippetEditorDialog.
-
-        Args:
-            parent (tk.Tk or tk.Toplevel): The parent window of this dialog.
-            theme_settings (dict): A dictionary containing theme-specific color settings.
-            current_snippets (dict): A dictionary of existing snippets (keyword: content).
-            save_callback (callable): A function to call when snippets need to be saved.
-                                      Expected signature: `save_callback(updated_snippets_dict)`.
-        """
+        """Initialize SnippetEditorDialog."""
         super().__init__(parent)
-        self.transient(parent) # Make the dialog transient to its parent.
+        self.transient(parent)  # Make dialog transient to parent
         self.title("Snippet Editor")
-        self.geometry("900x600") # Set initial size.
-        self.minsize(600, 400) # Set minimum size for resizing.
-        self.grab_set() # Grab all input events until the dialog is closed.
+        self.geometry("900x600")  # Set initial size
+        self.minsize(600, 400)  # Set minimum size for resizing
+        self.grab_set()  # Grab all input events until dialog is closed
 
         self.theme = theme_settings
-        # Work on a copy of snippets to allow cancellation without affecting original data.
+        # Work on copy of snippets to allow cancellation without affecting original data
         self.snippets = current_snippets.copy()  
         self.save_callback = save_callback
 
-        self._setup_ui() # Build the user interface.
-        self._populate_listbox() # Populate the snippet list.
-        self._update_button_states() # Set initial button states.
+        self._setup_ui()  # Build user interface
+        self._populate_listbox()  # Populate snippet list
+        self._update_button_states()  # Set initial button states
         self._new_snippet() # Start with a clean slate for creating a new snippet.
 
         self.protocol("WM_DELETE_WINDOW", self.destroy) # Handle window close button.

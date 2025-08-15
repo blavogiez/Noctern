@@ -97,8 +97,8 @@ class PDFTextNavigator:
                 scaled_min_y = min_y * scale_y
                 scaled_max_y = max_y * scale_y
                 
-                # Add a vertical margin for the highlight
-                v_margin = 25  # pixels
+                # Add vertical margin for highlight
+                v_margin = 25  # Pixels
                 
                 # Create a semi-transparent green rectangle that spans the full width
                 rect = self.pdf_viewer.canvas.create_rectangle(

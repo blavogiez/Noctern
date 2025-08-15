@@ -9,7 +9,7 @@ from utils import debug_console
 from llm import init as llm_init
 from llm import state as llm_state
 
-# The path to the global prompts directory
+# Define global prompts directory path
 PROMPTS_DIR = "data/prompts"
 
 def open_global_prompts_editor(root):

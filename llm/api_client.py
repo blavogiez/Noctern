@@ -44,7 +44,7 @@ def get_available_models():
     if config.get("gemini_api_key"):
         debug_console.log("Gemini API key found, adding Gemini models.", level='INFO')
         gemini_models = [
-            # Latest models (2025)
+            # Current models
             "gemini/gemini-2.5-pro-exp-01-28",
             "gemini/gemini-2.5-flash-exp-01-28",
             "gemini/gemini-2.5-flash-lite-exp-01-28",
@@ -107,14 +107,8 @@ def _request_gemini_generation(prompt_text, model_name, stream=True):
                 yield {"success": True, "chunk": chunk_text, "done": False}
             
             # Record usage after stream is complete
-            # Note: Token count from streaming is not directly available per chunk,
-            # but we can estimate or use a final call if the API provides it.
-            # For now, we will rely on the non-streaming implementation's way if possible
-            # or make a separate call to count tokens if needed.
-            # Let's assume for now the final response of the stream contains usage data.
-            # HACK: As of google-generativeai 0.5.0, usage_metadata is not on streaming chunks.
-            # We will make a non-streaming call to get the token count.
-            # This is inefficient but necessary for now.
+            # Token count unavailable from streaming chunks - use separate call
+            # Make non-streaming call to get token count
             completion = model.generate_content(prompt_text)
             input_tokens = completion.usage_metadata.prompt_token_count
             output_tokens = completion.usage_metadata.candidates_token_count
@@ -142,7 +136,7 @@ def request_llm_generation(prompt_text, model_name=DEFAULT_LLM_MODEL, stream=Tru
     """
     if model_name.startswith("gemini/"):
         # Route to Gemini
-        # The model name in the API doesn't have the 'gemini/' prefix
+        # Remove 'gemini/' prefix from model name for API
         actual_model_name = model_name.split('/')[-1]
         debug_console.log(f"Routing request to Google Gemini model: {actual_model_name}", level='INFO')
         yield from _request_gemini_generation(prompt_text, actual_model_name, stream)

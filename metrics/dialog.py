@@ -3,16 +3,14 @@ from tkinter import ttk
 from metrics import manager
 
 def open_metrics_dialog(parent):
-    """
-    Ouvre une fenêtre affichant les métriques d'utilisation des tokens.
-    """
+    """Open window displaying token usage metrics."""
     dialog = tk.Toplevel(parent)
     dialog.title("Métriques d'utilisation de l'IA")
     dialog.geometry("600x400")
     dialog.transient(parent)
     dialog.grab_set()
 
-    # Création du Treeview pour afficher les données
+    # Create treeview for displaying data
     tree = ttk.Treeview(dialog, columns=("date", "input", "output", "total"), show="headings")
     tree.heading("date", text="Date")
     tree.heading("input", text="Tokens d'entrée")
@@ -26,12 +24,12 @@ def open_metrics_dialog(parent):
 
     tree.pack(expand=True, fill="both", padx=10, pady=10)
 
-    # Chargement et affichage des données
+    # Load and display data
     metrics = manager.load_metrics()
     total_input = 0
     total_output = 0
 
-    # Trier les dates (clés)
+    # Sort date keys
     sorted_dates = sorted(metrics.keys())
 
     for date_str in sorted_dates:
@@ -45,14 +43,14 @@ def open_metrics_dialog(parent):
         total_input += input_tokens
         total_output += output_tokens
 
-    # Ligne de total
+    # Total row
     total_all = total_input + total_output
     tree.insert("", tk.END, values=("Total", total_input, total_output, total_all), tags=("total_row",))
 
-    # Style pour la ligne de total
+    # Style for total row
     tree.tag_configure("total_row", font=("", 10, "bold"))
 
-    # Bouton Fermer
+    # Close button
     close_button = ttk.Button(dialog, text="Fermer", command=dialog.destroy)
     close_button.pack(pady=10)
 

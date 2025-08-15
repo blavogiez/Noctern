@@ -14,7 +14,7 @@ def analyze_compilation_diff(diff_content: str, log_content: str):
         messagebox.showwarning("LLM Service Not Ready", "The LLM service is not fully initialized. Cannot perform analysis.")
         return
 
-    # The dialog itself now handles the AI analysis part.
+    # Dialog now handles AI analysis part
     show_debug_dialog(
         llm_state._root_window,
         llm_state._theme_setting_getter_func,

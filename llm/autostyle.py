@@ -1,7 +1,6 @@
 """
-This module provides the core functionality for the "Smart Style" feature.
-It orchestrates the user interaction (dialog) and then uses the generic
-streaming service to apply text styling.
+Provide core functionality for Smart Style feature.
+Orchestrate user interaction (dialog) and use generic streaming service to apply text styling.
 """
 import tkinter as tk
 from tkinter import messagebox
@@ -14,11 +13,10 @@ from utils import debug_console
 
 def autostyle_selection():
     """
-    Main entry point for the autostyle feature.
-    
-    Retrieves the active editor, prompts for intensity, and initiates styling.
+    Main entry point for autostyle feature.
+    Retrieve active editor, prompt for intensity, and initiate styling.
     """
-    # 1. Get active editor
+    # Get active editor
     if not llm_state._active_editor_getter_func:
         messagebox.showerror("LLM Error", "LLM service not fully initialized.")
         return
@@ -27,7 +25,7 @@ def autostyle_selection():
         messagebox.showerror("LLM Error", "No active editor found.")
         return
 
-    # 2. Get selected text
+    # Get selected text
     try:
         selection_indices = editor.tag_ranges("sel")
         if not selection_indices:
@@ -41,7 +39,7 @@ def autostyle_selection():
         messagebox.showinfo("Smart Style", "Please select some text to style.")
         return
 
-    # 3. Open dialog to get intensity
+    # Open dialog to get intensity
     dialog = StyleIntensityDialog(editor, title="Smart Styling")
     intensity = dialog.result
 

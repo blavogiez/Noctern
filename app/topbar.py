@@ -187,6 +187,6 @@ def create_top_buttons_frame(root):
     # Add separator before UI visibility options
     settings_menu.add_separator()
     # Note: UI visibility settings are now managed through the Settings window
-    # and are applied at application startup
+    # Apply at application startup
     
     return top_frame, settings_menu

@@ -81,6 +81,19 @@ llm_service.initialize_llm_service(
 - Configuration changes should update both runtime state and persist to settings.conf
 - Error handling includes user-friendly status messages and debug logging
 
+### Comment Standards
+- Write all comments in English only
+- Use professional but informal tone
+- Keep comments clear and concise
+- Start with action verbs (Initialize, Handle, Process, Create, Load)
+- No articles ("a", "the") unless critical for clarity
+- No ending punctuation except docstrings
+- Max 80 characters per line
+- Avoid time-specific language ("now", "currently", "will be")
+- Use present tense for describing what code does
+- Format: Docstrings `"""Action verb + brief description."""` | Inline `# Action verb + explanation`
+- Example: "Handle file operations" not "This will handle file operations"
+
 ### Testing
 - Tests located in `tests/` directory
 - Use pytest with configuration in `pytest.ini`

@@ -75,8 +75,8 @@ def remove_prefix_overlap_from_completion(text_before_completion, llm_generated_
 
     overlap_length = 0
     # Iterate to find the longest sequence of words that is a suffix of the context
-    # and a prefix of the completion.
-    # The loop runs from 1 up to the minimum length of the two word lists.
+    # Check longest matching sequence at prefix/suffix boundary
+    # Loop from 1 up to minimum length of word lists
     for i in range(1, min(len(words_in_context), len(words_in_completion)) + 1):
         # Check if the last `i` words of the context match the first `i` words of the completion.
         if words_in_context[-i:] == words_in_completion[:i]:

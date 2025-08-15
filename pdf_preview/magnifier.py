@@ -150,7 +150,7 @@ class CircularMagnifier:
             return
             
         # Position the magnifier near the cursor but not directly on it
-        # to avoid hiding the content being magnified
+        # Avoid hiding content being magnified
         offset = self.size // 2 + 10
         self.window.geometry(f"+{x + offset}+{y + offset}")
         

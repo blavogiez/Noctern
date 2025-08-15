@@ -1,5 +1,5 @@
 """
-This module contains the dialog for custom LLM text generation.
+Contain dialog for custom LLM text generation.
 """
 
 import tkinter as tk
@@ -12,30 +12,18 @@ def show_generate_text_dialog(root_window, theme_setting_getter_func,
                               on_history_entry_add_callback,
                               initial_prompt_text=None):
     """
-    Displays a dialog for users to input a custom prompt for LLM text generation.
-
-    This dialog allows users to specify a prompt, context lines from the editor,
-    and whether the generation should be LaTeX-oriented. It also displays a history
-    of previous prompts and responses.
-
-    Args:
-        root_window (tk.Tk): The main Tkinter root window.
-        theme_setting_getter_func (callable): Function to get theme settings.
-        current_prompt_history_list (list): A list of (user_prompt, llm_response) tuples for history display.
-        on_generate_request_callback (callable): Callback function triggered when the user clicks "Generate".
-                                                Signature: `(user_prompt, lines_before, lines_after, is_latex_mode)`.
-        on_history_entry_add_callback (callable): Callback to add a new entry to the history (e.g., "Generating...").
-                                                  Signature: `(user_prompt)`.
-        initial_prompt_text (str, optional): Initial text to pre-fill the prompt input area. Defaults to None.
+    Display dialog for users to input custom prompt for LLM text generation.
+    Allow users to specify prompt, context lines from editor, and whether generation should be LaTeX-oriented.
+    Display history of previous prompts and responses.
     """
     debug_console.log("Opening LLM text generation dialog.", level='ACTION')
     prompt_window = tk.Toplevel(root_window)
     prompt_window.title("Custom AI Generation")
-    prompt_window.transient(root_window) # Make dialog transient to the root window.
-    prompt_window.grab_set() # Grab all input until the dialog is closed.
+    prompt_window.transient(root_window) # Make dialog transient to root window
+    prompt_window.grab_set() # Grab all input until dialog is closed
     prompt_window.geometry("800x600")
 
-    # Apply theme settings to the dialog and its widgets.
+    # Apply theme settings to dialog and widgets
     dialog_bg = theme_setting_getter_func("root_bg", "#f0f0f0")
     text_bg = theme_setting_getter_func("editor_bg", "#ffffff")
     text_fg = theme_setting_getter_func("editor_fg", "#000000")

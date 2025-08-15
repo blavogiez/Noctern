@@ -177,7 +177,7 @@ class DebugDialog(tk.Toplevel):
         error_text.pack(pady=10, anchor="w")
 
         # Removed the retry button for a simpler, less frustrating UX.
-        # The user can close the dialog and re-trigger the compilation if they wish to try again.
+        # User can close dialog and re-trigger compilation to try again
         info_label = ttk.Label(self.ai_frame, text="You can close this dialog and try compiling again.", font=("Segoe UI", 9, "italic"))
         info_label.pack(pady=(20, 0), anchor="w")
 

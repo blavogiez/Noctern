@@ -107,7 +107,7 @@ class IconButton(ttk.Button):
         elif icon_path and icon_path.endswith('.svg'):
             # For SVG files, we'll use text as fallback for now
             # In a full implementation, we would use a library like cairosvg
-            # to convert SVG to PNG first
+            # To convert SVG to PNG first
             icon_map = {
                 'search': '🔍',
                 'next': '▶',

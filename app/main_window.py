@@ -1,7 +1,4 @@
-"""
-This module is responsible for setting up the main graphical user interface (GUI)
-of the AutomaTeX application.
-"""
+"""Setup main graphical user interface for AutomaTeX application."""
 import os
 import time
 import ttkbootstrap as ttk
@@ -18,7 +15,7 @@ from editor.monaco_optimizer import initialize_monaco_optimization, apply_monaco
 from pdf_preview.interface import PDFPreviewInterface
 
 def _apply_startup_window_settings(window, config):
-    """Applies window geometry and state from config at startup."""
+    """Apply window geometry and state from configuration."""
     monitors = screen_utils.get_monitors()
     if not monitors:
         window.geometry("1200x800")
@@ -49,12 +46,10 @@ def _apply_startup_window_settings(window, config):
         window.geometry(f"{width}x{height}+{x}+{y}")
 
 def setup_gui():
-    """
-    Initializes and sets up the main graphical user interface (GUI).
-    """
+    """Initialize and setup main graphical user interface."""
     state._app_config = app_config.load_config()
     state.zoom_manager = ZoomManager(state)
-    # Removed pre-compiler checker for performance
+    # Pre-compiler checker removed for performance optimization
 
     state.root = ttk.Window(themename="litera")
     
@@ -70,7 +65,7 @@ def setup_gui():
     debug_console.log("GUI initialization process started.", level='INFO')
 
     
-    # Ensure we use flatly as default theme
+    # Force flatly theme as default instead of litera
     if saved_theme == "litera":
         saved_theme = "flatly"
         
@@ -78,14 +73,14 @@ def setup_gui():
     state._theme_settings = interface_theme.get_theme_colors(state.root.style, state.current_theme)
 
     debug_console.initialize(state.root)
-    # Set minimum log level to reduce verbosity
+    # Configure minimum log level to reduce console output
     debug_console.set_min_level('INFO')
     create_top_buttons_frame(state.root)
     
-    # Initialize PDF preview interface
+    # Setup PDF preview interface for document viewing
     state.pdf_preview_interface = PDFPreviewInterface(state.root, state.get_current_tab)
     
-    # After UI is set up, load PDF for initial tab
+    # Load PDF for initial tab after UI completion
     def load_initial_pdf():
         current_tab = state.get_current_tab()
         if current_tab and hasattr(state, 'pdf_preview_interface') and state.pdf_preview_interface:
@@ -112,27 +107,27 @@ def setup_gui():
         except ttk.TclError as e:
             debug_console.log(f"Error navigating to line: {e}", level='ERROR')
 
-    # Créer le nouveau système de debug ultra-rapide
+    # Initialize optimized debug system with line navigation
     debug_coordinator, debug_panel = create_debug_panel(left_pane, on_goto_line=go_to_line)
     state.debug_coordinator = debug_coordinator
     state.debug_panel = debug_panel
     
-    # Maintenir la compatibilité avec l'ancien nom
+    # Preserve legacy error_panel reference for compatibility
     state.error_panel = debug_panel
     state.notebook = create_notebook(state.main_pane)
     
-    # Create PDF preview pane
+    # Setup PDF preview pane for document display
     pdf_preview_content = create_pdf_preview_pane(state.main_pane)
     state.pdf_preview_interface.create_preview_panel(pdf_preview_content)
     
-    # Store references to UI elements we want to be able to hide
+    # Store UI element references for visibility management
     state.pdf_preview_pane = pdf_preview_content
     state.pdf_preview_parent = state.main_pane
     
-    # Add main pane to vertical pane
+    # Attach main pane to vertical layout container
     state.vertical_pane.add(state.main_pane, weight=1)
 
-    # Add PDF preview pane according to user preferences
+    # Configure PDF preview pane based on user settings
     show_pdf_preview = app_config.get_bool(state._app_config.get("show_pdf_preview", "True"))
     if show_pdf_preview:
         state.main_pane.add(state.pdf_preview_pane.master, weight=3)  # Increased weight for larger default size
@@ -141,7 +136,7 @@ def setup_gui():
     state.console_pane = console_frame
     actions.hide_console()
 
-    # Variable to track the last update time
+    # Track timing for update throttling
     last_update_time = 0
     update_pending = False
 
@@ -150,55 +145,55 @@ def setup_gui():
         
         current_tab = state.get_current_tab()
         if current_tab and current_tab.editor:
-            # ULTRA-FAST differential highlighting - no debouncing needed!
+            # Apply differential highlighting for performance
             from editor import syntax as editor_syntax
             editor_syntax.apply_differential_syntax_highlighting(current_tab.editor)
-            # Only update outline occasionally, not every keystroke
+            # Throttle outline updates to once per second maximum
             if time.time() - last_update_time > 1.0:  # Max once per second
                 state.outline.update_outline(current_tab.editor)
             
-        # Reset the pending flag
+        # Clear update pending status
         update_pending = False
 
     def on_text_modified(event):
         nonlocal last_update_time, update_pending
         
-        # Ultra-fast event handling - Monaco style
+        # Handle text modification events with Monaco optimization
         current_tab = state.get_current_tab()
         if not current_tab or event.widget != current_tab.editor:
             return None
             
-        # Suppress updates during rapid typing
+        # Throttle updates during continuous typing
         suppress_monaco_updates(current_tab.editor, 50)
         
-        # Set the modified flag to False to avoid infinite loop
+        # Reset modified flag to prevent event recursion
         current_tab.editor.edit_modified(False)
         
-        # Ultra-lightweight PDF preview trigger (only occasionally)
+        # Trigger PDF preview updates with rate limiting
         current_time = time.time()
         if current_time - last_update_time > 0.5:  # Max twice per second
             if hasattr(state, 'pdf_preview_interface') and state.pdf_preview_interface:
                 state.pdf_preview_interface.on_editor_content_change()
             last_update_time = current_time
         
-        # Skip if update already pending
+        # Prevent duplicate updates when one is pending
         if update_pending:
             return None
             
         update_pending = True
         
-        # Ultra-fast debouncing - differential highlighting is so fast we can be responsive
+        # Schedule delayed update with minimal debouncing
         delay = 50  # Very short delay since we only process changed lines
         state.root.after(delay, apply_monaco_updates)
         return None
 
     def bind_text_modified_event(tab):
-        """Bind the text modified event to a tab."""
+        """Bind text modification events to editor tab."""
         if tab and tab.editor:
-            # Unbind any existing binding first to avoid duplicates
+            # Remove existing bindings to prevent conflicts
             tab.editor.unbind("<<Modified>>")
             tab.editor.bind("<<Modified>>", on_text_modified)
-            # Also bind KeyRelease to ensure we catch all changes
+            # Bind KeyRelease for comprehensive change detection
             tab.editor.bind("<KeyRelease>", on_text_modified)
             debug_console.log(f"Bound <<Modified>> and <KeyRelease> events to tab: {tab.file_path if tab.file_path else 'Untitled'}", level='TRACE')
 
@@ -207,20 +202,20 @@ def setup_gui():
         current_tab = state.get_current_tab()
         if current_tab:
             bind_text_modified_event(current_tab)
-            # Initialize Monaco optimization for new tab
+            # Setup Monaco optimization for newly selected tab
             initialize_monaco_optimization(current_tab.editor)
-            # Apply syntax highlighting when tab changes
+            # Trigger syntax highlighting for tab switch
             state.root.after(20, apply_monaco_updates)
             
-            # Load existing PDF for the tab if it exists
+            # Load associated PDF document for current tab
             if hasattr(state, 'pdf_preview_interface') and state.pdf_preview_interface:
                 state.pdf_preview_interface.load_existing_pdf_for_tab(current_tab)
             
-            # Update status bar with file info
+            # Refresh status bar with current file information
             from app import status_utils
             status_utils.update_status_bar_text()
             
-    # Also bind the text modified event to the initial tab
+    # Bind modification events to initial tab
     state.root.after(100, lambda: bind_text_modified_event(state.get_current_tab()))
 
     state.notebook.bind("<<NotebookTabChanged>>", on_tab_changed)
@@ -228,15 +223,15 @@ def setup_gui():
     bind_global_shortcuts(state.root)
     
     actions.load_session()
-    # Schedule an initial error check after loading session
-    # Initialize first tab with Monaco optimization
+    # Plan initial error checking after session restoration
+    # Setup Monaco optimization for initial tab
     first_tab = state.get_current_tab()
     if first_tab and first_tab.editor:
         initialize_monaco_optimization(first_tab.editor)
     state.root.after(100, apply_monaco_updates)
     state.root.protocol("WM_DELETE_WINDOW", actions.on_close_request)
     
-    # Create the status bar according to user preferences
+    # Setup status bar based on user configuration
     show_status_bar = app_config.get_bool(state._app_config.get("show_status_bar", "True"))
     
     if show_status_bar:
@@ -246,24 +241,24 @@ def setup_gui():
         state.gpu_status_label = gpu_status_label
         state.metrics_display = metrics_display
     else:
-        # Initialize variables to None if status bar is not shown
+        # Set status bar variables to None when disabled
         state.status_bar_frame = None
         state.status_label = None
         state.metrics_display = None
         state.gpu_status_label = None
     
-    # Initialize visibility tracking variables with saved settings
+    # Setup visibility state variables from configuration
     from app import ui_visibility
     show_pdf_preview = app_config.get_bool(state._app_config.get("show_pdf_preview", "True"))
     
     state._status_bar_visible_var = ttk.BooleanVar(value=show_status_bar)
     state._pdf_preview_visible_var = ttk.BooleanVar(value=show_pdf_preview)
     
-    # Apply initial visibility settings for PDF preview (status bar is already handled above)
+    # Configure initial PDF preview visibility state
     if not show_pdf_preview:
         ui_visibility.toggle_pdf_preview()
     
-    # Start the GPU status update loop if status bar is shown
+    # Initialize GPU status monitoring when status bar enabled
     if show_status_bar and state.gpu_status_label:
         start_gpu_status_loop(state.gpu_status_label, state.root)
     

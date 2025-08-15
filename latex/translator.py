@@ -1,8 +1,4 @@
-"""
-This module provides functionality for translating LaTeX document content using the Hugging Face `transformers` library.
-It is optimized to run on a CUDA-enabled GPU if available and includes a robust protection mechanism
-to avoid translating LaTeX commands, environments, and other syntax, ensuring document compilability.
-"""
+"""Provide LaTeX document translation using Hugging Face transformers library."""
 
 import tkinter as tk
 from tkinter import ttk, messagebox
@@ -19,19 +15,19 @@ except ImportError:
     _TRANSFORMERS_AVAILABLE = False
     debug_console.log("The 'transformers' or 'torch' module was not found. Translation functionality will be disabled.", level='WARNING')
 
-# --- Globals ---
+# Global variables for service configuration
 _root = None
 _theme_setting_getter_func = None
 _show_temporary_status_message_func = None
 _active_editor_getter_func = None
 _active_filepath_getter_func = None
 
-# --- Model Cache ---
+# Model caching and device configuration
 _model_cache = {}
 _device = None
 _is_initialized = False
 
-# --- Supported Languages ---
+# Supported translation language pairs
 SUPPORTED_TRANSLATIONS = {
     "Français -> Anglais": "Helsinki-NLP/opus-mt-fr-en",
     "Anglais -> Français": "Helsinki-NLP/opus-mt-en-fr",
@@ -45,10 +41,10 @@ SUPPORTED_TRANSLATIONS = {
     "Allemand -> Anglais": "Helsinki-NLP/opus-mt-de-en",
 }
 
-# This regex tokenizes the text into fundamental LaTeX components.
+# Tokenize text into fundamental LaTeX components
 LATEX_SPLIT_PATTERN = re.compile(r'(\\verb(.).*?\2|\\[a-zA-Z@]+(?:\*)?|\\[^a-zA-Z]|%.*?$|\$[^$]*\$|\$\$[^$]*\$\$|[{}[\]&])', re.MULTILINE)
 
-# --- CORE FIX V3: Expanded list of commands whose arguments (both optional [] and required {}) are KEYWORDS ---
+# Commands whose arguments should be treated as keywords and not translated
 KEYWORD_ARG_COMMANDS = {
     '\\documentclass', '\\usepackage', '\\include', '\\input',
     '\\begin', '\\end',
@@ -64,16 +60,15 @@ KEYWORD_ARG_COMMANDS = {
 }
 
 def _ensure_translator_initialized():
-    """Ensures the translator service is initialized before use."""
+    """Ensure translator service is initialized before use."""
     global _root, _theme_setting_getter_func, _show_temporary_status_message_func
     global _active_editor_getter_func, _active_filepath_getter_func, _device, _is_initialized
     
-    # Check if already initialized
+    # Skip if already initialized
     if _is_initialized:
         return True
         
-    # If we get here, the translator wasn't initialized at startup
-    # We'll need the parameters to initialize it now
+    # Initialize now if not done at startup
     if (_root is None or _theme_setting_getter_func is None or _show_temporary_status_message_func is None or 
         _active_editor_getter_func is None or _active_filepath_getter_func is None):
         debug_console.log("Translator service not properly configured.", level='ERROR')
@@ -91,7 +86,7 @@ def _ensure_translator_initialized():
     return True
 
 def initialize_translator(root_ref, theme_getter, status_message_func, active_editor_getter, active_filepath_getter):
-    """Initializes the translator service and determines the compute device."""
+    """Initialize translator service and determine compute device."""
     global _root, _theme_setting_getter_func, _show_temporary_status_message_func
     global _active_editor_getter_func, _active_filepath_getter_func, _device, _is_initialized
 
@@ -101,13 +96,12 @@ def initialize_translator(root_ref, theme_getter, status_message_func, active_ed
     _active_editor_getter_func = active_editor_getter
     _active_filepath_getter_func = active_filepath_getter
 
-    # Note: We're not actually initializing the device here to speed up startup
-    # Initialization will happen when translation is first requested
+    # Defer device initialization to speed up startup
     debug_console.log("Translator service configured for on-demand initialization.", level='INFO')
-    _is_initialized = False  # Mark as not yet fully initialized
+    _is_initialized = False  # Mark as not fully initialized
 
 def _get_model_and_tokenizer(model_name):
-    """Loads and caches a translation model and tokenizer."""
+    """Load and cache translation model and tokenizer."""
     if model_name in _model_cache:
         model, tokenizer = _model_cache[model_name]
         model.to(_device)
@@ -125,7 +119,7 @@ def _get_model_and_tokenizer(model_name):
         return None, None
 
 def _translate_text_chunk(text, model, tokenizer):
-    """Translates a single block of text, preserving surrounding whitespace."""
+    """Translate single text block preserving surrounding whitespace."""
     if not text.strip(): return text
     leading_ws = text[:len(text) - len(text.lstrip())]
     trailing_ws = text[len(text.rstrip()):]
@@ -142,14 +136,12 @@ def _translate_text_chunk(text, model, tokenizer):
         return text
 
 def _find_first_section(text):
-    """Finds the position of the first \section command in the document."""
+    """Find position of first section command in document."""
     match = re.search(r'\\section\s*\{', text, re.IGNORECASE)
     return match.start() if match else None
 
 def _translate_latex_safely(text, model, tokenizer, skip_preamble=False):
-    """
-    Translates LaTeX text using a stateful parser to protect command arguments (both {} and []).
-    """
+    """Translate LaTeX text using stateful parser to protect command arguments."""
     preamble = ""
     if skip_preamble:
         first_section_pos = _find_first_section(text)
@@ -159,7 +151,7 @@ def _translate_latex_safely(text, model, tokenizer, skip_preamble=False):
 
     parts = [p for p in LATEX_SPLIT_PATTERN.split(text) if p]
     
-    # --- Stateful Parser Logic ---
+    # Stateful parser implementation
     final_parts = []
     text_buffer = []
     i = 0
@@ -168,13 +160,13 @@ def _translate_latex_safely(text, model, tokenizer, skip_preamble=False):
         nonlocal text_buffer
         if text_buffer:
             buffered_text = "".join(text_buffer)
-            # Only translate buffers that contain meaningful, non-command text
+            # Translate only meaningful non-command text
             stripped = buffered_text.strip()
             if len(stripped) > 3 and any(c.isalpha() for c in stripped):
                 translated_chunk = _translate_text_chunk(buffered_text, model, tokenizer)
                 final_parts.append(translated_chunk)
             else:
-                final_parts.append(buffered_text) # Keep short/non-alpha text as is
+                final_parts.append(buffered_text)  # Keep short/non-alpha text as-is
             text_buffer = []
 
     while i < len(parts):
@@ -182,13 +174,13 @@ def _translate_latex_safely(text, model, tokenizer, skip_preamble=False):
         command_name = part.rstrip('*') if part.startswith('\\') else ''
 
         if LATEX_SPLIT_PATTERN.match(part):
-            flush_buffer() # Translate any text accumulated before this command/symbol
+            flush_buffer()  # Translate accumulated text before command/symbol
 
             if command_name in KEYWORD_ARG_COMMANDS:
                 block_to_keep = [part]
                 i += 1
-                # Capture optional arguments [...]
-                while i < len(parts) and parts[i].strip() == '': # Skip whitespace
+                # Capture optional arguments
+                while i < len(parts) and parts[i].strip() == '':  # Skip whitespace
                     block_to_keep.append(parts[i])
                     i += 1
                 if i < len(parts) and parts[i] == '[':
@@ -201,8 +193,8 @@ def _translate_latex_safely(text, model, tokenizer, skip_preamble=False):
                         block_to_keep.append(parts[i])
                         i += 1
                 
-                # Capture required arguments {...}
-                while i < len(parts) and parts[i].strip() == '': # Skip whitespace
+                # Capture required arguments
+                while i < len(parts) and parts[i].strip() == '':  # Skip whitespace
                     block_to_keep.append(parts[i])
                     i += 1
                 if i < len(parts) and parts[i] == '{':
@@ -215,19 +207,19 @@ def _translate_latex_safely(text, model, tokenizer, skip_preamble=False):
                         block_to_keep.append(parts[i])
                         i += 1
                 final_parts.append("".join(block_to_keep))
-                continue # Restart main loop from the new position
+                continue  # Restart main loop from new position
             else:
-                final_parts.append(part) # It's a command/symbol to keep, but not a keyword one
+                final_parts.append(part)  # Keep command/symbol but not keyword command
         else:
-            text_buffer.append(part) # It's plain text, add to buffer for later translation
+            text_buffer.append(part)  # Add plain text to buffer for translation
         i += 1
     
-    flush_buffer() # Translate any remaining text at the end of the document
+    flush_buffer()  # Translate any remaining text at document end
             
     return preamble + "".join(final_parts)
 
 def _perform_translation_threaded(source_text, model_name, original_filepath, dialog_window, skip_preamble):
-    """Manages the translation process in a background thread."""
+    """Manage translation process in background thread."""
     def run_translation():
         try:
             _root.after(0, lambda: _show_temporary_status_message_func(f"Initializing translation on {_device.upper()}..."))
@@ -262,8 +254,8 @@ def _perform_translation_threaded(source_text, model_name, original_filepath, di
     threading.Thread(target=run_translation, daemon=True).start()
 
 def open_translate_dialog():
-    """Opens a dialog for the user to select a translation language pair and options."""
-    # Ensure translator is initialized before use
+    """Open dialog for user to select translation language pair and options."""
+    # Initialize translator before use
     if not _ensure_translator_initialized():
         messagebox.showerror("Translation Error", "Failed to initialize translation service.")
         return

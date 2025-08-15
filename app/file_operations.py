@@ -1,7 +1,6 @@
 """
-This module provides functions for common file operations within the application,
-including opening, saving, and saving files under a new name. It interacts with
-Tkinter's `filedialog` for user interaction and `debug_console` for logging.
+Provide functions for common file operations within application.
+Include opening, saving, and saving files under new name. Interact with Tkinter filedialog for user interaction and debug_console for logging.
 """
 
 from tkinter import filedialog
@@ -10,33 +9,26 @@ from utils import debug_console
 
 def open_file(create_new_tab_callback, show_temporary_status_message_callback):
     """
-    Opens a file dialog to allow the user to select a file, then opens it in a new editor tab.
-
-    Args:
-        create_new_tab_callback (callable): A callback function to create a new editor tab.
-                                            Expected signature: `create_new_tab(file_path=None)`.
-        show_temporary_status_message_callback (callable): A callback function to display
-                                                            a temporary message in the status bar.
-                                                            Expected signature: `show_temporary_status_message(message)`.
+    Open file dialog to allow user to select file, then open it in new editor tab.
     """
     debug_console.log("Initiating file open dialog.", level='ACTION')
-    # Open a file dialog to let the user choose a file.
+    # Open file dialog to let user choose file
     file_path = filedialog.askopenfilename(
         title="Open File",
         filetypes=[("LaTeX Files", "*.tex"), ("Text Files", "*.txt"), ("All Files", "*.*")]
     )
     if file_path:
         debug_console.log(f"File selected for opening: {file_path}", level='INFO')
-        # Create a new tab and load the selected file.
+        # Create new tab and load selected file
         create_new_tab_callback(file_path=file_path)
-        # Display a success message in the status bar.
+        # Display success message in status bar
         show_temporary_status_message_callback(f"✅ Opened: {os.path.basename(file_path)}")
     else:
         debug_console.log("File open dialog cancelled by user.", level='INFO')
 
 def save_file(get_current_tab_callback, show_temporary_status_message_callback, save_file_as_callback):
     """
-    Saves the content of the current active editor tab.
+    Save content of current active editor tab.
 
     If the current tab has an associated file path, it saves directly to that path.
     If it's a new, unsaved file, it redirects to the `save_file_as` function.

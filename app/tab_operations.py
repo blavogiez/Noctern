@@ -67,7 +67,7 @@ def close_current_tab(get_current_tab_callback, root_window, notebook_widget, sa
     debug_console.log(f"Tab '{tab_display_name}' successfully closed and removed from notebook.", level='INFO')
     
     # If no tabs remain open, we don't create a new 'Untitled' tab automatically
-    # The application can function without any open tabs
+    # Application continues functioning without open tabs
     if not open_tabs_dict:
         debug_console.log("No tabs remaining. Application will continue without open tabs.", level='INFO')
 
@@ -106,7 +106,7 @@ def create_new_tab(file_path, notebook_widget, open_tabs_dict, apply_theme_callb
     new_tab = EditorTab_class(notebook_widget, file_path=file_path, schedule_heavy_updates_callback=schedule_heavy_updates_callback)
     
     # Add the new tab to the notebook. It's crucial to add it before loading content
-    # so that `new_tab.update_tab_title()` can correctly interact with the notebook.
+    # Enable proper notebook interaction for tab title updates
     notebook_widget.add(new_tab, text=tab_display_name)
     
     # Load content into the new tab (from file or template).
@@ -120,5 +120,5 @@ def create_new_tab(file_path, notebook_widget, open_tabs_dict, apply_theme_callb
     # Apply the current theme to the new tab's widgets to ensure visual consistency.
     apply_theme_callback() 
     # Note: on_tab_changed_callback will be automatically triggered by the NotebookTabChanged event
-    # when notebook_widget.select() is called above, so no manual call needed here
+    # Automatic trigger from notebook_widget.select() above
     debug_console.log(f"Tab for '{tab_display_name}' created and loaded successfully.", level='SUCCESS')

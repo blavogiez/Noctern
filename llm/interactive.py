@@ -79,7 +79,7 @@ class InteractiveSession:
     def handle_chunk(self, chunk):
         if self.is_discarded: return
         # For styling operations, we don't want to apply the llm_generated_text tag
-        # as it might interfere with the final styling
+        # Avoid interference with final styling
         tag = "llm_generated_text" if not self.is_styling else ""
         if tag:
             self.editor.insert(self.text_end_index, chunk, tag)
@@ -92,7 +92,7 @@ class InteractiveSession:
         if self.is_discarded: return
         self.editor.delete(self.text_start_index, self.text_end_index)
         # For styling operations, we don't want to apply the llm_generated_text tag
-        # as it might interfere with the final styling
+        # Avoid interference with final styling
         tag = "llm_generated_text" if not self.is_styling else ""
         if tag:
             self.editor.insert(self.text_start_index, final_cleaned_text, tag)

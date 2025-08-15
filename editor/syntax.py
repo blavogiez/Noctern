@@ -1,8 +1,4 @@
-"""
-ULTRA-FAST LaTeX Syntax Highlighting System
-Differential highlighting - only processes changed lines.
-Clean, simple API with maximum performance.
-"""
+"""Provide differential LaTeX syntax highlighting with maximum performance."""
 import tkinter as tk
 import weakref
 from editor.tab import EditorTab
@@ -10,26 +6,20 @@ from .syntax_highlighter import apply_differential_highlighting
 from .syntax_tracker import get_line_tracker, clear_line_tracker
 from .syntax_patterns import PATTERNS, COLORS
 
-# Performance thresholds
+# Performance threshold constants
 LARGE_FILE_THRESHOLD = 2000
 DEBOUNCE_DELAY = 500
 QUICK_DEBOUNCE_DELAY = 150
 
-# Global state
+# Global update tracking state
 _pending_updates = weakref.WeakKeyDictionary()
 
 def highlight_changes(editor):
-    """
-    Main function: Apply differential syntax highlighting.
-    Ultra-fast - only highlights changed lines.
-    """
+    """Apply differential syntax highlighting to changed lines only."""
     apply_differential_highlighting(editor)
 
 def highlight_full_document(editor):
-    """
-    Full document highlighting for file loading.
-    Clears cache and highlights everything.
-    """
+    """Apply full document highlighting with cache clearing."""
     if not editor:
         return
         

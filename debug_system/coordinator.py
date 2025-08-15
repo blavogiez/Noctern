@@ -1,7 +1,4 @@
-"""
-Main debug coordinator that orchestrates all debug functionality.
-Follows SOLID principles with clean separation of concerns.
-"""
+"""Orchestrate debug functionality with SOLID design principles."""
 
 from typing import Optional, Callable
 from utils import debug_console
@@ -14,14 +11,14 @@ from debug_system.debug_ui import TabbedDebugUI
 
 
 class DebugCoordinator:
-    """Main coordinator that orchestrates all debug functionality."""
+    """Coordinate all debug functionality components."""
     
     def __init__(self, debug_ui: TabbedDebugUI, on_goto_line: Optional[Callable[[int], None]] = None):
-        """Initialize the debug coordinator with all components."""
+        """Initialize debug coordinator with required components."""
         self.debug_ui = debug_ui
         self.on_goto_line = on_goto_line
         
-        # Initialize core components
+        # Setup core debug system components
         self.error_parser = LaTeXErrorParser()
         self.llm_analyzer = LLMAnalyzer()
         self.quick_fix_provider = LaTeXQuickFixProvider()

@@ -80,7 +80,7 @@ def open_settings_window(root):
     available_models = api_client.get_available_models()
     if not available_models:
         # If we can't fetch models, we add the currently saved ones as options
-        # so the user can at least see what's configured.
+        # Display currently configured models for user visibility
         available_models = list(set(current_config.get(key) for key in current_config if key.startswith("model_")))
 
     model_vars = {}

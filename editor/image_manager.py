@@ -18,10 +18,7 @@ _monitor_thread = None
 _last_manual_check = 0  # Track manual checks to avoid conflicts
 
 def _parse_for_images(content):
-    """
-    Parses the given document content to find all \includegraphics paths.
-    Enhanced to handle various edge cases and malformed LaTeX.
-    """
+    """Parse document content to find includegraphics paths with enhanced error handling."""
     if not content:
         return set()
     
@@ -49,18 +46,13 @@ def _parse_for_images(content):
     return found_paths
 
 def _get_content_hash(content):
-    """
-    Returns a hash of the content to detect changes more reliably
-    """
+    """Generate MD5 hash of content for change detection."""
     if not content:
         return ""
     return hashlib.md5(content.encode('utf-8', errors='ignore')).hexdigest()
 
 def _find_orphaned_images(tex_file_path, current_images):
-    """
-    AJOUT SIMPLE : Trouve les images orphelines en comparant les fichiers existants 
-    dans figures/ avec les références actuelles
-    """
+    """Find orphaned images by comparing existing figures/ files with current references."""
     if not tex_file_path:
         return set()
     
@@ -70,7 +62,7 @@ def _find_orphaned_images(tex_file_path, current_images):
     if not os.path.exists(figures_dir):
         return set()
     
-    # Extensions d'images courantes
+    # Common image extensions
     extensions = ['*.png', '*.jpg', '*.jpeg', '*.pdf', '*.eps', '*.svg']
     existing_files = set()
     
@@ -78,12 +70,12 @@ def _find_orphaned_images(tex_file_path, current_images):
         for ext in extensions:
             pattern = os.path.join(figures_dir, '**', ext)
             for file_path in glob.glob(pattern, recursive=True):
-                # Convertir en chemin relatif depuis le répertoire du .tex
+                # Convert to relative path from .tex directory
                 rel_path = os.path.relpath(file_path, base_dir)
-                rel_path = rel_path.replace(os.sep, '/')  # Format LaTeX
+                rel_path = rel_path.replace(os.sep, '/')  # LaTeX format
                 existing_files.add(rel_path)
         
-        # Retourner les fichiers qui existent mais ne sont plus référencés
+        # Return files that exist but are no longer referenced
         orphaned = existing_files - current_images
         if orphaned:
             debug_console.log(f"Found {len(orphaned)} orphaned images: {orphaned}", level='INFO')
@@ -94,31 +86,18 @@ def _find_orphaned_images(tex_file_path, current_images):
         return set()
 
 def _resolve_image_path(tex_file_path, image_path_in_tex):
-    """
-    Resolves a relative image path found in a .tex file to an absolute filesystem path.
-
-    This function takes the path of the .tex file and the image path as written
-    in the LaTeX document (which can be relative) and converts it into an absolute
-    path that can be used to locate the file on the system.
-
-    Args:
-        tex_file_path (str): The absolute path to the .tex file.
-        image_path_in_tex (str): The image path as specified in the \includegraphics command.
-
-    Returns:
-        str: The absolute path to the image file.
-    """
+    """Resolve relative image path from tex file to absolute filesystem path."""
     if not tex_file_path:
-        # If the .tex file path is not available, assume current working directory as base.
+        # Use current directory when tex file path unavailable
         base_directory = os.getcwd()
     else:
-        # Otherwise, the base directory is where the .tex file is located.
+        # Use tex file directory as base
         base_directory = os.path.dirname(tex_file_path)
     
-    # Clean the image path more thoroughly
+    # Clean image path thoroughly
     clean_image_path = image_path_in_tex.strip().replace('\n', '').replace('\r', '')
     
-    # Handle different path separators
+    # Normalize path separators
     normalized_path = os.path.normpath(clean_image_path.replace("/", os.sep).replace("\\", os.sep))
     absolute_path = os.path.join(base_directory, normalized_path)
     
@@ -127,21 +106,11 @@ def _resolve_image_path(tex_file_path, image_path_in_tex):
     return absolute_path
 
 def _cleanup_empty_dirs(path, base_figures_dir):
-    """
-    Recursively deletes empty directories upwards from the given path, stopping at the base 'figures' directory.
-
-    This function is called after an image file has been deleted. It checks if the parent
-    directories have become empty and, if so, deletes them recursively until a non-empty
-    directory or the specified base 'figures' directory is reached.
-
-    Args:
-        path (str): The starting path (typically the directory of the deleted image).
-        base_figures_dir (str): The root 'figures' directory, beyond which cleanup should not proceed.
-    """
+    """Recursively delete empty directories upward until base figures directory."""
     current_path = os.path.normpath(path)
     base_figures_dir = os.path.normpath(base_figures_dir)
 
-    # Loop upwards as long as the current path is within the base_figures_dir and is a directory.
+    # Loop upward while path is within base figures directory
     while current_path.startswith(base_figures_dir) and os.path.isdir(current_path) and current_path != base_figures_dir:
         try:
             if not os.listdir(current_path):
@@ -149,23 +118,13 @@ def _cleanup_empty_dirs(path, base_figures_dir):
                 debug_console.log(f"Removed empty directory: {current_path}", level='TRACE')
                 current_path = os.path.dirname(current_path)
             else:
-                break # Stop if the directory is not empty.
+                break  # Stop if directory not empty
         except OSError as e:
             debug_console.log(f"Failed to remove directory '{current_path}': {e}", level='ERROR')
-            break # Stop if an error occurs.
+            break  # Stop on error
 
 def _prompt_for_image_deletion(image_path_to_delete, tex_file_path):
-    """
-    Displays a confirmation dialog to the user for deleting an image file.
-
-    If the user confirms, the image file is deleted from the filesystem, and
-    subsequently, any empty parent directories within the 'figures' structure
-    are also cleaned up.
-
-    Args:
-        image_path_to_delete (str): The absolute path of the image file to potentially delete.
-        tex_file_path (str): The absolute path to the .tex file from which the image was referenced.
-    """
+    """Display confirmation dialog for image deletion with preview and cleanup."""
     if not os.path.exists(image_path_to_delete):
         debug_console.log(f"Image file '{image_path_to_delete}' does not exist, skipping deletion prompt.", level='INFO')
         return
@@ -174,16 +133,16 @@ def _prompt_for_image_deletion(image_path_to_delete, tex_file_path):
     try:
         display_path = os.path.relpath(image_path_to_delete, base_directory)
     except ValueError:
-        # Handle case where paths are on different drives (Windows)
+        # Handle different drives on Windows
         display_path = image_path_to_delete
         
     debug_console.log(f"Prompting user for deletion of image file: {display_path}", level='ACTION')
     
-    # Get additional information about the image file
+    # Get image file information
     file_size = "Unknown size"
     try:
         size_bytes = os.path.getsize(image_path_to_delete)
-        # Format file size in a human-readable way
+        # Format file size readably
         if size_bytes < 1024:
             file_size = f"{size_bytes} bytes"
         elif size_bytes < 1024 * 1024:
@@ -193,7 +152,7 @@ def _prompt_for_image_deletion(image_path_to_delete, tex_file_path):
     except OSError:
         pass
     
-    # Get file modification time
+    # Get modification time
     mod_time = "Unknown"
     try:
         mod_timestamp = os.path.getmtime(image_path_to_delete)
@@ -239,14 +198,14 @@ def _prompt_for_image_deletion(image_path_to_delete, tex_file_path):
         
         # Create label for image preview
         image_label = Label(preview_frame, image=photo)
-        image_label.image = photo  # Keep a reference to avoid garbage collection
+        image_label.image = photo  # Keep reference to prevent GC
         image_label.pack()
         
-        # Add a label to indicate this is a preview
+        # Add preview indicator
         preview_label = Label(preview_frame, text="Image Preview", font=("Arial", 8, "italic"))
         preview_label.pack()
     except Exception as e:
-        # If we can't load the image, just show a message
+        # Show message when image cannot load
         no_preview_label = Label(preview_frame, text=f"Cannot preview image: {str(e)}", 
                                 font=("Arial", 8, "italic"))
         no_preview_label.pack()
@@ -255,8 +214,8 @@ def _prompt_for_image_deletion(image_path_to_delete, tex_file_path):
     button_frame = Frame(main_frame)
     button_frame.pack()
     
-    # Result variable to store user choice
-    result = [False]  # Using list to allow modification in nested function
+    # Store user choice
+    result = [False]  # Use list for nested function modification
     
     def on_yes():
         result[0] = True
@@ -291,7 +250,7 @@ def _prompt_for_image_deletion(image_path_to_delete, tex_file_path):
             os.remove(image_path_to_delete)
             debug_console.log(f"Image file successfully deleted: {image_path_to_delete}", level='SUCCESS')
             
-            # Define the base 'figures' directory to stop cleanup
+            # Define base figures directory for cleanup boundary
             base_figures_dir = os.path.join(base_directory, 'figures')
             _cleanup_empty_dirs(image_dir, base_figures_dir)
         except OSError as e:
@@ -301,10 +260,7 @@ def _prompt_for_image_deletion(image_path_to_delete, tex_file_path):
         debug_console.log(f"User chose not to delete file: {image_path_to_delete}", level='INFO')
 
 def _monitor_changes():
-    """
-    Background thread that continuously monitors for image reference changes
-    Enhanced with better error handling and more frequent checks
-    """
+    """Background thread monitoring image reference changes with enhanced error handling."""
     global _monitoring_active, _tracked_tabs, _pending_deletions
     
     debug_console.log("Image monitoring thread started", level='TRACE')
@@ -314,19 +270,19 @@ def _monitor_changes():
             current_time = time.time()
             tabs_to_remove = []
             
-            # Create a copy of the dictionary to avoid modification during iteration
+            # Create snapshot to avoid modification during iteration
             tabs_snapshot = dict(_tracked_tabs)
             
             for tab_id, tab_data in tabs_snapshot.items():
                 try:
                     tab_ref = tab_data['tab_ref']
                     
-                    # Check if tab still exists and has required methods
+                    # Verify tab still exists with required methods
                     if not hasattr(tab_ref, 'get_content') or not callable(getattr(tab_ref, 'get_content')):
                         tabs_to_remove.append(tab_id)
                         continue
                     
-                    # Check for changes more frequently
+                    # Check for changes at configured interval
                     if current_time - tab_data.get('last_check_time', 0) >= _check_interval:
                         _check_tab_for_deletions(tab_id, tab_ref, tab_data)
                         tab_data['last_check_time'] = current_time
@@ -335,13 +291,13 @@ def _monitor_changes():
                     debug_console.log(f"Error monitoring tab {tab_id}: {e}", level='ERROR')
                     tabs_to_remove.append(tab_id)
             
-            # Clean up closed tabs
+            # Clean up dead tabs
             for tab_id in tabs_to_remove:
                 if tab_id in _tracked_tabs:
                     debug_console.log(f"Removing dead tab {tab_id} from monitoring", level='TRACE')
                     del _tracked_tabs[tab_id]
             
-            time.sleep(0.1)  # Very short pause for responsiveness
+            time.sleep(0.1)  # Short pause for responsiveness
             
         except Exception as e:
             debug_console.log(f"Critical error in monitoring thread: {e}", level='ERROR')
@@ -405,9 +361,7 @@ def _check_tab_for_deletions(tab_id, tab_ref, tab_data):
         debug_console.log(f"Error checking tab {tab_id} for deletions: {e}", level='ERROR')
 
 def _handle_image_deletion(image_path, tab_ref, pending_key):
-    """
-    Handles image deletion (in the main thread)
-    """
+    """Handle image deletion in main thread."""
     global _pending_deletions
     
     try:
@@ -422,12 +376,7 @@ def _handle_image_deletion(image_path, tab_ref, pending_key):
         debug_console.log(f"Error handling image deletion for '{image_path}': {e}", level='ERROR')
 
 def start_image_monitoring(current_tab):
-    """
-    Starts monitoring an editor tab for image reference changes
-    
-    Args:
-        current_tab (EditorTab): The editor tab to monitor
-    """
+    """Start monitoring editor tab for image reference changes."""
     global _tracked_tabs, _monitor_thread, _monitoring_active
     
     if not current_tab:
@@ -452,7 +401,7 @@ def start_image_monitoring(current_tab):
         
         debug_console.log(f"Started monitoring tab {tab_id} with {len(current_images)} images", level='INFO')
         
-        # Start monitoring thread if not already active
+        # Start monitoring thread if not active
         if not _monitor_thread or not _monitor_thread.is_alive():
             _monitoring_active = True
             _monitor_thread = threading.Thread(target=_monitor_changes, daemon=True)
@@ -462,12 +411,7 @@ def start_image_monitoring(current_tab):
         debug_console.log(f"Error starting image monitoring: {e}", level='ERROR')
 
 def stop_image_monitoring(current_tab):
-    """
-    Stops monitoring an editor tab
-    
-    Args:
-        current_tab (EditorTab): The editor tab to stop monitoring
-    """
+    """Stop monitoring editor tab."""
     global _tracked_tabs
     
     if current_tab:
@@ -477,12 +421,7 @@ def stop_image_monitoring(current_tab):
             debug_console.log(f"Stopped monitoring tab {tab_id}", level='INFO')
 
 def force_check_current_tab(current_tab):
-    """
-    Forces an immediate check of the current tab for image deletions
-    
-    Args:
-        current_tab (EditorTab): The current active editor tab
-    """
+    """Force immediate check of current tab for image deletions."""
     global _tracked_tabs, _last_manual_check
     
     if not current_tab:
@@ -503,9 +442,7 @@ def force_check_current_tab(current_tab):
         debug_console.log(f"Error in force check: {e}", level='ERROR')
 
 def shutdown_image_monitoring():
-    """
-    Properly shuts down the image monitoring system
-    """
+    """Properly shut down image monitoring system."""
     global _monitoring_active, _monitor_thread, _tracked_tabs, _pending_deletions
     
     debug_console.log("Shutting down image monitoring system", level='TRACE')
@@ -519,13 +456,7 @@ def shutdown_image_monitoring():
     debug_console.log("Image monitoring system shut down", level='TRACE')
 
 def check_for_deleted_images(current_tab):
-    """
-    Legacy function - now just ensures monitoring is active
-    AJOUT SIMPLE : Vérifie aussi les images orphelines au premier appel
-    
-    Args:
-        current_tab (EditorTab): The current active editor tab containing the document.
-    """
+    """Legacy function ensuring monitoring is active and checking orphaned images once."""
     debug_console.log("Check for deleted images called - ensuring monitoring is active", level='INFO')
     
     if not current_tab:
@@ -533,16 +464,16 @@ def check_for_deleted_images(current_tab):
         return
     
     try:
-        # Just ensure monitoring is active - real-time monitoring handles detection
+        # Ensure monitoring is active - real-time handles detection
         tab_id = id(current_tab)
         if tab_id not in _tracked_tabs:
             start_image_monitoring(current_tab)
         else:
             debug_console.log("Tab already being monitored - real-time detection active", level='DEBUG')
         
-        # AJOUT SIMPLE : Vérifier les orphelins une seule fois par fichier
+        # Check orphaned images once per file
         if hasattr(current_tab, 'file_path') and current_tab.file_path:
-            # Utiliser un attribut du tab pour éviter de refaire la vérification
+            # Use tab attribute to avoid re-checking
             if not hasattr(current_tab, '_orphan_check_done'):
                 current_tab._orphan_check_done = True
                 

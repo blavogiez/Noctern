@@ -1,6 +1,6 @@
 """
-Monaco Editor-inspired performance optimizations for AutomaTeX
-Ultra-high performance text editor optimization layer
+Monaco Editor-inspired performance optimizations for AutomaTeX.
+Ultra-high performance text editor optimization layer.
 """
 
 import tkinter as tk
@@ -11,30 +11,30 @@ from typing import Optional, Dict, List, Tuple, Set
 from utils import debug_console
 
 class DeltaTracker:
-    """Track only the changed parts of the document like Monaco Editor"""
+    """Track only changed document parts like Monaco Editor."""
     
     def __init__(self, editor):
         self.editor_ref = weakref.ref(editor)
         self.last_content_hash = ""
         self.last_line_count = 0
-        self.changed_lines = set()  # Only lines that actually changed
+        self.changed_lines = set()  # Store only actually changed lines
         self.last_cursor_line = 0
         
     def get_delta(self) -> Optional[Dict]:
-        """Get only what changed since last update - Monaco style"""
+        """Get only changes since last update - Monaco style."""
         editor = self.editor_ref()
         if not editor:
             return None
             
         try:
-            # Fast cursor position check
+            # Get cursor position efficiently
             cursor_line = int(editor.index(tk.INSERT).split('.')[0])
             
-            # Only check full content if cursor moved significantly
+            # Perform full check only if cursor moved significantly
             if abs(cursor_line - self.last_cursor_line) > 3:
                 return self._full_delta_check(editor, cursor_line)
             
-            # Micro-optimization: just track cursor movement for highlighting
+            # Track cursor movement for highlighting optimization
             delta = {
                 'type': 'cursor_move',
                 'cursor_line': cursor_line,
@@ -49,19 +49,19 @@ class DeltaTracker:
             return None
     
     def _full_delta_check(self, editor, cursor_line):
-        """Full change detection - only when necessary"""
+        """Perform full change detection only when necessary."""
         try:
-            # Get line count efficiently
+            # Calculate line count efficiently
             line_count = int(editor.index("end-1c").split('.')[0])
             line_count_changed = line_count != self.last_line_count
             
-            # For small changes, only check around cursor
+            # Check only cursor area for small changes
             if not line_count_changed and abs(cursor_line - self.last_cursor_line) <= 10:
                 start_check = max(1, cursor_line - 5)
                 end_check = min(line_count, cursor_line + 5)
                 changed_lines = self._check_lines_range(editor, start_check, end_check)
             else:
-                # Larger change - but still avoid full document scan
+                # Use smart detection to avoid full document scan
                 changed_lines = self._smart_change_detection(editor, line_count)
             
             delta = {
@@ -80,23 +80,23 @@ class DeltaTracker:
             return None
     
     def _check_lines_range(self, editor, start_line, end_line):
-        """Check only specific line range for changes"""
+        """Check specific line range for changes."""
         changed = set()
         try:
             for line_num in range(start_line, end_line + 1):
                 if line_num <= self.last_line_count:
-                    # This would require more sophisticated caching
-                    # For now, assume lines around cursor changed
+                    # TODO: implement sophisticated caching
+                    # Currently assume lines around cursor changed
                     changed.add(line_num)
         except tk.TclError:
             pass
         return changed
     
     def _smart_change_detection(self, editor, line_count):
-        """Smart detection avoiding full content comparison"""
-        # For now, assume reasonable change area around cursor
+        """Use smart detection avoiding full content comparison."""
+        # Assume reasonable change area around cursor
         cursor_line = self.last_cursor_line
-        buffer_size = min(50, line_count // 4)  # Adaptive buffer
+        buffer_size = min(50, line_count // 4)  # Use adaptive buffer size
         
         start_line = max(1, cursor_line - buffer_size)
         end_line = min(line_count, cursor_line + buffer_size)
@@ -104,34 +104,34 @@ class DeltaTracker:
         return set(range(start_line, end_line + 1))
 
 class MonacoStyleUpdater:
-    """Monaco-inspired update system with minimal overhead"""
+    """Monaco-inspired update system with minimal overhead."""
     
     def __init__(self):
         self.delta_trackers = weakref.WeakKeyDictionary()
         self.pending_updates = weakref.WeakKeyDictionary()
-        self.update_suppressions = weakref.WeakKeyDictionary()  # Temporary update blocking
+        self.update_suppressions = weakref.WeakKeyDictionary()  # Enable temporary update blocking
         
     def track_editor(self, editor):
-        """Start tracking an editor Monaco-style"""
+        """Start tracking editor Monaco-style."""
         if editor not in self.delta_trackers:
             self.delta_trackers[editor] = DeltaTracker(editor)
             self.update_suppressions[editor] = 0
     
     def suppress_updates(self, editor, duration_ms=100):
-        """Temporarily suppress updates - like Monaco during rapid typing"""
+        """Temporarily suppress updates like Monaco during rapid typing."""
         self.update_suppressions[editor] = time.time() + (duration_ms / 1000)
     
     def should_update(self, editor) -> bool:
-        """Check if updates should proceed"""
+        """Check if updates should proceed."""
         if editor in self.update_suppressions:
             if time.time() < self.update_suppressions[editor]:
-                return False  # Still suppressed
+                return False  # Updates still suppressed
         
-        # Check if update already pending
+        # Prevent duplicate pending updates
         return editor not in self.pending_updates
     
     def get_update_delta(self, editor) -> Optional[Dict]:
-        """Get what needs updating - Monaco differential style"""
+        """Get what needs updating - Monaco differential style."""
         if not self.should_update(editor):
             return None
             
@@ -143,44 +143,44 @@ class MonacoStyleUpdater:
         return tracker.get_delta()
     
     def mark_update_pending(self, editor):
-        """Mark update as pending"""
+        """Mark update as pending."""
         self.pending_updates[editor] = time.time()
     
     def mark_update_complete(self, editor):
-        """Mark update as complete"""
+        """Mark update as complete."""
         if editor in self.pending_updates:
             del self.pending_updates[editor]
 
 class UltraFastSyntaxHighlighter:
-    """Ultra-optimized syntax highlighter - Monaco inspired"""
+    """Ultra-optimized syntax highlighter - Monaco inspired."""
     
     def __init__(self):
-        self.token_cache = {}  # Line-based token cache
+        self.token_cache = {}  # Store line-based token cache
         self.viewport_cache = weakref.WeakKeyDictionary()
         
     def highlight_delta(self, editor, delta: Dict):
-        """Highlight only changed parts - core Monaco principle"""
+        """Highlight only changed parts - core Monaco principle."""
         if not delta or delta['type'] == 'cursor_move':
-            # For cursor moves, just update current line highlighting if needed
+            # Update current line highlighting for cursor moves
             self._highlight_cursor_line(editor, delta.get('cursor_line', 1))
             return
             
         if delta['type'] == 'content_change':
             changed_lines = delta.get('changed_lines', set())
             
-            # Only highlight changed lines + small buffer
+            # Highlight only changed lines with small buffer
             for line_num in changed_lines:
                 self._highlight_line(editor, line_num)
     
     def _highlight_cursor_line(self, editor, line_num):
-        """Highlight just the current cursor line - ultra fast"""
+        """Highlight current cursor line with ultra fast processing."""
         try:
-            # Get line content
+            # Extract line content
             line_start = f"{line_num}.0"
             line_end = f"{line_num}.end"
             line_content = editor.get(line_start, line_end)
             
-            # Clear existing tags on this line only
+            # Clear existing tags on current line only
             tags = ['command', 'section', 'math', 'comment', 'number', 'bracket']
             for tag in tags:
                 try:
@@ -188,7 +188,7 @@ class UltraFastSyntaxHighlighter:
                 except tk.TclError:
                     continue
             
-            # Quick pattern matching - only essential patterns
+            # Apply quick pattern matching for essential patterns only
             if line_content.strip().startswith('%'):
                 editor.tag_add('comment', line_start, line_end)
             elif '\\section' in line_content:
@@ -200,7 +200,7 @@ class UltraFastSyntaxHighlighter:
             pass
     
     def _highlight_line(self, editor, line_num):
-        """Highlight a specific line with full patterns"""
+        """Highlight specific line with full patterns."""
         try:
             line_start = f"{line_num}.0"
             line_end = f"{line_num}.end"
@@ -209,7 +209,7 @@ class UltraFastSyntaxHighlighter:
             if not line_content.strip():
                 return
                 
-            # Clear tags for this line
+            # Clear existing tags for this line
             tags = ['command', 'section', 'math', 'comment', 'number', 'bracket']
             for tag in tags:
                 try:
@@ -217,7 +217,7 @@ class UltraFastSyntaxHighlighter:
                 except tk.TclError:
                     continue
             
-            # Apply patterns to this line only
+            # Apply patterns to current line only
             import re
             patterns = {
                 'comment': re.compile(r'%[^\n]*'),
@@ -235,7 +235,7 @@ class UltraFastSyntaxHighlighter:
             pass
     
     def _quick_section_highlight(self, editor, line_content, line_start):
-        """Ultra-fast section highlighting"""
+        """Apply ultra-fast section highlighting."""
         try:
             import re
             section_match = re.search(r'\\(?:sub)*section\*?', line_content)
@@ -247,7 +247,7 @@ class UltraFastSyntaxHighlighter:
             pass
     
     def _quick_command_highlight(self, editor, line_content, line_start):
-        """Ultra-fast command highlighting"""
+        """Apply ultra-fast command highlighting."""
         try:
             import re
             for match in re.finditer(r'\\[a-zA-Z@]+', line_content):
@@ -257,22 +257,22 @@ class UltraFastSyntaxHighlighter:
         except (tk.TclError, AttributeError):
             pass
 
-# Global Monaco-style instances
+# Initialize global Monaco-style instances
 _monaco_updater = MonacoStyleUpdater()
 _ultra_highlighter = UltraFastSyntaxHighlighter()
 
 def initialize_monaco_optimization(editor):
-    """Initialize Monaco-style optimization for an editor"""
+    """Initialize Monaco-style optimization for editor."""
     _monaco_updater.track_editor(editor)
 
 def apply_monaco_highlighting(editor, force=False):
-    """Apply Monaco-style differential highlighting"""
+    """Apply Monaco-style differential highlighting."""
     if not force:
         delta = _monaco_updater.get_update_delta(editor)
         if not delta:
-            return  # No update needed
+            return  # Skip when no update needed
     else:
-        # Force update with fake delta
+        # Create fake delta to force update
         delta = {'type': 'content_change', 'changed_lines': {1}}
     
     _monaco_updater.mark_update_pending(editor)
@@ -283,5 +283,5 @@ def apply_monaco_highlighting(editor, force=False):
         _monaco_updater.mark_update_complete(editor)
 
 def suppress_monaco_updates(editor, duration_ms=100):
-    """Suppress updates during rapid typing - Monaco style"""
+    """Suppress updates during rapid typing - Monaco style."""
     _monaco_updater.suppress_updates(editor, duration_ms)

@@ -37,7 +37,7 @@ class PDFSyncManager:
         self._parse_latex_structure(tex_content)
         
         # In a full implementation, this would also parse the PDF for 
-        # corresponding positions, possibly using synctex or similar tools
+        # Parse PDF to find corresponding positions using synctex or similar tools
         
         debug_console.log(f"Created sync map with {len(self.sync_points)} points", level='DEBUG')
     

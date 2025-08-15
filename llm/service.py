@@ -1,8 +1,4 @@
-"""
-This module serves as the public-facing API (facade) for all Large Language Model (LLM) functionalities
-within the application. It centralizes access to various LLM-related operations by delegating calls
-to specialized internal modules, thereby promoting a clean, organized, and maintainable codebase.
-"""
+"""Provide centralized API facade for Large Language Model functionalities."""
 
 from llm import init as llm_init
 from llm import completion as llm_completion
@@ -99,6 +95,5 @@ def open_generate_text_dialog(event=None, initial_prompt_text=None):
         initial_prompt_text (str, optional): Initial text to pre-fill the prompt input area in the dialog.
                                              Defaults to None.
     """
-    # The `event` parameter is included for consistency with shortcut bindings,
-    # but it is not directly used by `llm_generation.open_generate_text_dialog`.
+    # Include event parameter for shortcut binding consistency
     llm_generation.open_generate_text_dialog(initial_prompt_text=initial_prompt_text)

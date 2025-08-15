@@ -15,7 +15,7 @@ class CachedDiffGenerator(DiffGenerator):
     
     def __init__(self):
         """Initialize the diff generator with cache integration."""
-        self.output_directory = None  # Will be set per file
+        self.output_directory = None  # Set per file
         debug_console.log("Cached diff generator initialized", level='DEBUG')
     
     def analyze_current_vs_last_successful(self, file_path: str, current_content: str) -> Tuple[bool, Optional[str], Optional[str]]:

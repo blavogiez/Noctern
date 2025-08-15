@@ -29,7 +29,7 @@ def bind_global_shortcuts(root):
             else:
                 func()
             # We return "break" only if the focus is not on the editor,
-            # to allow editor-specific bindings to still work.
+            # Allow editor-specific bindings to continue working
             if not isinstance(root.focus_get(), tk.Text):
                 return "break"
         return wrapper

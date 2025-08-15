@@ -1,7 +1,4 @@
-"""
-This module defines the `LineNumbers` and `EditorTab` classes, which are core components
-of the text editor interface.
-"""
+"""Define LineNumbers and EditorTab classes for text editor interface."""
 import re
 import tkinter as tk
 from tkinter import ttk

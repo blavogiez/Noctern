@@ -1,172 +1,111 @@
+"""Manage dedicated debug console window for displaying application logs."""
+
 import tkinter as tk
 from tkinter import ttk
 import datetime
 
 class DebugConsole:
-    """
-    Manages a dedicated debug console window for displaying application logs.
-
-    This class provides a graphical user interface (GUI) console that can display
-    log messages with different severity levels, each identified by a distinct color.
-    It acts as a centralized logging utility for the application, offering a more
-    structured and visually distinct output than standard console prints.
-    """
     def __init__(self):
-        """
-        Initializes the DebugConsole instance.
-
-        Sets up the console window and text widget to None, as they are created
-        dynamically when the console is shown. Defines a dictionary of log levels
-        mapped to their respective hexadecimal color codes for display.
-        """
+        """Initialize DebugConsole instance."""
         self.console_window = None
         self.text_widget = None
-        # Define color codes for different log levels to enhance readability.
+        # Define color codes for different log levels
         self.levels = {
-            'DEBUG': '#9E9E9E',   # Grey for detailed debugging information.
-            'TRACE': '#616161',   # Darker grey for very detailed tracing.
-            'INFO': '#FFFFFF',    # White for general informational messages.
-            'ACTION': '#81D4FA',  # Light Blue for user or system actions.
-            'SUCCESS': '#A5D6A7', # Green for successful operations.
-            'WARNING': '#FFD54F', # Amber for potential issues that are not errors.
-            'ERROR': '#EF9A9A',   # Red for critical errors.
-            'CONFIG': '#CE93D8',  # Purple for configuration-related messages.
+            'DEBUG': '#9E9E9E',   # Grey for debugging information
+            'TRACE': '#616161',   # Darker grey for detailed tracing
+            'INFO': '#FFFFFF',    # White for informational messages
+            'ACTION': '#81D4FA',  # Light blue for user or system actions
+            'SUCCESS': '#A5D6A7', # Green for successful operations
+            'WARNING': '#FFD54F', # Amber for potential issues
+            'ERROR': '#EF9A9A',   # Red for critical errors
+            'CONFIG': '#CE93D8',  # Purple for configuration messages
         }
-        # Define the order of levels for filtering
+        # Define level order for filtering
         self.level_order = ['TRACE', 'DEBUG', 'INFO', 'ACTION', 'SUCCESS', 'WARNING', 'ERROR', 'CONFIG']
-        # Set default minimum level to show
+        # Set default minimum level
         self.min_level = 'DEBUG'  # Show DEBUG and above by default
 
     def initialize(self, root):
-        """
-        Initializes the console with the main application root window.
-
-        This method is crucial for associating the debug console's top-level window
-        with the main application window, ensuring proper window management.
-
-        Args:
-            root (tk.Tk or tk.Toplevel): The root Tkinter window of the application.
-        """
+        """Initialize console with main application root window."""
         self.root = root
 
     def set_min_level(self, level):
-        """
-        Sets the minimum log level to display in the console.
-        
-        Args:
-            level (str): The minimum level to show (e.g., 'TRACE', 'DEBUG', 'INFO')
-        """
+        """Set minimum log level to display in console."""
         if level in self.levels:
             self.min_level = level
 
     def _should_show_level(self, level):
-        """
-        Determines if a log level should be shown based on the minimum level setting.
-        
-        Args:
-            level (str): The level to check
-            
-        Returns:
-            bool: True if the level should be shown, False otherwise
-        """
+        """Determine if log level should be shown based on minimum level setting."""
         try:
             level_idx = self.level_order.index(level.upper())
             min_idx = self.level_order.index(self.min_level.upper())
             return level_idx >= min_idx
         except ValueError:
-            # If level is not in our known levels, show it by default
+            # If level not in known levels, show by default
             return True
 
     def show_console(self):
-        """
-        Displays the debug console window.
-
-        If the console window already exists and is open, it brings it to the
-        foreground. Otherwise, it creates a new Toplevel window, configures its
-        appearance, and sets up the text widget for displaying logs. It also
-        configures text tags for colored output based on log levels.
-        """
-        # If the console window is already open, bring it to the front.
+        """Display debug console window."""
+        # If console window is already open, bring to front
         if self.console_window and self.console_window.winfo_exists():
             self.console_window.lift()
             return
 
-        # Create a new top-level window for the debug console.
+        # Create new top-level window for debug console
         self.console_window = tk.Toplevel(self.root)
         self.console_window.title("Debug Console")
         self.console_window.geometry("900x400")
-        self.console_window.configure(bg="#1e1e1e") # Set background color for the window.
+        self.console_window.configure(bg="#1e1e1e")  # Set background color for window
 
-        # Create a text widget to display log messages.
+        # Create text widget to display log messages
         self.text_widget = tk.Text(self.console_window, wrap="word", bg="#1e1e1e", fg="#d4d4d4",
                                    font=("Consolas", 10), relief=tk.FLAT, borderwidth=0)
         self.text_widget.pack(expand=True, fill="both", padx=5, pady=5)
 
-        # Configure text tags for each log level to apply specific foreground colors.
+        # Configure text tags for each log level with specific colors
         for level, color in self.levels.items():
             self.text_widget.tag_configure(level, foreground=color)
 
-        # Set the protocol for closing the window to call hide_console.
+        # Set protocol for closing window to call hide_console
         self.console_window.protocol("WM_DELETE_WINDOW", self.hide_console)
 
     def hide_console(self):
-        """
-        Hides and destroys the debug console window.
-
-        This method is called when the user closes the console window, ensuring
-        that the window resources are properly released.
-        """
+        """Hide and destroy debug console window."""
         if self.console_window:
             self.console_window.destroy()
-            self.console_window = None # Reset the reference to indicate the window is closed.
+            self.console_window = None  # Reset reference to indicate window is closed
 
     def log(self, message, level='INFO'):
-        """
-        Logs a message to the debug console with a specified level.
-
-        If the console window is not active, the message is printed to the standard
-        output (stdout) as a fallback. Otherwise, the message is formatted with a
-        timestamp and the log level, inserted into the text widget, and scrolled
-        to the end. The text widget is temporarily set to 'normal' state for insertion
-        and then back to 'disabled' to prevent user editing.
-
-        Args:
-            message (str): The log message to display.
-            level (str, optional): The severity level of the log message (e.g., 'INFO', 'ERROR').
-                                   Defaults to 'INFO'.
-        """
-        # Check if this level should be shown
+        """Log message to debug console with specified level."""
+        # Check if level should be shown
         if not self._should_show_level(level):
             return
             
-        # Fallback to stdout if the console window is not active or does not exist.
+        # Fallback to stdout if console window not active or does not exist
         if not self.console_window or not self.text_widget or not self.console_window.winfo_exists():
             print(f"[{level}] {message}")
             return
 
-        # Generate a timestamp for the log entry.
+        # Generate timestamp for log entry
         timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
         
-        # Format the complete log line.
+        # Format complete log line
         log_line = f"{timestamp} [{level.upper()}] {message}\n"
 
-        # Temporarily enable the text widget to insert the new log line.
+        # Temporarily enable text widget to insert new log line
         self.text_widget.config(state="normal")
         self.text_widget.insert(tk.END, log_line, level)
-        # Disable the text widget to prevent user interaction.
+        # Disable text widget to prevent user interaction
         self.text_widget.config(state="disabled")
-        # Automatically scroll to the end of the text widget to show the latest log.
+        # Automatically scroll to end to show latest log
         self.text_widget.see(tk.END)
 
-# --- Global Instance and Public API ---
-# This section creates a single, globally accessible instance of the DebugConsole
-# and exposes its core functionalities as direct imports. This design pattern
-# ensures that all parts of the application can log messages to the same console
-# without needing to pass the console instance around.
+# Global instance and public API
+# Create single globally accessible instance for application logging
 
 _console_instance = DebugConsole()
 
-# Expose the public methods of the DebugConsole instance for easy access throughout the application.
+# Expose public methods for easy access throughout application
 initialize = _console_instance.initialize
 show_console = _console_instance.show_console
 hide_console = _console_instance.hide_console

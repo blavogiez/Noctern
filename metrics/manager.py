@@ -5,12 +5,12 @@ import os
 METRICS_FILE = "metrics.json"
 
 def get_metrics_path():
-    # Assure que le chemin est relatif au répertoire racine du projet
+    # Ensure path is relative to project root directory
     project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
     return os.path.join(project_root, 'data', METRICS_FILE)
 
 def load_metrics():
-    """Charge les métriques depuis le fichier JSON."""
+    """Load metrics from JSON file."""
     path = get_metrics_path()
     if not os.path.exists(path):
         return {}
@@ -21,22 +21,16 @@ def load_metrics():
         return {}
 
 def save_metrics(data):
-    """Sauvegarde les métriques dans le fichier JSON."""
+    """Save metrics to JSON file."""
     path = get_metrics_path()
     try:
         with open(path, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=4)
     except IOError as e:
-        print(f"Erreur lors de la sauvegarde des métriques : {e}")
+        print(f"Error saving metrics: {e}")
 
 def record_usage(input_tokens: int, output_tokens: int):
-    """
-    Enregistre une nouvelle utilisation de tokens pour la date actuelle.
-
-    Args:
-        input_tokens (int): Le nombre de tokens en entrée.
-        output_tokens (int): Le nombre de tokens en sortie.
-    """
+    """Record new token usage for current date."""
     if not isinstance(input_tokens, int) or not isinstance(output_tokens, int):
         return
 

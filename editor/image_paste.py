@@ -7,21 +7,9 @@ from editor import structure as editor_structure
 from utils import debug_console
 
 class ImageDetailsDialog(tk.Toplevel):
-    """
-    A dialog window for collecting image details (caption and label) from the user.
-
-    This dialog is displayed when an image is pasted into the editor, allowing
-    the user to provide a descriptive caption and a unique LaTeX label for the image.
-    It is a modal window that blocks interaction with the main application until it is closed.
-    """
+    """Modal dialog for collecting image details including caption and label."""
     def __init__(self, parent, suggested_label, get_theme_setting):
-        """
-        Initializes the ImageDetailsDialog.
-
-        Args:
-            parent (tk.Tk or tk.Toplevel): The parent window for this dialog.
-            suggested_label (str): A pre-filled suggestion for the image label.
-        """
+        """Initialize dialog with parent window and suggested label."""
         super().__init__(parent)
         self.transient(parent)
         self.title("Image Details")
@@ -30,7 +18,7 @@ class ImageDetailsDialog(tk.Toplevel):
 
         self.caption = ""
         self.label = ""
-        self.cancelled = True # Assume cancellation until OK is pressed
+        self.cancelled = True  # Assume cancellation until OK is pressed
         self.get_theme_setting = get_theme_setting
 
         self._configure_styles()
@@ -40,7 +28,7 @@ class ImageDetailsDialog(tk.Toplevel):
         self.wait_window(self)
 
     def _configure_styles(self):
-        """Configures the dialog's appearance based on the application's theme."""
+        """Configure dialog appearance based on application theme."""
         try:
             bg_color = self.get_theme_setting("root_bg", "#f0f0f0")
             self.configure(bg=bg_color)
@@ -48,7 +36,7 @@ class ImageDetailsDialog(tk.Toplevel):
             self.configure(bg="#f0f0f0")
 
     def _create_widgets(self, suggested_label):
-        """Creates and lays out the widgets for the dialog."""
+        """Create and layout dialog widgets."""
         frame = ttk.Frame(self, padding=15)
         frame.pack(fill="both", expand=True)
 
@@ -74,7 +62,7 @@ class ImageDetailsDialog(tk.Toplevel):
         self.bind("<Escape>", lambda e: self._on_cancel())
 
     def _on_ok(self):
-        """Handles the OK button click, storing values and closing the dialog."""
+        """Handle OK button click, store values and close dialog."""
         self.caption = self.caption_entry.get().strip()
         self.label = self.label_entry.get().strip()
         if not self.label:
@@ -84,18 +72,12 @@ class ImageDetailsDialog(tk.Toplevel):
         self.destroy()
 
     def _on_cancel(self):
-        """Handles the Cancel button click or window close, closing the dialog."""
+        """Handle Cancel button click or window close."""
         self.cancelled = True
         self.destroy()
 
 def paste_image_from_clipboard(root, get_current_tab, get_theme_setting):
-    """
-    Handles pasting an image from the clipboard into the editor.
-
-    This function orchestrates the process of retrieving an image from the
-    clipboard, prompting the user for details, saving the image to a structured
-    directory, and inserting the corresponding LaTeX code into the editor.
-    """
+    """Handle pasting image from clipboard with structured directory and LaTeX generation."""
     debug_console.log("Attempting to paste image from clipboard.", level='ACTION')
 
     
@@ -147,7 +129,7 @@ def paste_image_from_clipboard(root, get_current_tab, get_theme_setting):
             return
             
         caption_text = details_dialog.caption or "Caption here"
-        label_text = details_dialog.label # Already validated in dialog
+        label_text = details_dialog.label  # Already validated in dialog
 
         image.save(full_file_path, "PNG")
         debug_console.log(f"Image saved to: {full_file_path}", level='SUCCESS')

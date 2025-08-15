@@ -1,16 +1,10 @@
-"""
-This module provides functions to parse LaTeX log files and extract relevant
-error messages, warnings, and other important information in a structured and
-human-readable format.
-"""
+"""Parse LaTeX log files and extract error messages and warnings."""
 
 import os
 import re
 
 def parse_log_file(log_content: str) -> str:
-    """
-    Parses the content of a LaTeX .log file to extract a summary of errors.
-    """
+    """Parse LaTeX log file content to extract error summary."""
     if not log_content:
         return "Log content is empty. Nothing to parse."
 
@@ -20,7 +14,7 @@ def parse_log_file(log_content: str) -> str:
     line_num_regex = re.compile(r'l\.(\d+)')
 
     for i, line in enumerate(lines):
-        # --- Priority 1: Specific, critical errors ---
+        # Priority 1: Specific critical errors
         if "! LaTeX Error: File" in line:
             match = re.search(r"`([^']+\.(sty|cls))' not found", line)
             if match:
@@ -28,30 +22,30 @@ def parse_log_file(log_content: str) -> str:
                 error_summary.append(f"Missing {file_type}: {match.group(1)}")
                 continue
 
-        # --- Priority 2: General errors ---
+        # Priority 2: General errors
         if line.startswith("! "):
             error_message = f"Error: {line[2:].strip()}"
             
-            # Search for line number and cause in the next few lines
+            # Search for line number and cause in next lines
             for j in range(i + 1, min(i + 4, len(lines))):
                 line_match = line_num_regex.search(lines[j])
                 if line_match:
                     if "(at line" not in error_message:
                         error_message += f" (at line {line_match.group(1)})";
                     
-                    # Once the line number is found, the *next* non-empty line is often the cause
+                    # Next non-empty line after line number is often the cause
                     if "Undefined control sequence" in error_message:
                         for k in range(j + 1, min(j + 3, len(lines))):
                             cause_line = lines[k].strip()
                             if cause_line:
                                 error_message += f"\n  -> Cause: {cause_line}"
-                                break # Found the cause, stop searching
-                    break # Found the line number, stop searching
+                                break  # Found cause, stop searching
+                    break  # Found line number, stop searching
             
             error_summary.append(error_message)
             continue
 
-        # --- Priority 3: Warnings ---
+        # Priority 3: Warnings
         if "Overfull \\hbox" in line or "Underfull \\vbox" in line:
             error_summary.append(f"Warning: {line.strip()}")
             continue
@@ -62,9 +56,7 @@ def parse_log_file(log_content: str) -> str:
     return "\n".join(error_summary)
 
 def read_and_parse_log(log_file_path: str) -> str:
-    """
-    Reads a .log file from the specified path and parses it for errors.
-    """
+    """Read log file from specified path and parse for errors."""
     if not os.path.exists(log_file_path):
         return f"Log file not found at: {log_file_path}"
     try:

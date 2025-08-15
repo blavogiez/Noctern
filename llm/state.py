@@ -1,19 +1,18 @@
 """
-This module manages the global state of the Large Language Model (LLM) service.
-It centralizes variables and references that need to be accessed by different
-parts of the LLM functionality, such as UI components, API clients, and prompt managers.
+Manage global state of Large Language Model (LLM) service.
+Centralize variables and references that need to be accessed by different parts of LLM functionality, such as UI components, API clients, and prompt managers.
 """
 
 # --- Core UI and Application References ---
-_root_window = None                  # Reference to the main Tkinter root window.
-_llm_progress_bar_widget = None      # Reference to the LLM progress bar widget.
-_theme_setting_getter_func = None    # Function to get current theme settings (e.g., colors, fonts).
-_active_editor_getter_func = None    # Function to get the currently active editor widget.
-_active_filepath_getter_func = None  # Function to get the file path of the active editor.
+_root_window = None                  # Reference to main Tkinter root window
+_llm_progress_bar_widget = None      # Reference to LLM progress bar widget
+_theme_setting_getter_func = None    # Function to get current theme settings (colors, fonts)
+_active_editor_getter_func = None    # Function to get currently active editor widget
+_active_filepath_getter_func = None  # Function to get file path of active editor
 
 # --- LLM Generation State ---
-_is_generating = False  # Flag to indicate if an LLM generation is currently in progress.
-_is_generation_cancelled = False # Flag to indicate if the user has cancelled the current generation.
+_is_generating = False  # Flag to indicate if LLM generation is currently in progress
+_is_generation_cancelled = False # Flag to indicate if user has cancelled current generation
 
 # --- Model Configuration ---
 model_completion = "default"
@@ -21,29 +20,29 @@ model_generation = "default"
 model_rephrase = "default"
 model_debug = "default"
 model_style = "default"
-last_style_intensity = 5 # Default intensity on a 1-10 scale
+last_style_intensity = 5 # Setting: default intensity on 1-10 scale
 
 
 # --- Prompt Templates and History ---
-# Holds the global default prompts loaded from the JSON file.
+# Store global default prompts loaded from JSON file
 _global_default_prompts = {}
-# File path for the default prompts configuration.
+# Store file path for default prompts configuration
 DEFAULT_PROMPTS_DIR = "data/prompts"
 
 # Per-document state (managed by llm.history and llm.prompts modules)
-# These are loaded/saved based on the active file.
-_prompt_history_list = [] # List of (user_prompt, llm_response) tuples.
-_completion_prompt_template = ""      # Custom completion prompt for the current file.
-_generation_prompt_template = ""      # Custom generation prompt for the current file.
-_styling_prompt_template = ""         # Custom styling prompt for the current file.
-_llm_keywords_list = []               # List of keywords for the current file.
+# Load/save based on active file
+_prompt_history_list = [] # Store list of (user_prompt, llm_response) tuples
+_completion_prompt_template = ""      # Store custom completion prompt for current file
+_generation_prompt_template = ""      # Store custom generation prompt for current file
+_styling_prompt_template = ""         # Store custom styling prompt for current file
+_llm_keywords_list = []               # Store list of keywords for current file
 
 # --- Last Action State (for re-generation) ---
-# Stores the type of the last LLM action ('completion' or 'generation') to enable re-doing.
+# Store type of last LLM action ('completion' or 'generation') to enable re-doing
 _last_llm_action_type = None
-# Stores the context of the last completion request.
+# Store context of last completion request
 _last_completion_phrase_start = ""
-# Stores the context of the last generation request.
+# Store context of last generation request
 _last_generation_context = {
     "user_prompt": "",
     "lines_before": 0,

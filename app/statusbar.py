@@ -27,31 +27,25 @@ def show_temporary_status_message(message, duration_ms, status_label, root, clea
     global _temporary_status_timer_id
     # Basic validation to ensure necessary widgets are provided.
     if not status_label or not root:
-        # In a real application, you might log this or raise an error.
+        # Consider logging this error in production.
         return
     
-    # Cancel any previously scheduled timer for a temporary message.
-    # This ensures that only the latest message is displayed and cleared correctly.
+    # Cancel previous timer to ensure only latest message is displayed
     if _temporary_status_timer_id:
         root.after_cancel(_temporary_status_timer_id)
         
-    # Update the status label with the new temporary message.
+    # Update status label with temporary message
     status_label.config(text=message)
     
-    # Schedule the `clear_function` to be called after `duration_ms` milliseconds.
+    # Schedule clear function after duration
     _temporary_status_timer_id = root.after(duration_ms, clear_function)
 
 def clear_temporary_status_message():
-    """
-    Resets the internal state related to temporary status messages.
-
-    This function is typically called by the `clear_function` passed to
-    `show_temporary_status_message` when the timer expires. It clears the
-    timer ID, indicating that no temporary message is currently scheduled.
-    The actual restoration of the status bar's default text (e.g., word count)
-    is handled by the caller of this function (e.g., in `interface.py`).
+    """Reset temporary status message state.
+    
+    Clears timer ID when temporary message expires.
+    Status bar restoration handled by caller.
     """
     global _temporary_status_timer_id
-    _temporary_status_timer_id = None # Clear the timer ID.
-    # The `_temporary_status_active` flag is managed externally (e.g., in `interface.py`)
-    # to ensure proper synchronization with the overall application state.
+    _temporary_status_timer_id = None
+    # _temporary_status_active flag managed externally for synchronization

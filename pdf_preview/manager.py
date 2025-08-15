@@ -1,6 +1,6 @@
 """
-PDF Preview Manager Component
-Manages the PDF preview functionality, including compilation triggering and status updates.
+PDF Preview Manager Component.
+Manage PDF preview functionality including compilation triggering and status updates.
 """
 
 import os
@@ -14,18 +14,12 @@ from pdf_preview.viewer import PDFPreviewViewer
 
 class PDFPreviewManager:
     """
-    Manages the PDF preview functionality, including automatic compilation
-    and status updates.
+    Manage PDF preview functionality including automatic compilation and status updates.
     """
     
     def __init__(self, root_window, get_current_tab_func, header_label=None):
         """
-        Initialize the PDF preview manager.
-        
-        Args:
-            root_window (tk.Tk): The main application window
-            get_current_tab_func (callable): Function to get the current editor tab
-            header_label (ttk.Label, optional): The label for status updates.
+        Initialize PDF preview manager.
         """
         self.root_window = root_window
         self.get_current_tab = get_current_tab_func
@@ -33,7 +27,7 @@ class PDFPreviewManager:
         self.viewer = None
         self.is_compiling = False
         
-        # Compilation and status tracking
+        # Initialize compilation and status tracking
         self.last_compilation_time = None
         self.compilation_status = "Not yet compiled"
         self.compilation_delay = 1.0
@@ -45,7 +39,7 @@ class PDFPreviewManager:
         self._update_status_label()
 
     def get_viewer(self):
-        """Get the current PDF viewer instance."""
+        """Get current PDF viewer instance."""
         return self.viewer
         
     def create_preview_panel(self, parent):

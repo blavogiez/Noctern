@@ -1,11 +1,6 @@
 
 
-"""
-This module contains the core action and event-handling functions for the AutomaTeX application.
-These functions are typically triggered by user interactions such as menu clicks,
-keyboard shortcuts, or GUI events. They orchestrate the application's response
-by interacting with the state, UI components, and various backend services.
-"""
+"""Handle core user actions and event-driven application responses."""
 
 import os
 import json
@@ -34,18 +29,12 @@ from editor import wordcount as editor_wordcount
 from utils import debug_console, animations
 
 def style_selected_text(event=None):
-    """
-    Main function to apply automatic styling to the selected text.
-    This is a wrapper that calls the LLM service, which handles all logic.
-    """
+    """Apply automatic styling to selected text via LLM service."""
     debug_console.log("Initiating Smart Styling action.", level='ACTION')
     llm_service.start_autostyle_process()
 
 def perform_heavy_updates():
-    """
-    LEGACY: Executes computationally intensive updates for the active editor tab.
-    Now redirects to optimized performance system.
-    """
+    """Execute heavy updates using optimized performance system."""
     state.heavy_update_timer_id = None
     
     current_tab = state.get_current_tab()
@@ -69,9 +58,7 @@ def perform_heavy_updates():
     schedule_optimized_update(current_tab.editor, {UpdateType.ALL}, force=True)
 
 def schedule_heavy_updates(_=None):
-    """
-    Schedules heavy updates using the optimized performance system.
-    """
+    """Schedule optimized heavy updates for current editor tab."""
     current_tab = state.get_current_tab()
     if not current_tab:
         return
@@ -81,30 +68,22 @@ def schedule_heavy_updates(_=None):
     schedule_optimized_update(current_tab.editor, {UpdateType.ALL})
 
 def paste_image(event=None):
-    """
-    Triggers the image pasting functionality from the clipboard into the active editor.
-    """
+    """Paste image from clipboard into active editor."""
     from editor import image_paste as editor_image_paste
     editor_image_paste.paste_image_from_clipboard(state.root, state.get_current_tab, state.get_theme_setting)
 
 def zoom_in(_=None):
-    """
-    Increases the font size of the active editor tab.
-    """
+    """Increase font size of active editor tab."""
     debug_console.log("Zoom In action triggered.", level='ACTION')
     state.zoom_manager.zoom_in()
 
 def zoom_out(_=None):
-    """
-    Decreases the font size of the active editor tab.
-    """
+    """Decrease font size of active editor tab."""
     debug_console.log("Zoom Out action triggered.", level='ACTION')
     state.zoom_manager.zoom_out()
 
 def show_console(content):
-    """
-    Displays the console pane with the given content.
-    """
+    """Display console pane with specified content."""
     if state.console_pane and state.console_output:
         if str(state.console_pane) not in state.vertical_pane.panes():
             state.vertical_pane.add(state.console_pane, height=150)
@@ -115,17 +94,13 @@ def show_console(content):
         state.console_output.config(state="disabled")
 
 def hide_console():
-    """
-    Hides the console pane.
-    """
+    """Hide console pane from view."""
     if state.console_pane:
         if str(state.console_pane) in state.vertical_pane.panes():
             state.vertical_pane.remove(state.console_pane)
 
 def show_temporary_status_message(message, duration_ms=2500):
-    """
-    Displays a temporary message in the status bar with a subtle flash animation.
-    """
+    """Display temporary status message with flash animation."""
     state._temporary_status_active = True
     
     if state.status_label:
@@ -199,19 +174,12 @@ def load_session():
                             create_new_tab(file_path)
                         else:
                             debug_console.log(f"File not found, not reopening: {file_path}", level='WARNING')
-                # Ne plus créer d'onglet vide si aucun fichier n'est ouvert
-                # else:
-                #     create_new_tab(None)
-            # Ne plus créer d'onglet vide si la section session n'existe pas
-            # else:
-            #     create_new_tab(None)
-        # Ne plus créer d'onglet vide si le fichier de config n'existe pas
-        # else:
-        #     create_new_tab(None)
+                # Skip creating empty tab if no file is open
+            # Skip creating empty tab if session section doesn't exist
+        # Skip creating empty tab if config file doesn't exist
     except Exception as e:
         debug_console.log(f"Error loading session state: {e}", level='ERROR')
-        # Ne plus créer d'onglet vide en cas d'erreur
-        # create_new_tab(None)
+        # Skip creating empty tab on error
 
 def on_close_request():
     """

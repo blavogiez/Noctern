@@ -38,7 +38,7 @@ def create_status_bar(root):
     # Session metrics display
     metrics_display = MetricsStatusDisplay(status_bar_frame, root)
 
-    # A vertical separator to visually divide the metrics from the GPU status.
+    # Add vertical separator between metrics and GPU status
     separator = ttk.Separator(status_bar_frame, orient='vertical')
     separator.pack(side="left", fill='y', padx=10)
 

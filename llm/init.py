@@ -83,6 +83,4 @@ def initialize_llm_service(root_window_ref, progress_bar_widget_ref,
     # Load global default prompts from the configuration file.
     _load_global_default_prompts()
     # Defer loading file-specific history and prompts until needed
-    # llm_history.load_prompt_history_for_current_file()
-    # llm_prompts.load_prompts_for_current_file()
     debug_console.log("LLM service core initialized and ready.", level='SUCCESS')

@@ -17,7 +17,10 @@
       "Bash(move:*)",
       "Bash(mkdir:*)",
       "Bash(mv:*)",
-      "Bash(pdflatex:*)"
+      "Bash(pdflatex:*)",
+      "Bash(rg:*)",
+      "Bash(cat:*)",
+      "Bash(find:*)"
     ],
     "deny": [],
     "ask": [],

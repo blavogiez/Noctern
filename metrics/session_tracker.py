@@ -1,7 +1,4 @@
-"""
-Session tracking module for file-based productivity metrics.
-Tracks time spent and words typed per file session.
-"""
+"""Track file-based productivity metrics for editing sessions."""
 
 import time
 import json
@@ -11,7 +8,7 @@ from pathlib import Path
 
 
 class SessionTracker:
-    """Tracks session metrics for a specific file."""
+    """Track session metrics for specific file."""
     
     def __init__(self, file_path=None):
         self.file_path = file_path
@@ -25,7 +22,7 @@ class SessionTracker:
             self.set_file_path(file_path)
     
     def set_file_path(self, file_path):
-        """Set or change the file being tracked."""
+        """Set or change file being tracked."""
         self.file_path = file_path
         self._cache_dir = self._get_cache_directory()
         self._ensure_cache_directory()
@@ -37,7 +34,7 @@ class SessionTracker:
         self.current_word_count = 0
     
     def _get_cache_directory(self):
-        """Get the cache directory path for the current file."""
+        """Get cache directory path for current file."""
         if not self.file_path:
             return None
         
@@ -46,18 +43,18 @@ class SessionTracker:
         return os.path.join(file_dir, f"{file_name}.cache")
     
     def _ensure_cache_directory(self):
-        """Ensure the cache directory exists."""
+        """Ensure cache directory exists."""
         if self._cache_dir and not os.path.exists(self._cache_dir):
             os.makedirs(self._cache_dir, exist_ok=True)
     
     def _get_metrics_file_path(self):
-        """Get the path to the metrics file."""
+        """Get path to metrics file."""
         if not self._cache_dir:
             return None
         return os.path.join(self._cache_dir, "session_metrics.json")
     
     def load_existing_metrics(self):
-        """Load existing metrics for this file."""
+        """Load existing metrics for file."""
         metrics_file = self._get_metrics_file_path()
         if not metrics_file or not os.path.exists(metrics_file):
             return {"sessions": []}
@@ -69,7 +66,7 @@ class SessionTracker:
             return {"sessions": []}
     
     def save_session_metrics(self):
-        """Save the current session metrics to the cache file."""
+        """Save current session metrics to cache file."""
         if not self._cache_dir:
             return
         
@@ -100,7 +97,7 @@ class SessionTracker:
             print(f"Error saving session metrics: {e}")
     
     def _calculate_productivity_score(self, words_typed, duration_seconds):
-        """Calculate a productivity score based on words per minute."""
+        """Calculate productivity score based on words per minute."""
         if duration_seconds <= 0:
             return 0
         
@@ -108,21 +105,21 @@ class SessionTracker:
         return words_typed / duration_minutes if duration_minutes > 0 else 0
     
     def update_word_count(self, word_count):
-        """Update the current word count."""
+        """Update current word count."""
         if self.initial_word_count == 0:
             self.initial_word_count = word_count
         self.current_word_count = word_count
     
     def get_session_time(self):
-        """Get the current session time in seconds."""
+        """Get current session time in seconds."""
         return time.time() - self.session_start_time
     
     def get_words_typed_this_session(self):
-        """Get the number of words typed in this session."""
+        """Get number of words typed in current session."""
         return max(0, self.current_word_count - self.initial_word_count)
     
     def get_session_summary(self):
-        """Get a summary of the current session."""
+        """Get summary of current session."""
         duration = self.get_session_time()
         words_typed = self.get_words_typed_this_session()
         
@@ -134,7 +131,7 @@ class SessionTracker:
         }
     
     def _format_duration(self, seconds):
-        """Format duration in a human-readable format."""
+        """Format duration in human-readable format."""
         hours = int(seconds // 3600)
         minutes = int((seconds % 3600) // 60)
         secs = int(seconds % 60)
@@ -147,11 +144,11 @@ class SessionTracker:
             return f"{secs}s"
     
     def get_historical_metrics(self):
-        """Get all historical metrics for this file."""
+        """Get all historical metrics for file."""
         return self.load_existing_metrics()
     
     def get_daily_summary(self, date_str=None):
-        """Get summary metrics for a specific date."""
+        """Get summary metrics for specific date."""
         if not date_str:
             date_str = datetime.now().strftime("%Y-%m-%d")
         

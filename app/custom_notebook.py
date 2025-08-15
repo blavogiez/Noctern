@@ -40,7 +40,7 @@ class ClosableNotebook(ttk.Notebook):
 
         element = self.identify(event.x, event.y)
         if "close" not in element:
-            # user moved the mouse off of the close button
+            # Handle mouse movement off close button
             return
 
         index = self.index(f"@{event.x},{event.y}")

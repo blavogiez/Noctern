@@ -1,6 +1,6 @@
 """
-This module implements a search functionality for the AutomaTeX editor,
-inspired by VSCode's search feature with a modern, clean design.
+Implement search functionality for AutomaTeX editor.
+Inspired by VSCode search feature with modern, clean design.
 """
 
 import tkinter as tk
@@ -13,10 +13,10 @@ from utils.icons import IconButton
 
 
 class SearchEngine:
-    """Handles the logic for searching text in the editor."""
+    """Handle logic for searching text in editor."""
     
     def __init__(self):
-        self.matches: List[Tuple[str, int, int]] = []  # (line, start_pos, end_pos)
+        self.matches: List[Tuple[str, int, int]] = []  # Store (line, start_pos, end_pos)
         self.current_match_index = -1
         
     def search(self, text_widget: tk.Text, search_term: str, case_sensitive: bool = True) -> List[Tuple[str, int, int]]:
