@@ -10,33 +10,110 @@ from utils import debug_console
 from debug_system.core import DebugUI, LaTeXError, AnalysisResult, QuickFix, DebugContext
 
 
-class ErrorListWidget(ttk.Treeview):
+class UltraFineTreeview(ttk.Treeview):
+    """Base class for ultra-fine treeviews with theme resistance."""
+    
+    def __init__(self, parent, **kwargs):
+        """Initialize ultra-fine treeview with performance-optimized theme monitoring."""
+        super().__init__(parent, **kwargs)
+        self._apply_fine_styling()
+        self._setup_theme_monitoring()
+    
+    def _apply_fine_styling(self):
+        """Apply aggressive fine styling that overrides all themes."""
+        widget_style = f"UltraFine{id(self)}.Treeview"
+        style = ttk.Style()
+        
+        # Force ultra-fine appearance
+        style.configure(widget_style,
+                       rowheight=12,
+                       font=('Segoe UI', 8),
+                       background='white',
+                       foreground='#333333',
+                       fieldbackground='white',
+                       borderwidth=0,
+                       relief='flat',
+                       focuscolor='none')
+        
+        style.configure(widget_style + ".Heading",
+                       font=('Segoe UI', 8, 'normal'),
+                       background='#f5f5f5',
+                       foreground='#666666',
+                       borderwidth=0,
+                       relief='flat',
+                       anchor='w')
+        
+        self.configure(style=widget_style)
+        self._widget_style = widget_style
+    
+    def _setup_theme_monitoring(self):
+        """Monitor theme changes with event-based approach."""
+        # Primary: event-based monitoring
+        self.bind_all('<<ThemeChanged>>', self._on_theme_change)
+        
+        # Also listen for style changes on parent windows
+        parent = self.winfo_toplevel()
+        if parent:
+            parent.bind('<<StyleChanged>>', self._on_theme_change, add='+')
+            
+        # Fallback: very infrequent check (only as safety net)
+        self._last_theme = ttk.Style().theme_use()
+        self._setup_fallback_check()
+            
+    def _on_theme_change(self, event=None):
+        """Handle theme change events efficiently."""
+        try:
+            self._apply_fine_styling()
+            self._last_theme = ttk.Style().theme_use()
+        except:
+            pass
+            
+    def _setup_fallback_check(self):
+        """Ultra-light fallback check only as safety net."""
+        def light_check():
+            try:
+                current_theme = ttk.Style().theme_use()
+                if current_theme != self._last_theme:
+                    self._on_theme_change()
+                    
+                if self.winfo_exists():
+                    # Much less frequent - only safety net
+                    self.after(5000, light_check)  # 5 seconds instead of 500ms
+            except:
+                pass
+                
+        # Start fallback after initial setup
+        self.after(5000, light_check)
+
+
+class ErrorListWidget(UltraFineTreeview):
     """Widget for displaying LaTeX errors in a list format."""
     
     def __init__(self, parent, on_error_click: Optional[Callable[[LaTeXError], None]] = None):
-        """Initialize the error list widget."""
-        super().__init__(parent, columns=('severity', 'line', 'message', 'error_index'), show='tree headings', height=8)
+        """Initialize error list widget with ultra-fine styling."""
+        super().__init__(parent, columns=('severity', 'line', 'message', 'error_index'), 
+                        show='tree headings', height=4)
         
         self.on_error_click = on_error_click
         self.errors: List[LaTeXError] = []
         
-        # Configure columns
+        # Configure columns with compact headers
         self.heading('#0', text='Type', anchor='w')
-        self.heading('severity', text='Severity', anchor='w')
+        self.heading('severity', text='Level', anchor='w')
         self.heading('line', text='Line', anchor='w')
         self.heading('message', text='Message', anchor='w')
         self.heading('error_index', text='')  # Hidden column
         
-        self.column('#0', width=50, minwidth=40)
-        self.column('severity', width=80, minwidth=60)
-        self.column('line', width=60, minwidth=50)
-        self.column('message', width=400, minwidth=300)
+        self.column('#0', width=40, minwidth=30)
+        self.column('severity', width=60, minwidth=50)
+        self.column('line', width=50, minwidth=40)
+        self.column('message', width=350, minwidth=250)
         self.column('error_index', width=0, minwidth=0, stretch=False)  # Hidden
         
-        # Configure tags for different error types
-        self.tag_configure('error', foreground='#d32f2f')
-        self.tag_configure('warning', foreground='#f57c00')
-        self.tag_configure('info', foreground='#1976d2')
+        # Configure tags with fine colors for white background
+        self.tag_configure('error', foreground='#c62828', background='white')
+        self.tag_configure('warning', foreground='#ef6c00', background='white')
+        self.tag_configure('info', foreground='#1565c0', background='white')
         
         # Bind events
         self.bind('<Double-1>', self._on_item_double_click)
@@ -52,16 +129,17 @@ class ErrorListWidget(ttk.Treeview):
         debug_console.log(f"Displaying {len(errors)} errors", level='INFO')
         
         for i, error in enumerate(errors):
-            # Error type icon
-            icon = {'Error': '❌', 'Warning': '⚠️', 'Info': 'ℹ️'}.get(error.severity, '•')
+            # Use simple letter indicators for error types
+            icon = {'Error': 'E', 'Warning': 'W', 'Info': 'I'}.get(error.severity, '•')
             
-            # Insert item
+            # Format line number display
+            line_display = (str(error.line_number) if error.line_number > 0 
+                          else 'EOF' if error.line_number == -1 else '')
+            
+            # Insert error item with compact formatting
             self.insert('', 'end', 
                        text=icon,
-                       values=(error.severity, 
-                              str(error.line_number) if error.line_number > 0 else 'End of file' if error.line_number == -1 else '',
-                              error.message,
-                              str(i)),  # error_index in the values
+                       values=(error.severity, line_display, error.message, str(i)),
                        tags=(error.severity.lower(),))
     
     def clear_errors(self):
@@ -257,63 +335,63 @@ class QuickFixTab(ttk.Frame):
         debug_console.log("QuickFix tab initialized", level='DEBUG')
     
     def _setup_ui(self):
-        """Setup the quick fix tab UI."""
-        # Header
+        """Setup ultra-fine quick fix tab UI."""
+        # Ultra-compact header
         header_frame = ttk.Frame(self)
-        header_frame.pack(fill='x', padx=5, pady=5)
+        header_frame.pack(fill='x', padx=2, pady=1)
         
-        title_label = ttk.Label(header_frame, text="Quick Fixes", font=('Arial', 10, 'bold'))
-        title_label.pack(side='left')
+        title_label = ttk.Label(header_frame, text="Quick Fixes", font=('Segoe UI', 8, 'bold'))
+        title_label.pack(side='left', padx=2)
         
         self.auto_fix_btn = ttk.Button(
             header_frame,
-            text="Auto-Fix Safe Issues",
+            text="Auto-Fix",
             command=self._auto_fix_safe,
-            style='Success.TButton'
+            width=8
         )
-        self.auto_fix_btn.pack(side='right')
+        self.auto_fix_btn.pack(side='right', padx=2)
         
-        # Quick fixes list
+        # Ultra-fine quick fixes list
         list_frame = ttk.Frame(self)
-        list_frame.pack(fill='both', expand=True, padx=5, pady=5)
+        list_frame.pack(fill='both', expand=True, padx=1, pady=1)
         
-        self.fixes_tree = ttk.Treeview(
+        self.fixes_tree = UltraFineTreeview(
             list_frame,
             columns=('confidence', 'type', 'description'),
             show='tree headings',
-            height=10
+            height=4
         )
         
-        # Configure columns
+        # Configure columns with compact sizing
         self.fixes_tree.heading('#0', text='Fix', anchor='w')
-        self.fixes_tree.heading('confidence', text='Confidence', anchor='w')
+        self.fixes_tree.heading('confidence', text='Conf', anchor='w')  # Shorter header
         self.fixes_tree.heading('type', text='Type', anchor='w')
         self.fixes_tree.heading('description', text='Description', anchor='w')
         
-        self.fixes_tree.column('#0', width=150, minwidth=100)
-        self.fixes_tree.column('confidence', width=80, minwidth=60)
-        self.fixes_tree.column('type', width=80, minwidth=60)
-        self.fixes_tree.column('description', width=300, minwidth=200)
+        self.fixes_tree.column('#0', width=120, minwidth=80)
+        self.fixes_tree.column('confidence', width=50, minwidth=40)  # Narrower
+        self.fixes_tree.column('type', width=60, minwidth=50)
+        self.fixes_tree.column('description', width=250, minwidth=180)
         
-        # Scrollbar
+        # Ultra-fine scrollbar
         fixes_scrollbar = ttk.Scrollbar(list_frame, orient='vertical', command=self.fixes_tree.yview)
         self.fixes_tree.configure(yscrollcommand=fixes_scrollbar.set)
         
         fixes_scrollbar.pack(side='right', fill='y')
         self.fixes_tree.pack(side='left', fill='both', expand=True)
         
-        # Apply button
+        # Ultra-compact apply button
         apply_frame = ttk.Frame(self)
-        apply_frame.pack(fill='x', padx=5, pady=5)
+        apply_frame.pack(fill='x', padx=2, pady=1)
         
         self.apply_fix_btn = ttk.Button(
             apply_frame,
-            text="Apply Selected Fix",
+            text="Apply",
             command=self._apply_selected_fix,
-            style='Accent.TButton',
-            state='disabled'
+            state='disabled',
+            width=8
         )
-        self.apply_fix_btn.pack(side='left')
+        self.apply_fix_btn.pack(side='left', padx=2)
         
         # Bind selection
         self.fixes_tree.bind('<<TreeviewSelect>>', self._on_fix_selected)
@@ -327,22 +405,22 @@ class QuickFixTab(ttk.Frame):
         for item in self.fixes_tree.get_children():
             self.fixes_tree.delete(item)
         
-        # Add fixes
+        # Add fixes with clean text indicators
         for i, fix in enumerate(fixes):
             confidence_pct = int(fix.confidence * 100)
             
-            # Icon based on confidence and auto-applicability
+            # Clean prefix based on confidence and auto-applicability
             if fix.auto_applicable and fix.confidence > 0.8:
-                icon = "🔧"  # High confidence auto fix
+                prefix = "[AUTO]"
             elif fix.auto_applicable:
-                icon = "⚙️"  # Auto fix
+                prefix = "[Auto]"
             elif fix.confidence > 0.8:
-                icon = "✅"  # High confidence manual fix
+                prefix = "[High]"
             else:
-                icon = "🔧"  # Manual fix
+                prefix = "[Fix]"
             
             self.fixes_tree.insert('', 'end',
-                                 text=f"{icon} {fix.title}",
+                                 text=f"{prefix} {fix.title}",
                                  values=(f"{confidence_pct}%", fix.fix_type, fix.description),
                                  tags=('auto' if fix.auto_applicable else 'manual',))
         
@@ -410,29 +488,30 @@ class TabbedDebugUI(ttk.Frame, DebugUI):
         debug_console.log("Tabbed debug UI initialized", level='DEBUG')
     
     def _setup_ui(self):
-        """Setup the tabbed UI."""
-        # Header with main actions
+        """Setup ultra-fine tabbed UI."""
+        # Ultra-compact header
         header_frame = ttk.Frame(self)
-        header_frame.pack(fill='x', padx=5, pady=5)
+        header_frame.pack(fill='x', padx=2, pady=1)
         
-        title_label = ttk.Label(header_frame, text="Debug Center", font=('Arial', 12, 'bold'))
-        title_label.pack(side='left')
+        # Fine title like Document outline
+        title_label = ttk.Label(header_frame, text="Debug Center", font=('Segoe UI', 8, 'bold'))
+        title_label.pack(side='left', padx=3)
         
+        # Minimal compare button
         self.compare_btn = ttk.Button(
             header_frame,
-            text="Compare Versions",
+            text="Compare",
             command=self._compare_versions,
-            style='Accent.TButton'
+            width=7
         )
-        self.compare_btn.pack(side='right')
+        self.compare_btn.pack(side='right', padx=2)
         
-        # Separator
-        separator = ttk.Separator(self, orient='horizontal')
-        separator.pack(fill='x', padx=5, pady=5)
-        
-        # Notebook with tabs
+        # Ultra-fine notebook with minimal padding
         self.notebook = ttk.Notebook(self)
-        self.notebook.pack(fill='both', expand=True, padx=5, pady=5)
+        self.notebook.pack(fill='both', expand=True, padx=1, pady=1)
+        
+        # Apply fine styling to notebook
+        self._apply_notebook_fine_styling()
         
         # Errors tab
         self.errors_frame = ttk.Frame(self.notebook)
@@ -442,7 +521,7 @@ class TabbedDebugUI(ttk.Frame, DebugUI):
             self.errors_frame,
             on_error_click=self._on_error_selected
         )
-        self.error_list.pack(fill='both', expand=True, padx=5, pady=5)
+        self.error_list.pack(fill='both', expand=True, padx=1, pady=1)
         
         # Analysis tab
         self.analysis_tab = AnalysisTab(
@@ -458,12 +537,33 @@ class TabbedDebugUI(ttk.Frame, DebugUI):
         )
         self.notebook.add(self.quickfix_tab, text='Quick Fixes')
         
-        # Status bar
+        # Ultra-fine status bar
         self.status_frame = ttk.Frame(self)
-        self.status_frame.pack(fill='x', padx=5, pady=2)
+        self.status_frame.pack(fill='x', padx=2, pady=1)
         
-        self.status_label = ttk.Label(self.status_frame, text="Ready", foreground='#666')
-        self.status_label.pack(side='left')
+        self.status_label = ttk.Label(self.status_frame, text="Ready", font=('Segoe UI', 7), foreground='#666')
+        self.status_label.pack(side='left', padx=2)
+    
+    def _apply_notebook_fine_styling(self):
+        """Apply fine styling to notebook tabs."""
+        style = ttk.Style()
+        
+        # Create fine notebook style
+        notebook_style = f"Fine{id(self)}.TNotebook"
+        tab_style = f"Fine{id(self)}.TNotebook.Tab"
+        
+        # Ultra-fine notebook styling
+        style.configure(notebook_style,
+                       borderwidth=0,
+                       relief='flat')
+        
+        # Ultra-fine tab styling  
+        style.configure(tab_style,
+                       font=('Segoe UI', 7),
+                       padding=[4, 2],
+                       borderwidth=1)
+        
+        self.notebook.configure(style=notebook_style)
     
     def update_compilation_errors(self, log_content: str, file_path: str = None, current_content: str = None):
         """Update UI with compilation errors."""

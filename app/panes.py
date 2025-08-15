@@ -66,13 +66,13 @@ def create_debug_panel(parent, on_goto_line=None):
         
         from debug_system.coordinator import create_debug_system
         
-        # Create the debug system
+        # Create debug system with proper error handling
         coordinator, debug_panel = create_debug_system(
             parent_window=parent,
             on_goto_line=on_goto_line
         )
         
-        # Add the panel to the parent
+        # Add panel to parent container
         parent.add(debug_panel, weight=1)
         
         debug_console.log("Debug panel created successfully", level='SUCCESS')
