@@ -77,25 +77,37 @@ def handle_snippet_expansion(event):
         # Record insertion point for placeholder detection
         insertion_point = editor.index(keyword_start_index)
         
+        # Get the snippet content and convert legacy placeholders if needed
+        snippet_content = all_snippets[keyword]
+        converted_snippet = PlaceholderManager.convert_legacy_placeholders(snippet_content)
+        
+        # If conversion happened, update the snippet in memory and save
+        if converted_snippet != snippet_content:
+            debug_console.log(f"Converted legacy placeholders in snippet '{keyword}'", level='INFO')
+            all_snippets[keyword] = converted_snippet
+            snippet_manager.save_snippets(all_snippets)
+            snippet_content = converted_snippet
+        
         # Delete keyword from editor
         editor.delete(keyword_start_index, cursor_position)
-        # Insert snippet content
-        editor.insert(insertion_point, all_snippets[keyword])
+        # Insert converted snippet content
+        editor.insert(insertion_point, snippet_content)
         
-        # Check for placeholders in snippet
-        if '$' in all_snippets[keyword]:
+        # Check for placeholders in snippet using new format
+        if PlaceholderManager.PLACEHOLDER_START in snippet_content:
             # Create placeholder manager if needed
             if not hasattr(editor, 'placeholder_manager'):
                 editor.placeholder_manager = PlaceholderManager(editor)
             
+            # Set snippet context for better placeholder tracking
+            editor.placeholder_manager.set_snippet_context(insertion_point, snippet_content)
+            
             # Find placeholders in the inserted snippet
-            snippet_lines = all_snippets[keyword].count('\n')
+            snippet_lines = snippet_content.count('\n')
             end_position = editor.index(f"{insertion_point} + {snippet_lines + 1} lines")
             
-            editor.placeholder_manager.find_placeholders(insertion_point, end_position)
-            
-            # Navigate to the first placeholder
-            if editor.placeholder_manager.has_placeholders():
+            if editor.placeholder_manager.find_placeholders(insertion_point, end_position):
+                # Navigate to the first placeholder
                 editor.placeholder_manager.navigate_to_next_placeholder()
 
         debug_console.log(f"Snippet '{keyword}' successfully expanded.", level='INFO')

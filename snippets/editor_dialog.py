@@ -69,8 +69,20 @@ class SnippetEditorDialog(tk.Toplevel):
         self.keyword_entry = ttk.Entry(right_frame, font=("Segoe UI", 10))
         self.keyword_entry.grid(row=1, column=0, sticky="ew", pady=(0, 10))
 
-        # Snippet content text area.
-        ttk.Label(right_frame, text="Snippet Content:").grid(row=2, column=0, sticky="w", pady=(0, 2))
+        # Snippet content text area with help text.
+        content_label_frame = ttk.Frame(right_frame)
+        content_label_frame.grid(row=2, column=0, sticky="ew", pady=(0, 2))
+        content_label_frame.columnconfigure(0, weight=1)
+        
+        ttk.Label(content_label_frame, text="Snippet Content:").grid(row=0, column=0, sticky="w")
+        
+        # Help text for placeholder format
+        help_text = "Use ⟨placeholder⟩ for Tab navigation (e.g., ⟨title⟩, ⟨content⟩)"
+        help_label = ttk.Label(content_label_frame, text=help_text, 
+                              foreground=self.theme.get("comment_color", "#808080"),
+                              font=("Segoe UI", 8))
+        help_label.grid(row=0, column=1, sticky="e")
+        
         self.content_text = tk.Text(
             right_frame, wrap="word", undo=True, font=("Consolas", 10),
             bg=self.theme.get("editor_bg"), fg=self.theme.get("editor_fg"),
@@ -82,15 +94,27 @@ class SnippetEditorDialog(tk.Toplevel):
 
         # --- Action Buttons for Snippet Management ---
         button_frame = ttk.Frame(right_frame)
-        button_frame.grid(row=4, column=0, sticky="e", pady=(10, 0))
+        button_frame.grid(row=4, column=0, sticky="ew", pady=(10, 0))
+        button_frame.columnconfigure(0, weight=1)
         
-        self.save_button = ttk.Button(button_frame, text="Save Snippet", command=self._save_snippet)
+        # Left side: Helper button
+        helper_frame = ttk.Frame(button_frame)
+        helper_frame.pack(side="left")
+        
+        ttk.Button(helper_frame, text="Add Placeholder", command=self._add_placeholder, 
+                  width=12).pack(side="left", padx=(0, 5))
+        
+        # Right side: Main action buttons
+        action_frame = ttk.Frame(button_frame)
+        action_frame.pack(side="right")
+        
+        self.save_button = ttk.Button(action_frame, text="Save Snippet", command=self._save_snippet)
         self.save_button.pack(side="left", padx=5)
         
-        self.delete_button = ttk.Button(button_frame, text="Delete Snippet", command=self._delete_snippet)
+        self.delete_button = ttk.Button(action_frame, text="Delete Snippet", command=self._delete_snippet)
         self.delete_button.pack(side="left", padx=5)
         
-        ttk.Button(button_frame, text="New Snippet", command=self._new_snippet).pack(side="left")
+        ttk.Button(action_frame, text="New Snippet", command=self._new_snippet).pack(side="left")
 
         main_pane.add(right_frame, stretch="always") # Add right frame to the paned window.
 
@@ -214,3 +238,58 @@ class SnippetEditorDialog(tk.Toplevel):
         """
         has_selection = self.snippet_listbox.curselection() # Check if any item is selected.
         self.delete_button.config(state=tk.NORMAL if has_selection else tk.DISABLED)
+
+    def _add_placeholder(self):
+        """
+        Opens a dialog to add a placeholder at the current cursor position.
+        
+        This helps users easily insert properly formatted placeholders in their snippets.
+        """
+        # Create a simple input dialog
+        placeholder_dialog = tk.Toplevel(self)
+        placeholder_dialog.title("Add Placeholder")
+        placeholder_dialog.geometry("300x120")
+        placeholder_dialog.transient(self)
+        placeholder_dialog.grab_set()
+        placeholder_dialog.resizable(False, False)
+        
+        # Center the dialog
+        placeholder_dialog.update_idletasks()
+        x = self.winfo_x() + (self.winfo_width() // 2) - (placeholder_dialog.winfo_width() // 2)
+        y = self.winfo_y() + (self.winfo_height() // 2) - (placeholder_dialog.winfo_height() // 2)
+        placeholder_dialog.geometry(f"+{x}+{y}")
+        
+        # Dialog content
+        main_frame = ttk.Frame(placeholder_dialog, padding=20)
+        main_frame.pack(fill="both", expand=True)
+        
+        ttk.Label(main_frame, text="Placeholder name:").pack(anchor="w")
+        placeholder_entry = ttk.Entry(main_frame, width=30, font=("Segoe UI", 10))
+        placeholder_entry.pack(fill="x", pady=(5, 15))
+        placeholder_entry.focus()
+        
+        # Button frame
+        button_frame = ttk.Frame(main_frame)
+        button_frame.pack(fill="x")
+        
+        def insert_placeholder():
+            placeholder_name = placeholder_entry.get().strip()
+            if placeholder_name:
+                # Insert at current cursor position in content text
+                cursor_pos = self.content_text.index(tk.INSERT)
+                placeholder_text = f"⟨{placeholder_name}⟩"
+                self.content_text.insert(cursor_pos, placeholder_text)
+                self.content_text.focus()
+                placeholder_dialog.destroy()
+            else:
+                messagebox.showwarning("Invalid Input", "Please enter a placeholder name.", parent=placeholder_dialog)
+        
+        def cancel():
+            placeholder_dialog.destroy()
+        
+        # Bind Enter key to insert
+        placeholder_entry.bind("<Return>", lambda e: insert_placeholder())
+        placeholder_dialog.bind("<Escape>", lambda e: cancel())
+        
+        ttk.Button(button_frame, text="Insert", command=insert_placeholder, width=10).pack(side="right", padx=(5, 0))
+        ttk.Button(button_frame, text="Cancel", command=cancel, width=10).pack(side="right")
