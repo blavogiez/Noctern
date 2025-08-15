@@ -1,12 +1,12 @@
 import json
 import os
 from utils import debug_console
+from llm.prompt_manager import get_document_cache_dir
 
 def _get_keyword_filepath(file_path: str) -> str | None:
     """
     Generates the absolute file path for the keyword JSON file.
-    The keyword file is named after the document, with a '.keywords.json' suffix,
-    and is located in the same directory as the document file.
+    The keyword file is stored in the document's cache directory as 'keywords.json'.
     Args:
         file_path: The absolute path to the document file.
     Returns:
@@ -17,13 +17,21 @@ def _get_keyword_filepath(file_path: str) -> str | None:
         debug_console.log("Cannot generate keyword filepath: No document path provided.", level='DEBUG')
         return None
     
-    base_name_without_ext, _ = os.path.splitext(file_path)
-    return f"{base_name_without_ext}_keywords.json"
+    cache_dir = get_document_cache_dir(file_path)
+    if not cache_dir:
+        return None
+    
+    # Ensure the cache directory exists
+    os.makedirs(cache_dir, exist_ok=True)
+    
+    keyword_file_path = os.path.join(cache_dir, "keywords.json")
+    debug_console.log(f"Generated keyword filepath: {keyword_file_path}", level='DEBUG')
+    return keyword_file_path
 
 def get_keywords_for_file(file_path: str) -> list[str]:
     """
     Retrieves the list of keywords for a specific file by reading its corresponding
-    '.keywords.json' file.
+    'keywords.json' file from the document's cache directory.
     Args:
         file_path: The absolute path to the file.
     Returns:
@@ -52,7 +60,7 @@ def get_keywords_for_file(file_path: str) -> list[str]:
 def set_keywords_for_file(file_path: str, keywords: list[str]):
     """
     Sets the list of keywords for a specific file and saves it to a 
-    '.keywords.json' file in the same directory.
+    'keywords.json' file in the document's cache directory.
     Args:
         file_path: The absolute path to the file.
         keywords: The new list of keywords for the file.
