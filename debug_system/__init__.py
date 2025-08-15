@@ -1,14 +1,16 @@
 """
-Système de debug ultra-rapide pour AutomaTeX.
-Architecture SOLID avec comparaison de versions et détection d'erreurs avancée.
+Clean debug system for LaTeX error analysis and correction.
+Provides a complete solution for debugging LaTeX compilation issues.
 """
 
-from .debug_coordinator import DebugCoordinator, DebugCoordinatorFactory
-
-__version__ = "1.0.0"
-__author__ = "AutomaTeX Debug System"
+from .coordinator import create_debug_system, DebugCoordinator
+from .core import LaTeXError, QuickFix, AnalysisResult, DebugContext
 
 __all__ = [
-    "DebugCoordinator",
-    "DebugCoordinatorFactory"
+    'create_debug_system',
+    'DebugCoordinator', 
+    'LaTeXError',
+    'QuickFix', 
+    'AnalysisResult',
+    'DebugContext'
 ]

@@ -8,8 +8,8 @@ from utils import debug_console
 from debug_system.core import DebugContext, AnalysisResult, QuickFix
 from debug_system.error_parser import LaTeXErrorParser
 from debug_system.llm_analyzer import LLMAnalyzer
-from debug_system.quick_fixer import LaTeXQuickFixProvider, EditorFixApplicator
-from debug_system.refactored_diff_service import CachedDiffGenerator
+from debug_system.quick_fixes import LaTeXQuickFixProvider, EditorFixApplicator
+from debug_system.diff_service import CachedDiffGenerator
 from debug_system.debug_ui import TabbedDebugUI
 
 
