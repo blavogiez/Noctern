@@ -1,6 +1,6 @@
 """
-AI-powered LaTeX error analyzer using LLM for intelligent suggestions.
-Integrates with existing Ollama system to provide context-aware error analysis.
+LaTeX error analyzer using LLM for intelligent suggestions.
+Integrate with Ollama system to provide context-aware error analysis.
 """
 
 import json
@@ -11,15 +11,15 @@ from debug_system.core import AnalysisEngine, AnalysisResult, DebugContext, Quic
 
 
 class LLMAnalyzer(AnalysisEngine):
-    """AI-powered LaTeX error analyzer using LLM for intelligent suggestions."""
+    """LaTeX error analyzer using LLM for intelligent suggestions."""
     
     def __init__(self):
-        """Initialize the LLM analyzer with cache and configuration."""
+        """Initialize analyzer with cache for repeated analysis."""
         self._analysis_cache: Dict[str, AnalysisResult] = {}
         debug_console.log("LLM analyzer initialized", level='DEBUG')
     
     def analyze_errors(self, context: DebugContext) -> AnalysisResult:
-        """Analyze errors and provide intelligent suggestions."""
+        """Analyze errors and provide suggestions."""
         if not self.is_available():
             return AnalysisResult(
                 explanation="LLM analysis not available",
@@ -99,7 +99,7 @@ class LLMAnalyzer(AnalysisEngine):
             )
         
         # Create error summary for analysis
-        error_summary = "\n".join([
+        error_summary = "\\n".join([
             f"Line {error.line_number}: {error.message}"
             for error in context.errors
         ])
@@ -107,7 +107,7 @@ class LLMAnalyzer(AnalysisEngine):
         return self._analyze_diff(error_summary, context.log_content or "")
     
     def _call_llm_system(self, diff_content: str, log_content: str) -> Optional[str]:
-        """Call the existing LLM system for analysis."""
+        """Call LLM system for analysis."""
         try:
             from llm import state as llm_state, api_client
             
@@ -129,12 +129,12 @@ class LLMAnalyzer(AnalysisEngine):
             
             debug_console.log("Sending request to LLM", level='DEBUG')
             
-            # Make optimized LLM request for debug analysis
-            response_generator = api_client.request_llm_generation_optimized(
+            # Make debug-specific LLM request
+            response_generator = api_client.generate_with_task_profile(
                 full_prompt,
                 model_name=llm_state.model_debug,
                 stream=False,
-                task_type="debug"  # Use debug-optimized profile
+                task_type="debug"
             )
             response = next(response_generator)
             
@@ -157,7 +157,7 @@ class LLMAnalyzer(AnalysisEngine):
         for line in diff_content.splitlines():
             if line.startswith('+') and not line.startswith('+++'):
                 added_lines.append(line[1:])  # Remove the + prefix
-        return '\n'.join(added_lines)
+        return '\\n'.join(added_lines)
     
     def _parse_llm_response(self, analysis_text: str, diff_content: str) -> AnalysisResult:
         """Parse LLM response into structured result."""
@@ -172,12 +172,8 @@ class LLMAnalyzer(AnalysisEngine):
                 corrected_code = json_data.get("corrected_code", json_data.get("fixed_code", ""))
                 confidence = self._calculate_confidence(json_data, analysis_text)
                 
-                # Generate quick fixes with error handling
-                try:
-                    quick_fixes = self._generate_quick_fixes(json_data, diff_content)
-                except Exception as e:
-                    debug_console.log(f"Error generating quick fixes: {e}", level='WARNING')
-                    quick_fixes = []
+                # Generate quick fixes
+                quick_fixes = self._generate_quick_fixes(json_data, diff_content)
                 
                 return AnalysisResult(
                     explanation=explanation,
@@ -188,7 +184,7 @@ class LLMAnalyzer(AnalysisEngine):
                     raw_analysis=analysis_text
                 )
             else:
-                # Fallback: create result from plain text
+                # Fallback to plain text parsing
                 debug_console.log("No JSON found, using plain text analysis", level='INFO')
                 
                 explanation = self._extract_explanation_from_text(analysis_text)
@@ -214,7 +210,7 @@ class LLMAnalyzer(AnalysisEngine):
     def _extract_json_from_text(self, text: str) -> Optional[Dict[str, Any]]:
         """Extract JSON object from text response."""
         # Try code block JSON first
-        json_match = re.search(r'```(?:json)?\s*({.*?})\s*```', text, re.DOTALL)
+        json_match = re.search(r'```(?:json)?\\s*({.*?})\\s*```', text, re.DOTALL)
         if json_match:
             try:
                 return json.loads(json_match.group(1))
@@ -232,7 +228,7 @@ class LLMAnalyzer(AnalysisEngine):
         return None
     
     def _calculate_confidence(self, json_data: Dict[str, Any], analysis_text: str) -> float:
-        """Calculate confidence score for the analysis."""
+        """Calculate confidence score for analysis."""
         confidence = 0.5  # Base confidence
         
         # Increase confidence if corrected code is provided
@@ -267,7 +263,7 @@ class LLMAnalyzer(AnalysisEngine):
                 auto_applicable=False
             ))
         
-        # Generate specific fixes based on common patterns
+        # Generate fixes for common patterns
         if "missing" in explanation.lower() and "}" in explanation:
             quick_fixes.append(QuickFix(
                 title="Add Missing Closing Brace",
@@ -279,27 +275,24 @@ class LLMAnalyzer(AnalysisEngine):
             ))
         
         if "package" in explanation.lower() and "usepackage" in explanation:
-            try:
-                package_match = re.search(r'\\usepackage\{([^}]+)\}', explanation)
-                if package_match and package_match.groups():
-                    package_name = package_match.group(1)
-                    quick_fixes.append(QuickFix(
-                        title=f"Add Package {package_name}",
-                        description=f"Add \\usepackage{{{package_name}}} to preamble",
-                        fix_type="insert",
-                        target_line=1,
-                        new_text=f"\\usepackage{{{package_name}}}",
-                        confidence=0.8,
-                        auto_applicable=False
-                    ))
-            except (IndexError, AttributeError) as e:
-                debug_console.log(f"Error extracting package name: {e}", level='WARNING')
+            package_match = re.search(r'\\\\usepackage\\{([^}]+)\\}', explanation)
+            if package_match:
+                package_name = package_match.group(1)
+                quick_fixes.append(QuickFix(
+                    title=f"Add Package {package_name}",
+                    description=f"Add \\\\usepackage{{{package_name}}} to preamble",
+                    fix_type="insert",
+                    target_line=1,
+                    new_text=f"\\\\usepackage{{{package_name}}}",
+                    confidence=0.8,
+                    auto_applicable=False
+                ))
         
         return quick_fixes
     
     def _extract_explanation_from_text(self, text: str) -> str:
         """Extract explanation from plain text response."""
-        lines = text.split('\n')
+        lines = text.split('\\n')
         explanation_lines = []
         
         for line in lines:
@@ -313,14 +306,14 @@ class LLMAnalyzer(AnalysisEngine):
     def _extract_code_from_text(self, text: str) -> Optional[str]:
         """Extract code blocks from plain text response."""
         # Look for LaTeX code blocks
-        code_match = re.search(r'```(?:latex|tex)?\s*(.*?)\s*```', text, re.DOTALL)
+        code_match = re.search(r'```(?:latex|tex)?\\s*(.*?)\\s*```', text, re.DOTALL)
         if code_match:
             return code_match.group(1).strip()
         
         # Look for LaTeX-like content
         latex_patterns = [
-            r'(\\documentclass.*?\\end\{document\})',
-            r'(\\begin\{.*?\}.*?\\end\{.*?\})',
+            r'(\\\\documentclass.*?\\\\end\\{document\\})',
+            r'(\\\\begin\\{.*?\\}.*?\\\\end\\{.*?\\})',
         ]
         
         for pattern in latex_patterns:

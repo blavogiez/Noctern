@@ -1,6 +1,6 @@
 """
-Provide core functionality for Smart Style feature.
-Orchestrate user interaction (dialog) and use generic streaming service to apply text styling.
+Smart Style feature for text styling and rephrasing.
+Handle user interaction and coordinate with streaming service for text enhancement.
 """
 import tkinter as tk
 from tkinter import messagebox
@@ -67,7 +67,7 @@ def autostyle_selection():
         selection_indices=selection_indices
     )
 
-    # 6. Call the high-performance streaming service with rephrase profile for styling
+    # Call streaming service with rephrase settings for styling
     start_streaming_request(
         editor=editor,
         prompt=full_prompt,

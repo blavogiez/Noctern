@@ -1,6 +1,6 @@
 """
-Manage process of generating text using Large Language Model (LLM).
-Provide functionality to open dialog for custom text generation requests, construct LLM prompt, and use centralized streaming service to handle streaming response from LLM.
+Text generation using LLM with dialog interface.
+Handle custom generation requests and coordinate with streaming service for response handling.
 """
 from tkinter import messagebox
 from llm import state as llm_state
@@ -84,7 +84,7 @@ def open_generate_text_dialog(initial_prompt_text=None):
             session_callbacks['on_error'](error_msg)
             _update_history_response_and_save(user_prompt, f"❌ Error: {error_msg[:100]}...")
 
-        # 4. Call the high-performance streaming service with generation profile
+        # Call streaming service with generation settings
         start_streaming_request(
             editor=editor,
             prompt=full_prompt,
