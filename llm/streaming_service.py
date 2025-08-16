@@ -12,21 +12,23 @@ from llm import api_client as llm_api_client
 from llm import utils as llm_utils
 from utils import debug_console
 
-def start_streaming_request(editor, prompt, model_name, on_chunk, on_success, on_error):
+def start_streaming_request(editor, prompt, model_name, on_chunk, on_success, on_error, task_type="general"):
     """
-    Starts a generic, non-blocking LLM streaming request in a background thread.
+    Starts a high-performance, non-blocking LLM streaming request with optimized profiles.
+    
+    Args:
+        task_type: "completion", "generation", "rephrase", "debug", or "general"
     """
     progress_bar = llm_state._llm_progress_bar_widget
     
     def stream_thread_target():
         """
-        Target function for the background thread.
-        This thread is a simple worker; it does not manage global state.
-        It relies on the `_is_generation_cancelled` flag to stop.
+        Target function for the high-performance background thread.
+        Uses optimized generation profiles for better performance.
         """
         try:
-            # API client provides improved, frequent cancellation checks
-            for response in llm_api_client.request_llm_generation(prompt, model_name=model_name):
+            # Use optimized API client with task-specific performance profiles
+            for response in llm_api_client.request_llm_generation_optimized(prompt, model_name=model_name, task_type=task_type):
                 # Perform additional cancellation check for safety
                 if llm_state._is_generation_cancelled:
                     break
@@ -62,4 +64,6 @@ def start_streaming_request(editor, prompt, model_name, on_chunk, on_success, on
         progress_bar.pack(pady=2)
         progress_bar.start(10)
     
+    # Start high-performance thread
+    debug_console.log(f"Starting high-performance LLM streaming thread (profile: {task_type})", level='INFO')
     threading.Thread(target=stream_thread_target, daemon=True).start()

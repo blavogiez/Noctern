@@ -67,12 +67,13 @@ def autostyle_selection():
         selection_indices=selection_indices
     )
 
-    # 6. Call the generic streaming service
+    # 6. Call the high-performance streaming service with rephrase profile for styling
     start_streaming_request(
         editor=editor,
         prompt=full_prompt,
         model_name=llm_state.model_style,
         on_chunk=session_callbacks['on_chunk'],
         on_success=session_callbacks['on_success'],
-        on_error=session_callbacks['on_error']
+        on_error=session_callbacks['on_error'],
+        task_type="rephrase"  # Use rephrase profile for styling (similar focused rewriting)
     )

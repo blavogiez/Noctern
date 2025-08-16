@@ -54,12 +54,13 @@ def request_llm_to_complete_text():
     # 3. Start interactive session to get callbacks
     session_callbacks = start_new_interactive_session(editor, is_completion=True, completion_phrase=current_phrase_start)
 
-    # 4. Call the generic streaming service
+    # 4. Call the high-performance streaming service with completion profile
     start_streaming_request(
         editor=editor,
         prompt=full_llm_prompt,
         model_name=llm_state.model_completion,
         on_chunk=session_callbacks['on_chunk'],
         on_success=session_callbacks['on_success'],
-        on_error=session_callbacks['on_error']
+        on_error=session_callbacks['on_error'],
+        task_type="completion"  # Optimized for completion tasks
     )

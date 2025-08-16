@@ -129,11 +129,12 @@ class LLMAnalyzer(AnalysisEngine):
             
             debug_console.log("Sending request to LLM", level='DEBUG')
             
-            # Make LLM request
-            response_generator = api_client.request_llm_generation(
+            # Make optimized LLM request for debug analysis
+            response_generator = api_client.request_llm_generation_optimized(
                 full_prompt,
                 model_name=llm_state.model_debug,
-                stream=False
+                stream=False,
+                task_type="debug"  # Use debug-optimized profile
             )
             response = next(response_generator)
             

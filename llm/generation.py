@@ -84,14 +84,15 @@ def open_generate_text_dialog(initial_prompt_text=None):
             session_callbacks['on_error'](error_msg)
             _update_history_response_and_save(user_prompt, f"❌ Error: {error_msg[:100]}...")
 
-        # 4. Call the generic streaming service
+        # 4. Call the high-performance streaming service with generation profile
         start_streaming_request(
             editor=editor,
             prompt=full_prompt,
             model_name=model_name,
             on_chunk=on_chunk,
             on_success=on_success,
-            on_error=on_error
+            on_error=on_error,
+            task_type="generation"  # Optimized for generation tasks
         )
 
     # Display the generation dialog, passing all necessary callbacks.

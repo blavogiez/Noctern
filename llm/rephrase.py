@@ -98,12 +98,13 @@ def _request_rephrase_for_text(editor, original_text, start_index, end_index, in
         on_discard_callback=on_discard_callback
     )
 
-    # Call the generic streaming service
+    # Call the high-performance streaming service with rephrase profile
     start_streaming_request(
         editor=editor,
         prompt=rephrase_prompt,
         model_name=llm_state.model_rephrase,
         on_chunk=session_callbacks['on_chunk'],
         on_success=session_callbacks['on_success'],
-        on_error=session_callbacks['on_error']
+        on_error=session_callbacks['on_error'],
+        task_type="rephrase"  # Optimized for rephrasing tasks
     )
