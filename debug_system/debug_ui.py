@@ -26,7 +26,7 @@ class UltraFineTreeview(ttk.Treeview):
         
         # Force ultra-fine appearance with unified font
         style.configure(widget_style,
-                       rowheight=14,
+                       rowheight=32,
                        font=('Segoe UI', 9),
                        background='white',
                        foreground='#333333',
@@ -92,7 +92,7 @@ class ErrorListWidget(UltraFineTreeview):
     def __init__(self, parent, on_error_click: Optional[Callable[[LaTeXError], None]] = None):
         """Initialize error list widget with ultra-fine styling."""
         super().__init__(parent, columns=('severity', 'line', 'message', 'error_index'), 
-                        show='tree headings', height=4)
+                        show='tree headings', height=6)
         
         self.on_error_click = on_error_click
         self.errors: List[LaTeXError] = []
@@ -104,10 +104,10 @@ class ErrorListWidget(UltraFineTreeview):
         self.heading('message', text='Message', anchor='w')
         self.heading('error_index', text='')  # Hidden column
         
-        self.column('#0', width=40, minwidth=30)
-        self.column('severity', width=60, minwidth=50)
-        self.column('line', width=50, minwidth=40)
-        self.column('message', width=350, minwidth=250)
+        self.column('#0', width=45, minwidth=35)
+        self.column('severity', width=70, minwidth=60)
+        self.column('line', width=60, minwidth=50)
+        self.column('message', width=400, minwidth=300)
         self.column('error_index', width=0, minwidth=0, stretch=False)  # Hidden
         
         # Configure tags with fine colors for white background
@@ -489,24 +489,24 @@ class TabbedDebugUI(ttk.Frame, DebugUI):
         """Setup ultra-fine tabbed UI."""
         # Ultra-compact header
         header_frame = ttk.Frame(self)
-        header_frame.pack(fill='x', padx=2, pady=1)
+        header_frame.pack(fill='x', padx=5, pady=(2, 4))
         
         # Fine title consistent with app style
         title_label = ttk.Label(header_frame, text="Debug Center", font=('Segoe UI', 9))
         title_label.pack(side='left', padx=3)
         
-        # Minimal compare button
+        # Minimal compare button with better positioning
         self.compare_btn = ttk.Button(
             header_frame,
             text="Compare",
             command=self._compare_versions,
             width=7
         )
-        self.compare_btn.pack(side='right', padx=2)
+        self.compare_btn.pack(side='right', padx=(5, 0))
         
         # Ultra-fine notebook with minimal padding
         self.notebook = ttk.Notebook(self)
-        self.notebook.pack(fill='both', expand=True, padx=1, pady=1)
+        self.notebook.pack(fill='both', expand=True, padx=3, pady=(0, 2))
         
         # Apply fine styling to notebook
         self._apply_notebook_fine_styling()
@@ -519,7 +519,7 @@ class TabbedDebugUI(ttk.Frame, DebugUI):
             self.errors_frame,
             on_error_click=self._on_error_selected
         )
-        self.error_list.pack(fill='both', expand=True, padx=1, pady=1)
+        self.error_list.pack(fill='both', expand=True, padx=3, pady=3)
         
         # Analysis tab
         self.analysis_tab = AnalysisTab(
@@ -537,10 +537,10 @@ class TabbedDebugUI(ttk.Frame, DebugUI):
         
         # Ultra-fine status bar
         self.status_frame = ttk.Frame(self)
-        self.status_frame.pack(fill='x', padx=2, pady=1)
+        self.status_frame.pack(fill='x', padx=5, pady=(2, 3))
         
         self.status_label = ttk.Label(self.status_frame, text="Ready", font=('Segoe UI', 9), foreground='#666')
-        self.status_label.pack(side='left', padx=2)
+        self.status_label.pack(side='left', padx=3)
     
     def _apply_notebook_fine_styling(self):
         """Apply fine styling to notebook tabs."""
