@@ -72,7 +72,18 @@ class PDFPreviewManager:
             if file_path:
                 source_dir = os.path.dirname(file_path)
                 file_name = os.path.basename(file_path)
-                with open(file_path, "w", encoding="utf-8") as f: f.write(editor_content)
+                
+                # Don't auto-save if file has unsaved changes - use temp file for compilation
+                if current_tab.is_dirty():
+                    # Create temporary file for compilation
+                    base_name = os.path.splitext(file_name)[0]
+                    temp_name = f"{base_name}_temp_compile.tex"
+                    temp_path = os.path.join(source_dir, temp_name)
+                    with open(temp_path, "w", encoding="utf-8") as f: f.write(editor_content)
+                    file_name = temp_name  # Use temp file for compilation
+                else:
+                    # File is already saved, safe to write
+                    with open(file_path, "w", encoding="utf-8") as f: f.write(editor_content)
             else: # Unsaved file
                 source_dir, file_name = "output", "preview.tex"
                 os.makedirs(source_dir, exist_ok=True)

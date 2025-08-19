@@ -78,7 +78,7 @@ def setup_gui():
 
     debug_console.initialize(state.root)
     # Configure minimum log level to reduce console output
-    debug_console.set_min_level('DEBUG')
+    debug_console.set_min_level('INFO')
     create_top_buttons_frame(state.root)
     
     # Check if PDF preview should be enabled before initialization

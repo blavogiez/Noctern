@@ -37,19 +37,18 @@ def close_current_tab(get_current_tab_callback, root_window, notebook_widget, sa
     if current_tab.is_dirty():
         debug_console.log(f"Tab '{tab_display_name}' has unsaved changes. Prompting user.", level='INFO')
         response = show_unsaved_changes_dialog(
-            f"The file '{tab_display_name}' has unsaved changes.\n\nWhat would you like to do?",
+            f"The file '{tab_display_name}' has unsaved changes.\n\nDo you want to save it before closing?",
             root_window
         )
         if response == "save":
             debug_console.log("User chose to SAVE before closing tab.", level='ACTION')
-            if not save_file_callback(): # Attempt to save the file.
+            if not save_file_callback():
                 debug_console.log("Save operation was cancelled or failed. Aborting tab close.", level='INFO')
-                return # Abort closing the tab if saving fails or is cancelled.
-        elif response == "cancel" or response is None: # User clicked 'Cancel'.
+                return
+        elif response == "cancel":
             debug_console.log("User CANCELLED the tab close operation.", level='ACTION')
             return
-        else: # response == "dont_save" (User chose not to save).
-            debug_console.log("User chose NOT to save before closing tab.", level='ACTION')
+        # If "dont_save", continue with closing
 
     # Add the file path to the closed tabs stack for potential restoration.
     if closed_tabs_stack is not None:

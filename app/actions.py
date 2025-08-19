@@ -183,77 +183,13 @@ def load_session():
         # Skip creating empty tab on error
 
 def on_close_request():
-    """
-    Handles the application close request, prompting to save unsaved changes.
-    """
+    """Handle application close request with unsaved changes check."""
     debug_console.log("Application close request received.", level='INFO')
-    debug_console.log(f"Total tabs: {len(state.tabs)}", level='DEBUG')
-    for tab_id, tab in state.tabs.items():
-        debug_console.log(f"Tab {tab_id}: {tab.file_path}, dirty: {tab.is_dirty()}", level='DEBUG')
     if not state.root:
         return
-
-    app_config_data = state.get_app_config()
-    if state.root.attributes('-fullscreen'):
-        app_config_data['window_state'] = 'Fullscreen'
-    elif state.root.state() == 'zoomed':
-        app_config_data['window_state'] = 'Maximized'
-    else:
-        app_config_data['window_state'] = 'Normal'
     
-    app_config_data['theme'] = state.current_theme
-    
-    # Save LLM model configuration
-    from llm import state as llm_state
-    app_config_data['model_completion'] = llm_state.model_completion
-    app_config_data['model_generation'] = llm_state.model_generation
-    app_config_data['model_rephrase'] = llm_state.model_rephrase
-    app_config_data['model_debug'] = llm_state.model_debug
-    app_config_data['model_style'] = llm_state.model_style
-    
-    app_config.save_config(app_config_data)
-    
-    dirty_tabs = [tab for tab in state.tabs.values() if tab.is_dirty()]
-    debug_console.log(f"Found {len(dirty_tabs)} dirty tabs during exit", level='DEBUG')
-    
-    # Debug each tab individually
-    for tab_id, tab in state.tabs.items():
-        is_tab_dirty = tab.is_dirty()
-        debug_console.log(f"Tab {os.path.basename(tab.file_path) if tab.file_path else 'Untitled'}: dirty={is_tab_dirty}", level='DEBUG')
-    if dirty_tabs:
-        file_list = [os.path.basename(tab.file_path) if tab.file_path else "Untitled" for tab in dirty_tabs]
-        
-        # Use centralized dialog for consistent user experience
-        debug_console.log(f"Showing unsaved changes dialog for files: {file_list}", level='DEBUG')
-        response = show_unsaved_changes_dialog_multiple_files(file_list, state.root)
-        debug_console.log(f"Dialog response: {response}", level='DEBUG')
-        
-        if response == "save":
-            all_saved = True
-            # Create a copy of the tabs dictionary since we'll be modifying it during iteration
-            tabs_copy = dict(state.tabs)
-            for tab_id, tab in tabs_copy.items():
-                if tab.is_dirty():
-                    # Check if the tab still exists before trying to select it
-                    if tab_id in state.notebook.tabs():
-                        try:
-                            state.notebook.select(tab_id)
-                            if not save_file():
-                                all_saved = False
-                                break
-                        except TclError:
-                            # Tab might have been closed already, skip it
-                            continue
-            if all_saved:
-                save_session()
-                state.root.destroy()
-        elif response == "dont_save":
-            save_session()
-            state.root.destroy()
-        # If response == "cancel" or None, do nothing (keep app open)
-    else:
-        save_session()
-        state.root.destroy()
+    from app.exit_handler import exit_application
+    exit_application()
 
 def close_tab_by_id(tab_id):
     """
@@ -342,55 +278,12 @@ def on_tab_changed(event=None):
 
 
 def restart_application():
-    """
-    Restarts the entire application.
-    """
+    """Restart the entire application with unsaved changes check."""
     debug_console.log("Application restart requested.", level='ACTION')
     
-    # Check for unsaved changes first  
-    dirty_tabs = [tab for tab in state.tabs.values() if tab.is_dirty()]
-    if dirty_tabs:
-        file_list = [os.path.basename(tab.file_path) if tab.file_path else "Untitled" for tab in dirty_tabs]
-        
-        from utils.unsaved_changes_dialog import show_unsaved_changes_dialog_multiple_files
-        response = show_unsaved_changes_dialog_multiple_files(file_list, state.root)
-        
-        if response == "save":
-            # Save all files first
-            all_saved = True
-            tabs_copy = dict(state.tabs)
-            for tab_id, tab in tabs_copy.items():
-                if tab.is_dirty():
-                    if tab_id in state.notebook.tabs():
-                        try:
-                            state.notebook.select(tab_id)
-                            if not save_file():
-                                all_saved = False
-                                break
-                        except TclError:
-                            continue
-            
-            if all_saved:
-                debug_console.log("User saved files and confirmed restart. Proceeding...", level='INFO')
-                save_session()
-                python_executable = sys.executable
-                os.execl(python_executable, python_executable, *sys.argv)
-        elif response == "dont_save":
-            debug_console.log("User confirmed restart without saving. Proceeding...", level='INFO')
-            save_session()
-            python_executable = sys.executable
-            os.execl(python_executable, python_executable, *sys.argv)
-        else:
-            debug_console.log("Application restart cancelled by user.", level='INFO')
-    else:
-        # No unsaved changes, simple confirmation
-        if Messagebox.yesno("Are you sure you want to restart the application?", "Restart Application") == "Yes":
-            debug_console.log("User confirmed restart. Proceeding...", level='INFO')
-            save_session()
-            python_executable = sys.executable
-            os.execl(python_executable, python_executable, *sys.argv)
-        else:
-            debug_console.log("Application restart cancelled by user.", level='INFO')
+    from app.exit_handler import restart_application as clean_restart
+    if not clean_restart():
+        debug_console.log("Application restart cancelled by user.", level='INFO')
 
 def go_to_line_in_pdf(event=None):
     """
