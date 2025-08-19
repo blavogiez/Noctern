@@ -7,6 +7,7 @@ and managing a stack of recently closed tabs for restoration.
 from tkinter import messagebox
 import os
 from utils import debug_console
+from utils.unsaved_changes_dialog import show_unsaved_changes_dialog
 
 def close_current_tab(get_current_tab_callback, root_window, notebook_widget, save_file_callback, create_new_tab_callback, open_tabs_dict, closed_tabs_stack):
     """
@@ -35,20 +36,19 @@ def close_current_tab(get_current_tab_callback, root_window, notebook_widget, sa
     # Check if the current tab has unsaved changes.
     if current_tab.is_dirty():
         debug_console.log(f"Tab '{tab_display_name}' has unsaved changes. Prompting user.", level='INFO')
-        response = messagebox.askyesnocancel(
-            "Unsaved Changes",
-            f"The file '{tab_display_name}' has unsaved changes. Do you want to save before closing it?",
-            parent=root_window
+        response = show_unsaved_changes_dialog(
+            f"The file '{tab_display_name}' has unsaved changes.\n\nWhat would you like to do?",
+            root_window
         )
-        if response is True:
+        if response == "save":
             debug_console.log("User chose to SAVE before closing tab.", level='ACTION')
             if not save_file_callback(): # Attempt to save the file.
                 debug_console.log("Save operation was cancelled or failed. Aborting tab close.", level='INFO')
                 return # Abort closing the tab if saving fails or is cancelled.
-        elif response is None: # User clicked 'Cancel'.
+        elif response == "cancel" or response is None: # User clicked 'Cancel'.
             debug_console.log("User CANCELLED the tab close operation.", level='ACTION')
             return
-        else: # response is False (User chose 'No' to save).
+        else: # response == "dont_save" (User chose not to save).
             debug_console.log("User chose NOT to save before closing tab.", level='ACTION')
 
     # Add the file path to the closed tabs stack for potential restoration.

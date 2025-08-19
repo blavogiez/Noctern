@@ -269,10 +269,17 @@ class EditorTab(ttk.Frame):
             pass
 
     def get_content(self):
-        return self.editor.get("1.0", tk.END)
+        # Use "end-1c" to exclude the automatic trailing newline that Tkinter adds
+        return self.editor.get("1.0", "end-1c")
 
     def is_dirty(self):
-        return self.get_content() != self.last_saved_content
+        current_content = self.get_content()
+        is_modified = current_content != self.last_saved_content
+        # Debug: uncomment to see dirty state detection
+        if hasattr(self, 'file_path') and self.file_path:
+            from utils import debug_console
+            debug_console.log(f"Dirty check for {self.file_path}: {is_modified} (len: {len(current_content)} vs {len(self.last_saved_content)})", level='DEBUG')
+        return is_modified
 
     def update_tab_title(self):
         base_name = os.path.basename(self.file_path) if self.file_path else "Untitled"
@@ -288,11 +295,16 @@ class EditorTab(ttk.Frame):
             except Exception as e:
                 messagebox.showerror("Error", f"Could not open file:\n{e}")
         else:
-            self.last_saved_content = "\n"
+            self.last_saved_content = ""
         
         self.editor.delete("1.0", tk.END)
         self.editor.insert("1.0", content)
         self.last_saved_content = self.get_content()
+        
+        # Debug
+        from utils import debug_console
+        debug_console.log(f"Loaded file, last_saved_content length: {len(self.last_saved_content)}", level='DEBUG')
+        
         self.update_tab_title()
         self.editor.edit_reset()
         

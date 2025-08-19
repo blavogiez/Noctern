@@ -5,6 +5,7 @@ This module contains the dialog for editing LLM prompt templates.
 import tkinter as tk
 from tkinter import ttk, messagebox
 from utils import debug_console
+from utils.unsaved_changes_dialog import show_unsaved_changes_dialog
 
 def show_edit_prompts_dialog(root_window, theme_setting_getter_func,
                              current_prompts, default_prompts, on_save_callback):
@@ -163,13 +164,16 @@ def show_edit_prompts_dialog(root_window, theme_setting_getter_func,
         )
         
         if has_unsaved_changes:
-            response = messagebox.askyesnocancel("Unsaved Changes", "You have unsaved changes. Do you want to save them before closing?", parent=prompts_window)
-            if response is True: 
+            response = show_unsaved_changes_dialog(
+                "You have unsaved changes to your prompt templates.\n\nWhat would you like to do?",
+                prompts_window
+            )
+            if response == "save": 
                 apply_changes()
                 prompts_window.destroy()
-            elif response is False: 
+            elif response == "dont_save": 
                 prompts_window.destroy()
-            # If response is None (Cancel), do nothing.
+            # If response == "cancel" or None, do nothing.
         else:
             prompts_window.destroy() # Close directly if no changes.
 

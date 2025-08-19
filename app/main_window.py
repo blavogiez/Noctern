@@ -78,7 +78,7 @@ def setup_gui():
 
     debug_console.initialize(state.root)
     # Configure minimum log level to reduce console output
-    debug_console.set_min_level('INFO')
+    debug_console.set_min_level('DEBUG')
     create_top_buttons_frame(state.root)
     
     # Check if PDF preview should be enabled before initialization
@@ -181,6 +181,9 @@ def setup_gui():
         
         # Reset modified flag to prevent event recursion
         current_tab.editor.edit_modified(False)
+        
+        # Update tab title to show dirty state
+        current_tab.update_tab_title()
         
         # Trigger PDF preview updates with rate limiting
         current_time = time.time()

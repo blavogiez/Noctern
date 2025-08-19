@@ -68,10 +68,13 @@ def main():
     
     # Register cleanup handler for metrics
     def on_closing():
-        # Save session metrics before exit
+        # Save session metrics before exit  
         if hasattr(state, 'metrics_display') and state.metrics_display:
             state.metrics_display.save_current_session()
-        root_window.destroy()
+        
+        # Use the proper close handler that checks for unsaved changes
+        from app import actions
+        actions.on_close_request()
     
     root_window.protocol("WM_DELETE_WINDOW", on_closing)
     
