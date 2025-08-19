@@ -81,16 +81,22 @@ def setup_gui():
     debug_console.set_min_level('INFO')
     create_top_buttons_frame(state.root)
     
-    # Setup PDF preview interface for document viewing
-    state.pdf_preview_interface = PDFPreviewInterface(state.root, state.get_current_tab)
+    # Check if PDF preview should be enabled before initialization
+    show_pdf_preview = app_config.get_bool(state._app_config.get("show_pdf_preview", "True"))
     
-    # Load PDF for initial tab after UI completion
-    def load_initial_pdf():
-        current_tab = state.get_current_tab()
-        if current_tab and hasattr(state, 'pdf_preview_interface') and state.pdf_preview_interface:
-            state.pdf_preview_interface.load_existing_pdf_for_tab(current_tab)
-    
-    state.root.after(300, load_initial_pdf)
+    # Setup PDF preview interface only when enabled
+    if show_pdf_preview:
+        state.pdf_preview_interface = PDFPreviewInterface(state.root, state.get_current_tab)
+        
+        # Load PDF for initial tab after UI completion
+        def load_initial_pdf():
+            current_tab = state.get_current_tab()
+            if current_tab and hasattr(state, 'pdf_preview_interface') and state.pdf_preview_interface:
+                state.pdf_preview_interface.load_existing_pdf_for_tab(current_tab)
+        
+        state.root.after(300, load_initial_pdf)
+    else:
+        state.pdf_preview_interface = None
 
     state.vertical_pane = ttk.PanedWindow(state.root, orient=ttk.VERTICAL)
     state.vertical_pane.pack(fill="both", expand=True)
@@ -120,20 +126,23 @@ def setup_gui():
     state.error_panel = debug_panel
     state.notebook = create_notebook(state.main_pane)
     
-    # Setup PDF preview pane for document display
-    pdf_preview_content = create_pdf_preview_pane(state.main_pane)
-    state.pdf_preview_interface.create_preview_panel(pdf_preview_content)
-    
-    # Store UI element references for visibility management
-    state.pdf_preview_pane = pdf_preview_content
-    state.pdf_preview_parent = state.main_pane
+    # Setup PDF preview pane only when enabled
+    if show_pdf_preview and state.pdf_preview_interface:
+        pdf_preview_content = create_pdf_preview_pane(state.main_pane)
+        state.pdf_preview_interface.create_preview_panel(pdf_preview_content)
+        
+        # Store UI element references for visibility management
+        state.pdf_preview_pane = pdf_preview_content
+        state.pdf_preview_parent = state.main_pane
+    else:
+        state.pdf_preview_pane = None
+        state.pdf_preview_parent = None
     
     # Attach main pane to vertical layout container
     state.vertical_pane.add(state.main_pane, weight=1)
 
     # Configure PDF preview pane based on user settings
-    show_pdf_preview = app_config.get_bool(state._app_config.get("show_pdf_preview", "True"))
-    if show_pdf_preview:
+    if show_pdf_preview and state.pdf_preview_pane:
         state.main_pane.add(state.pdf_preview_pane.master, weight=3)  # Increased weight for larger default size
     
     console_frame, state.console_output = create_console_pane(state.vertical_pane)
@@ -253,14 +262,9 @@ def setup_gui():
     
     # Setup visibility state variables from configuration
     from app import ui_visibility
-    show_pdf_preview = app_config.get_bool(state._app_config.get("show_pdf_preview", "True"))
     
     state._status_bar_visible_var = ttk.BooleanVar(value=show_status_bar)
     state._pdf_preview_visible_var = ttk.BooleanVar(value=show_pdf_preview)
-    
-    # Configure initial PDF preview visibility state
-    if not show_pdf_preview:
-        ui_visibility.toggle_pdf_preview()
     
     # Initialize GPU status monitoring when status bar enabled
     if show_status_bar and state.gpu_status_label:

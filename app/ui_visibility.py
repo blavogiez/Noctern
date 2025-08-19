@@ -80,6 +80,39 @@ def toggle_pdf_preview():
     """
     Toggle the visibility of the PDF preview pane.
     """
+    # Check if PDF preview interface exists
+    if not hasattr(state, 'pdf_preview_interface') or not state.pdf_preview_interface:
+        # PDF preview is disabled, need to create it
+        from app import config as app_config
+        from pdf_preview.interface import PDFPreviewInterface
+        from app.panes import create_pdf_preview_pane
+        
+        # Initialize PDF preview interface
+        state.pdf_preview_interface = PDFPreviewInterface(state.root, state.get_current_tab)
+        
+        # Create PDF preview pane
+        pdf_preview_content = create_pdf_preview_pane(state.main_pane)
+        state.pdf_preview_interface.create_preview_panel(pdf_preview_content)
+        
+        # Store UI element references
+        state.pdf_preview_pane = pdf_preview_content
+        state.pdf_preview_parent = state.main_pane
+        
+        # Add to paned window
+        state.main_pane.add(state.pdf_preview_pane.master, weight=2)
+        
+        # Update configuration
+        state._app_config["show_pdf_preview"] = "True"
+        app_config.save_config(state._app_config)
+        
+        debug_console.log("PDF preview created and shown.", level='INFO')
+        
+        # Load PDF for current tab
+        current_tab = state.get_current_tab()
+        if current_tab:
+            state.pdf_preview_interface.load_existing_pdf_for_tab(current_tab)
+        return
+    
     if not state.pdf_preview_pane or not state.pdf_preview_parent:
         debug_console.log("PDF preview pane or parent not found.", level='WARNING')
         return
@@ -92,7 +125,18 @@ def toggle_pdf_preview():
         # Check if the master frame is currently added to the parent paned window
         if pdf_preview_master_frame in state.pdf_preview_parent.panes():
             state.pdf_preview_parent.remove(pdf_preview_master_frame)
-            debug_console.log("PDF preview hidden.", level='INFO')
+            
+            # Destroy the PDF preview components to save resources
+            state.pdf_preview_interface = None
+            state.pdf_preview_pane = None
+            state.pdf_preview_parent = None
+            
+            # Update configuration
+            from app import config as app_config
+            state._app_config["show_pdf_preview"] = "False"
+            app_config.save_config(state._app_config)
+            
+            debug_console.log("PDF preview hidden and destroyed.", level='INFO')
         else:
             # Add it back to the paned window with appropriate weight
             state.pdf_preview_parent.add(pdf_preview_master_frame, weight=2)
@@ -108,6 +152,10 @@ def is_pdf_preview_visible():
     Returns:
         bool: True if visible, False otherwise
     """
+    # Check if PDF preview interface exists
+    if not hasattr(state, 'pdf_preview_interface') or not state.pdf_preview_interface:
+        return False
+        
     if not state.pdf_preview_pane or not state.pdf_preview_parent:
         return False
     try:
