@@ -53,6 +53,7 @@ class PDFPreviewManager:
 
     def trigger_compilation(self):
         if not self.auto_refresh_enabled: return
+        
         if self.compilation_timer: self.root_window.after_cancel(self.compilation_timer)
         self.compilation_timer = self.root_window.after(int(self.compilation_delay * 1000), self._compile_document)
     
@@ -67,27 +68,18 @@ class PDFPreviewManager:
         
         try:
             editor_content = current_tab.editor.get("1.0", "end-1c")
-            file_path = current_tab.file_path
             
-            if file_path:
-                source_dir = os.path.dirname(file_path)
-                file_name = os.path.basename(file_path)
-                
-                # Don't auto-save if file has unsaved changes - use temp file for compilation
-                if current_tab.is_dirty():
-                    # Create temporary file for compilation
-                    base_name = os.path.splitext(file_name)[0]
-                    temp_name = f"{base_name}_temp_compile.tex"
-                    temp_path = os.path.join(source_dir, temp_name)
-                    with open(temp_path, "w", encoding="utf-8") as f: f.write(editor_content)
-                    file_name = temp_name  # Use temp file for compilation
-                else:
-                    # File is already saved, safe to write
-                    with open(file_path, "w", encoding="utf-8") as f: f.write(editor_content)
-            else: # Unsaved file
-                source_dir, file_name = "output", "preview.tex"
-                os.makedirs(source_dir, exist_ok=True)
-                with open(os.path.join(source_dir, file_name), "w", encoding="utf-8") as f: f.write(editor_content)
+            # Use a single global temp file for all preview compilations
+            import tempfile
+            preview_dir = os.path.join(tempfile.gettempdir(), "automatex_preview")
+            os.makedirs(preview_dir, exist_ok=True)
+            
+            # Single preview file, always the same name
+            preview_file = os.path.join(preview_dir, "preview.tex")
+            with open(preview_file, "w", encoding="utf-8") as f: f.write(editor_content)
+            
+            source_dir = preview_dir
+            file_name = "preview.tex"
 
             comp_thread = threading.Thread(target=self._run_compilation, args=(source_dir, file_name), daemon=True)
             comp_thread.start()

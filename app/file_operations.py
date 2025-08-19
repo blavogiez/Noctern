@@ -57,6 +57,8 @@ def save_file(get_current_tab_callback, show_temporary_status_message_callback, 
         if current_tab.save_file(): # Attempt to save the file.
             debug_console.log(f"File saved successfully: {current_tab.file_path}", level='SUCCESS')
             show_temporary_status_message_callback(f"✅ Saved: {os.path.basename(current_tab.file_path)}")
+            
+            
             return True
         else:
             debug_console.log(f"File save failed for: {current_tab.file_path}", level='ERROR')
@@ -105,6 +107,8 @@ def save_file_as(get_current_tab_callback, show_temporary_status_message_callbac
             debug_console.log(f"File saved successfully to new path: {new_file_path}", level='SUCCESS')
             show_temporary_status_message_callback(f"✅ Saved as: {os.path.basename(new_file_path)}")
             on_tab_changed_callback() # Notify that the tab's file path has changed.
+            
+            
             return True
         else:
             debug_console.log(f"Save As operation failed for: {new_file_path}", level='ERROR')
