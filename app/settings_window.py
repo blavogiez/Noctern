@@ -120,6 +120,12 @@ def open_settings_window(root):
         combo.grid(row=i, column=1, sticky="ew", padx=5, pady=5)
         model_comboboxes[key] = combo # Store the widget
         
+        # Ensure the current value is properly selected in the combobox
+        if current_value in available_models:
+            combo.set(current_value)
+        else:
+            debug_console.log(f"Model '{current_value}' for {key} not in available models list", level='WARNING')
+        
         # Button to set all models to the value of this combobox
         set_all_button = ttk.Button(
             llm_frame, 
@@ -152,9 +158,14 @@ def open_settings_window(root):
     def refresh_models_command():
         """Saves the API key and refreshes the model list in the UI."""
         # 1. Save the current API key to the config file so the client can see it
-        temp_config = app_config.load_config()
+        # Use current_config as base to preserve any unsaved UI changes
+        temp_config = current_config.copy()
         temp_config["gemini_api_key"] = gemini_api_key_var.get()
+        # Also preserve any model changes made in the UI
+        for key, var in model_vars.items():
+            temp_config[key] = var.get()
         app_config.save_config(temp_config)
+        debug_console.log("API key and current model selections saved before refresh", level='INFO')
 
         # 2. Fetch the new, updated list of models
         new_models = api_client.get_available_models()
@@ -166,10 +177,10 @@ def open_settings_window(root):
             combo['values'] = new_models
             if current_selection in new_models:
                 combo.set(current_selection)
-            elif new_models:
-                combo.set(new_models[0])
             else:
-                combo.set('')
+                # Keep current selection even if not in new list
+                # User can manually change if needed
+                debug_console.log(f"Model '{current_selection}' not found in new list, keeping current selection", level='WARNING')
         
         from tkinter import messagebox
         messagebox.showinfo("Models Refreshed", f"Found {len(new_models)} available models.", parent=settings_win)
@@ -184,7 +195,9 @@ def open_settings_window(root):
     button_frame.columnconfigure(1, weight=1)
 
     def save_and_close():
-        updated_config = app_config.load_config()
+        # Use the current_config as base instead of reloading from file
+        # This prevents losing UI changes made since dialog opened
+        updated_config = current_config.copy()
         
         updated_config["app_monitor"] = app_monitor_var.get()
         updated_config["pdf_monitor"] = pdf_monitor_var.get()
@@ -195,9 +208,30 @@ def open_settings_window(root):
         updated_config["show_pdf_preview"] = str(show_pdf_preview_var.get())
         for key, var in model_vars.items():
             updated_config[key] = var.get()
+            debug_console.log(f"Saving model {key}: {var.get()}", level='DEBUG')
         
         app_config.save_config(updated_config)
-        debug_console.log("Settings saved.", level='SUCCESS')
+        debug_console.log("Settings saved successfully:", level='SUCCESS')
+        
+        # Log what was actually saved for debugging
+        debug_console.log("Saved models:", level='INFO')
+        for key, var in model_vars.items():
+            debug_console.log(f"  {key}: {var.get()}", level='INFO')
+        
+        # CRITICAL: Update llm_state with new model settings
+        # This prevents restart from overwriting with old values
+        from llm import state as llm_state
+        if 'model_completion' in updated_config:
+            llm_state.model_completion = updated_config['model_completion']
+        if 'model_generation' in updated_config:
+            llm_state.model_generation = updated_config['model_generation']
+        if 'model_rephrase' in updated_config:
+            llm_state.model_rephrase = updated_config['model_rephrase']
+        if 'model_debug' in updated_config:
+            llm_state.model_debug = updated_config['model_debug']
+        if 'model_style' in updated_config:
+            llm_state.model_style = updated_config['model_style']
+        debug_console.log("LLM state updated with new model settings", level='INFO')
         
         # Apply font change immediately if changed
         old_font = current_config.get("editor_font_family", "Consolas")

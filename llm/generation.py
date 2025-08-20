@@ -36,22 +36,20 @@ def open_generate_text_dialog(initial_prompt_text=None):
         if is_latex_mode:
             prompt_template = llm_state._global_default_prompts.get("generation_latex")
             model_name = llm_state.model_generation
-            if not prompt_template:
-                messagebox.showerror("Configuration Error", "The 'generation_latex' prompt is missing.")
-                return
         else:
             prompt_template = llm_state._generation_prompt_template or llm_state._global_default_prompts.get("generation", "")
             model_name = llm_state.model_generation
-        
-        if not prompt_template:
-            messagebox.showerror("LLM Error", "Generation prompt template is not configured.")
-            return
 
         # 2. Prepare context and full prompt
         llm_state._last_llm_action_type = "generation"
         llm_state._last_generation_user_prompt = user_prompt
         
         editor_context = llm_utils.extract_editor_context(editor, lines_before, lines_after)
+        
+        if not prompt_template:
+            messagebox.showerror("LLM Error", "Generation prompt template is not configured.")
+            return
+            
         active_file_path = llm_state._active_filepath_getter_func()
         keywords_str = ", ".join(keyword_history.get_keywords_for_file(active_file_path))
 
