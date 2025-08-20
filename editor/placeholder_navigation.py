@@ -38,38 +38,112 @@ class PlaceholderManager:
         debug_console.log(f"Found {len(self.snippet_placeholders)} placeholders in snippet", level='DEBUG')
         
     def navigate_next(self):
-        """Find and navigate to the next ⟨placeholder⟩ after current position."""
-        # Search for next placeholder pattern from current position
-        text_from_current = self.text_widget.get(self.current_search_pos, tk.END)
+        """Find and navigate to the closest ⟨placeholder⟩ from current cursor position."""
+        return self.navigate_to_closest_placeholder()
+    
+    def navigate_to_closest_placeholder(self):
+        """Navigate to the closest placeholder TO THE RIGHT (forward) of current cursor position."""
+        # Get current cursor position
+        try:
+            current_pos = self.text_widget.index(tk.INSERT)
+        except tk.TclError:
+            current_pos = "1.0"
         
-        match = re.search(self.PLACEHOLDER_PATTERN, text_from_current)
-        if not match:
-            # Not found, restart from beginning
-            self.current_search_pos = "1.0"
-            text_from_start = self.text_widget.get("1.0", tk.END)
-            match = re.search(self.PLACEHOLDER_PATTERN, text_from_start)
+        # Find all placeholders in document
+        full_text = self.text_widget.get("1.0", tk.END)
+        all_matches = list(re.finditer(self.PLACEHOLDER_PATTERN, full_text))
+        
+        if not all_matches:
+            debug_console.log("No placeholders found in document", level='DEBUG')
+            return False
+        
+        # Convert current position to character index for distance calculation
+        current_char_idx = self._pos_to_char_index(current_pos)
+        
+        # Find closest placeholder TO THE RIGHT (after current position)
+        closest_match = None
+        min_distance = float('inf')
+        
+        for match in all_matches:
+            match_start_idx = match.start()
             
-            if not match:
-                return False  # No placeholders in entire text
+            # Skip if this is the currently selected placeholder
+            if self._is_currently_selected(match_start_idx, match.end()):
+                continue
+            
+            # Only consider placeholders AFTER current position (to the right)
+            if match_start_idx <= current_char_idx:
+                continue
+            
+            # Calculate forward distance
+            distance = match_start_idx - current_char_idx
+            
+            if distance < min_distance:
+                min_distance = distance
+                closest_match = match
         
-        # Calculate exact positions
-        start_offset = match.start()
-        end_offset = match.end()
+        # If no forward placeholder found, wrap to first placeholder
+        if closest_match is None:
+            # Find the first unselected placeholder from beginning
+            for match in all_matches:
+                if not self._is_currently_selected(match.start(), match.end()):
+                    closest_match = match
+                    break
+            
+            # If still nothing, just take the first one
+            if closest_match is None:
+                closest_match = all_matches[0]
         
-        start_pos = f"{self.current_search_pos}+{start_offset}c"
-        end_pos = f"{self.current_search_pos}+{end_offset}c"
-        
-        # Select the placeholder
-        self.text_widget.tag_remove(tk.SEL, "1.0", tk.END)
-        self.text_widget.tag_add(tk.SEL, start_pos, end_pos)
-        self.text_widget.mark_set(tk.INSERT, start_pos)
-        self.text_widget.see(start_pos)
-        
-        # Update position for next search
-        self.current_search_pos = end_pos
-        
-        debug_console.log(f"Navigated to placeholder: {match.group()}", level='INFO')
-        return True
+        # Navigate to the closest forward placeholder
+        return self._navigate_to_match(closest_match)
+    
+    def _pos_to_char_index(self, pos):
+        """Convert Tkinter position (line.col) to character index."""
+        try:
+            return len(self.text_widget.get("1.0", pos))
+        except tk.TclError:
+            return 0
+    
+    def _is_currently_selected(self, start_char_idx, end_char_idx):
+        """Check if the placeholder at given indices is currently selected."""
+        try:
+            # Check if there's a selection
+            sel_start = self.text_widget.index(tk.SEL_FIRST)
+            sel_end = self.text_widget.index(tk.SEL_LAST)
+            
+            # Convert selection positions to character indices
+            sel_start_char = self._pos_to_char_index(sel_start)
+            sel_end_char = self._pos_to_char_index(sel_end)
+            
+            # Check if selection matches this placeholder
+            return (sel_start_char == start_char_idx and sel_end_char == end_char_idx)
+            
+        except tk.TclError:
+            # No selection
+            return False
+    
+    def _navigate_to_match(self, match):
+        """Navigate to a specific regex match."""
+        try:
+            # Convert character indices back to Tkinter positions
+            start_pos = f"1.0+{match.start()}c"
+            end_pos = f"1.0+{match.end()}c"
+            
+            # Select the placeholder
+            self.text_widget.tag_remove(tk.SEL, "1.0", tk.END)
+            self.text_widget.tag_add(tk.SEL, start_pos, end_pos)
+            self.text_widget.mark_set(tk.INSERT, start_pos)
+            self.text_widget.see(start_pos)
+            
+            # Update position for next search
+            self.current_search_pos = end_pos
+            
+            debug_console.log(f"Navigated to closest placeholder: {match.group()}", level='INFO')
+            return True
+            
+        except tk.TclError as e:
+            debug_console.log(f"Error navigating to placeholder: {e}", level='WARNING')
+            return False
     
     def navigate_to_next_placeholder(self):
         """Navigate to the next placeholder (for backward compatibility)."""
