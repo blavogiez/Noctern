@@ -63,16 +63,24 @@ def open_settings_window(root):
     window_state_combo = ttk.Combobox(display_frame, textvariable=window_state_var, values=window_states, state="readonly")
     window_state_combo.grid(row=3, column=1, sticky="ew", padx=5, pady=5)
     
+    # Editor Font Settings
+    ttk.Label(display_frame, text="Editor Font:").grid(row=4, column=0, sticky="w", padx=5, pady=5)
+    available_fonts = app_config.get_available_editor_fonts()
+    current_font = current_config.get("editor_font_family", "Consolas")
+    editor_font_var = tk.StringVar(value=current_font)
+    editor_font_combo = ttk.Combobox(display_frame, textvariable=editor_font_var, values=available_fonts, state="readonly")
+    editor_font_combo.grid(row=4, column=1, sticky="ew", padx=5, pady=5)
+    
     # UI Visibility Settings
-    ttk.Label(display_frame, text="Show Status Bar:").grid(row=4, column=0, sticky="w", padx=5, pady=5)
+    ttk.Label(display_frame, text="Show Status Bar:").grid(row=5, column=0, sticky="w", padx=5, pady=5)
     show_status_bar_var = tk.BooleanVar(value=app_config.get_bool(current_config.get("show_status_bar", "True")))
     show_status_bar_check = ttk.Checkbutton(display_frame, variable=show_status_bar_var)
-    show_status_bar_check.grid(row=4, column=1, sticky="w", padx=5, pady=5)
+    show_status_bar_check.grid(row=5, column=1, sticky="w", padx=5, pady=5)
     
-    ttk.Label(display_frame, text="Show PDF Preview:").grid(row=5, column=0, sticky="w", padx=5, pady=5)
+    ttk.Label(display_frame, text="Show PDF Preview:").grid(row=6, column=0, sticky="w", padx=5, pady=5)
     show_pdf_preview_var = tk.BooleanVar(value=app_config.get_bool(current_config.get("show_pdf_preview", "True")))
     show_pdf_preview_check = ttk.Checkbutton(display_frame, variable=show_pdf_preview_var)
-    show_pdf_preview_check.grid(row=5, column=1, sticky="w", padx=5, pady=5)
+    show_pdf_preview_check.grid(row=6, column=1, sticky="w", padx=5, pady=5)
 
     display_frame.columnconfigure(1, weight=1)
 
@@ -181,6 +189,7 @@ def open_settings_window(root):
         updated_config["app_monitor"] = app_monitor_var.get()
         updated_config["pdf_monitor"] = pdf_monitor_var.get()
         updated_config["window_state"] = window_state_var.get()
+        updated_config["editor_font_family"] = editor_font_var.get()
         updated_config["gemini_api_key"] = gemini_api_key_var.get()
         updated_config["show_status_bar"] = str(show_status_bar_var.get())
         updated_config["show_pdf_preview"] = str(show_pdf_preview_var.get())
@@ -189,10 +198,24 @@ def open_settings_window(root):
         
         app_config.save_config(updated_config)
         debug_console.log("Settings saved.", level='SUCCESS')
+        
+        # Apply font change immediately if changed
+        old_font = current_config.get("editor_font_family", "Consolas")
+        new_font = updated_config["editor_font_family"]
+        if old_font != new_font:
+            # Import state to access zoom manager
+            from app import state
+            if hasattr(state, 'zoom_manager') and state.zoom_manager:
+                state.zoom_manager.update_font_family(new_font)
+                debug_console.log(f"Editor font changed from {old_font} to {new_font}", level='INFO')
+        
         settings_win.destroy()
         
         from tkinter import messagebox
-        messagebox.showinfo("Settings Saved", "Your new settings have been saved. Some changes may require a restart to take effect.", parent=root)
+        if old_font != new_font:
+            messagebox.showinfo("Settings Saved", "Your settings have been saved and the editor font has been updated immediately.", parent=root)
+        else:
+            messagebox.showinfo("Settings Saved", "Your new settings have been saved. Some changes may require a restart to take effect.", parent=root)
 
     save_btn = ttk.Button(button_frame, text="Save Settings", command=save_and_close, bootstyle="success")
     save_btn.grid(row=0, column=0, padx=8, sticky="e")

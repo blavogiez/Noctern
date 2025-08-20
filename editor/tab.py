@@ -227,7 +227,12 @@ class EditorTab(ttk.Frame):
         self.file_path = file_path
         self._schedule_heavy_updates_callback = schedule_heavy_updates_callback
         self.last_saved_content = ""
-        self.editor_font = Font(family="Consolas", size=12)
+        # Load font from configuration
+        from app import config as app_config
+        config_dict = app_config.load_config()
+        font_settings = app_config.get_editor_font_settings(config_dict)
+        
+        self.editor_font = Font(family=font_settings["family"], size=font_settings["size"])
 
         self.editor = tk.Text(self, wrap="word", font=self.editor_font, undo=True, relief=tk.FLAT, bd=0, highlightthickness=0)
         self.scrollbar = ttk.Scrollbar(self, orient="vertical", command=self.editor.yview)

@@ -72,3 +72,40 @@ class ZoomManager:
         except ImportError:
             # If actions module is not available, skip heavy updates
             pass
+    
+    def update_font_family(self, new_font_family):
+        """
+        Updates the font family for all open editor tabs.
+        
+        Args:
+            new_font_family (str): The name of the new font family to apply
+        """
+        # Update all open tabs
+        for tab_id, tab in self.state.tabs.items():
+            if hasattr(tab, 'editor_font'):
+                current_size = tab.editor_font.cget("size")
+                
+                # Create new font with updated family
+                tab.editor_font = Font(
+                    family=new_font_family,
+                    size=current_size,
+                    weight=tab.editor_font.cget("weight"),
+                    slant=tab.editor_font.cget("slant")
+                )
+                
+                # Apply to editor
+                tab.editor.config(font=tab.editor_font)
+                
+                # Update line numbers font
+                if hasattr(tab, 'line_numbers') and tab.line_numbers:
+                    tab.line_numbers.font = tab.editor_font
+                    # Force immediate update for font change
+                    from editor.line_number_manager import force_line_number_update
+                    force_line_number_update(tab.line_numbers)
+        
+        # Update syntax highlighting for all tabs
+        try:
+            from app import actions
+            actions.perform_heavy_updates()
+        except ImportError:
+            pass

@@ -14,6 +14,7 @@ DEFAULT_VALUES = {
     "window_state": "Normal",
     "theme": "flatly",
     "font_size": "12",
+    "editor_font_family": "Consolas",
     "treeview_font_family": "Segoe UI",
     "treeview_font_size": "10",
     "treeview_row_height": "30",
@@ -124,4 +125,31 @@ def get_treeview_font_settings(config_dict):
         "family": font_family,
         "size": font_size, 
         "row_height": row_height
+    }
+
+def get_available_editor_fonts():
+    """Get list of available programming fonts for editor."""
+    # Simple list of preferred coding fonts
+    return ["Consolas", "Fira Code", "JetBrains Mono", "Cascadia Code", "Iosevka"]
+
+def get_editor_font_settings(config_dict):
+    """Extract and validate editor font configuration settings."""
+    font_family = config_dict.get("editor_font_family", "Consolas")
+    font_size_str = config_dict.get("font_size", "12")
+    
+    # Validate font size
+    try:
+        font_size = int(font_size_str)
+        if font_size < 8:
+            font_size = 8
+        elif font_size > 72:
+            font_size = 72
+    except (ValueError, TypeError):
+        font_size = 12
+    
+    # Use the selected font - Tkinter will handle fallback if not installed
+    
+    return {
+        "family": font_family,
+        "size": font_size
     }
