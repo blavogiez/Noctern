@@ -226,9 +226,8 @@ class EditorTab(ttk.Frame):
     def on_key_release(self, event=None):
         self.update_tab_title()
         self._schedule_smart_updates(event, 'keyrelease')
-        # Ensure line numbers are updated instantly
-        self.line_numbers.redraw()
-        # Note: syntax highlighting is already handled in _schedule_smart_updates
+        # Force line numbers update bypassing cache
+        self.line_numbers.force_update()
 
     def schedule_heavy_updates(self, event=None):
         """Legacy method - redirects to smart updates."""
@@ -242,8 +241,6 @@ class EditorTab(ttk.Frame):
             if event_type == 'keyrelease':
                 # DIFFERENTIAL HIGHLIGHTING: Only recolor changed lines
                 editor_syntax.apply_differential_syntax_highlighting(self.editor)
-                # Always update line numbers on key release for instant feedback
-                self.line_numbers.redraw()
                 
             elif event_type == 'configure':
                 # For viewport changes, just redraw line numbers

@@ -210,7 +210,7 @@ def setup_gui():
             tab.editor.unbind("<<Modified>>")
             tab.editor.bind("<<Modified>>", on_text_modified)
             # Bind KeyRelease for comprehensive change detection
-            tab.editor.bind("<KeyRelease>", on_text_modified)
+            tab.editor.bind("<KeyRelease>", on_text_modified, add='+')
             debug_console.log(f"Bound <<Modified>> and <KeyRelease> events to tab: {tab.file_path if tab.file_path else 'Untitled'}", level='TRACE')
 
     def on_tab_changed(event):
