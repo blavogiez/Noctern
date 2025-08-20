@@ -46,7 +46,10 @@ COLORS = {
     
     # Special characters - High contrast
     'special_chars': '#FF5722',     # Red-orange for special characters
-    'units': '#3F51B5'              # Indigo for units and measurements
+    'units': '#3F51B5',             # Indigo for units and measurements
+    
+    # Navigation placeholders - Ultra-visible highlighting
+    'placeholder': '#FF1744'        # Bright red for navigation placeholders ⟨content⟩
 }
 
 # Optimized regex patterns - ordered from most specific to most general
@@ -86,6 +89,9 @@ PATTERNS = {
     'proper_names': re.compile(r'(?<!\w)[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+(?!\w)', re.MULTILINE),
     'braced_content': re.compile(r'\{[^{}]*\}', re.MULTILINE),
     
+    # Navigation placeholders (high priority for visibility)
+    'placeholder': re.compile(r'⟨[^⟩]*⟩', re.MULTILINE),
+    
     # Numbers and basic elements
     'number': re.compile(r'(?<!\w)\d+(?:\.\d+)?(?!\w)', re.MULTILINE),
     'brackets': re.compile(r'[{}\[\]()]', re.MULTILINE),
@@ -107,6 +113,7 @@ def get_relevant_patterns(line_content):
     has_math = '$' in line_content
     has_uppercase = any(c.isupper() for c in line_content)
     has_digits = any(c.isdigit() for c in line_content)
+    has_placeholder = '⟨' in line_content and '⟩' in line_content
     
     # Comments
     if has_percent:
@@ -165,5 +172,9 @@ def get_relevant_patterns(line_content):
     # Numbers
     if has_digits:
         patterns['number'] = PATTERNS['number']
+    
+    # Navigation placeholders (high priority for visibility)
+    if has_placeholder:
+        patterns['placeholder'] = PATTERNS['placeholder']
     
     return patterns

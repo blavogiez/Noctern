@@ -26,6 +26,7 @@ from editor import syntax as editor_syntax
 from editor import image_manager as editor_image_manager
 from latex import compiler as latex_compiler
 from editor import wordcount as editor_wordcount
+from editor import table_insertion as editor_table_insertion
 from utils import debug_console, animations
 from utils.unsaved_changes_dialog import show_unsaved_changes_dialog_multiple_files
 
@@ -72,6 +73,53 @@ def paste_image(event=None):
     """Paste image from clipboard into active editor."""
     from editor import image_paste as editor_image_paste
     editor_image_paste.paste_image_from_clipboard(state.root, state.get_current_tab, state.get_theme_setting)
+
+def insert_table(event=None):
+    """Open table insertion dialog and insert LaTeX table with snippet navigation."""
+    debug_console.log("Table insertion action triggered.", level='ACTION')
+    
+    current_tab = state.get_current_tab()
+    if not current_tab or not current_tab.editor:
+        debug_console.log("No active editor tab found for table insertion.", level='WARNING')
+        return
+    
+    def insert_callback(latex_code):
+        """Insert LaTeX code and setup snippet navigation."""
+        try:
+            # Get cursor position
+            cursor_pos = current_tab.editor.index(tk.INSERT)
+            
+            # Insert LaTeX code
+            current_tab.editor.insert(cursor_pos, latex_code)
+            
+            # Setup placeholder navigation
+            from editor.placeholder_navigation import PlaceholderManager
+            if not hasattr(current_tab.editor, 'placeholder_manager'):
+                current_tab.editor.placeholder_manager = PlaceholderManager(current_tab.editor)
+            
+            # Set context for snippet navigation
+            manager = current_tab.editor.placeholder_manager
+            manager.set_snippet_context(cursor_pos, latex_code)
+            
+            # Navigate to first placeholder
+            if manager.navigate_next():
+                debug_console.log("Navigating to first table placeholder", level='INFO')
+            
+            # Update syntax highlighting
+            schedule_heavy_updates()
+            
+            show_temporary_status_message("✅ Table inserted - use Tab to navigate placeholders")
+            debug_console.log("Table with placeholders inserted successfully.", level='SUCCESS')
+            
+        except Exception as e:
+            debug_console.log(f"Error inserting table: {e}", level='ERROR')
+            show_temporary_status_message("❌ Failed to insert table")
+    
+    # Show simplified table dialog
+    editor_table_insertion.show_table_dialog(
+        parent=state.root,
+        insert_callback=insert_callback
+    )
 
 def zoom_in(_=None):
     """Increase font size of active editor tab."""

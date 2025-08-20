@@ -27,7 +27,8 @@ def get_theme_colors(style, theme_name):
             "statusbar_bg": "#F6B092", "statusbar_fg": "#4A4238",
             "button_bg": "#F6B092", "button_fg": "#4A4238",
             "treeview_bg": "#FFFFFF", "treeview_fg": "#4A4238", "treeview_heading_bg": "#F6B092",
-            "notebook_bg": "#FFF8F0", "notebook_tab_bg": "#F6B092", "notebook_active_tab_bg": "#FF8242", "notebook_active_tab_fg": "#FFFFFF"
+            "notebook_bg": "#FFF8F0", "notebook_tab_bg": "#F6B092", "notebook_active_tab_bg": "#FF8242", "notebook_active_tab_fg": "#FFFFFF",
+            "placeholder_color": "#FF1744"
         }
 
     is_dark = style.lookup('TLabel', 'background') == colors.dark
@@ -46,7 +47,8 @@ def get_theme_colors(style, theme_name):
             "statusbar_bg": colors.primary, "statusbar_fg": colors.light,
             "button_bg": colors.primary, "button_fg": colors.light,
             "treeview_bg": colors.dark, "treeview_fg": colors.light, "treeview_heading_bg": colors.primary,
-            "notebook_bg": colors.dark, "notebook_tab_bg": "#3c3c3c", "notebook_active_tab_bg": colors.primary, "notebook_active_tab_fg": colors.light
+            "notebook_bg": colors.dark, "notebook_tab_bg": "#3c3c3c", "notebook_active_tab_bg": colors.primary, "notebook_active_tab_fg": colors.light,
+            "placeholder_color": "#FF6B9D"
         }
     else: # Light themes
         return {
@@ -62,7 +64,8 @@ def get_theme_colors(style, theme_name):
             "statusbar_bg": colors.primary, "statusbar_fg": colors.light,
             "button_bg": colors.primary, "button_fg": colors.light,
             "treeview_bg": colors.light, "treeview_fg": colors.dark, "treeview_heading_bg": colors.primary,
-            "notebook_bg": colors.light, "notebook_tab_bg": "#f0f0f0", "notebook_active_tab_bg": colors.primary, "notebook_active_tab_fg": colors.light
+            "notebook_bg": colors.light, "notebook_tab_bg": "#f0f0f0", "notebook_active_tab_bg": colors.primary, "notebook_active_tab_fg": colors.light,
+            "placeholder_color": "#E91E63"
         }
 
 def apply_theme(theme_name, root_window, main_paned_window, open_tabs_dict, perform_heavy_updates_callback, console_widget, status_bar_frame=None, status_label=None, gpu_status_label=None, config_settings=None):

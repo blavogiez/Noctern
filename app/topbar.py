@@ -154,6 +154,7 @@ def create_top_buttons_frame(root):
     tools_menu.add_separator()
     tools_menu.add_command(label="Rephrase Selected Text (Ctrl+R)", command=lambda: [_log_action("Tools: Rephrase Text"), llm_rephrase.open_rephrase_dialog()])
     tools_menu.add_command(label="Paste Image from Clipboard (Ctrl+Shift+V)", command=lambda: [_log_action("Tools: Paste Image"), interface.paste_image()])
+    tools_menu.add_command(label="Insert Table (Ctrl+Shift+B)", command=lambda: [_log_action("Tools: Insert Table"), interface.insert_table()])
     tools_menu.add_separator()
     tools_menu.add_command(label="Clean Project Directory", command=lambda: [_log_action("Tools: Clean Project"), latex_compiler.clean_project_directory()])
     tools_menu.add_separator()

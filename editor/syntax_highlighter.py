@@ -5,6 +5,7 @@ Only highlights changed lines - maximum performance.
 import tkinter as tk
 from editor.tab import EditorTab
 from .syntax_patterns import COLORS, get_relevant_patterns
+from app import state
 from .syntax_tracker import get_line_tracker
 
 def apply_differential_highlighting(editor):
@@ -69,7 +70,7 @@ def _clear_tags_single_line(editor, line_start, line_end):
             'command', 'text_format', 'font_size', 'geometry',
             'ref_cite', 'label', 'hyperref', 'math', 'math_symbols',
             'proper_names', 'braced_content', 'comment', 'number', 'bracket', 'string',
-            'special_chars', 'units']
+            'special_chars', 'units', 'placeholder']
     
     for tag in tags:
         try:
@@ -92,52 +93,67 @@ def _get_fonts(editor):
 
 def _setup_tags(editor, normal_font, bold_font):
     """Configure highlighting tags with comprehensive LaTeX support."""
+    # Get theme colors for placeholders
+    theme_settings = state.get_theme_settings() if hasattr(state, 'get_theme_settings') else {}
+    placeholder_color = theme_settings.get('placeholder_color', COLORS['placeholder'])
+    
     tags_config = {
         # Document structure (bold for emphasis)
-        "documentclass": (COLORS['documentclass'], bold_font),
-        "package": (COLORS['package'], normal_font),
-        "section": (COLORS['section'], bold_font),
-        "subsection": (COLORS['subsection'], bold_font),
-        "title_commands": (COLORS['title_commands'], bold_font),
+        "documentclass": (COLORS['documentclass'], bold_font, None),
+        "package": (COLORS['package'], normal_font, None),
+        "section": (COLORS['section'], bold_font, None),
+        "subsection": (COLORS['subsection'], bold_font, None),
+        "title_commands": (COLORS['title_commands'], bold_font, None),
         
         # Environments
-        "environment": (COLORS['environment'], normal_font),
-        "list_env": (COLORS['list_env'], normal_font),
-        "math_env": (COLORS['math_env'], bold_font),
-        "figure_env": (COLORS['figure_env'], normal_font),
+        "environment": (COLORS['environment'], normal_font, None),
+        "list_env": (COLORS['list_env'], normal_font, None),
+        "math_env": (COLORS['math_env'], bold_font, None),
+        "figure_env": (COLORS['figure_env'], normal_font, None),
         
         # Commands and formatting
-        "command": (COLORS['command'], normal_font),
-        "text_format": (COLORS['text_format'], normal_font),
-        "font_size": (COLORS['font_size'], normal_font),
-        "geometry": (COLORS['geometry'], normal_font),
+        "command": (COLORS['command'], normal_font, None),
+        "text_format": (COLORS['text_format'], normal_font, None),
+        "font_size": (COLORS['font_size'], normal_font, None),
+        "geometry": (COLORS['geometry'], normal_font, None),
         
         # References and citations
-        "ref_cite": (COLORS['ref_cite'], normal_font),
-        "label": (COLORS['label'], normal_font),
-        "hyperref": (COLORS['hyperref'], normal_font),
+        "ref_cite": (COLORS['ref_cite'], normal_font, None),
+        "label": (COLORS['label'], normal_font, None),
+        "hyperref": (COLORS['hyperref'], normal_font, None),
         
         # Math elements
-        "math": (COLORS['math'], normal_font),
-        "math_symbols": (COLORS['math_symbols'], normal_font),
+        "math": (COLORS['math'], normal_font, None),
+        "math_symbols": (COLORS['math_symbols'], normal_font, None),
         
         # Text content
-        "proper_names": (COLORS['proper_names'], bold_font),
-        "braced_content": (COLORS['braced_content'], normal_font),
+        "proper_names": (COLORS['proper_names'], bold_font, None),
+        "braced_content": (COLORS['braced_content'], normal_font, None),
         
         # Basic elements
-        "comment": (COLORS['comment'], normal_font),
-        "number": (COLORS['number'], normal_font),
-        "bracket": (COLORS['bracket'], normal_font),
-        "string": (COLORS['string'], normal_font),
+        "comment": (COLORS['comment'], normal_font, None),
+        "number": (COLORS['number'], normal_font, None),
+        "bracket": (COLORS['bracket'], normal_font, None),
+        "string": (COLORS['string'], normal_font, None),
         
         # Special elements
-        "special_chars": (COLORS['special_chars'], normal_font),
-        "units": (COLORS['units'], normal_font)
+        "special_chars": (COLORS['special_chars'], normal_font, None),
+        "units": (COLORS['units'], normal_font, None),
+        
+        # Navigation placeholders (theme-aware, no background to preserve selection visibility)
+        "placeholder": (placeholder_color, bold_font, None)
     }
     
-    for tag_name, (color, font) in tags_config.items():
+    for tag_name, config in tags_config.items():
         try:
-            editor.tag_configure(tag_name, foreground=color, font=font)
+            if len(config) == 3:
+                color, font, bg_color = config
+                if bg_color:
+                    editor.tag_configure(tag_name, foreground=color, font=font, background=bg_color)
+                else:
+                    editor.tag_configure(tag_name, foreground=color, font=font)
+            else:
+                color, font = config
+                editor.tag_configure(tag_name, foreground=color, font=font)
         except tk.TclError:
             pass

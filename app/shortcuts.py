@@ -54,6 +54,7 @@ def bind_global_shortcuts(root):
         "<Control-Shift-S>": (llm_service.start_autostyle_process, "Smart Style"),
         "<Control-r>": (llm_rephrase.open_rephrase_dialog, "Rephrase Dialog"),
         "<Control-Shift-V>": (interface.paste_image, "Paste Image"),
+        "<Control-Shift-B>": (interface.insert_table, "Insert Table"),
         "<Control-t>": (latex_translator.open_translate_dialog, "Translate Dialog"),
         "<Control-f>": (toggle_search_bar, "Find"),
     }
