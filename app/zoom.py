@@ -61,7 +61,9 @@ class ZoomManager:
         
         if hasattr(tab, 'line_numbers') and tab.line_numbers:
             tab.line_numbers.font = tab.editor_font
-            tab.line_numbers.redraw()
+            # Force immediate update for zoom (user expects instant feedback)
+            from editor.line_number_manager import force_line_number_update
+            force_line_number_update(tab.line_numbers)
         
         # Assuming perform_heavy_updates is available in actions
         try:

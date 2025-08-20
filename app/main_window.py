@@ -179,6 +179,11 @@ def setup_gui():
         # Throttle updates during continuous typing
         suppress_monaco_updates(current_tab.editor, 50)
         
+        # Update line numbers with performance optimization
+        if hasattr(current_tab, 'line_numbers') and current_tab.line_numbers:
+            from editor.line_number_manager import schedule_line_number_update
+            schedule_line_number_update(current_tab.line_numbers)
+        
         # Reset modified flag to prevent event recursion
         current_tab.editor.edit_modified(False)
         

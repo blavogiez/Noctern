@@ -33,52 +33,67 @@ class LineNumbers(tk.Canvas):
         self.redraw()
 
     def redraw(self, *args):
-        """Optimized redraw with viewport detection and incremental updates."""
+        """Production-ready redraw with comprehensive error handling and optimization"""
         try:
+            # Safety checks
             if not self.editor or not self.winfo_exists():
                 return
             
-            # Get current viewport and document stats
-            first_visible_line = self.editor.index("@0,0")
-            last_char = self.editor.index("end-1c")
-            last_line_num = int(last_char.split('.')[0]) if last_char != "1.0" or self.editor.get("1.0", "1.end") else 0
+            # Get current document state with error handling
+            try:
+                first_visible_line = self.editor.index("@0,0")
+                last_char = self.editor.index("end-1c")
+                last_line_num = int(last_char.split('.')[0]) if last_char != "1.0" or self.editor.get("1.0", "1.end") else 0
+            except (tk.TclError, ValueError, AttributeError):
+                return
             
-            if last_line_num == 0:
+            # Handle empty document
+            if last_line_num <= 0:
                 self.delete("all")
                 return
             
-            # Parse current viewport
-            first_line_num = int(first_visible_line.split('.')[0])
-            current_viewport = (first_line_num, last_line_num)
+            # Calculate viewport with bounds checking
+            try:
+                first_line_num = max(1, int(first_visible_line.split('.')[0]))
+                current_viewport = (first_line_num, last_line_num)
+            except (ValueError, IndexError):
+                current_viewport = (1, last_line_num)
             
-            # Check if we can skip expensive operations
+            # Smart skip logic for performance
             if self._should_skip_redraw(current_viewport, last_line_num):
                 return
             
-            # Calculate required width
+            # Calculate optimal width with caching
             max_digits = len(str(last_line_num))
-            required_width = self.font.measure("0" * max_digits) + 10
+            required_width = max(40, self.font.measure("9" * max_digits) + 15)  # Buffer for padding
             
-            # Only resize if significantly different
-            if abs(self.winfo_width() - required_width) > 5:
+            # Efficient width updates
+            current_width = self.winfo_width()
+            if abs(current_width - required_width) > 3:  # Reduced threshold for smoother resizing
                 self.config(width=required_width)
                 self._last_width = required_width
             else:
-                required_width = self._last_width
+                required_width = current_width
             
-            # For large files (>2000 lines), use optimized rendering
+            # Adaptive rendering based on file size
             if last_line_num > 2000:
-                self._redraw_viewport_optimized(first_visible_line, required_width)
+                self._render_large_file(first_visible_line, required_width)
+            elif last_line_num > 100:
+                self._render_medium_file(first_visible_line, last_line_num, required_width)
             else:
-                self._redraw_standard(first_visible_line, last_line_num, required_width)
+                self._render_small_file(first_visible_line, last_line_num, required_width)
             
-            # Update cache
+            # Update state cache
             self._last_viewport = current_viewport
             self._last_total_lines = last_line_num
             
-        except tk.TclError:
-            # Editor might be destroyed
-            pass
+        except Exception as e:
+            # Production error handling - log and continue
+            try:
+                from utils import debug_console
+                debug_console.log(f"Line numbers redraw error: {e}", level='WARNING')
+            except:
+                pass
     
     def force_update(self):
         """Force an immediate update of the line numbers."""
@@ -88,28 +103,30 @@ class LineNumbers(tk.Canvas):
         self.redraw()
     
     def _should_skip_redraw(self, current_viewport, total_lines):
-        """Determine if redraw can be skipped based on viewport changes."""
+        """Smart redraw logic optimized for production performance"""
         old_start, old_total = self._last_viewport[0], self._last_total_lines
         new_start, _ = current_viewport
         
-        # Always redraw if line count changed
+        # Always redraw if line count changed (new lines added/removed)
         if total_lines != old_total:
             return False
             
-        # For scrolling, we need to be more sensitive
-        # Even small viewport changes should trigger a redraw
-        return new_start == old_start
+        # Skip redraw if viewport hasn't changed significantly (optimization)
+        viewport_change_threshold = max(1, total_lines // 100)  # 1% threshold or min 1
+        if abs(new_start - old_start) < viewport_change_threshold:
+            return True
+            
+        return False
     
-    def _redraw_viewport_optimized(self, first_visible_line, required_width):
-        """Optimized redraw for large files - only visible area."""
+    def _render_large_file(self, first_visible_line, required_width):
+        """Render line numbers for large files with viewport optimization"""
         self.delete("all")
         self._rendered_numbers.clear()
         
-        # Get visible area bounds
         try:
             canvas_height = self.winfo_height()
             line_height = self.font.metrics("linespace")
-            max_visible_lines = min(100, canvas_height // line_height + 5)  # Safety limit
+            max_visible_lines = min(150, canvas_height // line_height + 10)  # Extended buffer for large files
             
             current_line = first_visible_line
             lines_drawn = 0
@@ -121,11 +138,11 @@ class LineNumbers(tk.Canvas):
                         break
                         
                     y = dline[1]
-                    if y > canvas_height + 50:  # Off-screen buffer
+                    if y > canvas_height + 100:  # Extended off-screen buffer
                         break
                         
                     line_num_str = current_line.split(".")[0]
-                    self.create_text(required_width - 5, y, anchor="ne", 
+                    self.create_text(required_width - 8, y + dline[3] // 2, anchor="e", 
                                    text=line_num_str, font=self.font, fill=self.text_color)
                     
                     self._rendered_numbers[y] = line_num_str
@@ -135,34 +152,65 @@ class LineNumbers(tk.Canvas):
                 except tk.TclError:
                     break
                     
-        except tk.TclError:
+        except (tk.TclError, ZeroDivisionError):
             pass
     
-    def _redraw_standard(self, first_visible_line, last_line_num, required_width):
-        """Standard redraw for smaller files."""
+    def _render_medium_file(self, first_visible_line, last_line_num, required_width):
+        """Render line numbers for medium files with balanced performance"""
         self.delete("all")
         self._rendered_numbers.clear()
         
-        current_line = first_visible_line
-        while True:
-            try:
-                dline = self.editor.dlineinfo(current_line)
-                if not dline:
-                    break
+        try:
+            # Calculate visible range with buffer for smooth scrolling
+            canvas_height = self.winfo_height()
+            buffer_lines = max(5, canvas_height // 20)  # Adaptive buffer based on canvas height
+            
+            start_line_num = max(1, int(first_visible_line.split('.')[0]) - buffer_lines)
+            end_line_num = min(last_line_num, int(first_visible_line.split('.')[0]) + canvas_height // 16 + buffer_lines)
+            
+            for line_num in range(start_line_num, end_line_num + 1):
+                try:
+                    line_index = f"{line_num}.0"
+                    dline = self.editor.dlineinfo(line_index)
+                    if not dline:
+                        continue
+                        
+                    y = dline[1] + dline[3] // 2  # Center vertically in line
+                    if -50 <= y <= canvas_height + 50:  # Render buffer zone
+                        self.create_text(required_width - 8, y, anchor="e", 
+                                       text=str(line_num), font=self.font, fill=self.text_color)
+                        self._rendered_numbers[y] = str(line_num)
+                        
+                except tk.TclError:
+                    continue
                     
-                y = dline[1]
-                line_num_str = current_line.split(".")[0]
-                self.create_text(required_width - 5, y, anchor="ne", 
-                               text=line_num_str, font=self.font, fill=self.text_color)
-                
-                self._rendered_numbers[y] = line_num_str
-                current_line = self.editor.index(f"{current_line}+1line")
-                
-                if int(current_line.split('.')[0]) > last_line_num + 1:
-                    break
+        except (tk.TclError, ValueError, ZeroDivisionError):
+            pass
+    
+    def _render_small_file(self, first_visible_line, last_line_num, required_width):
+        """Render line numbers for small files with full document rendering"""
+        self.delete("all")
+        self._rendered_numbers.clear()
+        
+        try:
+            # Render all lines for small files - performance is not critical
+            for line_num in range(1, last_line_num + 1):
+                try:
+                    line_index = f"{line_num}.0"
+                    dline = self.editor.dlineinfo(line_index)
+                    if not dline:
+                        continue
+                        
+                    y = dline[1] + dline[3] // 2  # Center vertically in line
+                    self.create_text(required_width - 8, y, anchor="e", 
+                                   text=str(line_num), font=self.font, fill=self.text_color)
+                    self._rendered_numbers[y] = str(line_num)
                     
-            except tk.TclError:
-                break
+                except tk.TclError:
+                    continue
+                    
+        except (tk.TclError, ValueError):
+            pass
     
     def force_redraw(self):
         """Force complete redraw, ignoring cache."""
@@ -224,10 +272,9 @@ class EditorTab(ttk.Frame):
             pass
 
     def on_key_release(self, event=None):
-        self.update_tab_title()
+        # Tab title and line numbers are now handled in main_window.py on_text_modified
+        # Only handle syntax highlighting here to avoid duplication
         self._schedule_smart_updates(event, 'keyrelease')
-        # Force line numbers update bypassing cache
-        self.line_numbers.force_update()
 
     def schedule_heavy_updates(self, event=None):
         """Legacy method - redirects to smart updates."""
