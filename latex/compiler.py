@@ -146,14 +146,13 @@ def compile_latex(event=None):
             debug_console.log(f"Error saving temporary file for compilation: {e}", level='ERROR')
             return
 
-    # Use existing cache directory in the same directory as the tex file
+    # Setup for caching successful compilation
     tex_base_name = os.path.splitext(file_name)[0]
     cache_directory = os.path.join(source_directory, f"{tex_base_name}.cache")
     os.makedirs(cache_directory, exist_ok=True)
-    tex_base_name = os.path.splitext(file_name)[0]
     cached_tex_path = os.path.join(cache_directory, f"{tex_base_name}_last_successful.tex")
 
-    # Compile in the source directory
+    # Compile directly in source directory
     try:
         # Execute pdflatex command in the source directory
         command = ["pdflatex", "-interaction=nonstopmode", file_name]
