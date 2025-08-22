@@ -105,9 +105,14 @@ def validate_proofreading_response(response_data):
         if importance not in ["high", "medium", "low"]:
             importance = "medium"
         
-        # Skip errors with empty required fields
-        if not original or not suggestion or not explanation:
-            debug_console.log(f"Error {i+1}: Empty required fields - original: {bool(original)}, suggestion: {bool(suggestion)}, explanation: {bool(explanation)}", level='DEBUG')
+        # Skip errors with empty required fields (but allow empty suggestion for deletions)
+        if not original or not explanation:
+            debug_console.log(f"Error {i+1}: Empty required fields - original: {bool(original)}, explanation: {bool(explanation)}", level='DEBUG')
+            continue
+        
+        # For coherence errors, empty suggestion means deletion (which is valid)
+        if not suggestion and error_type != "coherence":
+            debug_console.log(f"Error {i+1}: Empty suggestion for non-coherence error type '{error_type}', skipping", level='DEBUG')
             continue
         
         # Skip if suggestion is identical to original (no actual correction)

@@ -543,7 +543,8 @@ class ProofreadingDialog:
         
         self.suggested_text.config(state="normal")
         self.suggested_text.delete("1.0", "end")
-        self.suggested_text.insert("1.0", current_error.suggestion)
+        suggestion_text = current_error.suggestion if current_error.suggestion else "[DELETE]"
+        self.suggested_text.insert("1.0", suggestion_text)
         self.suggested_text.config(state="disabled")
         
         self.explanation_label.config(text=current_error.explanation)
@@ -558,7 +559,8 @@ class ProofreadingDialog:
             self.apply_button.config(state="disabled", text="Applied")
             self.applied_label.config(text="Already applied", foreground=self.colors['success'])
         else:
-            self.apply_button.config(state="normal", text="Apply Correction")
+            button_text = "Delete Text" if not current_error.suggestion else "Apply Correction"
+            self.apply_button.config(state="normal", text=button_text)
             self.applied_label.config(text="")
         
         # Update applied corrections count

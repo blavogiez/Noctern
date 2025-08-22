@@ -338,6 +338,12 @@ def get_task_options(task_type):
             "top_p": 0.7,
             "num_predict": 2048,
             "top_k": 15,
+        },
+        "proofreading": {
+            "temperature": 0.1,
+            "top_p": 0.3,
+            "num_predict": 2048,
+            "top_k": 10,
         }
     }
     

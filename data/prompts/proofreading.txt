@@ -1,26 +1,56 @@
-TASK: Perform EXHAUSTIVE proofreading analysis. You MUST analyze EVERY single sentence, phrase, and word. Do NOT stop at the first few errors - continue analyzing until you have examined the ENTIRE text thoroughly. Your goal is to catch ALL errors that would make this document appear unprofessional or undermine credibility.
+TASK: Perform SYSTEMATIC proofreading analysis. You MUST analyze EVERY single sentence, phrase, and word following the EXACT order specified below. Your goal is to catch ALL errors consistently and reproducibly.
 
 {custom_instructions}
 
-MANDATORY THOROUGHNESS REQUIREMENTS:
-- Read the ENTIRE text word by word, sentence by sentence
-- Do NOT get lazy or skip sections - analyze EVERYTHING
-- Check EVERY sentence for logical flow and coherence with surrounding content
-- Examine EVERY word for correctness
-- Verify EVERY punctuation mark
-- Do NOT stop after finding a few errors - keep going until the end
-- Pay special attention to sentences that seem disconnected, random, or completely unrelated to the main topic
+MANDATORY ANALYSIS ORDER (follow this sequence EXACTLY):
+1. Read the text from TOP TO BOTTOM, LEFT TO RIGHT
+2. Process each paragraph in sequential order (1st, 2nd, 3rd, etc.)
+3. Within each paragraph, analyze each sentence in order
+4. For each sentence, check ALL error types in this priority order:
+   a) SPELLING errors (highest priority)
+   b) GRAMMAR errors 
+   c) SYNTAX errors
+   d) PUNCTUATION errors
+   e) COHERENCE errors (sentences out of context)
+   f) CLARITY errors
+   g) STYLE errors (lowest priority)
 
-COMPREHENSIVE ANALYSIS CHECKLIST (examine ALL of these):
-1. SPELLING: Check EVERY word for misspellings, typos, incorrect word forms, wrong word usage
-2. GRAMMAR: Identify subject-verb disagreements, incorrect tense usage, article errors, pronoun misuse, sentence fragments
-3. SYNTAX: Find sentence structure problems, run-on sentences, fragments, incorrect word order, missing words
-4. PUNCTUATION: Locate missing or incorrect punctuation marks, comma splices, apostrophe errors, quotation mark issues
-5. CONSISTENCY: Check for inconsistent terminology, formatting, capitalization, number formats throughout the ENTIRE document
-6. CLARITY: Identify confusing phrasing, ambiguous references, unclear expressions, vague language
-7. STYLE: Find inappropriate tone, redundant phrases, awkward constructions, wordiness, passive voice overuse
-8. CONTENT COHERENCE: Detect sentences or phrases that are completely out of context, irrelevant to the document's subject matter, random insertions, topic drift, non-sequiturs, logical inconsistencies, contradictions
-9. LOGICAL FLOW: Ensure each sentence logically follows from the previous one and contributes to the overall argument or narrative
+CONSISTENCY REQUIREMENTS:
+- ALWAYS start with paragraph 1, sentence 1
+- Do NOT skip ANY sentence or paragraph
+- Report errors in the ORDER you find them (top to bottom)
+- Use IDENTICAL criteria for each error type every time
+- Do NOT vary your analysis based on text length or complexity
+
+PRECISE ERROR DETECTION CRITERIA (apply these EXACT standards):
+
+1. SPELLING: Misspelled words, typos, wrong word forms
+   Example: "recieve" → "receive", "there" → "their"
+
+2. GRAMMAR: Subject-verb disagreement, tense errors, article misuse
+   Example: "The data shows" → "The data show"
+
+3. SYNTAX: Sentence structure problems, word order errors, missing words
+   Example: "The important very document" → "The very important document"
+
+4. PUNCTUATION: Missing/incorrect punctuation marks, comma errors
+   Example: "However the data" → "However, the data"
+
+5. COHERENCE: Sentences completely unrelated to surrounding context
+   Example: Random insertion about weather in a technical document
+
+6. CLARITY: Ambiguous phrasing, unclear references, confusing expressions
+   Example: "This causes problems" (unclear "this")
+
+7. STYLE: Redundancy, wordiness, inappropriate tone for academic writing
+   Example: "In my personal opinion" → "In my opinion"
+
+DETERMINISTIC PROCESSING RULES:
+- Process EXACTLY 1 paragraph at a time in document order
+- Within each paragraph, process EXACTLY 1 sentence at a time
+- For each sentence, check error types in priority order (a→g)
+- Report errors immediately when found, maintain document position order
+- Use SAME severity criteria: major grammar/spelling = HIGH, punctuation = MEDIUM, style = LOW
 
 CRITICAL: You must return ONLY a JSON object with exactly this structure. Do NOT return article metadata, abstracts, or bibliographic information.
 

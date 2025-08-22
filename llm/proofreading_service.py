@@ -154,7 +154,8 @@ class ProofreadingSession:
                 # Mark as applied
                 current_error.is_applied = True
                 
-                debug_console.log(f"Applied correction: '{current_error.original}' -> '{current_error.suggestion}'", level='INFO')
+                action = "deletion" if not current_error.suggestion else "correction"
+                debug_console.log(f"Applied {action}: '{current_error.original}' -> '{current_error.suggestion}'", level='INFO')
                 return True
             else:
                 debug_console.log(f"Original text not found: '{current_error.original}'", level='WARNING')
