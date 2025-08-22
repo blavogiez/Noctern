@@ -1,777 +1,677 @@
 """
-Dialogs for document proofreading functionality.
-Includes setup dialog for configuring proofreading and navigation dialog for reviewing errors.
+Professional proofreading user interface with modern UX.
+Beautiful, intuitive dialog for AI-powered document correction.
 """
-import json
 import tkinter as tk
 from tkinter import ttk, messagebox
+from typing import Optional, List
+
 from utils import debug_console
-from llm import state as llm_state
-from llm import utils as llm_utils
-from llm.streaming_service import start_streaming_request
-from llm.schemas import get_proofreading_schema, validate_proofreading_response
+from llm.proofreading_service import get_proofreading_service, ProofreadingSession, ProofreadingError
 
-def show_proofreading_setup_dialog(root_window, theme_setting_getter_func, text_to_check, on_proofread_callback):
-    """
-    Display setup dialog for configuring proofreading parameters.
-    
-    Args:
-        root_window (tk.Tk): Main application window
-        theme_setting_getter_func (callable): Function to get theme settings
-        text_to_check (str): Text to be proofread
-        on_proofread_callback (callable): Callback with (text, custom_instructions) when ready
-    """
-    debug_console.log("Opening proofreading setup dialog.", level='ACTION')
-    dialog = tk.Toplevel(root_window)
-    dialog.title("Document Proofreading")
-    dialog.transient(root_window)
-    dialog.grab_set()
-    dialog.geometry("600x400")
-    
-    # Theme settings
-    dialog_bg = theme_setting_getter_func("root_bg", "#f0f0f0")
-    text_bg = theme_setting_getter_func("editor_bg", "#ffffff")
-    text_fg = theme_setting_getter_func("editor_fg", "#000000")
-    dialog.configure(bg=dialog_bg)
-    
-    # Main frame
-    main_frame = ttk.Frame(dialog, padding=10)
-    main_frame.pack(fill="both", expand=True)
-    main_frame.grid_rowconfigure(2, weight=1)
-    main_frame.grid_columnconfigure(0, weight=1)
-    
-    # Title
-    title_label = ttk.Label(main_frame, text="Document Proofreading", font=("Segoe UI", 12, "bold"))
-    title_label.grid(row=0, column=0, sticky="w", pady=(0, 10))
-    
-    # Instructions entry
-    instructions_frame = ttk.LabelFrame(main_frame, text="Custom Instructions (optional)", padding=5)
-    instructions_frame.grid(row=1, column=0, sticky="ew", pady=(0, 10))
-    instructions_frame.grid_columnconfigure(0, weight=1)
-    
-    instructions_entry = ttk.Entry(instructions_frame, font=("Segoe UI", 9))
-    instructions_entry.grid(row=0, column=0, sticky="ew", padx=5, pady=5)
-    instructions_entry.insert(0, "Focus on grammar and spelling")
-    
-    # Text preview
-    preview_frame = ttk.LabelFrame(main_frame, text="Text to Proofread", padding=5)
-    preview_frame.grid(row=2, column=0, sticky="nsew")
-    preview_frame.grid_rowconfigure(0, weight=1)
-    preview_frame.grid_columnconfigure(0, weight=1)
-    
-    preview_text = tk.Text(
-        preview_frame, wrap="word", bg=text_bg, fg=text_fg, 
-        font=("Segoe UI", 9), state="disabled", height=12
-    )
-    preview_text.grid(row=0, column=0, sticky="nsew")
-    
-    preview_scrollbar = ttk.Scrollbar(preview_frame, orient="vertical", command=preview_text.yview)
-    preview_scrollbar.grid(row=0, column=1, sticky="ns")
-    preview_text.config(yscrollcommand=preview_scrollbar.set)
-    
-    # Show text preview
-    preview_text.config(state="normal")
-    preview_text.insert("1.0", text_to_check)
-    preview_text.config(state="disabled")
-    
-    # Buttons
-    button_frame = ttk.Frame(main_frame)
-    button_frame.grid(row=3, column=0, sticky="e", pady=(10, 0))
-    
-    def _on_start_proofreading():
-        custom_instructions = instructions_entry.get().strip()
-        dialog.destroy()
-        on_proofread_callback(text_to_check, custom_instructions)
-    
-    def _on_cancel():
-        dialog.destroy()
-    
-    start_button = ttk.Button(button_frame, text="Start Proofreading", command=_on_start_proofreading)
-    start_button.pack(side="left", padx=5)
-    
-    cancel_button = ttk.Button(button_frame, text="Cancel", command=_on_cancel)
-    cancel_button.pack(side="left")
-    
-    # Shortcuts
-    dialog.bind("<Return>", lambda e: _on_start_proofreading())
-    dialog.bind("<Escape>", lambda e: _on_cancel())
-    dialog.protocol("WM_DELETE_WINDOW", _on_cancel)
-    
-    instructions_entry.focus_set()
-    dialog.wait_window()
 
-def show_proofreading_dialog(root_window, theme_setting_getter_func, editor, errors, original_text):
+class ProofreadingDialog:
     """
-    Display dialog for navigating and applying proofreading corrections.
+    Professional document proofreading interface.
     
-    Args:
-        root_window (tk.Tk): Main application window
-        theme_setting_getter_func (callable): Function to get theme settings
-        editor (tk.Text): Editor widget to apply corrections to
-        errors (list): List of error dictionaries from LLM
-        original_text (str): Original text that was proofread
+    Features:
+    - Maximized window for optimal user experience  
+    - Real-time AI analysis with streaming feedback
+    - Intuitive error navigation and correction
+    - Beautiful modern UI with animations
+    - Clear progress indicators and status updates
     """
-    debug_console.log(f"Opening proofreading results dialog with {len(errors)} errors.", level='INFO')
-    dialog = tk.Toplevel(root_window)
-    dialog.title(f"Proofreading Results - {len(errors)} errors found")
-    dialog.transient(root_window)
-    dialog.grab_set()
-    dialog.geometry("800x600")
     
-    # Theme settings
-    dialog_bg = theme_setting_getter_func("root_bg", "#f0f0f0")
-    text_bg = theme_setting_getter_func("editor_bg", "#ffffff")
-    text_fg = theme_setting_getter_func("editor_fg", "#000000")
-    error_bg = theme_setting_getter_func("llm_generated_bg", "#ffe6e6")
-    dialog.configure(bg=dialog_bg)
-    
-    # State variables
-    current_error_index = tk.IntVar(value=0)
-    applied_corrections = set()  # Track applied corrections
-    
-    # Main frame
-    main_frame = ttk.Frame(dialog, padding=10)
-    main_frame.pack(fill="both", expand=True)
-    main_frame.grid_rowconfigure(2, weight=1)
-    main_frame.grid_columnconfigure(0, weight=1)
-    
-    # Header with navigation
-    header_frame = ttk.Frame(main_frame)
-    header_frame.grid(row=0, column=0, sticky="ew", pady=(0, 10))
-    header_frame.grid_columnconfigure(1, weight=1)
-    
-    # Navigation buttons
-    nav_frame = ttk.Frame(header_frame)
-    nav_frame.grid(row=0, column=0, sticky="w")
-    
-    def _update_navigation():
-        current = current_error_index.get()
-        prev_button.config(state="normal" if current > 0 else "disabled")
-        next_button.config(state="normal" if current < len(errors) - 1 else "disabled")
-        counter_label.config(text=f"{current + 1} of {len(errors)}")
-        _show_current_error()
-    
-    def _go_previous():
-        if current_error_index.get() > 0:
-            current_error_index.set(current_error_index.get() - 1)
-            _update_navigation()
-    
-    def _go_next():
-        if current_error_index.get() < len(errors) - 1:
-            current_error_index.set(current_error_index.get() + 1)
-            _update_navigation()
-    
-    prev_button = ttk.Button(nav_frame, text="◄ Previous", command=_go_previous)
-    prev_button.pack(side="left", padx=2)
-    
-    next_button = ttk.Button(nav_frame, text="Next ►", command=_go_next)
-    next_button.pack(side="left", padx=2)
-    
-    counter_label = ttk.Label(nav_frame, text="1 of 1", font=("Segoe UI", 9))
-    counter_label.pack(side="left", padx=10)
-    
-    # Error info frame
-    info_frame = ttk.LabelFrame(main_frame, text="Error Details", padding=10)
-    info_frame.grid(row=1, column=0, sticky="ew", pady=(0, 10))
-    info_frame.grid_columnconfigure(1, weight=1)
-    
-    # Error type and position
-    type_label = ttk.Label(info_frame, text="Type:", font=("Segoe UI", 9, "bold"))
-    type_label.grid(row=0, column=0, sticky="w", padx=(0, 5))
-    
-    type_value = ttk.Label(info_frame, text="", font=("Segoe UI", 9))
-    type_value.grid(row=0, column=1, sticky="w")
-    
-    # Original and suggested text
-    original_label = ttk.Label(info_frame, text="Original:", font=("Segoe UI", 9, "bold"))
-    original_label.grid(row=1, column=0, sticky="nw", padx=(0, 5), pady=(5, 0))
-    
-    original_text_widget = tk.Text(
-        info_frame, height=2, wrap="word", bg=error_bg, fg=text_fg,
-        font=("Segoe UI", 9), state="disabled", relief=tk.FLAT
-    )
-    original_text_widget.grid(row=1, column=1, sticky="ew", pady=(5, 0))
-    
-    suggested_label = ttk.Label(info_frame, text="Suggested:", font=("Segoe UI", 9, "bold"))
-    suggested_label.grid(row=2, column=0, sticky="nw", padx=(0, 5), pady=(5, 0))
-    
-    suggested_text_widget = tk.Text(
-        info_frame, height=2, wrap="word", bg=text_bg, fg=text_fg,
-        font=("Segoe UI", 9), state="disabled", relief=tk.FLAT
-    )
-    suggested_text_widget.grid(row=2, column=1, sticky="ew", pady=(5, 0))
-    
-    # Context display
-    context_frame = ttk.LabelFrame(main_frame, text="Context", padding=5)
-    context_frame.grid(row=2, column=0, sticky="nsew")
-    context_frame.grid_rowconfigure(0, weight=1)
-    context_frame.grid_columnconfigure(0, weight=1)
-    
-    context_text = tk.Text(
-        context_frame, wrap="word", bg=text_bg, fg=text_fg,
-        font=("Segoe UI", 9), state="disabled"
-    )
-    context_text.grid(row=0, column=0, sticky="nsew")
-    
-    context_scrollbar = ttk.Scrollbar(context_frame, orient="vertical", command=context_text.yview)
-    context_scrollbar.grid(row=0, column=1, sticky="ns")
-    context_text.config(yscrollcommand=context_scrollbar.set)
-    
-    # Action buttons
-    action_frame = ttk.Frame(main_frame)
-    action_frame.grid(row=3, column=0, sticky="ew", pady=(10, 0))
-    
-    def _apply_correction():
-        current = current_error_index.get()
-        error = errors[current]
+    def __init__(self, parent, theme_getter, editor, initial_text: str):
+        self.parent = parent
+        self.theme_getter = theme_getter
+        self.editor = editor
+        self.initial_text = initial_text
         
-        if current in applied_corrections:
-            messagebox.showinfo("Already Applied", "This correction has already been applied.")
-            return
+        # Services and state
+        self.proofreading_service = get_proofreading_service()
+        self.session: Optional[ProofreadingSession] = None
         
-        try:
-            # Find and replace the original text with suggestion
-            original = error.get("original", "")
-            suggestion = error.get("suggestion", "")
-            
-            if not original or not suggestion:
-                messagebox.showerror("Error", "Invalid error data - missing original or suggestion text.")
-                return
-            
-            # Get current editor content
-            editor_content = editor.get("1.0", "end-1c")
-            
-            # Simple replacement - in production, you might want more sophisticated position tracking
-            if original in editor_content:
-                updated_content = editor_content.replace(original, suggestion, 1)
-                editor.delete("1.0", "end")
-                editor.insert("1.0", updated_content)
-                
-                applied_corrections.add(current)
-                messagebox.showinfo("Applied", f"Correction applied successfully.")
-                
-                # Move to next error if available
-                if current < len(errors) - 1:
-                    _go_next()
-            else:
-                messagebox.showwarning("Not Found", "The original text was not found in the editor. The text may have been modified.")
-                
-        except Exception as e:
-            debug_console.log(f"Error applying correction: {e}", level='ERROR')
-            messagebox.showerror("Error", f"Failed to apply correction: {str(e)}")
-    
-    def _skip_error():
-        if current_error_index.get() < len(errors) - 1:
-            _go_next()
-        else:
-            messagebox.showinfo("Complete", "Reached the end of errors.")
-    
-    apply_button = ttk.Button(action_frame, text="Apply Correction", command=_apply_correction)
-    apply_button.pack(side="left", padx=5)
-    
-    skip_button = ttk.Button(action_frame, text="Skip", command=_skip_error)
-    skip_button.pack(side="left", padx=5)
-    
-    close_button = ttk.Button(action_frame, text="Close", command=dialog.destroy)
-    close_button.pack(side="right", padx=5)
-    
-    def _show_current_error():
-        """Update UI to show current error details."""
-        current = current_error_index.get()
-        error = errors[current]
+        # UI components
+        self.window: Optional[tk.Toplevel] = None
+        self.status_var = tk.StringVar(value="Ready to start proofreading")
+        self.progress_var = tk.StringVar(value="")
+        self.current_error_var = tk.StringVar(value="")
+        self.error_counter_var = tk.StringVar(value="")
         
-        # Update error type
-        error_type = error.get("type", "Unknown")
-        type_value.config(text=error_type)
+        # Theme colors
+        self._load_theme_colors()
+    
+    def _load_theme_colors(self):
+        """Load minimal color palette."""
+        self.colors = {
+            'bg': self.theme_getter("root_bg", "#ffffff"),
+            'surface': self.theme_getter("editor_bg", "#ffffff"),
+            'text': self.theme_getter("editor_fg", "#000000"),
+            'primary': "#0066cc",
+            'success': "#006600",
+            'danger': "#cc0000",
+            'muted': "#666666",
+            'error_bg': "#ffeeee",
+            'grammar_color': "#cc0000",
+            'spelling_color': "#ff6600",
+            'punctuation_color': "#6600cc",
+            'style_color': "#0066cc",
+            'clarity_color': "#006600",
+            'syntax_color': "#990000"
+        }
+    
+    def show(self):
+        """Display the proofreading dialog."""
+        self._create_window()
+        self._setup_layout()
+        self._bind_events()
         
-        # Update original text
-        original = error.get("original", "")
-        original_text_widget.config(state="normal")
-        original_text_widget.delete("1.0", "end")
-        original_text_widget.insert("1.0", original)
-        original_text_widget.config(state="disabled")
+        # Show window and center focus
+        self.window.deiconify()
+        self.window.focus_force()
+        self.window.wait_window()
+    
+    def _create_window(self):
+        """Create and configure the main window."""
+        self.window = tk.Toplevel(self.parent)
+        self.window.title("Professional Document Proofreading")
+        self.window.configure(bg=self.colors['bg'])
         
-        # Update suggested text
-        suggestion = error.get("suggestion", "")
-        suggested_text_widget.config(state="normal")
-        suggested_text_widget.delete("1.0", "end")
-        suggested_text_widget.insert("1.0", suggestion)
-        suggested_text_widget.config(state="disabled")
+        # Maximize window for optimal experience
+        self.window.state('zoomed')
+        self.window.transient(self.parent)
+        self.window.grab_set()
         
-        # Update context - show surrounding text
-        context = error.get("context", "")
-        if not context:
-            # Generate context from original text if not provided
-            start_pos = error.get("start", 0)
-            end_pos = error.get("end", len(original))
-            context_start = max(0, start_pos - 50)
-            context_end = min(len(original_text), end_pos + 50)
-            context = original_text[context_start:context_end]
+        # Prevent window from being destroyed accidentally
+        self.window.protocol("WM_DELETE_WINDOW", self._on_close)
         
-        context_text.config(state="normal")
-        context_text.delete("1.0", "end")
-        context_text.insert("1.0", context)
+        debug_console.log("Professional proofreading interface created", level='INFO')
+    
+    def _setup_layout(self):
+        """Create the beautiful, professional UI layout."""
+        # Main container with padding
+        main_container = ttk.Frame(self.window, padding="30")
+        main_container.pack(fill="both", expand=True)
+        main_container.grid_rowconfigure(2, weight=1)
+        main_container.grid_columnconfigure(0, weight=1)
         
-        # Highlight the error in context if possible
-        if original in context:
-            start_idx = context.find(original)
-            if start_idx != -1:
-                start_pos = f"1.{start_idx}"
-                end_pos = f"1.{start_idx + len(original)}"
-                context_text.tag_add("error", start_pos, end_pos)
-                context_text.tag_config("error", background=error_bg, font=("Segoe UI", 9, "bold"))
+        # Header section with title and status
+        self._create_header(main_container)
         
-        context_text.config(state="disabled")
+        # Progress section with visual indicators
+        self._create_progress_section(main_container)
         
-        # Update apply button state
-        if current in applied_corrections:
-            apply_button.config(text="Applied ✓", state="disabled")
-        else:
-            apply_button.config(text="Apply Correction", state="normal")
-    
-    # Keyboard shortcuts
-    dialog.bind("<Left>", lambda e: _go_previous())
-    dialog.bind("<Right>", lambda e: _go_next())
-    dialog.bind("<Return>", lambda e: _apply_correction())
-    dialog.bind("<Escape>", lambda e: dialog.destroy())
-    
-    # Initialize display
-    _update_navigation()
-    dialog.wait_window()
-
-def show_proofreading_interface(root_window, theme_setting_getter_func, editor, text_to_check):
-    """
-    Display full-screen proofreading interface that stays open during processing.
-    
-    Args:
-        root_window (tk.Tk): Main application window
-        theme_setting_getter_func (callable): Function to get theme settings
-        editor (tk.Text): Editor widget to apply corrections to
-        text_to_check (str): Text to be proofread
-    """
-    debug_console.log("Opening full-screen proofreading interface.", level='INFO')
-    dialog = tk.Toplevel(root_window)
-    dialog.title("Document Proofreading")
-    dialog.transient(root_window)
-    dialog.grab_set()
-    dialog.state('zoomed')  # Full screen on Windows
-    
-    # Theme settings
-    dialog_bg = theme_setting_getter_func("root_bg", "#f0f0f0")
-    text_bg = theme_setting_getter_func("editor_bg", "#ffffff")
-    text_fg = theme_setting_getter_func("editor_fg", "#000000")
-    error_bg = theme_setting_getter_func("llm_generated_bg", "#ffe6e6")
-    dialog.configure(bg=dialog_bg)
-    
-    # State variables
-    current_error_index = tk.IntVar(value=0)
-    applied_corrections = set()
-    errors_list = []
-    is_processing = tk.BooleanVar(value=False)
-    accumulated_response = tk.StringVar(value="")
-    
-    # Main frame with padding
-    main_frame = ttk.Frame(dialog, padding=20)
-    main_frame.pack(fill="both", expand=True)
-    main_frame.grid_rowconfigure(3, weight=1)  # Make content area expandable
-    main_frame.grid_columnconfigure(0, weight=1)
-    
-    # Title and status
-    title_frame = ttk.Frame(main_frame)
-    title_frame.grid(row=0, column=0, sticky="ew", pady=(0, 15))
-    title_frame.grid_columnconfigure(1, weight=1)
-    
-    title_label = ttk.Label(title_frame, text="Document Proofreading", font=("Segoe UI", 16, "bold"))
-    title_label.grid(row=0, column=0, sticky="w")
-    
-    status_label = ttk.Label(title_frame, text="Ready", font=("Segoe UI", 10))
-    status_label.grid(row=0, column=1, sticky="e")
-    
-    # Instructions and controls frame
-    controls_frame = ttk.Frame(main_frame)
-    controls_frame.grid(row=1, column=0, sticky="ew", pady=(0, 15))
-    controls_frame.grid_columnconfigure(1, weight=1)
-    
-    ttk.Label(controls_frame, text="Custom Instructions:", font=("Segoe UI", 10)).grid(row=0, column=0, sticky="w", padx=(0, 10))
-    
-    instructions_entry = ttk.Entry(controls_frame, font=("Segoe UI", 10))
-    instructions_entry.grid(row=0, column=1, sticky="ew", padx=(0, 10))
-    instructions_entry.insert(0, "Focus on grammar and spelling")
-    
-    start_button = ttk.Button(controls_frame, text="Start Proofreading", bootstyle="success")
-    start_button.grid(row=0, column=2, sticky="e")
-    
-    close_button = ttk.Button(controls_frame, text="Close", command=dialog.destroy)
-    close_button.grid(row=0, column=3, sticky="e", padx=(5, 0))
-    
-    # Progress bar
-    progress_frame = ttk.Frame(main_frame)
-    progress_frame.grid(row=2, column=0, sticky="ew", pady=(0, 15))
-    progress_frame.grid_columnconfigure(0, weight=1)
-    
-    progress_bar = ttk.Progressbar(progress_frame, mode="indeterminate", bootstyle="success-striped")
-    progress_bar.grid(row=0, column=0, sticky="ew")
-    
-    progress_label = ttk.Label(progress_frame, text="", font=("Segoe UI", 9))
-    progress_label.grid(row=1, column=0, sticky="w", pady=(5, 0))
-    
-    # Content area - tabbed interface
-    content_notebook = ttk.Notebook(main_frame)
-    content_notebook.grid(row=3, column=0, sticky="nsew")
-    
-    # Tab 1: Text preview and streaming output
-    preview_frame = ttk.Frame(content_notebook, padding=10)
-    content_notebook.add(preview_frame, text="Text & Analysis")
-    preview_frame.grid_rowconfigure(0, weight=1)
-    preview_frame.grid_rowconfigure(2, weight=1)
-    preview_frame.grid_columnconfigure(0, weight=1)
-    
-    # Original text display
-    ttk.Label(preview_frame, text="Original Text:", font=("Segoe UI", 10, "bold")).grid(row=0, column=0, sticky="nw", pady=(0, 5))
-    
-    original_text_frame = ttk.Frame(preview_frame)
-    original_text_frame.grid(row=1, column=0, sticky="nsew", pady=(0, 10))
-    original_text_frame.grid_rowconfigure(0, weight=1)
-    original_text_frame.grid_columnconfigure(0, weight=1)
-    
-    original_text_widget = tk.Text(
-        original_text_frame, wrap="word", bg=text_bg, fg=text_fg,
-        font=("Segoe UI", 10), state="disabled", height=8
-    )
-    original_text_widget.grid(row=0, column=0, sticky="nsew")
-    
-    original_scrollbar = ttk.Scrollbar(original_text_frame, orient="vertical", command=original_text_widget.yview)
-    original_scrollbar.grid(row=0, column=1, sticky="ns")
-    original_text_widget.config(yscrollcommand=original_scrollbar.set)
-    
-    # Show original text
-    original_text_widget.config(state="normal")
-    original_text_widget.insert("1.0", text_to_check)
-    original_text_widget.config(state="disabled")
-    
-    # LLM Response area
-    ttk.Label(preview_frame, text="LLM Analysis:", font=("Segoe UI", 10, "bold")).grid(row=2, column=0, sticky="nw", pady=(10, 5))
-    
-    response_text_frame = ttk.Frame(preview_frame)
-    response_text_frame.grid(row=3, column=0, sticky="nsew")
-    response_text_frame.grid_rowconfigure(0, weight=1)
-    response_text_frame.grid_columnconfigure(0, weight=1)
-    
-    response_text_widget = tk.Text(
-        response_text_frame, wrap="word", bg=text_bg, fg=text_fg,
-        font=("Consolas", 9), state="disabled", height=8
-    )
-    response_text_widget.grid(row=0, column=0, sticky="nsew")
-    
-    response_scrollbar = ttk.Scrollbar(response_text_frame, orient="vertical", command=response_text_widget.yview)
-    response_scrollbar.grid(row=0, column=1, sticky="ns")
-    response_text_widget.config(yscrollcommand=response_scrollbar.set)
-    
-    # Tab 2: Error navigation (initially hidden)
-    errors_frame = ttk.Frame(content_notebook, padding=10)
-    
-    def _show_errors_tab():
-        """Show the errors navigation tab."""
-        content_notebook.add(errors_frame, text=f"Errors ({len(errors_list)})")
-        content_notebook.select(errors_frame)
-        _setup_errors_navigation()
-    
-    def _setup_errors_navigation():
-        """Setup the error navigation interface."""
-        if not errors_list:
-            return
-            
-        errors_frame.grid_rowconfigure(2, weight=1)
-        errors_frame.grid_columnconfigure(0, weight=1)
+        # Main content area with tabs
+        self._create_content_area(main_container)
         
-        # Navigation controls
-        nav_frame = ttk.Frame(errors_frame)
-        nav_frame.grid(row=0, column=0, sticky="ew", pady=(0, 10))
-        nav_frame.grid_columnconfigure(1, weight=1)
+        # Footer with action buttons
+        self._create_footer(main_container)
+    
+    def _create_header(self, parent):
+        """Create professional header with branding."""
+        header_frame = ttk.Frame(parent)
+        header_frame.grid(row=0, column=0, sticky="ew", pady=(0, 20))
+        header_frame.grid_columnconfigure(1, weight=1)
         
-        def _update_navigation():
-            current = current_error_index.get()
-            prev_btn.config(state="normal" if current > 0 else "disabled")
-            next_btn.config(state="normal" if current < len(errors_list) - 1 else "disabled")
-            counter_lbl.config(text=f"{current + 1} of {len(errors_list)}")
-            _show_current_error()
+        # Title with icon
+        title_frame = ttk.Frame(header_frame)
+        title_frame.grid(row=0, column=0, sticky="w")
         
-        def _go_previous():
-            if current_error_index.get() > 0:
-                current_error_index.set(current_error_index.get() - 1)
-                _update_navigation()
+        title_label = ttk.Label(
+            title_frame, 
+            text="Document Proofreading",
+            font=("Segoe UI", 16),
+            foreground=self.colors['primary']
+        )
+        title_label.pack(side="left")
         
-        def _go_next():
-            if current_error_index.get() < len(errors_list) - 1:
-                current_error_index.set(current_error_index.get() + 1)
-                _update_navigation()
+        subtitle_label = ttk.Label(
+            title_frame,
+            text="Grammar and style checker",
+            foreground=self.colors['muted']
+        )
+        subtitle_label.pack(side="left", padx=(10, 0))
         
-        prev_btn = ttk.Button(nav_frame, text="◄ Previous", command=_go_previous)
-        prev_btn.grid(row=0, column=0, sticky="w", padx=(0, 5))
+        # Status display
+        status_frame = ttk.Frame(header_frame)
+        status_frame.grid(row=0, column=1, sticky="e")
         
-        next_btn = ttk.Button(nav_frame, text="Next ►", command=_go_next)
-        next_btn.grid(row=0, column=1, sticky="w", padx=(0, 10))
+        self.status_label = ttk.Label(
+            status_frame,
+            textvariable=self.status_var,
+            font=("Segoe UI", 10),
+            foreground=self.colors['primary']
+        )
+        self.status_label.pack(anchor="e")
+    
+    def _create_progress_section(self, parent):
+        """Create progress indicators and controls."""
+        progress_frame = ttk.LabelFrame(parent, text=" Analysis Progress ", padding="15")
+        progress_frame.grid(row=1, column=0, sticky="ew", pady=(0, 20))
+        progress_frame.grid_columnconfigure(1, weight=1)
         
-        counter_lbl = ttk.Label(nav_frame, text="1 of 1", font=("Segoe UI", 10))
-        counter_lbl.grid(row=0, column=2, sticky="w")
+        # Status indicator
+        self.status_indicator = ttk.Label(
+            progress_frame,
+            text="Ready",
+            foreground=self.colors['muted']
+        )
+        self.status_indicator.grid(row=0, column=0, columnspan=3, sticky="w", pady=(0, 10))
         
-        # Error details
-        error_detail_frame = ttk.LabelFrame(errors_frame, text="Error Details", padding=10)
-        error_detail_frame.grid(row=1, column=0, sticky="ew", pady=(0, 10))
-        error_detail_frame.grid_columnconfigure(1, weight=1)
+        # Progress text
+        self.progress_label = ttk.Label(
+            progress_frame,
+            textvariable=self.progress_var
+        )
+        self.progress_label.grid(row=1, column=0, columnspan=3, sticky="w")
         
-        type_lbl = ttk.Label(error_detail_frame, text="Type:", font=("Segoe UI", 9, "bold"))
-        type_lbl.grid(row=0, column=0, sticky="w", padx=(0, 5))
-        type_value = ttk.Label(error_detail_frame, text="", font=("Segoe UI", 9))
-        type_value.grid(row=0, column=1, sticky="w")
+        # Custom instructions
+        ttk.Label(progress_frame, text="Instructions:").grid(row=2, column=0, sticky="w", pady=(10, 5))
         
-        original_lbl = ttk.Label(error_detail_frame, text="Original:", font=("Segoe UI", 9, "bold"))
-        original_lbl.grid(row=1, column=0, sticky="nw", padx=(0, 5), pady=(5, 0))
-        original_text = tk.Text(error_detail_frame, height=2, wrap="word", bg=error_bg, fg=text_fg, font=("Segoe UI", 9), state="disabled")
-        original_text.grid(row=1, column=1, sticky="ew", pady=(5, 0))
+        self.instructions_entry = ttk.Entry(
+            progress_frame, 
+            width=40
+        )
+        self.instructions_entry.grid(row=3, column=0, columnspan=2, sticky="ew", pady=(0, 5))
         
-        suggested_lbl = ttk.Label(error_detail_frame, text="Suggested:", font=("Segoe UI", 9, "bold"))
-        suggested_lbl.grid(row=2, column=0, sticky="nw", padx=(0, 5), pady=(5, 0))
-        suggested_text = tk.Text(error_detail_frame, height=2, wrap="word", bg=text_bg, fg=text_fg, font=("Segoe UI", 9), state="disabled")
-        suggested_text.grid(row=2, column=1, sticky="ew", pady=(5, 0))
+        # Start/Restart button
+        self.analyze_button = ttk.Button(
+            progress_frame,
+            text="Start Analysis",
+            style="Accent.TButton",
+            command=self._start_proofreading
+        )
+        self.analyze_button.grid(row=3, column=2, sticky="e", padx=(10, 0))
+    
+    def _create_content_area(self, parent):
+        """Create main content area with tabs."""
+        # Notebook for organized content
+        self.notebook = ttk.Notebook(parent, padding="5")
+        self.notebook.grid(row=2, column=0, sticky="nsew", pady=(0, 20))
+        
+        # Text Analysis Tab
+        self._create_text_analysis_tab()
+        
+        # Error Navigation Tab (initially hidden)
+        self.errors_tab_frame = None
+        
+        # Results Summary Tab (initially hidden)  
+        self.summary_tab_frame = None
+    
+    def _create_text_analysis_tab(self):
+        """Create text analysis tab with streaming output."""
+        analysis_frame = ttk.Frame(self.notebook, padding="15")
+        self.notebook.add(analysis_frame, text="Text Analysis")
+        
+        analysis_frame.grid_rowconfigure(1, weight=1)
+        analysis_frame.grid_rowconfigure(3, weight=1)
+        analysis_frame.grid_columnconfigure(0, weight=1)
+        
+        # Original text section
+        ttk.Label(analysis_frame, text="Original Text").grid(row=0, column=0, sticky="w", pady=(0, 5))
+        
+        original_frame = ttk.Frame(analysis_frame, relief="solid", borderwidth=1)
+        original_frame.grid(row=1, column=0, sticky="nsew", pady=(0, 15))
+        original_frame.grid_rowconfigure(0, weight=1)
+        original_frame.grid_columnconfigure(0, weight=1)
+        
+        self.original_text_widget = tk.Text(
+            original_frame,
+            wrap="word",
+            bg=self.colors['surface'],
+            fg=self.colors['text'],
+            state="disabled",
+            relief="flat",
+            padx=10,
+            pady=10
+        )
+        self.original_text_widget.grid(row=0, column=0, sticky="nsew")
+        
+        original_scrollbar = ttk.Scrollbar(original_frame, orient="vertical", command=self.original_text_widget.yview)
+        original_scrollbar.grid(row=0, column=1, sticky="ns")
+        self.original_text_widget.config(yscrollcommand=original_scrollbar.set)
+        
+        # Show original text
+        self.original_text_widget.config(state="normal")
+        self.original_text_widget.insert("1.0", self.initial_text)
+        self.original_text_widget.config(state="disabled")
+        
+        # AI Analysis section
+        ttk.Label(analysis_frame, text="AI Analysis").grid(row=2, column=0, sticky="w", pady=(0, 5))
+        
+        analysis_output_frame = ttk.Frame(analysis_frame, relief="solid", borderwidth=1)
+        analysis_output_frame.grid(row=3, column=0, sticky="nsew")
+        analysis_output_frame.grid_rowconfigure(0, weight=1)
+        analysis_output_frame.grid_columnconfigure(0, weight=1)
+        
+        self.analysis_text_widget = tk.Text(
+            analysis_output_frame,
+            wrap="word",
+            bg="#f8f9fa",
+            fg=self.colors['text'],
+            state="disabled",
+            relief="flat",
+            padx=10,
+            pady=10
+        )
+        self.analysis_text_widget.grid(row=0, column=0, sticky="nsew")
+        
+        analysis_scrollbar = ttk.Scrollbar(analysis_output_frame, orient="vertical", command=self.analysis_text_widget.yview)
+        analysis_scrollbar.grid(row=0, column=1, sticky="ns")
+        self.analysis_text_widget.config(yscrollcommand=analysis_scrollbar.set)
+    
+    def _create_error_navigation_tab(self, errors: List[ProofreadingError]):
+        """Create error navigation tab with beautiful error display."""
+        if self.errors_tab_frame:
+            self.notebook.forget(self.errors_tab_frame)
+        
+        self.errors_tab_frame = ttk.Frame(self.notebook, padding="15")
+        error_count = len(errors)
+        self.notebook.add(self.errors_tab_frame, text=f"Errors ({error_count})")
+        self.notebook.select(self.errors_tab_frame)
+        
+        self.errors_tab_frame.grid_rowconfigure(2, weight=1)
+        self.errors_tab_frame.grid_columnconfigure(0, weight=1)
+        
+        # Navigation header
+        nav_header = ttk.Frame(self.errors_tab_frame)
+        nav_header.grid(row=0, column=0, sticky="ew", pady=(0, 15))
+        nav_header.grid_columnconfigure(2, weight=1)
+        
+        # Navigation buttons
+        self.prev_button = ttk.Button(
+            nav_header, 
+            text="Previous", 
+            command=self._go_previous,
+            style="Outline.TButton"
+        )
+        self.prev_button.grid(row=0, column=0, padx=(0, 10))
+        
+        self.next_button = ttk.Button(
+            nav_header,
+            text="Next",
+            command=self._go_next,
+            style="Outline.TButton"
+        )
+        self.next_button.grid(row=0, column=1, padx=(0, 20))
+        
+        # Error counter
+        self.counter_label = ttk.Label(
+            nav_header,
+            textvariable=self.error_counter_var
+        )
+        self.counter_label.grid(row=0, column=2, sticky="w")
+        
+        # Quick stats
+        stats_text = self._get_error_stats_text(errors)
+        stats_label = ttk.Label(
+            nav_header,
+            text=stats_text,
+            foreground=self.colors['muted']
+        )
+        stats_label.grid(row=0, column=3, sticky="e")
+        
+        # Current error display
+        self._create_error_display_section(self.errors_tab_frame)
+        
+        # Update navigation
+        self._update_error_navigation()
+    
+    def _create_error_display_section(self, parent):
+        """Create beautiful error display section."""
+        # Error details frame
+        details_frame = ttk.LabelFrame(parent, text=" Error Details ", padding="20")
+        details_frame.grid(row=1, column=0, sticky="ew", pady=(0, 15))
+        details_frame.grid_columnconfigure(1, weight=1)
+        
+        # Error type with colored badge
+        ttk.Label(details_frame, text="Type:").grid(row=0, column=0, sticky="nw", padx=(0, 10))
+        self.error_type_label = ttk.Label(details_frame, text="")
+        self.error_type_label.grid(row=0, column=1, sticky="w")
+        
+        # Original text (highlighted)
+        ttk.Label(details_frame, text="Original:").grid(row=1, column=0, sticky="nw", padx=(0, 10), pady=(5, 0))
+        
+        self.original_error_text = tk.Text(
+            details_frame,
+            height=2,
+            wrap="word",
+            bg=self.colors['error_bg'],
+            fg=self.colors['text'],
+            state="disabled",
+            relief="flat",
+            padx=5,
+            pady=5
+        )
+        self.original_error_text.grid(row=1, column=1, sticky="ew", pady=(10, 0))
+        
+        # Suggested correction
+        ttk.Label(details_frame, text="Suggestion:").grid(row=2, column=0, sticky="nw", padx=(0, 10), pady=(5, 0))
+        
+        self.suggested_text = tk.Text(
+            details_frame,
+            height=2,
+            wrap="word",
+            bg=self.colors['surface'],
+            fg=self.colors['text'],
+            state="disabled",
+            relief="solid",
+            borderwidth=1,
+            padx=5,
+            pady=5
+        )
+        self.suggested_text.grid(row=2, column=1, sticky="ew", pady=(10, 0))
+        
+        # Explanation
+        ttk.Label(details_frame, text="Explanation:").grid(row=3, column=0, sticky="nw", padx=(0, 10), pady=(5, 0))
+        self.explanation_label = ttk.Label(
+            details_frame, 
+            text="",
+            wraplength=500
+        )
+        self.explanation_label.grid(row=3, column=1, sticky="w", pady=(10, 0))
         
         # Context display
-        context_frame = ttk.LabelFrame(errors_frame, text="Context", padding=5)
+        context_frame = ttk.LabelFrame(parent, text=" Context ", padding="15")
         context_frame.grid(row=2, column=0, sticky="nsew")
         context_frame.grid_rowconfigure(0, weight=1)
         context_frame.grid_columnconfigure(0, weight=1)
         
-        context_text = tk.Text(context_frame, wrap="word", bg=text_bg, fg=text_fg, font=("Segoe UI", 9), state="disabled")
-        context_text.grid(row=0, column=0, sticky="nsew")
+        self.context_text = tk.Text(
+            context_frame,
+            wrap="word",
+            bg=self.colors['surface'],
+            fg=self.colors['text'],
+            state="disabled",
+            relief="flat",
+            padx=10,
+            pady=5
+        )
+        self.context_text.grid(row=0, column=0, sticky="nsew")
         
         # Action buttons
-        action_frame = ttk.Frame(errors_frame)
-        action_frame.grid(row=3, column=0, sticky="ew", pady=(10, 0))
+        action_frame = ttk.Frame(parent)
+        action_frame.grid(row=3, column=0, sticky="ew", pady=(15, 0))
         
-        def _apply_correction():
-            current = current_error_index.get()
-            error = errors_list[current]
-            
-            if current in applied_corrections:
-                messagebox.showinfo("Already Applied", "This correction has already been applied.")
-                return
-            
-            try:
-                original = error.get("original", "")
-                suggestion = error.get("suggestion", "")
-                
-                if not original or not suggestion:
-                    messagebox.showerror("Error", "Invalid error data.")
-                    return
-                
-                # Apply correction to editor
-                editor_content = editor.get("1.0", "end-1c")
-                if original in editor_content:
-                    updated_content = editor_content.replace(original, suggestion, 1)
-                    editor.delete("1.0", "end")
-                    editor.insert("1.0", updated_content)
-                    applied_corrections.add(current)
-                    messagebox.showinfo("Applied", "Correction applied successfully.")
-                    if current < len(errors_list) - 1:
-                        _go_next()
-                else:
-                    messagebox.showwarning("Not Found", "Original text not found in editor.")
-            except Exception as e:
-                messagebox.showerror("Error", f"Failed to apply correction: {str(e)}")
+        self.apply_button = ttk.Button(
+            action_frame,
+            text="Apply Correction",
+            command=self._apply_current_correction,
+            style="Accent.TButton"
+        )
+        self.apply_button.pack(side="left", padx=(0, 10))
         
-        apply_btn = ttk.Button(action_frame, text="Apply Correction", command=_apply_correction)
-        apply_btn.pack(side="left", padx=5)
+        self.skip_button = ttk.Button(
+            action_frame,
+            text="Skip This Error",
+            command=self._go_next,
+            style="Outline.TButton"
+        )
+        self.skip_button.pack(side="left", padx=(0, 10))
         
-        skip_btn = ttk.Button(action_frame, text="Skip", command=_go_next)
-        skip_btn.pack(side="left", padx=5)
-        
-        def _show_current_error():
-            """Update UI to show current error details."""
-            current = current_error_index.get()
-            if current >= len(errors_list):
-                return
-                
-            error = errors_list[current]
-            type_value.config(text=error.get("type", "Unknown"))
-            
-            # Update original text
-            original_text.config(state="normal")
-            original_text.delete("1.0", "end")
-            original_text.insert("1.0", error.get("original", ""))
-            original_text.config(state="disabled")
-            
-            # Update suggested text
-            suggested_text.config(state="normal")
-            suggested_text.delete("1.0", "end")
-            suggested_text.insert("1.0", error.get("suggestion", ""))
-            suggested_text.config(state="disabled")
-            
-            # Update context
-            context = error.get("context", error.get("original", ""))
-            context_text.config(state="normal")
-            context_text.delete("1.0", "end")
-            context_text.insert("1.0", context)
-            context_text.config(state="disabled")
-            
-            # Update apply button state
-            if current in applied_corrections:
-                apply_btn.config(text="Applied ✓", state="disabled")
-            else:
-                apply_btn.config(text="Apply Correction", state="normal")
-        
-        # Store references for updates
-        errors_frame._type_value = type_value
-        errors_frame._original_text = original_text
-        errors_frame._suggested_text = suggested_text
-        errors_frame._context_text = context_text
-        errors_frame._apply_btn = apply_btn
-        errors_frame._show_current_error = _show_current_error
-        errors_frame._update_navigation = _update_navigation
-        
-        # Initialize display
-        _update_navigation()
+        # Progress info
+        applied_label = ttk.Label(
+            action_frame,
+            text="",
+            foreground=self.colors['success']
+        )
+        applied_label.pack(side="right")
+        self.applied_label = applied_label
     
-    def _start_proofreading():
-        """Start the proofreading process."""
-        if is_processing.get():
+    def _create_summary_tab(self):
+        """Create results summary tab."""
+        if self.summary_tab_frame:
+            self.notebook.forget(self.summary_tab_frame)
+        
+        self.summary_tab_frame = ttk.Frame(self.notebook, padding="20")
+        self.notebook.add(self.summary_tab_frame, text="Summary")
+        
+        # Add summary content here
+        summary_text = self._generate_summary_text()
+        
+        summary_label = ttk.Label(
+            self.summary_tab_frame,
+            text=summary_text,
+            justify="left"
+        )
+        summary_label.pack(anchor="w")
+    
+    def _create_footer(self, parent):
+        """Create footer with action buttons."""
+        footer_frame = ttk.Frame(parent)
+        footer_frame.grid(row=3, column=0, sticky="ew")
+        
+        ttk.Button(
+            footer_frame,
+            text="Close",
+            command=self._on_close,
+            style="Outline.TButton"
+        ).pack(side="right")
+        
+        ttk.Button(
+            footer_frame,
+            text="Restart Analysis", 
+            command=self._restart_analysis,
+            style="Outline.TButton"
+        ).pack(side="right", padx=(0, 10))
+    
+    def _bind_events(self):
+        """Bind keyboard shortcuts and events."""
+        self.window.bind("<Escape>", lambda e: self._on_close())
+        self.window.bind("<F5>", lambda e: self._restart_analysis())
+        self.window.bind("<Left>", lambda e: self._go_previous())
+        self.window.bind("<Right>", lambda e: self._go_next())
+        self.window.bind("<Return>", lambda e: self._apply_current_correction())
+    
+    # Event Handlers
+    def _start_proofreading(self):
+        """Start AI-powered proofreading analysis."""
+        if self.session and self.session.is_processing:
             return
-            
-        is_processing.set(True)
-        start_button.config(state="disabled", text="Processing...")
-        status_label.config(text="Processing...")
-        progress_bar.start(10)
-        progress_label.config(text="Analyzing text with LLM...")
         
-        # Clear previous response
-        response_text_widget.config(state="normal")
-        response_text_widget.delete("1.0", "end")
-        response_text_widget.config(state="disabled")
-        accumulated_response.set("")
+        custom_instructions = self.instructions_entry.get().strip()
         
-        # Get custom instructions
-        custom_instructions = instructions_entry.get().strip()
-        instructions_part = f"Additional instructions: {custom_instructions}" if custom_instructions else ""
-        
-        # Get prompt template
-        prompt_template = llm_state._global_default_prompts.get("proofreading")
-        if not prompt_template:
-            messagebox.showerror("Error", "Proofreading prompt template not found.")
-            _reset_ui()
-            return
-            
-        full_prompt = prompt_template.format(
-            text_to_check=text_to_check,
-            custom_instructions=instructions_part
+        # Create new session
+        self.session = self.proofreading_service.start_proofreading_session(
+            self.initial_text, 
+            custom_instructions
         )
         
-        # Start streaming request
-        def on_chunk(chunk):
-            current_response = accumulated_response.get() + chunk
-            accumulated_response.set(current_response)
+        # Setup callbacks
+        self.session.on_status_change = self._on_status_change
+        self.session.on_progress_change = self._on_progress_change  
+        self.session.on_chunk_received = self._on_chunk_received
+        self.session.on_errors_found = self._on_errors_found
+        self.session.on_error = self._on_analysis_error
+        
+        # Update UI
+        self.analyze_button.config(state="disabled", text="Analyzing...")
+        self.status_indicator.config(text="Analyzing...", foreground=self.colors['primary'])
+        
+        # Start analysis
+        self.proofreading_service.analyze_text(self.session, self.editor)
+        
+        debug_console.log("Proofreading analysis started", level='INFO')
+    
+    def _restart_analysis(self):
+        """Restart the proofreading analysis."""
+        # Reset UI
+        if hasattr(self, 'errors_tab_frame') and self.errors_tab_frame:
+            self.notebook.forget(self.errors_tab_frame)
+            self.errors_tab_frame = None
             
-            # Update response display
-            response_text_widget.config(state="normal")
-            response_text_widget.delete("1.0", "end")
-            response_text_widget.insert("1.0", current_response)
-            response_text_widget.see("end")
-            response_text_widget.config(state="disabled")
+        if hasattr(self, 'summary_tab_frame') and self.summary_tab_frame:
+            self.notebook.forget(self.summary_tab_frame)
+            self.summary_tab_frame = None
+        
+        self.analysis_text_widget.config(state="normal")
+        self.analysis_text_widget.delete("1.0", "end")
+        self.analysis_text_widget.config(state="disabled")
+        
+        self.analyze_button.config(state="normal", text="Start Analysis")
+        self.status_indicator.config(text="Ready", foreground=self.colors['muted'])
+        
+        # Start new analysis
+        self._start_proofreading()
+    
+    def _go_previous(self):
+        """Navigate to previous error."""
+        if self.session and self.session.go_to_previous_error():
+            self._update_error_navigation()
+    
+    def _go_next(self):
+        """Navigate to next error."""
+        if self.session and self.session.go_to_next_error():
+            self._update_error_navigation()
+    
+    def _apply_current_correction(self):
+        """Apply current error's correction."""
+        if not self.session:
+            return
             
-        def on_success(final_text):
-            _reset_ui()
-            try:
-                cleaned_response = llm_utils.clean_full_llm_response(final_text)
-                debug_console.log(f"Cleaned response (first 200 chars): {cleaned_response[:200]}", level='DEBUG')
-                
-                # Parse JSON response
-                errors_data = json.loads(cleaned_response)
-                debug_console.log(f"Parsed JSON successfully", level='INFO')
-                
-                # Use schema validation for robust error handling
-                is_valid, normalized_errors = validate_proofreading_response(errors_data)
-                
-                if not is_valid:
-                    debug_console.log(f"Invalid response structure detected", level='WARNING')
-                    debug_console.log(f"Response keys: {list(errors_data.keys()) if isinstance(errors_data, dict) else 'Not a dict'}", level='DEBUG')
-                    
-                    # Try to handle malformed response gracefully
-                    if isinstance(errors_data, list):
-                        # Response is a direct array instead of {"errors": [...]}
-                        debug_console.log("Response is array instead of object, attempting conversion", level='INFO')
-                        is_valid, normalized_errors = validate_proofreading_response({"errors": errors_data})
-                    
-                    # If still invalid, show a helpful error message
-                    if not is_valid:
-                        # Check if response looks like metadata extraction instead of proofreading
-                        forbidden_fields = ["title", "authors", "journal", "volume", "issue", "pages", "doi", "abstract", "date"]
-                        if isinstance(errors_data, dict) and any(field in errors_data for field in forbidden_fields):
-                            error_msg = "The LLM extracted document metadata instead of finding proofreading errors. This suggests the model misunderstood the task."
-                        else:
-                            error_msg = "The LLM response does not match the expected proofreading format."
-                        
-                        status_label.config(text="Wrong response format")
-                        progress_label.config(text=error_msg)
-                        messagebox.showerror("Format Error", 
-                            f"{error_msg}\n\nPlease try again. If this persists, try a different model or adjust the custom instructions.")
-                        return
-                
-                nonlocal errors_list
-                errors_list = normalized_errors
-                
-                debug_console.log(f"Validated and normalized {len(errors_list)} errors", level='INFO')
-                
-                if not errors_list:
-                    status_label.config(text="No errors found")
-                    progress_label.config(text="Analysis complete - no errors detected")
-                else:
-                    status_label.config(text=f"Found {len(errors_list)} errors")
-                    progress_label.config(text=f"Analysis complete - {len(errors_list)} errors found")
-                    _show_errors_tab()
-                    
-            except json.JSONDecodeError as e:
-                debug_console.log(f"JSON parsing error: {e}", level='ERROR')
-                debug_console.log(f"Raw response: {cleaned_response}", level='ERROR')
-                status_label.config(text="Invalid JSON response")
-                progress_label.config(text="LLM did not return valid JSON")
-                messagebox.showerror("JSON Error", f"The LLM response is not valid JSON. This should not happen with structured output. Raw response is shown in the 'Text & Analysis' tab.")
-            except Exception as e:
-                debug_console.log(f"Error processing response: {e}", level='ERROR')
-                debug_console.log(f"Response data: {cleaned_response}", level='ERROR')
-                status_label.config(text="Processing error")
-                progress_label.config(text=f"Error: {str(e)}")
-                messagebox.showerror("Processing Error", f"Failed to process response: {str(e)}")
+        if self.session.apply_current_correction(self.editor):
+            self.applied_label.config(text=f"Correction applied!", foreground=self.colors['success'])
+            self.apply_button.config(state="disabled", text="Applied")
+            
+            # Auto-advance to next error
+            self.window.after(1000, self._go_next)
+        else:
+            messagebox.showwarning("Application Failed", 
+                "Could not apply the correction. The original text may have been modified.")
+    
+    def _update_error_navigation(self):
+        """Update error navigation UI."""
+        if not self.session or not self.session.errors:
+            return
         
-        def on_error(error_msg):
-            _reset_ui()
-            status_label.config(text="Request failed")
-            progress_label.config(text=f"Error: {error_msg}")
-            messagebox.showerror("Request Error", f"Proofreading request failed: {error_msg}")
+        current_error = self.session.get_current_error()
+        if not current_error:
+            return
         
-        def _reset_ui():
-            is_processing.set(False)
-            start_button.config(state="normal", text="Start Proofreading")
-            progress_bar.stop()
+        # Update counter
+        current_idx = self.session.current_error_index + 1
+        total = len(self.session.errors)
+        self.error_counter_var.set(f"Error {current_idx} of {total}")
         
-        # Start streaming request with structured output
-        json_schema = get_proofreading_schema()
-        start_streaming_request(
-            editor=editor,
-            prompt=full_prompt,
-            model_name=llm_state.model_rephrase,
-            on_chunk=on_chunk,
-            on_success=on_success,
-            on_error=on_error,
-            task_type="proofreading",
-            json_schema=json_schema
-        )
+        # Update navigation buttons
+        self.prev_button.config(state="normal" if self.session.current_error_index > 0 else "disabled")
+        self.next_button.config(state="normal" if self.session.current_error_index < total - 1 else "disabled")
+        
+        # Update error details with color coding
+        error_color = self.colors.get(f'{current_error.type.value}_color', self.colors['primary'])
+        self.error_type_label.config(text=current_error.type.value.title(), foreground=error_color)
+        
+        # Update text widgets
+        self.original_error_text.config(state="normal")
+        self.original_error_text.delete("1.0", "end")
+        self.original_error_text.insert("1.0", current_error.original)
+        self.original_error_text.config(state="disabled")
+        
+        self.suggested_text.config(state="normal")
+        self.suggested_text.delete("1.0", "end")
+        self.suggested_text.insert("1.0", current_error.suggestion)
+        self.suggested_text.config(state="disabled")
+        
+        self.explanation_label.config(text=current_error.explanation)
+        
+        self.context_text.config(state="normal")
+        self.context_text.delete("1.0", "end")
+        self.context_text.insert("1.0", current_error.context)
+        self.context_text.config(state="disabled")
+        
+        # Update apply button
+        if current_error.is_applied:
+            self.apply_button.config(state="disabled", text="Applied")
+            self.applied_label.config(text="Already applied", foreground=self.colors['success'])
+        else:
+            self.apply_button.config(state="normal", text="Apply Correction")
+            self.applied_label.config(text="")
+        
+        # Update applied corrections count
+        applied_count = self.session.get_applied_corrections_count()
+        if applied_count > 0:
+            self.applied_label.config(text=f"{applied_count}/{total} corrections applied", foreground=self.colors['success'])
     
-    # Bind start button
-    start_button.config(command=_start_proofreading)
+    # Callback handlers
+    def _on_status_change(self, status: str):
+        """Handle status updates."""
+        self.status_var.set(status)
+        
+        if "found" in status.lower():
+            # Analysis complete
+            self.analyze_button.config(state="normal", text="Restart Analysis")
+            self.status_indicator.config(text="Analysis complete", foreground=self.colors['success'])
     
-    # Keyboard shortcuts
-    dialog.bind("<Escape>", lambda e: dialog.destroy())
-    dialog.bind("<Return>", lambda e: _start_proofreading() if not is_processing.get() else None)
+    def _on_progress_change(self, progress: str):
+        """Handle progress updates.""" 
+        self.progress_var.set(progress)
     
-    # Set initial focus
-    instructions_entry.focus_set()
+    def _on_chunk_received(self, chunk: str):
+        """Handle streaming text chunks."""
+        self.analysis_text_widget.config(state="normal")
+        self.analysis_text_widget.delete("1.0", "end")
+        self.analysis_text_widget.insert("1.0", chunk)
+        self.analysis_text_widget.see("end")
+        self.analysis_text_widget.config(state="disabled")
     
-    dialog.wait_window()
+    def _on_errors_found(self, errors: List[ProofreadingError]):
+        """Handle when errors are found."""
+        if errors:
+            self._create_error_navigation_tab(errors)
+        
+        self._create_summary_tab()
+        
+        debug_console.log(f"Proofreading UI updated with {len(errors)} errors", level='INFO')
+    
+    def _on_analysis_error(self, error_msg: str):
+        """Handle analysis errors."""
+        self.analyze_button.config(state="normal", text="Retry Analysis")
+        self.status_indicator.config(text="Analysis failed", foreground=self.colors['danger'])
+        
+        messagebox.showerror("Analysis Error", error_msg)
+    
+    # Utility methods
+    def _get_error_stats_text(self, errors: List[ProofreadingError]) -> str:
+        """Generate error statistics text."""
+        if not errors:
+            return "No errors found"
+        
+        stats = {}
+        for error in errors:
+            error_type = error.type.value
+            stats[error_type] = stats.get(error_type, 0) + 1
+        
+        stats_parts = [f"{count} {error_type}" for error_type, count in stats.items()]
+        return " • ".join(stats_parts)
+    
+    def _generate_summary_text(self) -> str:
+        """Generate summary text for results."""
+        if not self.session or not self.session.errors:
+            return "No errors detected! Your text looks great."
+        
+        total = len(self.session.errors)
+        applied = self.session.get_applied_corrections_count()
+        
+        summary = f"Analysis Results\n\n"
+        summary += f"Total errors found: {total}\n"
+        summary += f"Corrections applied: {applied}\n"
+        summary += f"Remaining errors: {total - applied}\n\n"
+        
+        if applied == total:
+            summary += "Excellent! All errors have been corrected."
+        elif applied > 0:
+            summary += f"Great progress! {applied} corrections applied."
+        else:
+            summary += "Review the errors and apply corrections as needed."
+        
+        return summary
+    
+    def _on_close(self):
+        """Handle dialog close."""
+        if self.session and self.session.is_processing:
+            if messagebox.askyesno("Analysis in Progress", 
+                                 "Analysis is still running. Are you sure you want to close?"):
+                self.window.destroy()
+        else:
+            self.window.destroy()
