@@ -1,16 +1,26 @@
-TASK: Perform thorough proofreading to detect ALL errors that would make the document appear unprofessional or undermine its credibility. Focus on finding inconsistencies, syntax errors, spelling mistakes, grammar issues, and stylistic problems.
+TASK: Perform EXHAUSTIVE proofreading analysis. You MUST analyze EVERY single sentence, phrase, and word. Do NOT stop at the first few errors - continue analyzing until you have examined the ENTIRE text thoroughly. Your goal is to catch ALL errors that would make this document appear unprofessional or undermine credibility.
 
 {custom_instructions}
 
-ANALYSIS APPROACH:
-1. SPELLING: Check for misspelled words, typos, incorrect word forms
-2. GRAMMAR: Identify subject-verb disagreements, incorrect tense usage, article errors, pronoun misuse
-3. SYNTAX: Find sentence structure problems, run-on sentences, fragments, incorrect word order
-4. PUNCTUATION: Locate missing or incorrect punctuation marks, comma splices, apostrophe errors
-5. CONSISTENCY: Check for inconsistent terminology, formatting, capitalization, number formats
-6. CLARITY: Identify confusing phrasing, ambiguous references, unclear expressions
-7. STYLE: Find inappropriate tone, redundant phrases, awkward constructions
-8. CONTENT COHERENCE: Detect sentences or phrases that are completely out of context or irrelevant to the document's subject matter, random insertions, topic drift, non-sequiturs
+MANDATORY THOROUGHNESS REQUIREMENTS:
+- Read the ENTIRE text word by word, sentence by sentence
+- Do NOT get lazy or skip sections - analyze EVERYTHING
+- Check EVERY sentence for logical flow and coherence with surrounding content
+- Examine EVERY word for correctness
+- Verify EVERY punctuation mark
+- Do NOT stop after finding a few errors - keep going until the end
+- Pay special attention to sentences that seem disconnected, random, or completely unrelated to the main topic
+
+COMPREHENSIVE ANALYSIS CHECKLIST (examine ALL of these):
+1. SPELLING: Check EVERY word for misspellings, typos, incorrect word forms, wrong word usage
+2. GRAMMAR: Identify subject-verb disagreements, incorrect tense usage, article errors, pronoun misuse, sentence fragments
+3. SYNTAX: Find sentence structure problems, run-on sentences, fragments, incorrect word order, missing words
+4. PUNCTUATION: Locate missing or incorrect punctuation marks, comma splices, apostrophe errors, quotation mark issues
+5. CONSISTENCY: Check for inconsistent terminology, formatting, capitalization, number formats throughout the ENTIRE document
+6. CLARITY: Identify confusing phrasing, ambiguous references, unclear expressions, vague language
+7. STYLE: Find inappropriate tone, redundant phrases, awkward constructions, wordiness, passive voice overuse
+8. CONTENT COHERENCE: Detect sentences or phrases that are completely out of context, irrelevant to the document's subject matter, random insertions, topic drift, non-sequiturs, logical inconsistencies, contradictions
+9. LOGICAL FLOW: Ensure each sentence logically follows from the previous one and contributes to the overall argument or narrative
 
 CRITICAL: You must return ONLY a JSON object with exactly this structure. Do NOT return article metadata, abstracts, or bibliographic information.
 
@@ -27,21 +37,46 @@ REQUIRED JSON FORMAT:
   ]
 }}
 
-STRICT RULES:
+ABSOLUTE REQUIREMENTS:
+- ANALYZE EVERY SINGLE WORD AND SENTENCE - no exceptions, no shortcuts
+- Do NOT stop analyzing until you reach the very end of the text
 - ONLY analyze for language errors and content coherence (grammar, spelling, punctuation, style, clarity, syntax, coherence)
 - DO NOT extract metadata, titles, authors, journals, or bibliographic data
 - type MUST be exactly one of: grammar, spelling, punctuation, style, clarity, syntax, coherence
 - importance MUST be exactly one of: high, medium, low
 - original MUST be exact text from the input that contains an error
 - suggestion MUST be the corrected version of that text
-- HIGH importance: Critical errors that severely impact professionalism (major grammar, spelling, content completely out of context, factual inconsistencies)
-- MEDIUM importance: Noticeable errors that affect readability (punctuation, minor grammar, style issues, minor coherence problems)
-- LOW importance: Minor improvements for polish (style preferences, minor clarity enhancements)
-- Be thorough - catch ALL errors, even minor ones
-- If NO errors found, return: {{"errors": []}}
+
+IMPORTANCE CLASSIFICATION:
+- HIGH importance: Critical errors that severely impact professionalism (major grammar errors, misspellings, sentences completely out of context or unrelated to the topic, factual inconsistencies, logical contradictions, missing words that change meaning)
+- MEDIUM importance: Noticeable errors that affect readability (punctuation issues, minor grammar problems, style inconsistencies, unclear phrasing, minor coherence problems)
+- LOW importance: Minor improvements for polish (style preferences, minor clarity enhancements, redundancy, wordiness)
+
+ANTI-LAZINESS ENFORCEMENT:
+- You MUST find and report ALL errors, not just the obvious ones
+- You MUST analyze the COMPLETE text from beginning to end
+- Pay extra attention to detecting sentences that don't belong or seem randomly inserted
+- Check if each paragraph and sentence logically connects to the overall topic
+- Do NOT assume the text is mostly correct - examine everything critically
+- If you find 20+ errors, keep going - there might be more
+- Be especially vigilant for content that seems out of place or irrelevant
+
+COMPLETION REQUIREMENTS:
+- If NO errors found after examining EVERY word, return: {{"errors": []}}
+- If errors found, list ALL of them without exception
 - Return ONLY the JSON object, nothing else
 
 TEXT TO PROOFREAD:
 {text_to_check}
+
+FINAL REMINDER BEFORE YOU START:
+- You are about to analyze the text above. You MUST read EVERY SINGLE WORD.
+- Do NOT skim, do NOT skip sentences, do NOT assume sections are correct.
+- Look for sentences that seem random, out of place, or unrelated to the main topic.
+- Check for logical inconsistencies between sentences and paragraphs.
+- Be thorough, be meticulous, be complete. Your reputation depends on finding ALL errors.
+- Remember: Professional documents require PERFECT proofreading.
+
+START YOUR EXHAUSTIVE ANALYSIS NOW.
 
 JSON RESPONSE:

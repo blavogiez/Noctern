@@ -107,13 +107,29 @@ def get_available_models():
     config = app_config.load_config()
     if config.get("gemini_api_key"):
         gemini_models = [
+            # Gemini 2.5 Family (Latest)
+            "gemini/gemini-2.5-pro",
+            "gemini/gemini-2.5-flash", 
+            "gemini/gemini-2.5-flash-lite",
             "gemini/gemini-2.5-pro-exp-01-28",
-            "gemini/gemini-2.5-flash-exp-01-28", 
-            "gemini/gemini-2.0-flash-exp",
+            "gemini/gemini-2.5-flash-exp-01-28",
+            
+            # Gemini 2.0 Family  
             "gemini/gemini-2.0-flash",
+            "gemini/gemini-2.0-flash-lite",
+            "gemini/gemini-2.0-pro",
+            "gemini/gemini-2.0-flash-exp",
+            "gemini/gemini-2.0-flash-thinking",
+            
+            # Gemini 1.5 Family (Legacy but still available)
+            "gemini/gemini-1.5-pro",
+            "gemini/gemini-1.5-flash",
+            "gemini/gemini-1.5-flash-8b",
             "gemini/gemini-1.5-pro-latest",
             "gemini/gemini-1.5-flash-latest",
             "gemini/gemini-1.5-flash-8b-latest",
+            
+            # Classic models
             "gemini/gemini-pro"
         ]
         model_names.extend(gemini_models)
@@ -154,9 +170,21 @@ def _request_gemini_generation(prompt_text, model_name, stream=True, json_schema
                     debug_console.log("Gemini generation cancelled", level='INFO')
                     return
                 
-                chunk_text = chunk.text
-                full_content += chunk_text
-                yield {"success": True, "chunk": chunk_text, "done": False}
+                # Handle chunks that might not have text
+                try:
+                    chunk_text = chunk.text if hasattr(chunk, 'text') and chunk.text else ""
+                    if chunk_text:
+                        full_content += chunk_text
+                        yield {"success": True, "chunk": chunk_text, "done": False}
+                except Exception as chunk_error:
+                    debug_console.log(f"Chunk processing error: {chunk_error}", level='WARNING')
+                    # Check if response was blocked
+                    if hasattr(chunk, 'candidates') and chunk.candidates:
+                        candidate = chunk.candidates[0]
+                        if hasattr(candidate, 'finish_reason') and candidate.finish_reason == 1:
+                            yield {"success": False, "error": "Content was filtered by safety settings. Try with different text or a different model.", "done": True}
+                            return
+                    continue
             
             # Record usage for streaming
             try:
@@ -178,10 +206,28 @@ def _request_gemini_generation(prompt_text, model_name, stream=True, json_schema
                 prompt_text,
                 generation_config=generation_config if json_schema else None
             )
-            input_tokens = response.usage_metadata.prompt_token_count
-            output_tokens = response.usage_metadata.candidates_token_count
-            record_usage(input_tokens, output_tokens)
-            yield {"success": True, "data": response.text, "done": True}
+            
+            # Check if response was blocked before accessing text
+            if hasattr(response, 'candidates') and response.candidates:
+                candidate = response.candidates[0]
+                if hasattr(candidate, 'finish_reason') and candidate.finish_reason == 1:
+                    yield {"success": False, "error": "Content was filtered by safety settings. Try with different text or a different model.", "done": True}
+                    return
+            
+            # Try to get text safely
+            try:
+                response_text = response.text if hasattr(response, 'text') and response.text else ""
+                if not response_text:
+                    yield {"success": False, "error": "Empty response from Gemini. Content may have been filtered.", "done": True}
+                    return
+                
+                input_tokens = response.usage_metadata.prompt_token_count
+                output_tokens = response.usage_metadata.candidates_token_count
+                record_usage(input_tokens, output_tokens)
+                yield {"success": True, "data": response_text, "done": True}
+            except Exception as text_error:
+                debug_console.log(f"Error accessing response text: {text_error}", level='ERROR')
+                yield {"success": False, "error": "Failed to access response text. Content may have been filtered by safety settings.", "done": True}
 
     except Exception as e:
         error_message = f"Gemini API error: {str(e)}"

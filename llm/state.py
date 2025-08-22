@@ -20,6 +20,7 @@ model_generation = "default"
 model_rephrase = "default"
 model_debug = "default"
 model_style = "default"
+model_proofreading = "default"
 last_style_intensity = 5 # Setting: default intensity on 1-10 scale
 
 

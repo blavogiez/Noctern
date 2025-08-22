@@ -41,8 +41,19 @@ class ProofreadingError:
     @classmethod
     def from_dict(cls, data: Dict) -> 'ProofreadingError':
         """Create ProofreadingError from dictionary."""
+        error_type_str = data.get('type', 'grammar').lower().strip()
+        
+        # Try to create ErrorType, with fallback
+        try:
+            error_type = ErrorType(error_type_str)
+        except ValueError as e:
+            debug_console.log(f"Invalid error type '{error_type_str}', falling back to grammar: {e}", level='WARNING')
+            error_type = ErrorType('grammar')
+        
+        debug_console.log(f"Creating error of type: {error_type.value}", level='DEBUG')
+        
         return cls(
-            type=ErrorType(data.get('type', 'grammar')),
+            type=error_type,
             original=data.get('original', ''),
             suggestion=data.get('suggestion', ''),
             explanation=data.get('explanation', ''),
@@ -235,7 +246,12 @@ class ProofreadingService:
                         return
                 
                 # Convert to ProofreadingError objects
+                debug_console.log(f"Processing {len(normalized_errors)} normalized errors", level='INFO')
+                for i, error_data in enumerate(normalized_errors):
+                    debug_console.log(f"Error {i+1}: type='{error_data.get('type')}', original='{error_data.get('original', '')[:50]}...'", level='DEBUG')
+                
                 session.errors = [ProofreadingError.from_dict(error_data) for error_data in normalized_errors]
+                debug_console.log(f"Created {len(session.errors)} ProofreadingError objects", level='INFO')
                 session.current_error_index = 0
                 
                 # Update status
@@ -277,15 +293,31 @@ class ProofreadingService:
             session.is_processing = False
             session.status = "Analysis failed"
             debug_console.log(f"Proofreading request failed: {error_msg}", level='ERROR')
+            
+            # Provide helpful suggestions for common issues
+            enhanced_error = error_msg
+            if "filtered by safety settings" in error_msg.lower():
+                enhanced_error = ("Content was filtered by Gemini's safety settings.\n\n"
+                                "Suggestions:\n"
+                                "• Try using a different Gemini model (2.5-flash-lite or 2.0-flash)\n"
+                                "• Break your text into smaller sections\n"
+                                "• Check for potentially sensitive content\n"
+                                "• Use an Ollama model instead")
+            elif "empty response" in error_msg.lower():
+                enhanced_error = ("Gemini returned an empty response.\n\n"
+                                "This usually means:\n"
+                                "• Content was filtered by safety settings\n"
+                                "• Try a different model or smaller text sections")
+            
             if session.on_error:
-                session.on_error(f"AI analysis failed: {error_msg}")
+                session.on_error(enhanced_error)
         
         # Start AI analysis with structured output
         json_schema = get_proofreading_schema()
         start_streaming_request(
             editor=editor,
             prompt=full_prompt,
-            model_name=llm_state.model_rephrase,
+            model_name=llm_state.model_proofreading,
             on_chunk=on_chunk,
             on_success=on_success,
             on_error=on_error,

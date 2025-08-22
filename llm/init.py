@@ -78,7 +78,8 @@ def initialize_llm_service(root_window_ref, progress_bar_widget_ref,
     llm_state.model_rephrase = app_config.get("model_rephrase", "default")
     llm_state.model_debug = app_config.get("model_debug", "default")
     llm_state.model_style = app_config.get("model_style", "default")
-    debug_console.log(f"LLM models loaded: completion='{llm_state.model_completion}', generation='{llm_state.model_generation}', etc.", level='INFO')
+    llm_state.model_proofreading = app_config.get("model_proofreading", "default")
+    debug_console.log(f"LLM models loaded: completion='{llm_state.model_completion}', generation='{llm_state.model_generation}', proofreading='{llm_state.model_proofreading}', etc.", level='INFO')
 
     # Load global default prompts from the configuration file.
     _load_global_default_prompts()

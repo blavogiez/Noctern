@@ -101,7 +101,8 @@ def open_settings_window(root):
         "model_generation": "Generation:",
         "model_rephrase": "Rephrase:",
         "model_debug": "Debug:",
-        "model_style": "Style:"
+        "model_style": "Style:",
+        "model_proofreading": "Proofreading:"
     }
 
     def set_all_models_to(model_name):
@@ -231,6 +232,8 @@ def open_settings_window(root):
             llm_state.model_debug = updated_config['model_debug']
         if 'model_style' in updated_config:
             llm_state.model_style = updated_config['model_style']
+        if 'model_proofreading' in updated_config:
+            llm_state.model_proofreading = updated_config['model_proofreading']
         debug_console.log("LLM state updated with new model settings", level='INFO')
         
         # Apply font change immediately if changed

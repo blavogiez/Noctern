@@ -1,6 +1,5 @@
 """
-Professional proofreading user interface with modern UX.
-Beautiful, intuitive dialog for AI-powered document correction.
+Document proofreading dialog interface.
 """
 import tkinter as tk
 from tkinter import ttk, messagebox
@@ -12,14 +11,7 @@ from llm.proofreading_service import get_proofreading_service, ProofreadingSessi
 
 class ProofreadingDialog:
     """
-    Professional document proofreading interface.
-    
-    Features:
-    - Maximized window for optimal user experience  
-    - Real-time AI analysis with streaming feedback
-    - Intuitive error navigation and correction
-    - Beautiful modern UI with animations
-    - Clear progress indicators and status updates
+    Document proofreading dialog interface.
     """
     
     def __init__(self, parent, theme_getter, editor, initial_text: str):
@@ -43,7 +35,7 @@ class ProofreadingDialog:
         self._load_theme_colors()
     
     def _load_theme_colors(self):
-        """Load minimal color palette."""
+        """Load color theme settings."""
         self.colors = {
             'bg': self.theme_getter("root_bg", "#ffffff"),
             'surface': self.theme_getter("editor_bg", "#ffffff"),
@@ -58,96 +50,78 @@ class ProofreadingDialog:
             'punctuation_color': "#6600cc",
             'style_color': "#0066cc",
             'clarity_color': "#006600",
-            'syntax_color': "#990000"
+            'syntax_color': "#990000",
+            'coherence_color': "#cc6600"
         }
     
     def show(self):
-        """Display the proofreading dialog."""
+        """Display proofreading dialog."""
         self._create_window()
         self._setup_layout()
         self._bind_events()
         
-        # Show window and center focus
+        # Show window
         self.window.deiconify()
         self.window.focus_force()
         self.window.wait_window()
     
     def _create_window(self):
-        """Create and configure the main window."""
+        """Create and configure dialog window."""
         self.window = tk.Toplevel(self.parent)
-        self.window.title("Professional Document Proofreading")
+        self.window.title("Document Proofreading")
         self.window.configure(bg=self.colors['bg'])
         
-        # Maximize window for optimal experience
+        # Maximize window
         self.window.state('zoomed')
+        self.window.minsize(800, 600)
         self.window.transient(self.parent)
         self.window.grab_set()
         
-        # Prevent window from being destroyed accidentally
         self.window.protocol("WM_DELETE_WINDOW", self._on_close)
         
-        debug_console.log("Professional proofreading interface created", level='INFO')
+        debug_console.log("Proofreading dialog created", level='INFO')
     
     def _setup_layout(self):
-        """Create the beautiful, professional UI layout."""
-        # Main container with padding
-        main_container = ttk.Frame(self.window, padding="30")
+        """Create dialog layout."""
+        # Main container
+        main_container = ttk.Frame(self.window, padding="10")
         main_container.pack(fill="both", expand=True)
         main_container.grid_rowconfigure(2, weight=1)
         main_container.grid_columnconfigure(0, weight=1)
         
-        # Header section with title and status
+        # Create sections
         self._create_header(main_container)
-        
-        # Progress section with visual indicators
         self._create_progress_section(main_container)
-        
-        # Main content area with tabs
         self._create_content_area(main_container)
-        
-        # Footer with action buttons
         self._create_footer(main_container)
     
     def _create_header(self, parent):
-        """Create professional header with branding."""
+        """Create header section."""
         header_frame = ttk.Frame(parent)
         header_frame.grid(row=0, column=0, sticky="ew", pady=(0, 20))
         header_frame.grid_columnconfigure(1, weight=1)
         
-        # Title with icon
-        title_frame = ttk.Frame(header_frame)
-        title_frame.grid(row=0, column=0, sticky="w")
-        
+        # Title
         title_label = ttk.Label(
-            title_frame, 
+            header_frame, 
             text="Document Proofreading",
-            font=("Segoe UI", 16),
+            font=("Segoe UI", 12),
             foreground=self.colors['primary']
         )
-        title_label.pack(side="left")
-        
-        subtitle_label = ttk.Label(
-            title_frame,
-            text="Grammar and style checker",
-            foreground=self.colors['muted']
-        )
-        subtitle_label.pack(side="left", padx=(10, 0))
+        title_label.grid(row=0, column=0, sticky="w")
         
         # Status display
-        status_frame = ttk.Frame(header_frame)
-        status_frame.grid(row=0, column=1, sticky="e")
-        
         self.status_label = ttk.Label(
-            status_frame,
+            header_frame,
             textvariable=self.status_var,
             font=("Segoe UI", 10),
             foreground=self.colors['primary']
         )
-        self.status_label.pack(anchor="e")
+        self.status_label.grid(row=0, column=1, sticky="e")
     
     def _create_progress_section(self, parent):
-        """Create progress indicators and controls."""
-        progress_frame = ttk.LabelFrame(parent, text=" Analysis Progress ", padding="15")
+        """Create progress section."""
+        progress_frame = ttk.LabelFrame(parent, text=" Progress ", padding="10")
         progress_frame.grid(row=1, column=0, sticky="ew", pady=(0, 20))
         progress_frame.grid_columnconfigure(1, weight=1)
         
@@ -166,28 +140,33 @@ class ProofreadingDialog:
         )
         self.progress_label.grid(row=1, column=0, columnspan=3, sticky="w")
         
-        # Custom instructions
-        ttk.Label(progress_frame, text="Instructions:").grid(row=2, column=0, sticky="w", pady=(10, 5))
+        # Instructions and control
+        instructions_label = ttk.Label(progress_frame, text="Instructions (leaving blank is fine):")
+        instructions_label.grid(row=2, column=0, sticky="w", pady=(10, 5))
         
-        self.instructions_entry = ttk.Entry(
-            progress_frame, 
-            width=40
-        )
+        self.instructions_entry = ttk.Entry(progress_frame, width=40)
         self.instructions_entry.grid(row=3, column=0, columnspan=2, sticky="ew", pady=(0, 5))
         
-        # Start/Restart button
+        # Warning about processing time
+        warning_label = ttk.Label(
+            progress_frame, 
+            text="Note: Thorough analysis may take a while", 
+            foreground=self.colors['muted'],
+            font=("Segoe UI", 9)
+        )
+        warning_label.grid(row=4, column=0, columnspan=3, sticky="w", pady=(5, 0))
+        
         self.analyze_button = ttk.Button(
             progress_frame,
             text="Start Analysis",
-            style="Accent.TButton",
             command=self._start_proofreading
         )
         self.analyze_button.grid(row=3, column=2, sticky="e", padx=(10, 0))
     
     def _create_content_area(self, parent):
-        """Create main content area with tabs."""
-        # Notebook for organized content
-        self.notebook = ttk.Notebook(parent, padding="5")
+        """Create content area with tabs."""
+        # Content tabs
+        self.notebook = ttk.Notebook(parent)
         self.notebook.grid(row=2, column=0, sticky="nsew", pady=(0, 20))
         
         # Text Analysis Tab
@@ -200,8 +179,8 @@ class ProofreadingDialog:
         self.summary_tab_frame = None
     
     def _create_text_analysis_tab(self):
-        """Create text analysis tab with streaming output."""
-        analysis_frame = ttk.Frame(self.notebook, padding="15")
+        """Create text analysis tab."""
+        analysis_frame = ttk.Frame(self.notebook, padding="10")
         self.notebook.add(analysis_frame, text="Text Analysis")
         
         analysis_frame.grid_rowconfigure(1, weight=1)
@@ -262,11 +241,11 @@ class ProofreadingDialog:
         self.analysis_text_widget.config(yscrollcommand=analysis_scrollbar.set)
     
     def _create_error_navigation_tab(self, errors: List[ProofreadingError]):
-        """Create error navigation tab with beautiful error display."""
+        """Create error navigation tab."""
         if self.errors_tab_frame:
             self.notebook.forget(self.errors_tab_frame)
         
-        self.errors_tab_frame = ttk.Frame(self.notebook, padding="15")
+        self.errors_tab_frame = ttk.Frame(self.notebook, padding="10")
         error_count = len(errors)
         self.notebook.add(self.errors_tab_frame, text=f"Errors ({error_count})")
         self.notebook.select(self.errors_tab_frame)
@@ -283,16 +262,14 @@ class ProofreadingDialog:
         self.prev_button = ttk.Button(
             nav_header, 
             text="Previous", 
-            command=self._go_previous,
-            style="Outline.TButton"
+            command=self._go_previous
         )
         self.prev_button.grid(row=0, column=0, padx=(0, 10))
         
         self.next_button = ttk.Button(
             nav_header,
             text="Next",
-            command=self._go_next,
-            style="Outline.TButton"
+            command=self._go_next
         )
         self.next_button.grid(row=0, column=1, padx=(0, 20))
         
@@ -319,18 +296,18 @@ class ProofreadingDialog:
         self._update_error_navigation()
     
     def _create_error_display_section(self, parent):
-        """Create beautiful error display section."""
+        """Create error display section."""
         # Error details frame
-        details_frame = ttk.LabelFrame(parent, text=" Error Details ", padding="20")
+        details_frame = ttk.LabelFrame(parent, text=" Error Details ", padding="10")
         details_frame.grid(row=1, column=0, sticky="ew", pady=(0, 15))
         details_frame.grid_columnconfigure(1, weight=1)
         
-        # Error type with colored badge
+        # Error type
         ttk.Label(details_frame, text="Type:").grid(row=0, column=0, sticky="nw", padx=(0, 10))
         self.error_type_label = ttk.Label(details_frame, text="")
         self.error_type_label.grid(row=0, column=1, sticky="w")
         
-        # Original text (highlighted)
+        # Original text
         ttk.Label(details_frame, text="Original:").grid(row=1, column=0, sticky="nw", padx=(0, 10), pady=(5, 0))
         
         self.original_error_text = tk.Text(
@@ -397,16 +374,14 @@ class ProofreadingDialog:
         self.apply_button = ttk.Button(
             action_frame,
             text="Apply Correction",
-            command=self._apply_current_correction,
-            style="Accent.TButton"
+            command=self._apply_current_correction
         )
         self.apply_button.pack(side="left", padx=(0, 10))
         
         self.skip_button = ttk.Button(
             action_frame,
             text="Skip This Error",
-            command=self._go_next,
-            style="Outline.TButton"
+            command=self._go_next
         )
         self.skip_button.pack(side="left", padx=(0, 10))
         
@@ -420,11 +395,11 @@ class ProofreadingDialog:
         self.applied_label = applied_label
     
     def _create_summary_tab(self):
-        """Create results summary tab."""
+        """Create summary tab."""
         if self.summary_tab_frame:
             self.notebook.forget(self.summary_tab_frame)
         
-        self.summary_tab_frame = ttk.Frame(self.notebook, padding="20")
+        self.summary_tab_frame = ttk.Frame(self.notebook, padding="10")
         self.notebook.add(self.summary_tab_frame, text="Summary")
         
         # Add summary content here
@@ -438,26 +413,24 @@ class ProofreadingDialog:
         summary_label.pack(anchor="w")
     
     def _create_footer(self, parent):
-        """Create footer with action buttons."""
+        """Create footer buttons."""
         footer_frame = ttk.Frame(parent)
         footer_frame.grid(row=3, column=0, sticky="ew")
         
         ttk.Button(
             footer_frame,
             text="Close",
-            command=self._on_close,
-            style="Outline.TButton"
+            command=self._on_close
         ).pack(side="right")
         
         ttk.Button(
             footer_frame,
             text="Restart Analysis", 
-            command=self._restart_analysis,
-            style="Outline.TButton"
+            command=self._restart_analysis
         ).pack(side="right", padx=(0, 10))
     
     def _bind_events(self):
-        """Bind keyboard shortcuts and events."""
+        """Bind keyboard shortcuts."""
         self.window.bind("<Escape>", lambda e: self._on_close())
         self.window.bind("<F5>", lambda e: self._restart_analysis())
         self.window.bind("<Left>", lambda e: self._go_previous())
@@ -466,7 +439,7 @@ class ProofreadingDialog:
     
     # Event Handlers
     def _start_proofreading(self):
-        """Start AI-powered proofreading analysis."""
+        """Start proofreading analysis."""
         if self.session and self.session.is_processing:
             return
         
@@ -486,8 +459,8 @@ class ProofreadingDialog:
         self.session.on_error = self._on_analysis_error
         
         # Update UI
-        self.analyze_button.config(state="disabled", text="Analyzing...")
-        self.status_indicator.config(text="Analyzing...", foreground=self.colors['primary'])
+        self.analyze_button.config(state="disabled", text="Processing...")
+        self.status_indicator.config(text="Processing", foreground=self.colors['primary'])
         
         # Start analysis
         self.proofreading_service.analyze_text(self.session, self.editor)
@@ -495,7 +468,7 @@ class ProofreadingDialog:
         debug_console.log("Proofreading analysis started", level='INFO')
     
     def _restart_analysis(self):
-        """Restart the proofreading analysis."""
+        """Restart proofreading analysis."""
         # Reset UI
         if hasattr(self, 'errors_tab_frame') and self.errors_tab_frame:
             self.notebook.forget(self.errors_tab_frame)
@@ -516,17 +489,17 @@ class ProofreadingDialog:
         self._start_proofreading()
     
     def _go_previous(self):
-        """Navigate to previous error."""
+        """Go to previous error."""
         if self.session and self.session.go_to_previous_error():
             self._update_error_navigation()
     
     def _go_next(self):
-        """Navigate to next error."""
+        """Go to next error."""
         if self.session and self.session.go_to_next_error():
             self._update_error_navigation()
     
     def _apply_current_correction(self):
-        """Apply current error's correction."""
+        """Apply current correction."""
         if not self.session:
             return
             
@@ -541,7 +514,7 @@ class ProofreadingDialog:
                 "Could not apply the correction. The original text may have been modified.")
     
     def _update_error_navigation(self):
-        """Update error navigation UI."""
+        """Update error navigation."""
         if not self.session or not self.session.errors:
             return
         
@@ -558,7 +531,7 @@ class ProofreadingDialog:
         self.prev_button.config(state="normal" if self.session.current_error_index > 0 else "disabled")
         self.next_button.config(state="normal" if self.session.current_error_index < total - 1 else "disabled")
         
-        # Update error details with color coding
+        # Update error details
         error_color = self.colors.get(f'{current_error.type.value}_color', self.colors['primary'])
         self.error_type_label.config(text=current_error.type.value.title(), foreground=error_color)
         
@@ -595,7 +568,7 @@ class ProofreadingDialog:
     
     # Callback handlers
     def _on_status_change(self, status: str):
-        """Handle status updates."""
+        """Handle status change."""
         self.status_var.set(status)
         
         if "found" in status.lower():
@@ -604,11 +577,11 @@ class ProofreadingDialog:
             self.status_indicator.config(text="Analysis complete", foreground=self.colors['success'])
     
     def _on_progress_change(self, progress: str):
-        """Handle progress updates.""" 
+        """Handle progress change.""" 
         self.progress_var.set(progress)
     
     def _on_chunk_received(self, chunk: str):
-        """Handle streaming text chunks."""
+        """Handle text chunk."""
         self.analysis_text_widget.config(state="normal")
         self.analysis_text_widget.delete("1.0", "end")
         self.analysis_text_widget.insert("1.0", chunk)
@@ -616,7 +589,7 @@ class ProofreadingDialog:
         self.analysis_text_widget.config(state="disabled")
     
     def _on_errors_found(self, errors: List[ProofreadingError]):
-        """Handle when errors are found."""
+        """Handle errors found."""
         if errors:
             self._create_error_navigation_tab(errors)
         
@@ -625,7 +598,7 @@ class ProofreadingDialog:
         debug_console.log(f"Proofreading UI updated with {len(errors)} errors", level='INFO')
     
     def _on_analysis_error(self, error_msg: str):
-        """Handle analysis errors."""
+        """Handle analysis error."""
         self.analyze_button.config(state="normal", text="Retry Analysis")
         self.status_indicator.config(text="Analysis failed", foreground=self.colors['danger'])
         
@@ -633,7 +606,7 @@ class ProofreadingDialog:
     
     # Utility methods
     def _get_error_stats_text(self, errors: List[ProofreadingError]) -> str:
-        """Generate error statistics text."""
+        """Generate error statistics."""
         if not errors:
             return "No errors found"
         
@@ -646,7 +619,7 @@ class ProofreadingDialog:
         return " • ".join(stats_parts)
     
     def _generate_summary_text(self) -> str:
-        """Generate summary text for results."""
+        """Generate summary text."""
         if not self.session or not self.session.errors:
             return "No errors detected! Your text looks great."
         

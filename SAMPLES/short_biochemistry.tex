@@ -1,0 +1,347 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amsfonts,amssymb}
+\usepackage{graphicx}
+\usepackage{geometry}
+\usepackage{setspace}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+
+\geometry{margin=2.5cm}
+\onehalfspacing
+
+\title{Novel Enzymatic Pathways in Metabolic Regulation: Discovery and Characterization of the AMPK-mTOR Crosstalk Mechanism in Cellular Energy Homeostasis}
+
+\author{Dr. Elena Rodriguez\textsuperscript{1,2} \and 
+        Dr. Michael Chen\textsuperscript{1} \and 
+        Dr. Sarah Johnson\textsuperscript{2,3} \and 
+        Dr. Ahmed Hassan\textsuperscript{1} \and 
+        Prof. David Thompson\textsuperscript{1,2,*}}
+
+\date{\textsuperscript{1}Department of Biochemistry and Molecular Biology, Harvard Medical School, Boston, MA 02115, USA\\
+\textsuperscript{2}Institute for Metabolic Research, Dana-Farber Cancer Institute, Boston, MA 02215, USA\\
+\textsuperscript{3}Department of Cell Biology, MIT, Cambridge, MA 02139, USA\\
+\textsuperscript{*}Corresponding author: david\_thompson@hms.harvard.edu}
+
+\begin{document}
+
+
+\maketitle
+
+\begin{abstract}
+Cellular energy homeostasis represents one of the most fundamental processes governing life at the molecular level. The intricate balance between energy production and consumption is regulated by sophisticated signaling networks that respond to metabolic demands and environmental conditions. In this comprehensive study, we report the discovery and detailed characterization of a novel regulatory mechanism involving the crosstalk between AMP-activated protein kinase (AMPK) and the mechanistic target of rapamycin (mTOR) pathways. Through a combination of biochemical, molecular, and cellular approaches, we have identified a previously unknown intermediate protein complex that serves as a molecular switch in metabolic regulation. Our findings demonstrate that this complex, designated as MARC (Metabolic Adapter Regulatory Complex), directly modulates the phosphorylation status of key regulatory proteins in both pathways, thereby fine-tuning cellular responses to energy stress. The discovery of MARC has profound implications for understanding metabolic diseases, aging, and cancer, and opens new therapeutic avenues for treating conditions characterized by dysregulated energy metabolism. This work represents a significant advancement in our understanding of cellular bioenergetics and provides a foundation for future research in metabolic therapeutics.
+\end{abstract}
+
+\newpage
+
+\tableofcontents
+
+\newpage
+
+\section{Introduction}
+
+\subsection{Background and Rationale}
+
+Cellular energy homeostasis is a fundamental biological process that ensures the survival and proper functioning of all living organisms. At the heart of this process lies a complex network of signaling pathways that coordinate energy production, consumption, and storage in response to changing cellular conditions and environmental demands. The maintenance of energy balance is critical for cellular survival, as disruptions in this delicate equilibrium can lead to various pathological conditions, including metabolic disorders, cancer, and premature aging.
+
+The AMP-activated protein kinase (AMPK) pathway has long been recognized as the primary cellular energy sensor, responding to changes in the AMP:ATP ratio and initiating appropriate metabolic responses to restore energy balance. When activated by energy stress, AMPK promotes catabolic processes such as fatty acid oxidation and glucose uptake while simultaneously inhibiting anabolic processes including protein synthesis and lipogenesis. This dual action ensures that cellular resources are redirected toward energy production when needed.
+
+Conversely, the mechanistic target of rapamycin (mTOR) pathway serves as a central hub for coordinating cell growth, proliferation, and metabolism in response to nutrient availability, growth factors, and cellular energy status. The mTOR complex 1 (mTORC1) promotes anabolic processes when conditions are favorable, stimulating protein synthesis, ribosome biogenesis, and lipid synthesis while inhibiting autophagy and other catabolic processes.
+
+While both AMPK and mTOR pathways have been extensively studied individually, the mechanisms underlying their crosstalk and coordinate regulation remain incompletely understood. Previous studies have suggested that these pathways interact through direct phosphorylation events and shared downstream targets, but the molecular details of this interaction and its physiological significance have remained elusive.
+
+\subsection{Research Objectives}
+
+The primary objective of this research was to elucidate the molecular mechanisms governing the interaction between AMPK and mTOR pathways in the context of cellular energy homeostasis. Specifically, we aimed to:
+
+\begin{enumerate}
+\item Identify novel regulatory proteins and complexes involved in AMPK-mTOR crosstalk
+\item Characterize the biochemical properties and cellular functions of these regulatory elements
+\item Determine the physiological significance of this crosstalk in various cellular contexts
+\item Investigate the potential therapeutic implications of targeting this regulatory network
+\end{enumerate}
+
+I want a peperroni pizza for 8pm please with a margharita.
+
+\subsection{Hypothesis}
+
+We hypothesized that the coordination between AMPK and mTOR pathways is mediated by a previously uncharacterized protein complex that serves as a molecular integrator of multiple metabolic signals. This complex, we predicted, would contain both scaffolding proteins that facilitate protein-protein interactions and enzymatic activities that modulate the phosphorylation status of key regulatory proteins in both pathways.
+
+\subsection{Significance of the Study}
+
+The elucidation of novel mechanisms governing cellular energy homeostasis has far-reaching implications for human health and disease. Dysregulation of metabolic pathways is implicated in numerous pathological conditions, including diabetes, obesity, cardiovascular disease, cancer, and neurodegenerative disorders. By understanding the fundamental mechanisms that control energy balance at the cellular level, we can develop more effective therapeutic strategies for treating these conditions.
+
+Furthermore, the identification of new regulatory proteins and pathways provides opportunities for drug development and the design of targeted interventions. The ability to modulate cellular energy homeostasis with precision could lead to breakthrough treatments for metabolic diseases and age-related conditions.
+
+\section{Literature Review}
+
+\subsection{AMPK Signaling Pathway}
+
+The AMP-activated protein kinase (AMPK) is a highly conserved serine/threonine kinase that functions as a cellular energy sensor and metabolic regulator. The enzyme exists as a heterotrimeric complex consisting of a catalytic alpha subunit and regulatory beta and gamma subunits, each of which has multiple isoforms that confer tissue-specific properties and regulatory mechanisms.
+
+The alpha subunit contains the kinase domain and is subject to activating phosphorylation at Thr172 by upstream kinases including LKB1, CaMKKbeta, and TAK1. The beta subunit serves as a scaffolding protein and contains a carbohydrate-binding module that allows AMPK to sense glycogen levels. The gamma subunit contains four cystathionine beta-synthase (CBS) domains that form two Bateman domains, which bind adenine nucleotides and confer AMP/ATP sensitivity to the complex.
+
+AMPK activation occurs through multiple mechanisms, including allosteric activation by AMP binding to the gamma subunit, increased phosphorylation of Thr172 by upstream kinases, and protection from dephosphorylation by protein phosphatases. Once activated, AMPK phosphorylates numerous downstream targets involved in metabolic regulation, including acetyl-CoA carboxylase (ACC), 3-hydroxy-3-methylglutaryl-CoA reductase (HMGR), and transcriptional regulators such as FOXO3 and PGC-1alpha.
+
+The physiological functions of AMPK extend beyond simple metabolic regulation. The kinase plays crucial roles in autophagy induction, mitochondrial biogenesis, cell cycle control, and stress responses. These diverse functions are mediated through the phosphorylation of specific substrates and the regulation of key transcriptional programs that coordinate cellular adaptation to energy stress.
+
+\subsection{mTOR Signaling Pathway}
+
+The mechanistic target of rapamycin (mTOR) is a serine/threonine kinase that belongs to the phosphatidylinositol 3-kinase-related kinase (PIKK) family. mTOR functions as the catalytic subunit of two distinct protein complexes: mTOR complex 1 (mTORC1) and mTOR complex 2 (mTORC2), each with unique composition, regulation, and functions.
+
+mTORC1 consists of mTOR, Raptor (regulatory-associated protein of mTOR), mLST8, PRAS40, and DEPTOR. This complex is sensitive to rapamycin and serves as a central hub for coordinating cell growth and metabolism in response to growth factors, nutrients, energy, and stress signals. mTORC1 promotes anabolic processes including protein synthesis, ribosome biogenesis, lipid synthesis, and nucleotide synthesis while inhibiting catabolic processes such as autophagy.
+
+The regulation of mTORC1 involves multiple upstream signaling pathways. Growth factors activate mTORC1 through the PI3K-Akt pathway, which phosphorylates and inactivates the TSC1-TSC2 complex, leading to activation of the small GTPase Rheb. Amino acids, particularly leucine and arginine, activate mTORC1 through the Rag GTPases and the lysosomal recruitment of the complex. Energy stress inhibits mTORC1 through AMPK-mediated phosphorylation of both TSC2 and Raptor.
+
+mTORC2 consists of mTOR, Rictor (rapamycin-insensitive companion of mTOR), mLST8, mSIN1, Protor1/2, and DEPTOR. This complex is largely insensitive to rapamycin and primarily regulates cell survival and cytoskeletal organization through phosphorylation of Akt, SGK1, and PKCalpha. The regulation of mTORC2 is less well understood than that of mTORC1, but it appears to respond to growth factors and may be regulated by ribosomes and AMPK.
+
+\subsection{AMPK-mTOR Crosstalk}
+
+The relationship between AMPK and mTOR pathways is characterized by antagonistic regulation, with AMPK activation leading to mTOR inhibition under conditions of energy stress. This relationship ensures that energy-consuming anabolic processes are shut down when cellular energy levels are low, allowing resources to be redirected toward energy production and cell survival.
+
+The primary mechanism of AMPK-mediated mTORC1 inhibition involves the phosphorylation of TSC2 at Ser1387, which enhances the GAP activity of the TSC1-TSC2 complex toward Rheb, thereby reducing mTORC1 activation. Additionally, AMPK directly phosphorylates Raptor at Ser722 and Ser792, which promotes the binding of 14-3-3 proteins to Raptor and inhibits mTORC1 activity.
+
+Recent studies have revealed additional layers of complexity in AMPK-mTOR crosstalk. For example, mTORC1 can phosphorylate and inhibit AMPK through multiple mechanisms, including the phosphorylation of AMPK regulatory subunits and the activation of S6K1, which in turn phosphorylates and inhibits AMPK. This creates a negative feedback loop that may contribute to insulin resistance and metabolic dysfunction in conditions of chronic mTORC1 activation.
+
+Despite these advances, many aspects of AMPK-mTOR crosstalk remain poorly understood. The temporal dynamics of pathway interactions, the role of subcellular localization, and the existence of additional regulatory mechanisms are active areas of investigation that may yield important insights into metabolic regulation and disease pathogenesis.
+
+\subsection{Metabolic Regulation and Disease}
+
+Dysregulation of AMPK and mTOR signaling is implicated in numerous human diseases, particularly those involving metabolic dysfunction. In type 2 diabetes, reduced AMPK activity and excessive mTORC1 signaling contribute to insulin resistance, impaired glucose homeostasis, and complications such as diabetic nephropathy and cardiomyopathy.
+
+Cancer cells often exhibit altered AMPK and mTOR signaling, with many tumors showing reduced AMPK activity and hyperactivated mTOR signaling. This metabolic reprogramming supports the high energy demands of proliferating cells and contributes to treatment resistance. Therapeutic strategies targeting these pathways, including metformin (an AMPK activator) and rapamycin analogs (mTOR inhibitors), have shown promise in cancer treatment.
+
+Aging is associated with progressive decline in AMPK activity and dysregulated mTOR signaling, contributing to age-related metabolic dysfunction, cellular senescence, and reduced stress resistance. Interventions that activate AMPK or inhibit mTOR have been shown to extend lifespan in model organisms and may have therapeutic potential for age-related diseases.
+
+Neurodegeneration, cardiovascular disease, and inflammatory conditions are also linked to AMPK-mTOR dysfunction, highlighting the broad physiological importance of these pathways and the potential therapeutic value of understanding their regulation in detail.
+
+\section{Materials and Methods}
+
+\subsection{Cell Culture and Reagents}
+
+\subsubsection{Cell Lines}
+
+Multiple cell lines were utilized in this study to investigate AMPK-mTOR crosstalk across different cellular contexts. HEK293T cells (ATCC CRL-3216) were primarily used for biochemical assays and protein overexpression studies due to their high transfection efficiency and robust protein expression. HeLa cells (ATCC CCL-2) served as a model for studying cell cycle-dependent metabolic regulation. Primary mouse embryonic fibroblasts (MEFs) were isolated from C57BL/6J mice at embryonic day 13.5 and used within five passages to maintain physiological relevance.
+
+Specialized cell lines included H1975 lung adenocarcinoma cells (ATCC CRL-5908) for cancer-related studies, C2C12 mouse myoblasts (ATCC CRL-1772) for muscle-specific investigations, and 3T3-L1 mouse fibroblasts (ATCC CCL-92.1) for adipogenesis studies. All cell lines were verified by STR profiling and tested for mycoplasma contamination using PCR-based detection methods.
+
+Cells were maintained in Dulbecco's Modified Eagle's Medium (DMEM, Gibco 11965-092) supplemented with 10\% fetal bovine serum (FBS, Gibco 26140-079), 100 units/mL penicillin, and 100 mug/mL streptomycin (Gibco 15140-122). Cultures were maintained at 37degreesC in a humidified atmosphere containing 5\% CO2.
+
+\subsubsection{Chemical Reagents}
+
+Pharmacological modulators of AMPK and mTOR pathways were obtained from multiple suppliers and used at optimized concentrations determined through dose-response studies. 5-Aminoimidazole-4-carboxamide ribonucleoside (AICAR, Sigma A9978) was used at 1-2 mM to activate AMPK through AICAR monophosphate accumulation. Metformin (Sigma D150959) was employed at 1-10 mM as an alternative AMPK activator with clinical relevance.
+
+mTOR pathway inhibitors included rapamycin (Sigma R8781) at 10-100 nM for mTORC1-specific inhibition, and Torin1 (Tocris 4247) at 100-500 nM for dual mTORC1/mTORC2 inhibition. PP242 (Sigma P0037) was used at 1-5 muM as an additional ATP-competitive mTOR inhibitor.
+
+Protease inhibitor cocktails (Sigma P8340) and phosphatase inhibitors including sodium fluoride (10 mM), sodium orthovanadate (1 mM), and beta-glycerophosphate (20 mM) were routinely used in all biochemical extractions. Okadaic acid (Sigma O9381) at 10-50 nM served as a protein phosphatase inhibitor for specific experiments.
+
+\subsection{Protein Expression and Purification}
+
+\subsubsection{Recombinant Protein Expression}
+
+Full-length and truncated versions of key proteins were expressed in Escherichia coli using the pET28a vector system (Novagen). Genes encoding human AMPK subunits (alpha1, beta1, gamma1), mTOR, Raptor, and novel proteins identified in this study were cloned using standard molecular biology techniques. All constructs were verified by DNA sequencing and restriction enzyme analysis.
+
+Protein expression was performed in BL21(DE3) E. coli cells grown in LB medium supplemented with 50 mug/mL kanamycin. Cultures were grown to an OD600 of 0.6-0.8 at 37degreesC, then induced with 0.5 mM IPTG and grown for an additional 16 hours at 18degreesC to maximize soluble protein yield.
+
+Bacterial cells were harvested by centrifugation and resuspended in lysis buffer containing 50 mM Tris-HCl pH 7.5, 300 mM NaCl, 10 mM imidazole, 1 mM PMSF, and 1× protease inhibitor cocktail. Cells were lysed by sonication on ice using a probe sonicator (Branson 250) with 30-second pulses followed by 30-second rest periods for a total sonication time of 5 minutes.
+
+\subsubsection{Protein Purification}
+
+His-tagged proteins were purified using nickel-nitrilotriacetic acid (Ni-NTA) affinity chromatography. Clarified lysates were applied to Ni-NTA agarose columns (Qiagen) pre-equilibrated with lysis buffer. After extensive washing with buffer containing 20 mM imidazole, proteins were eluted with buffer containing 250 mM imidazole.
+
+Further purification was achieved through size exclusion chromatography using a Superdex 200 16/60 column (GE Healthcare) equilibrated with buffer containing 20 mM Tris-HCl pH 7.5, 150 mM NaCl, and 1 mM DTT. Protein purity was assessed by SDS-PAGE and Coomassie blue staining, with typical purities exceeding 90\%.
+
+Protein concentrations were determined using the Bradford assay (Bio-Rad) with bovine serum albumin as a standard. Purified proteins were aliquoted, flash-frozen in liquid nitrogen, and stored at -80degreesC. Protein stability and activity were monitored over time, with most preparations maintaining activity for several months when properly stored.
+
+\subsection{Biochemical Assays}
+
+\subsubsection{Kinase Activity Assays}
+
+AMPK kinase activity was measured using the SAMS (synthetic AMPK substrate) peptide assay. Briefly, purified AMPK or immunoprecipitated AMPK complexes were incubated with 200 muM SAMS peptide (HMRSAMSGLHLVKRR) in kinase buffer containing 40 mM HEPES pH 7.0, 80 mM NaCl, 8 mM MgCl2, 0.8 mM DTT, and 200 muM ATP including [gamma-32P]ATP (specific activity 1000-3000 cpm/pmol).
+
+Reactions were performed at 30degreesC for 10 minutes and terminated by spotting 10 muL aliquots onto P81 phosphocellulose paper (Whatman). Papers were washed three times in 1\% phosphoric acid and once in acetone before scintillation counting. Specific activity was calculated as pmol phosphate incorporated per minute per mg protein.
+
+mTOR kinase activity was assessed using recombinant 4E-BP1 as a substrate. Immunoprecipitated mTORC1 complexes were incubated with 2 mug recombinant 4E-BP1 in kinase buffer containing 25 mM HEPES pH 7.4, 100 mM potassium acetate, 10 mM MgCl2, and 1 mM ATP. Reactions were performed at 30degreesC for 30 minutes and analyzed by Western blotting using phospho-specific antibodies against 4E-BP1 phosphorylation sites.
+
+\subsubsection{Protein-Protein Interaction Assays}
+
+Co-immunoprecipitation experiments were performed using standard protocols with modifications for studying metabolic protein complexes. Cells were lysed in NP-40 lysis buffer (50 mM Tris-HCl pH 7.5, 150 mM NaCl, 1\% NP-40, 1 mM EDTA) supplemented with protease and phosphatase inhibitors. Lysates were clarified by centrifugation at 14,000 × g for 10 minutes at 4degreesC.
+
+For immunoprecipitations, 500-1000 mug of protein lysate was incubated with specific antibodies overnight at 4degreesC with rotation. Protein A/G agarose beads (Santa Cruz) were added for 2 hours to capture immune complexes. Beads were washed four times with lysis buffer before elution in SDS sample buffer and analysis by Western blotting.
+
+GST pull-down assays were performed using bacterially expressed GST fusion proteins immobilized on glutathione-Sepharose beads. In vitro translated proteins or cellular lysates were incubated with GST fusion proteins for 2 hours at 4degreesC with rotation. After extensive washing, bound proteins were eluted and analyzed by SDS-PAGE and Western blotting.
+
+\subsection{Mass Spectrometry Analysis}
+
+\subsubsection{Sample Preparation}
+
+Protein complexes isolated by immunoprecipitation or affinity chromatography were subjected to mass spectrometric analysis for protein identification and post-translational modification mapping. Proteins were separated by SDS-PAGE and visualized by Coomassie blue staining. Gel bands were excised and subjected to in-gel trypsin digestion using standard protocols.
+
+Briefly, gel pieces were destained with 50\% acetonitrile in 25 mM ammonium bicarbonate, reduced with 10 mM DTT at 56degreesC for 1 hour, and alkylated with 55 mM iodoacetamide at room temperature for 45 minutes in the dark. After dehydration with acetonitrile, proteins were digested overnight at 37degreesC with 12.5 ng/muL trypsin in 25 mM ammonium bicarbonate.
+
+Peptides were extracted from gel pieces using 50\% acetonitrile/5\% formic acid and concentrated using C18 ZipTips (Millipore). Samples were resuspended in 0.1\% formic acid prior to LC-MS/MS analysis.
+
+\subsubsection{LC-MS/MS Analysis}
+
+Peptide samples were analyzed using a nanoAcquity UPLC system (Waters) coupled to a Q Exactive HF mass spectrometer (Thermo Fisher Scientific). Peptides were loaded onto a trapping column (nanoAcquity UPLC 2G-V/M Trap 5 mum Symmetry C18, 180 mum × 20 mm) and separated on an analytical column (nanoAcquity UPLC BEH 1.7 mum C18, 75 mum × 250 mm) using a 90-minute linear gradient from 3\% to 40\% acetonitrile in 0.1\% formic acid at a flow rate of 300 nL/min.
+
+The mass spectrometer was operated in data-dependent acquisition mode with a full MS scan range of m/z 375-1500 at 60,000 resolution. The top 15 most intense peaks were selected for higher-energy collisional dissociation (HCD) fragmentation with normalized collision energy of 27\%. MS/MS spectra were acquired at 15,000 resolution with an AGC target of 1e5 and maximum injection time of 50 ms.
+
+Raw data files were processed using MaxQuant software version 1.6.3.4 with the Andromeda search engine. Searches were performed against the human UniProt database with common contaminants included. Search parameters included trypsin specificity, up to two missed cleavages, carbamidomethylation of cysteine as a fixed modification, and oxidation of methionine and acetylation of protein N-termini as variable modifications. False discovery rates were set to 1\% for both peptides and proteins.
+
+\subsection{Cell Biology Techniques}
+
+\subsubsection{Immunofluorescence Microscopy}
+
+Cells were grown on glass coverslips and fixed with 4\% paraformaldehyde in PBS for 10 minutes at room temperature. After permeabilization with 0.1\% Triton X-100 for 5 minutes and blocking with 5\% normal goat serum in PBS for 1 hour, cells were incubated with primary antibodies overnight at 4degreesC.
+
+Primary antibodies included rabbit anti-AMPK alpha (Cell Signaling 2532, 1:500), mouse anti-mTOR (Cell Signaling 2972, 1:200), and antibodies against newly identified proteins (custom antibodies generated for this study, 1:200-1:500). After washing with PBS, cells were incubated with appropriate fluorescent secondary antibodies for 1 hour at room temperature.
+
+Nuclei were stained with DAPI (1 mug/mL) for 5 minutes, and coverslips were mounted using ProLong Gold antifade reagent (Invitrogen). Images were acquired using a confocal laser scanning microscope (Zeiss LSM 880) equipped with 405 nm, 488 nm, 561 nm, and 633 nm laser lines. Z-stack images were collected with 0.2 mum step size and processed using ZEN software.
+
+\subsubsection{Live Cell Imaging}
+
+For metabolic flux measurements, cells were transfected with fluorescent biosensors including AMPKAR (AMPK activity reporter) and mTOR activity biosensors. Transfections were performed using Lipofectamine 3000 (Invitrogen) according to the manufacturer's protocol.
+
+Live cell imaging was performed using an environmentally controlled microscope system (Nikon Ti-E) equipped with a heated stage and CO2 control. Cells were maintained at 37degreesC in 5\% CO2 throughout the imaging period. Time-lapse images were acquired every 5 minutes for up to 12 hours using appropriate filter sets for fluorescent proteins.
+
+Fluorescence intensities were measured using ImageJ software with background subtraction and photobleaching correction. Kinase activities were calculated based on the ratio of acceptor to donor fluorescence for FRET-based biosensors, with values normalized to baseline measurements prior to treatment.
+
+\subsection{Molecular Biology Techniques}
+
+\subsubsection{Gene Cloning and Mutagenesis}
+
+Novel genes identified through mass spectrometry were cloned into appropriate expression vectors for functional studies. PCR amplification was performed using high-fidelity DNA polymerase (Phusion, NEB) with primers designed to introduce restriction enzyme sites for directional cloning.
+
+Site-directed mutagenesis was performed using the QuikChange protocol (Agilent) to generate phosphorylation site mutants and deletion constructs. Mutations were introduced to convert serine and threonine residues to alanine (non-phosphorylatable) or aspartic acid/glutamic acid (phosphomimetic) to study the functional importance of specific phosphorylation events.
+
+All constructs were sequence-verified using automated DNA sequencing (Applied Biosystems 3130xl) and restriction enzyme analysis. Expression vectors included mammalian expression plasmids (pcDNA3.1, pCMV) for overexpression studies and bacterial expression vectors (pET28a, pGEX) for protein purification.
+
+\subsubsection{RNA Interference}
+
+Small interfering RNAs (siRNAs) targeting key proteins were obtained from multiple suppliers to ensure specificity and minimize off-target effects. Dharmacon ON-TARGETplus siRNAs were used as the primary reagents, with Ambion Silencer Select siRNAs serving as validation tools.
+
+Cells were transfected with siRNAs (25-50 nM final concentration) using Lipofectamine RNAiMAX (Invitrogen) in serum-free medium. Transfection efficiency was monitored using fluorescently labeled control siRNAs, and knockdown efficiency was assessed by Western blotting and quantitative PCR 48-72 hours post-transfection.
+
+Multiple independent siRNAs targeting different regions of each gene were tested to confirm specificity. Rescue experiments using siRNA-resistant expression constructs were performed to validate the specificity of observed phenotypes.
+
+\subsubsection{CRISPR/Cas9 Gene Editing}
+
+For generating stable cell lines with targeted gene modifications, CRISPR/Cas9 technology was employed. Guide RNAs were designed using online tools (MIT CRISPR Design, Broad Institute) and cloned into the pSpCas9(BB)-2A-Puro vector (Addgene 48139).
+
+Cells were transfected with CRISPR constructs using Lipofectamine 3000 and selected with puromycin (2 mug/mL) for 48 hours. Individual clones were isolated by limiting dilution and screened by PCR amplification and sequencing of the target region. Successful modifications were confirmed by Western blotting and functional assays.
+
+For generating knockout cell lines, multiple guide RNAs targeting early exons were used to increase the probability of generating null alleles. Homozygous deletions were confirmed by PCR analysis and the absence of protein expression by Western blotting.
+
+\subsection{Metabolic Assays}
+
+\subsubsection{Cellular Energy Measurements}
+
+Cellular ATP, ADP, and AMP levels were measured using HPLC-based nucleotide analysis. Cells were rapidly extracted with 0.5 M perchloric acid on ice, and extracts were neutralized with 2.5 M K2CO3. Nucleotides were separated on a reverse-phase C18 column using ion-pairing chromatography with tetrabutylammonium phosphate as the ion-pairing agent.
+
+The mobile phase consisted of 100 mM KH2PO4, 8 mM tetrabutylammonium phosphate, and 1.5\% methanol (pH 6.0) at a flow rate of 1 mL/min. Nucleotides were detected by UV absorption at 254 nm and quantified using authentic standards. The adenylate energy charge was calculated as (ATP + 0.5 ADP)/(ATP + ADP + AMP).
+
+Alternative measurements of cellular energy status were performed using luciferase-based ATP assays (CellTiter-Glo, Promega) and fluorescent AMP/ATP ratio sensors (Perceval-HR) for real-time measurements in living cells.
+
+\subsubsection{Glucose Uptake and Utilization}
+
+Glucose uptake was measured using the fluorescent glucose analog 2-NBDG (2-(N-(7-nitrobenz-2-oxa-1,3-diazol-4-yl)amino)-2-deoxyglucose). Cells were incubated with 100 muM 2-NBDG for 30 minutes at 37degreesC, washed with PBS, and analyzed by flow cytometry or fluorescence microscopy.
+
+Glucose utilization was assessed by measuring glucose consumption from culture medium using a glucose oxidase-based assay (Glucose Assay Kit, Abcam). Medium samples were collected at various time points, and glucose concentrations were determined spectrophotometrically at 570 nm.
+
+Lactate production was measured as an indicator of glycolytic activity using a lactate assay kit (Sigma MAK064). Culture medium was collected and analyzed according to the manufacturer's protocol, with lactate production rates calculated from the change in medium lactate concentration over time.
+
+\subsubsection{Mitochondrial Function Analysis}
+
+Oxygen consumption rates (OCR) were measured using a Seahorse XF96 Extracellular Flux Analyzer (Agilent). Cells were seeded in XF96 cell culture microplates and allowed to adhere overnight. Prior to measurements, cells were equilibrated in unbuffered DMEM at 37degreesC for 1 hour.
+
+Sequential injections of oligomycin (1 muM), carbonyl cyanide-4-(trifluoromethoxy)phenylhydrazone (FCCP, 1 muM), and rotenone/antimycin A (0.5 muM each) were used to determine basal respiration, ATP-linked respiration, maximal respiratory capacity, and non-mitochondrial respiration.
+
+Mitochondrial membrane potential was assessed using tetramethylrhodamine ethyl ester (TMRE, 25 nM) and analyzed by flow cytometry or fluorescence microscopy. Changes in membrane potential were expressed as fold change in fluorescence intensity compared to control conditions.
+
+\subsection{Statistical Analysis}
+
+All experiments were performed with appropriate biological replicates (\textit{n} >= 3) and technical replicates to ensure statistical power and reproducibility. Data are presented as mean +/- standard error of the mean (\textit{SEM}) unless otherwise indicated. Statistical significance was determined using unpaired two-tailed \textit{Student's} \texttt{t}-test for comparisons between two groups, or one-way \textit{ANOVA} followed by \textit{Tukey's} multiple comparison test for comparisons among multiple groups.
+
+For time-course experiments and dose-response studies, two-way \textit{ANOVA} with \textit{Bonferroni} post-hoc analysis was used to account for multiple variables. Correlation analyses were performed using \textit{Pearson} correlation coefficients with 95\% confidence intervals.
+
+Statistical analyses were performed using GraphPad Prism software version 8.0. A p-value of less than 0.05 was considered statistically significant. Effect sizes were calculated using Cohen's d for t-tests and eta-squared for ANOVA to assess the magnitude of observed differences.
+
+Power analyses were performed prior to experiments using G*Power software to ensure adequate sample sizes for detecting biologically meaningful differences. Post-hoc power analyses confirmed that studies achieved greater than 80\% power for detecting the observed effect sizes.
+
+\section{Results}
+
+\subsection{Discovery of the Metabolic Adapter Regulatory Complex (MARC)}
+
+\subsubsection{Identification of Novel AMPK-Interacting Proteins}
+
+To identify previously unknown components of AMPK signaling networks, we performed comprehensive proteomic analysis of AMPK complexes isolated from HEK293T cells under various metabolic conditions. Cells were treated with vehicle control, AICAR (1 mM for 2 hours to activate AMPK), or glucose deprivation (4 hours) to induce metabolic stress. AMPK complexes were immunoprecipitated using validated antibodies against the AMPK alpha subunit, and associated proteins were analyzed by high-resolution mass spectrometry.
+
+Under basal conditions, we identified the expected AMPK subunits (alpha1, beta1, gamma1) along with known regulatory proteins including LKB1, STRAD, and PP2A catalytic subunits. However, AMPK activation by either AICAR treatment or glucose deprivation resulted in the recruitment of several previously uncharacterized proteins to the AMPK complex.
+
+The most prominent of these novel interactors was a 95-kDa protein that we designated MARC1 (Metabolic Adapter Regulatory Complex protein 1). MARC1 showed robust association with activated AMPK complexes, with peptide coverage of 78\% in mass spectrometry analysis. Database searches revealed that MARC1 (gene symbol MARCP1, chromosome location 12q23.1) encodes a protein with several recognizable domains, including an N-terminal leucine-rich repeat (LRR) domain, a central armadillo repeat region, and a C-terminal domain with homology to protein phosphatase regulatory subunits.
+
+Two additional proteins, designated MARC2 (62 kDa) and MARC3 (48 kDa), were consistently identified in association with MARC1 and activated AMPK. MARC2 contains a RING finger domain typical of E3 ubiquitin ligases, while MARC3 exhibits similarity to scaffolding proteins of the HEAT repeat family. The simultaneous presence of these three proteins suggested they might form a stable complex.
+
+\subsubsection{Biochemical Characterization of MARC Components}
+
+To validate the mass spectrometry findings and characterize the biochemical properties of MARC proteins, we cloned full-length cDNAs encoding MARC1, MARC2, and MARC3 and expressed them as recombinant proteins in bacterial and mammalian systems. GST-tagged versions of each protein were produced in E. coli and used for in vitro binding studies.
+
+GST pull-down experiments demonstrated that MARC1 directly binds to the AMPK alpha subunit with high affinity (Kd approximately equal to 150 nM as determined by surface plasmon resonance). This interaction was enhanced approximately 4-fold when AMPK was phosphorylated at Thr172, suggesting that MARC1 preferentially associates with the activated form of the kinase. Deletion analysis revealed that the armadillo repeat region of MARC1 is both necessary and sufficient for AMPK binding.
+
+MARC2 and MARC3 did not show direct binding to AMPK in isolation but formed stable complexes with MARC1. Size exclusion chromatography of co-expressed proteins revealed a stable 205-kDa complex consistent with a heterotrimeric assembly containing one copy each of MARC1, MARC2, and MARC3. The complex remained stable across a wide range of salt concentrations (50-500 mM NaCl) and pH conditions (pH 6.0-8.5), suggesting robust protein-protein interactions.
+
+Immunofluorescence microscopy using custom antibodies generated against each MARC protein revealed distinct subcellular localization patterns. MARC1 showed predominantly cytoplasmic localization with some nuclear accumulation, MARC2 was primarily nuclear, and MARC3 displayed both cytoplasmic and mitochondrial localization. Upon metabolic stress induced by glucose deprivation, all three MARC proteins showed increased co-localization in discrete cytoplasmic foci that also contained activated AMPK.
+
+\subsubsection{MARC Complex Formation and Dynamics}
+
+To investigate the assembly and dynamics of MARC complexes in living cells, we developed fluorescently tagged versions of each protein and performed live-cell imaging studies. MARC1 was tagged with enhanced GFP, MARC2 with mCherry, and MARC3 with CFP, allowing for simultaneous monitoring of all three components.
+
+Under basal conditions, the MARC proteins showed relatively uniform distribution throughout their respective subcellular compartments. However, within 15-30 minutes of glucose deprivation, we observed the formation of discrete punctate structures containing all three MARC proteins. These structures increased in both size and number over time, reaching maximum abundance after 2-3 hours of glucose deprivation.
+
+Fluorescence recovery after photobleaching (FRAP) experiments revealed that MARC complexes are highly dynamic structures. The mobile fractions were 85\% for MARC1, 72\% for MARC2, and 91\% for MARC3, with half-times of recovery ranging from 45-120 seconds. This dynamic behavior suggests that MARC complexes undergo continuous assembly and disassembly, potentially allowing for rapid response to changing metabolic conditions.
+
+Treatment with the protein synthesis inhibitor cycloheximide (100 mug/mL) did not prevent MARC complex formation, indicating that de novo protein synthesis is not required for this process. Similarly, treatment with the autophagy inhibitor bafilomycin A1 (100 nM) did not affect complex formation, ruling out involvement of autophagosome biogenesis.
+
+\subsection{Functional Analysis of MARC in AMPK Regulation}
+
+\subsubsection{MARC Modulates AMPK Activity}
+
+To investigate the functional significance of MARC complex association with AMPK, we examined how MARC components affect AMPK kinase activity using both in vitro and cellular assays. Purified AMPK complexes were incubated with recombinant MARC proteins in kinase assays using the SAMS peptide substrate.
+
+Addition of the complete MARC complex (MARC1+MARC2+MARC3) to AMPK kinase reactions resulted in a dose-dependent increase in kinase activity, with maximal stimulation of approximately 2.8-fold at a 1:1 molar ratio of MARC complex to AMPK. This stimulation was observed only when AMPK was pre-phosphorylated at Thr172 by upstream kinases, suggesting that MARC enhances the activity of already-activated AMPK rather than promoting its initial activation.
+
+Individual MARC proteins showed differential effects on AMPK activity. MARC1 alone provided modest stimulation (1.4-fold), MARC2 had no significant effect, and MARC3 actually inhibited AMPK activity by approximately 30\%. However, the combination of all three proteins produced synergistic activation greater than the sum of individual effects, indicating that the intact MARC complex has distinct regulatory properties.
+
+The mechanism of AMPK activation by MARC was investigated through kinetic analysis. MARC complex increased the Vmax of AMPK without significantly affecting the Km for ATP or the SAMS peptide substrate, suggesting that MARC enhances the catalytic efficiency of the enzyme without altering substrate binding. This effect was associated with protection of AMPK from dephosphorylation by protein phosphatases, as evidenced by prolonged retention of Thr172 phosphorylation in the presence of MARC.
+
+\subsubsection{Cellular Validation of MARC Function}
+
+To validate the in vitro findings in a cellular context, we used siRNA-mediated knockdown of individual MARC components and assessed the effects on AMPK signaling. Efficient knockdown (>80\% reduction in protein levels) was achieved for all three MARC proteins using multiple independent siRNAs.
+
+Depletion of MARC1 significantly impaired AMPK activation in response to multiple stimuli, including AICAR treatment, glucose deprivation, and metformin exposure. The reduction in AMPK activity was approximately 40-60\% compared to control cells, as measured by both in vitro kinase assays and phosphorylation of cellular AMPK substrates including acetyl-CoA carboxylase (ACC) and raptor.
+
+MARC2 knockdown had more subtle effects on AMPK activity but significantly altered the kinetics of AMPK activation and inactivation. While peak AMPK activity was only modestly reduced (20-25\%), the duration of activation was shortened, with AMPK returning to basal levels more rapidly after withdrawal of activating stimuli.
+
+MARC3 depletion produced complex effects that varied depending on the stimulus used to activate AMPK. Under conditions of glucose deprivation, MARC3 knockdown actually enhanced AMPK activity, consistent with its inhibitory effects observed in vitro. However, in response to AICAR or metformin, MARC3 depletion impaired AMPK activation, suggesting stimulus-specific regulatory mechanisms.
+
+\subsubsection{MARC Affects AMPK Substrate Phosphorylation}
+
+The physiological relevance of MARC-mediated AMPK regulation was assessed by examining the phosphorylation of key AMPK substrates in cells with altered MARC expression. We focused on well-characterized AMPK targets involved in metabolic regulation, including ACC1 (Ser79), ACC2 (Ser212), HMGR (Ser871), and raptor (Ser792).
+
+MARC1 overexpression enhanced the phosphorylation of all tested AMPK substrates under both basal and activated conditions. The effects were most pronounced for ACC1 and ACC2, with phosphorylation levels increased 2.5-3.0 fold. This enhanced substrate phosphorylation was accompanied by corresponding changes in metabolic enzyme activities, with increased fatty acid oxidation and decreased fatty acid synthesis.
+
+Conversely, MARC1 knockdown reduced AMPK substrate phosphorylation even when total AMPK activity (measured with exogenous peptide substrates) was only modestly affected. This apparent disconnect suggested that MARC might influence substrate specificity or the accessibility of endogenous substrates to AMPK.
+
+To investigate this possibility, we examined the subcellular localization of AMPK in the presence and absence of MARC1. Immunofluorescence microscopy revealed that MARC1 depletion altered the distribution of activated AMPK, with reduced accumulation in specific subcellular compartments including the vicinity of mitochondria and lipid droplets where key metabolic enzymes are localized.
+
+\subsection{MARC Regulation of mTOR Signaling}
+
+\subsubsection{MARC Interacts with mTOR Complex Components}
+
+no it ends there
+
+\end{document}
