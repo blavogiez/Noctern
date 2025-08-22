@@ -428,6 +428,14 @@ class ProofreadingDialog:
             text="Restart Analysis", 
             command=self._restart_analysis
         ).pack(side="right", padx=(0, 10))
+        
+        # Apply All Corrections button (initially hidden)
+        self.apply_all_button = ttk.Button(
+            footer_frame,
+            text="Apply All & Save Corrected File",
+            command=self._apply_all_corrections
+        )
+        # Don't pack initially - will be shown when errors are found
     
     def _bind_events(self):
         """Bind keyboard shortcuts."""
@@ -478,6 +486,10 @@ class ProofreadingDialog:
             self.notebook.forget(self.summary_tab_frame)
             self.summary_tab_frame = None
         
+        # Hide Apply All button
+        if hasattr(self, 'apply_all_button'):
+            self.apply_all_button.pack_forget()
+        
         self.analysis_text_widget.config(state="normal")
         self.analysis_text_widget.delete("1.0", "end")
         self.analysis_text_widget.config(state="disabled")
@@ -490,121 +502,203 @@ class ProofreadingDialog:
     
     def _go_previous(self):
         """Go to previous error."""
+        if not self._is_window_valid():
+            return
         if self.session and self.session.go_to_previous_error():
             self._update_error_navigation()
     
     def _go_next(self):
         """Go to next error."""
+        if not self._is_window_valid():
+            return
         if self.session and self.session.go_to_next_error():
             self._update_error_navigation()
     
     def _apply_current_correction(self):
         """Apply current correction."""
-        if not self.session:
+        if not self._is_window_valid() or not self.session:
             return
             
-        if self.session.apply_current_correction(self.editor):
-            self.applied_label.config(text=f"Correction applied!", foreground=self.colors['success'])
-            self.apply_button.config(state="disabled", text="Applied")
-            
-            # Auto-advance to next error
-            self.window.after(1000, self._go_next)
-        else:
-            messagebox.showwarning("Application Failed", 
-                "Could not apply the correction. The original text may have been modified.")
+        try:
+            if self.session.apply_current_correction(self.editor):
+                self.applied_label.config(text=f"Correction applied!", foreground=self.colors['success'])
+                self.apply_button.config(state="disabled", text="Applied")
+                
+                # Auto-advance to next error
+                if self._is_window_valid():
+                    self.window.after(1000, self._go_next)
+            else:
+                if self._is_window_valid():
+                    messagebox.showwarning("Application Failed", 
+                        "Could not apply the correction. The original text may have been modified.",
+                        parent=self.window)
+        except tk.TclError:
+            debug_console.log("Window destroyed during correction application", level='DEBUG')
     
     def _update_error_navigation(self):
         """Update error navigation."""
-        if not self.session or not self.session.errors:
+        if not self._is_window_valid() or not self.session or not self.session.errors:
             return
         
-        current_error = self.session.get_current_error()
-        if not current_error:
+        try:
+            current_error = self.session.get_current_error()
+            if not current_error:
+                return
+            
+            # Update counter
+            current_idx = self.session.current_error_index + 1
+            total = len(self.session.errors)
+            self.error_counter_var.set(f"Error {current_idx} of {total}")
+            
+            # Update navigation buttons
+            self.prev_button.config(state="normal" if self.session.current_error_index > 0 else "disabled")
+            self.next_button.config(state="normal" if self.session.current_error_index < total - 1 else "disabled")
+            
+            # Update error details
+            error_color = self.colors.get(f'{current_error.type.value}_color', self.colors['primary'])
+            self.error_type_label.config(text=current_error.type.value.title(), foreground=error_color)
+            
+            # Update text widgets
+            self.original_error_text.config(state="normal")
+            self.original_error_text.delete("1.0", "end")
+            self.original_error_text.insert("1.0", current_error.original)
+            self.original_error_text.config(state="disabled")
+            
+            self.suggested_text.config(state="normal")
+            self.suggested_text.delete("1.0", "end")
+            suggestion_text = current_error.suggestion if current_error.suggestion else "[DELETE]"
+            self.suggested_text.insert("1.0", suggestion_text)
+            self.suggested_text.config(state="disabled")
+            
+            self.explanation_label.config(text=current_error.explanation)
+            
+            self.context_text.config(state="normal")
+            self.context_text.delete("1.0", "end")
+            self.context_text.insert("1.0", current_error.context)
+            self.context_text.config(state="disabled")
+            
+            # Update apply button
+            if current_error.is_applied:
+                self.apply_button.config(state="disabled", text="Applied")
+                self.applied_label.config(text="Already applied", foreground=self.colors['success'])
+            else:
+                button_text = "Delete Text" if not current_error.suggestion else "Apply Correction"
+                self.apply_button.config(state="normal", text=button_text)
+                self.applied_label.config(text="")
+            
+            # Update applied corrections count
+            applied_count = self.session.get_applied_corrections_count()
+            if applied_count > 0:
+                self.applied_label.config(text=f"{applied_count}/{total} corrections applied", foreground=self.colors['success'])
+            
+            # Update Apply All button
+            self._update_apply_all_button()
+            
+        except tk.TclError:
+            debug_console.log("Window destroyed during error navigation update", level='DEBUG')
+    
+    def _update_apply_all_button(self):
+        """Update Apply All button visibility and text."""
+        if not self._is_window_valid():
             return
-        
-        # Update counter
-        current_idx = self.session.current_error_index + 1
-        total = len(self.session.errors)
-        self.error_counter_var.set(f"Error {current_idx} of {total}")
-        
-        # Update navigation buttons
-        self.prev_button.config(state="normal" if self.session.current_error_index > 0 else "disabled")
-        self.next_button.config(state="normal" if self.session.current_error_index < total - 1 else "disabled")
-        
-        # Update error details
-        error_color = self.colors.get(f'{current_error.type.value}_color', self.colors['primary'])
-        self.error_type_label.config(text=current_error.type.value.title(), foreground=error_color)
-        
-        # Update text widgets
-        self.original_error_text.config(state="normal")
-        self.original_error_text.delete("1.0", "end")
-        self.original_error_text.insert("1.0", current_error.original)
-        self.original_error_text.config(state="disabled")
-        
-        self.suggested_text.config(state="normal")
-        self.suggested_text.delete("1.0", "end")
-        suggestion_text = current_error.suggestion if current_error.suggestion else "[DELETE]"
-        self.suggested_text.insert("1.0", suggestion_text)
-        self.suggested_text.config(state="disabled")
-        
-        self.explanation_label.config(text=current_error.explanation)
-        
-        self.context_text.config(state="normal")
-        self.context_text.delete("1.0", "end")
-        self.context_text.insert("1.0", current_error.context)
-        self.context_text.config(state="disabled")
-        
-        # Update apply button
-        if current_error.is_applied:
-            self.apply_button.config(state="disabled", text="Applied")
-            self.applied_label.config(text="Already applied", foreground=self.colors['success'])
-        else:
-            button_text = "Delete Text" if not current_error.suggestion else "Apply Correction"
-            self.apply_button.config(state="normal", text=button_text)
-            self.applied_label.config(text="")
-        
-        # Update applied corrections count
-        applied_count = self.session.get_applied_corrections_count()
-        if applied_count > 0:
-            self.applied_label.config(text=f"{applied_count}/{total} corrections applied", foreground=self.colors['success'])
+            
+        try:
+            if not self.session or not self.session.errors:
+                if hasattr(self, 'apply_all_button'):
+                    self.apply_all_button.pack_forget()
+                return
+            
+            # Count unapplied corrections
+            unapplied_count = len([e for e in self.session.errors if not e.is_applied])
+            
+            if unapplied_count > 0:
+                # Show button with count
+                button_text = f"Apply All {unapplied_count} Corrections & Save"
+                self.apply_all_button.config(text=button_text, state="normal")
+                if not self.apply_all_button.winfo_viewable():
+                    self.apply_all_button.pack(side="left", padx=(0, 10))
+            else:
+                # All corrections applied - change button text
+                self.apply_all_button.config(text="All Corrections Applied", state="disabled")
+        except tk.TclError:
+            debug_console.log("Window destroyed during Apply All button update", level='DEBUG')
+    
+    def _is_window_valid(self) -> bool:
+        """Check if the window and widgets are still valid."""
+        try:
+            return self.window and self.window.winfo_exists()
+        except tk.TclError:
+            return False
     
     # Callback handlers
     def _on_status_change(self, status: str):
         """Handle status change."""
-        self.status_var.set(status)
-        
-        if "found" in status.lower():
-            # Analysis complete
-            self.analyze_button.config(state="normal", text="Restart Analysis")
-            self.status_indicator.config(text="Analysis complete", foreground=self.colors['success'])
+        if not self._is_window_valid():
+            return
+            
+        try:
+            self.status_var.set(status)
+            
+            if "found" in status.lower():
+                # Analysis complete
+                self.analyze_button.config(state="normal", text="Restart Analysis")
+                self.status_indicator.config(text="Analysis complete", foreground=self.colors['success'])
+        except tk.TclError:
+            debug_console.log("Window destroyed during status update", level='DEBUG')
     
     def _on_progress_change(self, progress: str):
-        """Handle progress change.""" 
-        self.progress_var.set(progress)
+        """Handle progress change."""
+        if not self._is_window_valid():
+            return
+            
+        try:
+            self.progress_var.set(progress)
+        except tk.TclError:
+            debug_console.log("Window destroyed during progress update", level='DEBUG')
     
     def _on_chunk_received(self, chunk: str):
         """Handle text chunk."""
-        self.analysis_text_widget.config(state="normal")
-        self.analysis_text_widget.delete("1.0", "end")
-        self.analysis_text_widget.insert("1.0", chunk)
-        self.analysis_text_widget.see("end")
-        self.analysis_text_widget.config(state="disabled")
+        if not self._is_window_valid():
+            return
+            
+        try:
+            self.analysis_text_widget.config(state="normal")
+            self.analysis_text_widget.delete("1.0", "end")
+            self.analysis_text_widget.insert("1.0", chunk)
+            self.analysis_text_widget.see("end")
+            self.analysis_text_widget.config(state="disabled")
+        except tk.TclError:
+            debug_console.log("Window destroyed during chunk update", level='DEBUG')
     
     def _on_errors_found(self, errors: List[ProofreadingError]):
         """Handle errors found."""
-        if errors:
-            self._create_error_navigation_tab(errors)
-        
-        self._create_summary_tab()
-        
-        debug_console.log(f"Proofreading UI updated with {len(errors)} errors", level='INFO')
+        if not self._is_window_valid():
+            return
+            
+        try:
+            if errors:
+                self._create_error_navigation_tab(errors)
+                # Show Apply All button when errors are found
+                self.apply_all_button.pack(side="left", padx=(0, 10))
+            
+            self._create_summary_tab()
+            
+            debug_console.log(f"Proofreading UI updated with {len(errors)} errors", level='INFO')
+        except tk.TclError:
+            debug_console.log("Window destroyed during errors update", level='DEBUG')
     
     def _on_analysis_error(self, error_msg: str):
         """Handle analysis error."""
-        self.analyze_button.config(state="normal", text="Retry Analysis")
-        self.status_indicator.config(text="Analysis failed", foreground=self.colors['danger'])
-        
-        messagebox.showerror("Analysis Error", error_msg)
+        if not self._is_window_valid():
+            return
+            
+        try:
+            self.analyze_button.config(state="normal", text="Retry Analysis")
+            self.status_indicator.config(text="Analysis failed", foreground=self.colors['danger'])
+            
+            messagebox.showerror("Analysis Error", error_msg, parent=self.window)
+        except tk.TclError:
+            debug_console.log("Window destroyed during error handling", level='DEBUG')
     
     # Utility methods
     def _get_error_stats_text(self, errors: List[ProofreadingError]) -> str:
@@ -641,6 +735,25 @@ class ProofreadingDialog:
             summary += "Review the errors and apply corrections as needed."
         
         return summary
+    
+    def _apply_all_corrections(self):
+        """Apply all corrections and save to corrected file."""
+        if not self._is_window_valid() or not self.session or not self.session.errors:
+            return
+        
+        # Use dedicated applier module
+        from llm.proofreading_apply import apply_all_corrections
+        
+        success, corrected_filepath = apply_all_corrections(
+            self.session.errors,
+            self.initial_text,
+            parent_window=self.window if self._is_window_valid() else None
+        )
+        
+        if success and self._is_window_valid():
+            # Update UI to reflect applied corrections
+            self._update_error_navigation()
+            self._update_apply_all_button()
     
     def _on_close(self):
         """Handle dialog close."""
