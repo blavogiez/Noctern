@@ -8,7 +8,7 @@ from llm import api_client
 from llm import utils as llm_utils
 from utils import debug_console
 
-def start_streaming_request(editor, prompt, model_name, on_chunk, on_success, on_error, task_type="general"):
+def start_streaming_request(editor, prompt, model_name, on_chunk, on_success, on_error, task_type="general", json_schema=None):
     """
     Start LLM streaming request in background thread.
     
@@ -20,14 +20,26 @@ def start_streaming_request(editor, prompt, model_name, on_chunk, on_success, on
         on_success: Callback when generation completes
         on_error: Callback when generation fails
         task_type: Type of task for optimization settings
+        json_schema: Optional JSON schema for structured output
     """
     progress_bar = llm_state._llm_progress_bar_widget
     
     def stream_worker():
         """Background worker for LLM streaming."""
         try:
-            # Use task-specific generation settings
-            for response in api_client.generate_with_task_profile(prompt, model_name=model_name, task_type=task_type):
+            # Choose appropriate generation function
+            if json_schema:
+                debug_console.log("Using structured output generation", level='INFO')
+                generator = api_client.generate_with_structured_output(
+                    prompt, json_schema, model_name=model_name, 
+                    stream=True, task_type=task_type
+                )
+            else:
+                generator = api_client.generate_with_task_profile(
+                    prompt, model_name=model_name, stream=True, task_type=task_type
+                )
+            
+            for response in generator:
                 if llm_state._is_generation_cancelled:
                     break
                 
@@ -62,5 +74,5 @@ def start_streaming_request(editor, prompt, model_name, on_chunk, on_success, on
         progress_bar.start(10)
     
     # Start background thread
-    debug_console.log(f"Starting LLM streaming (task: {task_type})", level='INFO')
+    debug_console.log(f"Starting LLM streaming (task: {task_type}, structured: {json_schema is not None})", level='INFO')
     threading.Thread(target=stream_worker, daemon=True).start()

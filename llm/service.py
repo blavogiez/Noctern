@@ -7,6 +7,7 @@ from llm import keywords as llm_keywords
 from llm import prompts as llm_prompts
 from llm import history as llm_history
 from llm import autostyle as llm_autostyle
+from llm import proofreading as llm_proofreading
 
 def start_autostyle_process(event=None):
     """
@@ -97,3 +98,16 @@ def open_generate_text_dialog(event=None, initial_prompt_text=None):
     """
     # Include event parameter for shortcut binding consistency
     llm_generation.open_generate_text_dialog(initial_prompt_text=initial_prompt_text)
+
+def open_proofreading_dialog(event=None):
+    """
+    Opens the dialog for document proofreading to detect grammar and spelling errors.
+    
+    This function acts as a wrapper, delegating the call to the `llm_proofreading` module.
+    The proofreading functionality analyzes selected text or the entire document for errors
+    and provides an interface to navigate and apply suggested corrections.
+    
+    Args:
+        event (tk.Event, optional): The Tkinter event object, if called from a binding. Defaults to None.
+    """
+    llm_proofreading.open_proofreading_dialog()

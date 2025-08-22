@@ -124,8 +124,8 @@ def get_available_models():
     
     return model_names if model_names else ["default"]
 
-def _request_gemini_generation(prompt_text, model_name, stream=True):
-    """Send generation request to Google Gemini API."""
+def _request_gemini_generation(prompt_text, model_name, stream=True, json_schema=None):
+    """Send generation request to Google Gemini API with optional structured output."""
     config = app_config.load_config()
     api_key = config.get("gemini_api_key")
     if not api_key:
@@ -135,9 +135,19 @@ def _request_gemini_generation(prompt_text, model_name, stream=True):
     genai.configure(api_key=api_key)
     model = genai.GenerativeModel(model_name)
 
+    # Prepare generation config for structured output
+    generation_config = {}
+    if json_schema:
+        generation_config["response_mime_type"] = "application/json"
+        generation_config["response_schema"] = json_schema
+
     try:
         if stream:
-            response = model.generate_content(prompt_text, stream=True)
+            response = model.generate_content(
+                prompt_text, 
+                stream=True,
+                generation_config=generation_config if json_schema else None
+            )
             full_content = ""
             for chunk in response:
                 if llm_state._is_generation_cancelled:
@@ -149,15 +159,25 @@ def _request_gemini_generation(prompt_text, model_name, stream=True):
                 yield {"success": True, "chunk": chunk_text, "done": False}
             
             # Record usage for streaming
-            completion = model.generate_content(prompt_text)
-            input_tokens = completion.usage_metadata.prompt_token_count
-            output_tokens = completion.usage_metadata.candidates_token_count
-            record_usage(input_tokens, output_tokens)
+            try:
+                completion = model.generate_content(
+                    prompt_text,
+                    generation_config=generation_config if json_schema else None
+                )
+                input_tokens = completion.usage_metadata.prompt_token_count
+                output_tokens = completion.usage_metadata.candidates_token_count
+                record_usage(input_tokens, output_tokens)
+            except:
+                # Fallback if usage metadata fails
+                record_usage(0, len(full_content.split()))
 
             yield {"success": True, "data": full_content, "done": True}
 
         else:
-            response = model.generate_content(prompt_text)
+            response = model.generate_content(
+                prompt_text,
+                generation_config=generation_config if json_schema else None
+            )
             input_tokens = response.usage_metadata.prompt_token_count
             output_tokens = response.usage_metadata.candidates_token_count
             record_usage(input_tokens, output_tokens)
@@ -178,21 +198,28 @@ def request_llm_generation(prompt_text, model_name=DEFAULT_MODEL, stream=True):
         debug_console.log(f"Using Ollama model: {model_name}", level='INFO')
         yield from _request_ollama_generation(prompt_text, model_name, stream)
 
-def _request_ollama_generation(prompt_text, model_name=DEFAULT_MODEL, stream=True):
-    """Generate text using Ollama."""
+def _request_ollama_generation(prompt_text, model_name=DEFAULT_MODEL, stream=True, json_format=False):
+    """Generate text using Ollama with optional JSON format enforcement."""
     debug_console.log(f"Starting Ollama generation: {model_name}", level='INFO')
     
     try:
         client = get_client()
         options = get_task_options("general")
         
+        # Add JSON format for structured output
+        request_params = {
+            "model": model_name,
+            "prompt": prompt_text,
+            "stream": stream,
+            "options": options
+        }
+        
+        if json_format:
+            request_params["format"] = "json"
+            debug_console.log("Using Ollama structured JSON output", level='INFO')
+        
         if not stream:
-            response = client.generate(
-                model=model_name,
-                prompt=prompt_text,
-                stream=False,
-                options=options
-            )
+            response = client.generate(**request_params)
             
             record_usage(
                 response.get("prompt_eval_count", 0),
@@ -205,12 +232,7 @@ def _request_ollama_generation(prompt_text, model_name=DEFAULT_MODEL, stream=Tru
         # Streaming generation
         full_content = ""
         
-        for chunk in client.generate(
-            model=model_name,
-            prompt=prompt_text,
-            stream=True,
-            options=options
-        ):
+        for chunk in client.generate(**request_params):
             if llm_state._is_generation_cancelled:
                 debug_console.log("Generation cancelled", level='INFO')
                 return
@@ -344,6 +366,18 @@ def get_cache_stats():
         "cache_size": len(_response_cache)
     }
 
+def generate_with_structured_output(prompt_text, json_schema, model_name=DEFAULT_MODEL, stream=True, task_type="general"):
+    """Generate text with guaranteed structured JSON output."""
+    debug_console.log(f"Starting structured output generation (task: {task_type})", level='INFO')
+    
+    if model_name.startswith("gemini/"):
+        actual_model_name = model_name.split('/')[-1]
+        debug_console.log(f"Using Gemini model with structured output: {actual_model_name}", level='INFO')
+        yield from _request_gemini_generation(prompt_text, actual_model_name, stream, json_schema)
+    else:
+        debug_console.log(f"Using Ollama model with JSON format: {model_name}", level='INFO')
+        yield from _generate_ollama_with_profile(prompt_text, model_name, stream, task_type, json_format=True)
+
 def generate_with_task_profile(prompt_text, model_name=DEFAULT_MODEL, stream=True, task_type="general"):
     """Generate text with task-specific settings and caching."""
     # Check cache for non-streaming requests
@@ -362,19 +396,26 @@ def generate_with_task_profile(prompt_text, model_name=DEFAULT_MODEL, stream=Tru
         debug_console.log(f"Using Ollama model: {model_name} (task: {task_type})", level='INFO')
         yield from _generate_ollama_with_profile(prompt_text, model_name, stream, task_type)
 
-def _generate_ollama_with_profile(prompt_text, model_name, stream, task_type):
+def _generate_ollama_with_profile(prompt_text, model_name, stream, task_type, json_format=False):
     """Generate text using Ollama with task-specific configuration."""
     try:
         client = get_client()
         options = get_task_options(task_type)
         
+        # Prepare request parameters
+        request_params = {
+            "model": model_name,
+            "prompt": prompt_text,
+            "stream": stream,
+            "options": options
+        }
+        
+        if json_format:
+            request_params["format"] = "json"
+            debug_console.log("Using Ollama JSON format constraint", level='INFO')
+        
         if not stream:
-            response = client.generate(
-                model=model_name,
-                prompt=prompt_text,
-                stream=False,
-                options=options
-            )
+            response = client.generate(**request_params)
             
             record_usage(
                 response.get("prompt_eval_count", 0),
@@ -392,12 +433,7 @@ def _generate_ollama_with_profile(prompt_text, model_name, stream, task_type):
         # Streaming with task profile
         full_content = ""
         
-        for chunk in client.generate(
-            model=model_name,
-            prompt=prompt_text,
-            stream=True,
-            options=options
-        ):
+        for chunk in client.generate(**request_params):
             if llm_state._is_generation_cancelled:
                 return
             

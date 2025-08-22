@@ -1,0 +1,31 @@
+TASK: Find grammar, spelling, punctuation, and style errors in the text below.
+
+{custom_instructions}
+
+CRITICAL: You must return ONLY a JSON object with exactly this structure. Do NOT return article metadata, abstracts, or bibliographic information.
+
+REQUIRED JSON FORMAT:
+{{
+  "errors": [
+    {{
+      "type": "grammar",
+      "original": "exact text with error",
+      "suggestion": "corrected text",
+      "explanation": "brief error explanation"
+    }}
+  ]
+}}
+
+STRICT RULES:
+- ONLY analyze for language errors (grammar, spelling, punctuation, style)
+- DO NOT extract metadata, titles, authors, journals, or bibliographic data
+- type MUST be exactly one of: grammar, spelling, punctuation, style, clarity, syntax
+- original MUST be exact text from the input that contains an error
+- suggestion MUST be the corrected version of that text
+- If NO errors found, return: {{"errors": []}}
+- Return ONLY the JSON object, nothing else
+
+TEXT TO PROOFREAD:
+{text_to_check}
+
+JSON RESPONSE:
