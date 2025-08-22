@@ -15,7 +15,7 @@ PROOFREADING_SCHEMA = {
                 "properties": {
                     "type": {
                         "type": "string",
-                        "enum": ["grammar", "spelling", "punctuation", "style", "clarity", "syntax"],
+                        "enum": ["grammar", "spelling", "punctuation", "style", "clarity", "syntax", "coherence"],
                         "description": "Type of language error found"
                     },
                     "original": {
@@ -29,9 +29,14 @@ PROOFREADING_SCHEMA = {
                     "explanation": {
                         "type": "string",
                         "description": "Brief explanation of why this is an error"
+                    },
+                    "importance": {
+                        "type": "string",
+                        "enum": ["high", "medium", "low"],
+                        "description": "Importance level of the error for document professionalism"
                     }
                 },
-                "required": ["type", "original", "suggestion", "explanation"]
+                "required": ["type", "original", "suggestion", "explanation", "importance"]
             }
         }
     },
@@ -68,7 +73,7 @@ def validate_proofreading_response(response_data):
         return False, []
     
     normalized_errors = []
-    valid_types = ["grammar", "spelling", "punctuation", "style", "clarity", "syntax"]
+    valid_types = ["grammar", "spelling", "punctuation", "style", "clarity", "syntax", "coherence"]
     
     for error in errors:
         if not isinstance(error, dict):
@@ -86,6 +91,11 @@ def validate_proofreading_response(response_data):
         original = error.get("original", "").strip()
         suggestion = error.get("suggestion", "").strip()
         explanation = error.get("explanation", "").strip()
+        importance = error.get("importance", "medium").lower()
+        
+        # Validate importance level
+        if importance not in ["high", "medium", "low"]:
+            importance = "medium"
         
         # Skip errors with empty required fields
         if not original or not suggestion or not explanation:
@@ -101,6 +111,7 @@ def validate_proofreading_response(response_data):
             "original": original,
             "suggestion": suggestion,
             "explanation": explanation,
+            "importance": importance,
             "start": error.get("start", 0),
             "end": error.get("end", 0),
             "context": error.get("context", original)

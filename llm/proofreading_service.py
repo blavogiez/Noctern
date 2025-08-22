@@ -22,6 +22,7 @@ class ErrorType(Enum):
     STYLE = "style"
     CLARITY = "clarity"
     SYNTAX = "syntax"
+    COHERENCE = "coherence"
 
 
 @dataclass
@@ -31,6 +32,7 @@ class ProofreadingError:
     original: str
     suggestion: str
     explanation: str
+    importance: str = "medium"
     start_pos: int = 0
     end_pos: int = 0
     context: str = ""
@@ -44,6 +46,7 @@ class ProofreadingError:
             original=data.get('original', ''),
             suggestion=data.get('suggestion', ''),
             explanation=data.get('explanation', ''),
+            importance=data.get('importance', 'medium'),
             start_pos=data.get('start', 0),
             end_pos=data.get('end', 0),
             context=data.get('context', data.get('original', ''))
@@ -56,6 +59,7 @@ class ProofreadingError:
             'original': self.original,
             'suggestion': self.suggestion,
             'explanation': self.explanation,
+            'importance': self.importance,
             'start': self.start_pos,
             'end': self.end_pos,
             'context': self.context

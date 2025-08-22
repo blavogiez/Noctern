@@ -1,6 +1,16 @@
-TASK: Find grammar, spelling, punctuation, and style errors in the text below.
+TASK: Perform thorough proofreading to detect ALL errors that would make the document appear unprofessional or undermine its credibility. Focus on finding inconsistencies, syntax errors, spelling mistakes, grammar issues, and stylistic problems.
 
 {custom_instructions}
+
+ANALYSIS APPROACH:
+1. SPELLING: Check for misspelled words, typos, incorrect word forms
+2. GRAMMAR: Identify subject-verb disagreements, incorrect tense usage, article errors, pronoun misuse
+3. SYNTAX: Find sentence structure problems, run-on sentences, fragments, incorrect word order
+4. PUNCTUATION: Locate missing or incorrect punctuation marks, comma splices, apostrophe errors
+5. CONSISTENCY: Check for inconsistent terminology, formatting, capitalization, number formats
+6. CLARITY: Identify confusing phrasing, ambiguous references, unclear expressions
+7. STYLE: Find inappropriate tone, redundant phrases, awkward constructions
+8. CONTENT COHERENCE: Detect sentences or phrases that are completely out of context or irrelevant to the document's subject matter, random insertions, topic drift, non-sequiturs
 
 CRITICAL: You must return ONLY a JSON object with exactly this structure. Do NOT return article metadata, abstracts, or bibliographic information.
 
@@ -11,17 +21,23 @@ REQUIRED JSON FORMAT:
       "type": "grammar",
       "original": "exact text with error",
       "suggestion": "corrected text",
-      "explanation": "brief error explanation"
+      "explanation": "brief error explanation",
+      "importance": "high"
     }}
   ]
 }}
 
 STRICT RULES:
-- ONLY analyze for language errors (grammar, spelling, punctuation, style)
+- ONLY analyze for language errors and content coherence (grammar, spelling, punctuation, style, clarity, syntax, coherence)
 - DO NOT extract metadata, titles, authors, journals, or bibliographic data
-- type MUST be exactly one of: grammar, spelling, punctuation, style, clarity, syntax
+- type MUST be exactly one of: grammar, spelling, punctuation, style, clarity, syntax, coherence
+- importance MUST be exactly one of: high, medium, low
 - original MUST be exact text from the input that contains an error
 - suggestion MUST be the corrected version of that text
+- HIGH importance: Critical errors that severely impact professionalism (major grammar, spelling, content completely out of context, factual inconsistencies)
+- MEDIUM importance: Noticeable errors that affect readability (punctuation, minor grammar, style issues, minor coherence problems)
+- LOW importance: Minor improvements for polish (style preferences, minor clarity enhancements)
+- Be thorough - catch ALL errors, even minor ones
 - If NO errors found, return: {{"errors": []}}
 - Return ONLY the JSON object, nothing else
 
