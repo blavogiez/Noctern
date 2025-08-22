@@ -371,19 +371,29 @@ class ProofreadingDialog:
         action_frame = ttk.Frame(parent)
         action_frame.grid(row=3, column=0, sticky="ew", pady=(15, 0))
         
+        # Approval buttons
+        self.approve_button = ttk.Button(
+            action_frame,
+            text="✓ Approve",
+            command=self._approve_current_correction
+        )
+        self.approve_button.pack(side="left", padx=(0, 10))
+        
+        self.reject_button = ttk.Button(
+            action_frame,
+            text="✗ Reject",
+            command=self._reject_current_correction
+        )
+        self.reject_button.pack(side="left", padx=(0, 10))
+        
+        # Individual apply button (for approved corrections)
         self.apply_button = ttk.Button(
             action_frame,
-            text="Apply Correction",
-            command=self._apply_current_correction
+            text="Apply Now",
+            command=self._apply_current_correction,
+            state="disabled"
         )
         self.apply_button.pack(side="left", padx=(0, 10))
-        
-        self.skip_button = ttk.Button(
-            action_frame,
-            text="Skip This Error",
-            command=self._go_next
-        )
-        self.skip_button.pack(side="left", padx=(0, 10))
         
         # Progress info
         applied_label = ttk.Label(
@@ -429,10 +439,10 @@ class ProofreadingDialog:
             command=self._restart_analysis
         ).pack(side="right", padx=(0, 10))
         
-        # Apply All Corrections button (initially hidden)
+        # Apply All Approved Corrections button (initially hidden)
         self.apply_all_button = ttk.Button(
             footer_frame,
-            text="Apply All & Save Corrected File",
+            text="Apply All Approved & Save Corrected File",
             command=self._apply_all_corrections
         )
         # Don't pack initially - will be shown when errors are found
@@ -443,6 +453,8 @@ class ProofreadingDialog:
         self.window.bind("<F5>", lambda e: self._restart_analysis())
         self.window.bind("<Left>", lambda e: self._go_previous())
         self.window.bind("<Right>", lambda e: self._go_next())
+        self.window.bind("<a>", lambda e: self._approve_current_correction())  # A for Approve
+        self.window.bind("<r>", lambda e: self._reject_current_correction())   # R for Reject
         self.window.bind("<Return>", lambda e: self._apply_current_correction())
     
     # Event Handlers
@@ -514,9 +526,42 @@ class ProofreadingDialog:
         if self.session and self.session.go_to_next_error():
             self._update_error_navigation()
     
-    def _apply_current_correction(self):
-        """Apply current correction."""
+    def _approve_current_correction(self):
+        """Approve current correction for later application."""
         if not self._is_window_valid() or not self.session:
+            return
+            
+        try:
+            if self.session.approve_current_correction():
+                self._update_error_navigation()
+                # Auto-advance to next error
+                if self._is_window_valid():
+                    self.window.after(500, self._go_next)
+        except tk.TclError:
+            debug_console.log("Window destroyed during correction approval", level='DEBUG')
+    
+    def _reject_current_correction(self):
+        """Reject current correction."""
+        if not self._is_window_valid() or not self.session:
+            return
+            
+        try:
+            if self.session.reject_current_correction():
+                self._update_error_navigation()
+                # Auto-advance to next error
+                if self._is_window_valid():
+                    self.window.after(500, self._go_next)
+        except tk.TclError:
+            debug_console.log("Window destroyed during correction rejection", level='DEBUG')
+    
+    def _apply_current_correction(self):
+        """Apply current correction immediately (only if approved)."""
+        if not self._is_window_valid() or not self.session:
+            return
+            
+        current_error = self.session.get_current_error()
+        if not current_error or not current_error.is_approved:
+            messagebox.showwarning("Not Approved", "Please approve this correction before applying it.", parent=self.window)
             return
             
         try:
@@ -577,19 +622,42 @@ class ProofreadingDialog:
             self.context_text.insert("1.0", current_error.context)
             self.context_text.config(state="disabled")
             
-            # Update apply button
+            # Update button states based on approval and application status
             if current_error.is_applied:
+                # Already applied
+                self.approve_button.config(state="disabled", text="✓ Applied")
+                self.reject_button.config(state="disabled")
                 self.apply_button.config(state="disabled", text="Applied")
-                self.applied_label.config(text="Already applied", foreground=self.colors['success'])
+                status_color = self.colors['success']
+                status_text = "Already applied"
+            elif current_error.is_approved:
+                # Approved but not applied
+                self.approve_button.config(state="disabled", text="✓ Approved")
+                self.reject_button.config(state="normal", text="✗ Reject")
+                self.apply_button.config(state="normal", text="Apply Now")
+                status_color = self.colors['primary']
+                status_text = "Approved - ready to apply"
             else:
-                button_text = "Delete Text" if not current_error.suggestion else "Apply Correction"
-                self.apply_button.config(state="normal", text=button_text)
-                self.applied_label.config(text="")
+                # Not approved yet
+                self.approve_button.config(state="normal", text="✓ Approve")
+                self.reject_button.config(state="normal", text="✗ Reject") 
+                self.apply_button.config(state="disabled", text="Apply Now")
+                status_color = self.colors['muted']
+                status_text = "Pending approval"
             
-            # Update applied corrections count
+            # Update status display
+            approved_count = self.session.get_approved_corrections_count()
             applied_count = self.session.get_applied_corrections_count()
-            if applied_count > 0:
-                self.applied_label.config(text=f"{applied_count}/{total} corrections applied", foreground=self.colors['success'])
+            
+            if applied_count > 0 or approved_count > 0:
+                status_parts = []
+                if approved_count > 0:
+                    status_parts.append(f"{approved_count} approved")
+                if applied_count > 0:
+                    status_parts.append(f"{applied_count} applied")
+                status_text = f"{', '.join(status_parts)} of {total}"
+            
+            self.applied_label.config(text=status_text, foreground=status_color)
             
             # Update Apply All button
             self._update_apply_all_button()
@@ -608,18 +676,27 @@ class ProofreadingDialog:
                     self.apply_all_button.pack_forget()
                 return
             
-            # Count unapplied corrections
-            unapplied_count = len([e for e in self.session.errors if not e.is_applied])
+            # Count approved but unapplied corrections
+            approved_unapplied = len([e for e in self.session.errors if e.is_approved and not e.is_applied])
             
-            if unapplied_count > 0:
-                # Show button with count
-                button_text = f"Apply All {unapplied_count} Corrections & Save"
+            if approved_unapplied > 0:
+                # Show button with approved count
+                button_text = f"Apply All {approved_unapplied} Approved Corrections & Save"
                 self.apply_all_button.config(text=button_text, state="normal")
                 if not self.apply_all_button.winfo_viewable():
                     self.apply_all_button.pack(side="left", padx=(0, 10))
             else:
-                # All corrections applied - change button text
-                self.apply_all_button.config(text="All Corrections Applied", state="disabled")
+                # Check if there are any approved corrections (all applied)
+                approved_count = self.session.get_approved_corrections_count()
+                applied_count = self.session.get_applied_corrections_count()
+                
+                if approved_count > 0 and approved_count == applied_count:
+                    # All approved corrections have been applied
+                    self.apply_all_button.config(text="All Approved Corrections Applied", state="disabled")
+                else:
+                    # No approved corrections yet
+                    if hasattr(self, 'apply_all_button'):
+                        self.apply_all_button.pack_forget()
         except tk.TclError:
             debug_console.log("Window destroyed during Apply All button update", level='DEBUG')
     

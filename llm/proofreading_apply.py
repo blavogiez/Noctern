@@ -23,24 +23,27 @@ class ProofreadingApplier:
                             original_text: str,
                             parent_window=None) -> Tuple[bool, Optional[str]]:
         """
-        Apply all corrections and save to corrected file.
+        Apply all approved corrections and save to corrected file.
         
         Args:
-            errors: List of proofreading errors to apply
+            errors: List of proofreading errors (only approved ones will be applied)
             original_text: Original text content
             parent_window: Parent window for dialogs
             
         Returns:
             Tuple of (success, corrected_file_path)
         """
-        if not errors:
+        # Filter to only approved errors
+        approved_errors = [error for error in errors if error.is_approved]
+        
+        if not approved_errors:
             if parent_window:
-                messagebox.showwarning("No Corrections", "No errors found to correct.", parent=parent_window)
+                messagebox.showwarning("No Approved Corrections", "No corrections have been approved for application.", parent=parent_window)
             return False, None
         
         try:
-            # Apply corrections to text
-            corrected_text = self._apply_corrections_to_text(original_text, errors)
+            # Apply corrections to text (only approved ones)
+            corrected_text = self._apply_corrections_to_text(original_text, approved_errors)
             
             # Generate corrected file path
             corrected_filepath = self._generate_corrected_filepath()
@@ -48,23 +51,23 @@ class ProofreadingApplier:
             # Save corrected file
             self._save_corrected_file(corrected_text, corrected_filepath)
             
-            # Mark all errors as applied
-            for error in errors:
+            # Mark approved errors as applied
+            for error in approved_errors:
                 error.is_applied = True
             
             # Store results
-            self.last_applied_count = len(errors)
+            self.last_applied_count = len(approved_errors)
             self.last_file_path = corrected_filepath
             
             # Show success message
             if parent_window:
                 messagebox.showinfo(
                     "Corrections Applied", 
-                    f"Applied {len(errors)} corrections and saved to:\n{corrected_filepath}",
+                    f"Applied {len(approved_errors)} approved corrections and saved to:\n{corrected_filepath}",
                     parent=parent_window
                 )
             
-            debug_console.log(f"Applied {len(errors)} corrections and saved to: {corrected_filepath}", level='SUCCESS')
+            debug_console.log(f"Applied {len(approved_errors)} approved corrections and saved to: {corrected_filepath}", level='SUCCESS')
             return True, corrected_filepath
             
         except Exception as e:
@@ -221,10 +224,10 @@ def apply_all_corrections(errors: List[ProofreadingError],
                          original_text: str,
                          parent_window=None) -> Tuple[bool, Optional[str]]:
     """
-    Apply all proofreading corrections and save to corrected file.
+    Apply all approved proofreading corrections and save to corrected file.
     
     Args:
-        errors: List of proofreading errors to apply
+        errors: List of proofreading errors (only approved ones will be applied)
         original_text: Original text content  
         parent_window: Parent window for dialogs
         

@@ -37,6 +37,7 @@ class ProofreadingError:
     end_pos: int = 0
     context: str = ""
     is_applied: bool = False
+    is_approved: bool = False  # New field for manual approval
     
     @classmethod
     def from_dict(cls, data: Dict) -> 'ProofreadingError':
@@ -168,6 +169,32 @@ class ProofreadingSession:
     def get_applied_corrections_count(self) -> int:
         """Get number of applied corrections."""
         return sum(1 for error in self.errors if error.is_applied)
+    
+    def get_approved_corrections_count(self) -> int:
+        """Get number of approved corrections."""
+        return sum(1 for error in self.errors if error.is_approved)
+    
+    def approve_current_correction(self) -> bool:
+        """Approve the current error's correction."""
+        current_error = self.get_current_error()
+        if current_error and not current_error.is_approved:
+            current_error.is_approved = True
+            debug_console.log(f"Approved correction: '{current_error.original}' -> '{current_error.suggestion}'", level='INFO')
+            return True
+        return False
+    
+    def reject_current_correction(self) -> bool:
+        """Reject the current error's correction."""
+        current_error = self.get_current_error()
+        if current_error:
+            current_error.is_approved = False
+            debug_console.log(f"Rejected correction: '{current_error.original}' -> '{current_error.suggestion}'", level='INFO')
+            return True
+        return False
+    
+    def get_approved_errors(self) -> List['ProofreadingError']:
+        """Get list of approved errors ready for application."""
+        return [error for error in self.errors if error.is_approved and not error.is_applied]
 
 
 class ProofreadingService:
