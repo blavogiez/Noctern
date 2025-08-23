@@ -5,7 +5,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from typing import Optional, List
 
-from llm.proofreading_service import get_proofreading_service, ProofreadingError, ProofreadingSession, ProofreadingCache
+from llm.proofreading_service import get_proofreading_service, ProofreadingError, ProofreadingSession, load_session_from_cache, list_cached_sessions
 from llm import state
 
 
@@ -445,7 +445,7 @@ class ProofreadingDialog:
         custom_instructions = self.instructions_entry.get().strip()
         
         # Create new session
-        self.session = self.proofreading_service.start_proofreading_session(
+        self.session = self.proofreading_service.start_session(
             self.initial_text, 
             custom_instructions
         )
@@ -834,7 +834,7 @@ class ProofreadingDialog:
                 return
             
             # Get cached sessions
-            sessions = ProofreadingCache.list_sessions(current_filepath)
+            sessions = list_cached_sessions(current_filepath)
             
             if not sessions:
                 messagebox.showinfo("No History", "No proofreading history found for this document.", parent=self.window)
@@ -931,7 +931,7 @@ class ProofreadingDialog:
             
             try:
                 # Load session from cache
-                loaded_session = ProofreadingCache.load_session(session_file)
+                loaded_session = load_session_from_cache(session_file)
                 if loaded_session:
                     # Replace current session
                     self.session = loaded_session

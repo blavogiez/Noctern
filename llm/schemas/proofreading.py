@@ -1,7 +1,6 @@
-"""JSON Schema for proofreading errors structured output."""
+"""JSON Schema for proofreading errors validation."""
 
-
-# JSON Schema for proofreading errors (OpenAPI 3.0 subset compatible with Gemini)
+# Schema for structured AI output
 PROOFREADING_SCHEMA = {
     "type": "object",
     "properties": {
@@ -31,7 +30,7 @@ PROOFREADING_SCHEMA = {
                     "importance": {
                         "type": "string",
                         "enum": ["high", "medium", "low"],
-                        "description": "Importance level of the error for document professionalism"
+                        "description": "Importance level of the error"
                     }
                 },
                 "required": ["type", "original", "suggestion", "explanation", "importance"]
@@ -41,26 +40,18 @@ PROOFREADING_SCHEMA = {
     "required": ["errors"]
 }
 
+
 def get_proofreading_schema():
     """Get JSON schema for proofreading structured output."""
-    """Get the JSON schema for proofreading structured output."""
     return PROOFREADING_SCHEMA
+
 
 def validate_proofreading_response(response_data):
     """Validate response matches proofreading schema."""
-    """
-    Validate that a response matches the expected proofreading schema.
-    
-    Args:
-        response_data (dict): The parsed JSON response
-    
-    Returns:
-        tuple: (is_valid, normalized_errors)
-    """
     if not isinstance(response_data, dict):
         return False, []
     
-    # Check for unwanted fields that indicate wrong response type
+    # Check for forbidden fields (wrong response type)
     forbidden_fields = ["title", "authors", "journal", "volume", "issue", "pages", "doi", "abstract", "date"]
     if any(field in response_data for field in forbidden_fields):
         return False, []
@@ -73,19 +64,18 @@ def validate_proofreading_response(response_data):
         return False, []
     
     normalized_errors = []
-    valid_types = ["grammar", "spelling", "punctuation", "style", "clarity", "syntax", "coherence"]
+    valid_types = {"grammar", "spelling", "punctuation", "style", "clarity", "syntax", "coherence"}
+    valid_importance = {"high", "medium", "low"}
     
-    for i, error in enumerate(errors):
+    for error in errors:
         if not isinstance(error, dict):
             continue
         
-        # Check for required fields
-        required_fields = ["type", "original", "suggestion", "explanation"]
-        missing_fields = [field for field in required_fields if field not in error]
-        if missing_fields:
+        # Check required fields
+        required_fields = ["type", "original", "explanation"]
+        if not all(field in error for field in required_fields):
             continue
-            
-        # Validate type
+        
         error_type = error.get("type", "").lower()
         if error_type not in valid_types:
             continue
@@ -95,23 +85,22 @@ def validate_proofreading_response(response_data):
         explanation = error.get("explanation", "").strip()
         importance = error.get("importance", "medium").lower()
         
-        # Validate importance level
-        if importance not in ["high", "medium", "low"]:
-            importance = "medium"
-        
-        # Skip errors with empty required fields (but allow empty suggestion for deletions)
+        # Validate fields
         if not original or not explanation:
             continue
         
-        # For coherence errors, empty suggestion means deletion (which is valid)
+        if importance not in valid_importance:
+            importance = "medium"
+        
+        # Allow empty suggestion for deletions (coherence errors)
         if not suggestion and error_type != "coherence":
             continue
         
-        # Skip if suggestion is identical to original (no actual correction)
+        # Skip if suggestion is identical to original
         if original == suggestion:
             continue
-            
-        # Normalize error with required fields and defaults
+        
+        # Create normalized error
         normalized_error = {
             "type": error_type,
             "original": original,
