@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-AutomaTeX is a modern LaTeX editor with AI assistance that runs locally. It's a Python desktop application built with ttkbootstrap (Tkinter) that provides LaTeX editing, compilation, PDF preview, and AI-powered text generation/completion using Ollama models.
+AutomaTeX is a modern AI-assisted LaTeX editor built with Python and ttkbootstrap. It provides local AI integration through Ollama for text completion, generation, and proofreading, along with an integrated PDF preview system.
 
 ## Development Commands
 
@@ -14,87 +14,101 @@ python main.py
 ```
 
 ### Testing
+Run PDF preview tests:
 ```bash
-pytest
+python pdf_preview/test.py
+python pdf_preview/test_comprehensive.py
 ```
 
-### Installing Dependencies
+Run specific test suites with pytest:
+```bash
+python -m pytest tests/ -v
+```
+
+### Dependencies Installation
 ```bash
 pip install -r requirements.txt
 ```
 
-### Prerequisites Setup
-- Python 3.8+
-- LaTeX distribution (MiKTeX/MacTeX/TeXLive) 
-- Ollama with models (mistral, codellama:7b-instruct recommended)
-
 ## Architecture Overview
 
-### Core Application Structure
-- **main.py**: Entry point that initializes GUI, subsystems (compiler, LLM service, translator), and starts the Tkinter event loop
-- **app/**: Main GUI components and application state management
-  - `main_window.py`: GUI setup and window management
-  - `state.py`: Global application state
-  - `actions.py`: User action handlers
-  - `config.py`: Configuration loading/saving (settings.conf)
+### Core Modules
 
-### Key Subsystems
-- **editor/**: Text editing functionality (syntax highlighting, search, snippets, structure navigation)
-- **latex/**: LaTeX compilation and translation services
-- **llm/**: AI service integration with Ollama for completion, generation, rephrasing
-- **pdf_preview/**: Integrated PDF viewer with synchronization
-- **pre_compiler/**: Error checking and validation
-- **metrics/**: Usage tracking and analytics
+**app/**: GUI components and application state
+- `main_window.py`: Primary window setup and configuration  
+- `state.py`: Global application state management
+- `actions.py`: User action handlers and event routing
+- `theme.py`: UI theming and visual customization
+- `zoom.py`: Text scaling and zoom functionality
+- Tab operations, shortcuts, and UI visibility controls
 
-### Configuration
-Settings are stored in `settings.conf` using configparser with these key sections:
-- Model assignments (completion, generation, rephrase, debug, style)
-- UI preferences (theme, font size, window state, monitor selection)
-- Feature toggles (status bar, PDF preview)
+**editor/**: Text editing engine and LaTeX support
+- `syntax.py`: Differential LaTeX syntax highlighting with performance optimization
+- `syntax_highlighter.py`: Core highlighting implementation
+- `syntax_tracker.py`: Line-based change tracking for efficient updates
+- `tab.py`: Editor tab management and EditorTab class
+- `monaco_optimizer.py`: Performance optimizations for large files
+- Document outline, search, snippets, and image management
 
-### AI Integration Pattern
-The LLM service uses lazy initialization and getter functions to access application state, allowing modular integration:
-```python
-llm_service.initialize_llm_service(
-    root_window=root_window,
-    active_editor_getter=lambda: state.get_current_tab().editor if state.get_current_tab() else None,
-    active_filepath_getter=lambda: state.get_current_tab().file_path if state.get_current_tab() else None
-)
-```
+**latex/**: LaTeX compilation and processing
+- `compiler.py`: pdflatex integration and compilation management
+- `error_parser.py`: LaTeX error parsing and user-friendly messages
+- `translator.py`: Document translation services
 
-### Key Features Implementation
-- **Image Pasting**: Automatic LaTeX code generation and organized file structure (figures/section/subsection/)
-- **AI Completion**: Context-aware text completion and generation via keyboard shortcuts
-- **PDF Synchronization**: Bidirectional sync between editor cursor and PDF position
-- **Translation**: Document translation with automatic file naming
+**llm/**: AI/LLM integration layer
+- `service.py`: Centralized LLM API facade
+- `api_client.py`: Ollama and external API communication
+- `completion.py`, `generation.py`, `proofreading.py`: Core AI features
+- `dialogs/`: AI interaction dialogs and user interfaces
+- `schemas/`: Data validation and response parsing
 
-## Important Development Guidelines
+**pdf_preview/**: Integrated PDF viewer
+- `manager.py`: PDF compilation and synchronization
+- `viewer.py`: PDF rendering and display
+- `interface.py`: Integration with main application
+- Live preview with auto-compilation and editor synchronization
 
-### Performance Optimizations
-- Deferred initialization of heavy components (snippets, translation service) to improve startup time
-- Heavy updates (syntax highlighting) scheduled with `root_window.after()` to avoid blocking UI
-- Lazy loading of LLM models to reduce memory footprint
+**debug_system/**: LaTeX debugging and error analysis
+- `coordinator.py`: Debug workflow coordination
+- `llm_analyzer.py`: AI-powered error analysis
+- `error_parser.py`: LaTeX error interpretation
+- `quick_fixes.py`: Automated error correction
 
-### Code Conventions
-- Use getter functions (lambdas) for accessing dynamic application state
-- Initialize services with callback functions rather than direct references for better modularity
-- Configuration changes should update both runtime state and persist to settings.conf
-- Error handling includes user-friendly status messages and debug logging
+### Key Design Patterns
 
-### Comment Standards
-- Write all comments in English only
-- Use professional but informal tone
-- Keep comments clear and concise
-- Start with action verbs (Initialize, Handle, Process, Create, Load)
-- No articles ("a", "the") unless critical for clarity
-- No ending punctuation except docstrings
-- Max 80 characters per line
-- Avoid time-specific language ("now", "currently", "will be")
-- Use present tense for describing what code does
-- Format: Docstrings `"""Action verb + brief description."""` | Inline `# Action verb + explanation`
-- Example: "Handle file operations" not "This will handle file operations"
+**Performance Optimization**: 
+- Differential syntax highlighting tracks only changed lines
+- Large file threshold (2000+ lines) triggers optimized rendering
+- Monaco editor optimizations for responsive editing
 
-### Testing
-- Tests located in `tests/` directory
-- Use pytest with configuration in `pytest.ini`
-- Focus on editor events, error parsing, search functionality, and theme management
+**AI Integration**:
+- Local-first approach using Ollama for privacy
+- Modular service architecture with dialog-based interactions
+- Streaming responses for real-time feedback
+
+**State Management**:
+- Centralized application state with getter functions
+- Weak references for memory-efficient editor tracking
+- Event-driven architecture for UI updates
+
+## Critical Implementation Notes
+
+**Syntax Highlighting**: Uses differential highlighting system that only processes changed lines. The `syntax_tracker.py` module maintains line state to optimize performance on large documents.
+
+**AI Service**: Initialized through `llm/service.py` with dependency injection of UI components. All AI features route through this central service for consistent behavior.
+
+**PDF Preview**: Automatically synchronizes with LaTeX compilation. Uses pdf2image for rendering and caches pages for performance.
+
+**Editor Tabs**: Managed through `EditorTab` class with weak reference tracking. Each tab maintains its own syntax highlighting state.
+
+## Testing Strategy
+
+- PDF preview module has comprehensive test suites
+- Use pytest for structured testing with `pytest.ini` configuration
+- Individual module testing through direct Python execution
+
+## Dependencies
+
+Core: ttkbootstrap, Pillow, PyPDF2, pdf2image
+AI: ollama, google-generativeai
+LaTeX: Requires system pdflatex installation (MiKTeX/TeX Live)

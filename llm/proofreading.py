@@ -53,11 +53,14 @@ def open_proofreading_dialog():
 
 def _get_text_to_proofread(editor) -> str:
     """
-    Extract text to proofread from editor.
+    Extract text to proofread from editor, filtering out LaTeX comment lines.
     
     Priority:
     1. Selected text (if any)
     2. Entire document content
+    
+    Comment lines (starting with %) are filtered out to avoid proofreading 
+    LaTeX comments which should not be modified.
     
     Returns:
         str: Text to proofread, or empty string if no content
@@ -66,8 +69,9 @@ def _get_text_to_proofread(editor) -> str:
         # Try to get selected text first
         selected_text = editor.get(editor.index("sel.first"), editor.index("sel.last"))
         if selected_text.strip():
-            debug_console.log(f"Using selected text for proofreading: {len(selected_text)} chars", level='INFO')
-            return selected_text
+            filtered_text = _filter_comment_lines(selected_text)
+            debug_console.log(f"Using selected text for proofreading: {len(filtered_text)} chars (filtered from {len(selected_text)})", level='INFO')
+            return filtered_text
     except:
         # No selection, use entire document
         pass
@@ -75,7 +79,39 @@ def _get_text_to_proofread(editor) -> str:
     # Get entire document content
     full_text = editor.get("1.0", "end-1c")
     if full_text.strip():
-        debug_console.log(f"Using entire document for proofreading: {len(full_text)} chars", level='INFO')
-        return full_text
+        filtered_text = _filter_comment_lines(full_text)
+        debug_console.log(f"Using entire document for proofreading: {len(filtered_text)} chars (filtered from {len(full_text)})", level='INFO')
+        return filtered_text
     
     return ""
+
+
+def _filter_comment_lines(text: str) -> str:
+    """
+    Filter out LaTeX comment lines from the text.
+    
+    Removes lines that start with % (LaTeX comments), while preserving
+    the structure of the document by keeping empty lines.
+    
+    Args:
+        text (str): Original text content
+        
+    Returns:
+        str: Text with comment lines removed
+    """
+    if not text:
+        return text
+    
+    lines = text.split('\n')
+    filtered_lines = []
+    
+    for line in lines:
+        # Check if line starts with % (after removing leading whitespace)
+        stripped_line = line.lstrip()
+        if stripped_line.startswith('%'):
+            # Replace comment line with empty line to preserve document structure
+            filtered_lines.append('')
+        else:
+            filtered_lines.append(line)
+    
+    return '\n'.join(filtered_lines)

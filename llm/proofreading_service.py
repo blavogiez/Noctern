@@ -40,7 +40,7 @@ class ProofreadingError:
     is_approved: bool = False  # New field for manual approval
     
     @classmethod
-    def from_dict(cls, data: Dict) -> 'ProofreadingError':
+    def from_dict(cls, data: Dict, full_text: str = "") -> 'ProofreadingError':
         """Create ProofreadingError from dictionary."""
         error_type_str = data.get('type', 'grammar').lower().strip()
         
@@ -53,16 +53,155 @@ class ProofreadingError:
         
         debug_console.log(f"Creating error of type: {error_type.value}", level='DEBUG')
         
+        # Always extract context from full text when available
+        original_text = data.get('original', '')
+        
+        if full_text and original_text:
+            # Always create enhanced context from full text
+            enhanced_context = cls._create_enhanced_context(original_text, full_text)
+        else:
+            # Fallback to original text if no full text available
+            enhanced_context = original_text
+        
         return cls(
             type=error_type,
-            original=data.get('original', ''),
+            original=original_text,
             suggestion=data.get('suggestion', ''),
             explanation=data.get('explanation', ''),
             importance=data.get('importance', 'medium'),
             start_pos=data.get('start', 0),
             end_pos=data.get('end', 0),
-            context=data.get('context', data.get('original', ''))
+            context=enhanced_context
         )
+    
+    @staticmethod
+    def _create_enhanced_context(original_text: str, full_text: str, words_before: int = 10, words_after: int = 10) -> str:
+        """Create enhanced context showing words around the error."""
+        if not original_text or not full_text:
+            return original_text
+        
+        # Find the best position of the error in the text
+        error_pos = ProofreadingError._find_best_error_position(original_text, full_text)
+        if error_pos == -1:
+            return original_text
+        
+        # Extract context with specified number of words before and after
+        context = ProofreadingError._extract_word_context(
+            full_text, error_pos, len(original_text), words_before, words_after
+        )
+        
+        return context.strip() if context else original_text
+    
+    @staticmethod
+    def _find_best_error_position(original_text: str, full_text: str) -> int:
+        """Find the best position of the error text in the full text."""
+        import re
+        
+        # Try exact match first
+        matches = []
+        start = 0
+        while True:
+            pos = full_text.find(original_text, start)
+            if pos == -1:
+                break
+            matches.append(pos)
+            start = pos + 1
+        
+        # If no exact match, try case-insensitive
+        if not matches:
+            pattern = re.escape(original_text)
+            for match in re.finditer(pattern, full_text, re.IGNORECASE):
+                matches.append(match.start())
+        
+        if not matches:
+            return -1
+        
+        if len(matches) == 1:
+            return matches[0]
+        
+        # Choose the best match
+        best_pos = matches[0]
+        best_score = -1
+        
+        for pos in matches:
+            score = ProofreadingError._score_position(pos, original_text, full_text)
+            if score > best_score:
+                best_score = score
+                best_pos = pos
+        
+        return best_pos
+    
+    @staticmethod
+    def _score_position(pos: int, original_text: str, full_text: str) -> int:
+        """Score a position to determine if it's the right error occurrence."""
+        score = 0
+        
+        # Check if it's a complete word (not part of another word)
+        before_ok = (pos == 0 or not full_text[pos - 1].isalnum())
+        after_ok = (pos + len(original_text) >= len(full_text) or 
+                   not full_text[pos + len(original_text)].isalnum())
+        if before_ok and after_ok:
+            score += 10
+        
+        # Check if it's at the start of a sentence
+        if pos == 0:
+            score += 5
+        elif pos > 0:
+            char_before = full_text[pos - 1]
+            if char_before == '\n':
+                score += 15  # New line = likely sentence start
+            elif char_before in '.!?' and pos < len(full_text) - 1:
+                score += 12  # After punctuation
+            elif pos > 1 and full_text[pos - 2:pos] in ['. ', '! ', '? ']:
+                score += 10  # After punctuation + space
+        
+        return score
+    
+    @staticmethod
+    def _extract_word_context(full_text: str, error_pos: int, error_length: int, words_before: int, words_after: int) -> str:
+        """Extract context with specified number of words before and after the error."""
+        if not full_text or error_pos < 0:
+            return full_text[error_pos:error_pos + error_length] if full_text else ""
+        
+        # Simple approach: split around the error position
+        error_end = error_pos + error_length
+        
+        # Get text before and after error
+        text_before = full_text[:error_pos]
+        text_after = full_text[error_end:]
+        error_text = full_text[error_pos:error_end]
+        
+        # Split into words and take the requested number
+        words_before_list = text_before.split()
+        words_after_list = text_after.split()
+        
+        # Take last N words before
+        context_words_before = words_before_list[-words_before:] if words_before_list else []
+        
+        # Take first N words after  
+        context_words_after = words_after_list[:words_after] if words_after_list else []
+        
+        # Build context
+        context_parts = []
+        
+        # Add ellipsis if we're not at the start
+        if len(words_before_list) > words_before:
+            context_parts.append("...")
+        
+        # Add words before
+        context_parts.extend(context_words_before)
+        
+        # Add the error text
+        context_parts.append(error_text)
+        
+        # Add words after
+        context_parts.extend(context_words_after)
+        
+        # Add ellipsis if we're not at the end
+        if len(words_after_list) > words_after:
+            context_parts.append("...")
+        
+        return " ".join(context_parts)
     
     def to_dict(self) -> Dict:
         """Convert to dictionary."""
@@ -278,7 +417,7 @@ class ProofreadingService:
                 for i, error_data in enumerate(normalized_errors):
                     debug_console.log(f"Error {i+1}: type='{error_data.get('type')}', original='{error_data.get('original', '')[:50]}...'", level='DEBUG')
                 
-                session.errors = [ProofreadingError.from_dict(error_data) for error_data in normalized_errors]
+                session.errors = [ProofreadingError.from_dict(error_data, session.original_text) for error_data in normalized_errors]
                 debug_console.log(f"Created {len(session.errors)} ProofreadingError objects", level='INFO')
                 session.current_error_index = 0
                 

@@ -26,7 +26,6 @@ class ProofreadingDialog:
         
         # UI components
         self.window: Optional[tk.Toplevel] = None
-        self.status_var = tk.StringVar(value="Ready to start proofreading")
         self.progress_var = tk.StringVar(value="")
         self.current_error_var = tk.StringVar(value="")
         self.error_counter_var = tk.StringVar(value="")
@@ -90,34 +89,9 @@ class ProofreadingDialog:
         main_container.grid_columnconfigure(0, weight=1)
         
         # Create sections
-        self._create_header(main_container)
         self._create_progress_section(main_container)
         self._create_content_area(main_container)
         self._create_footer(main_container)
-    
-    def _create_header(self, parent):
-        """Create header section."""
-        header_frame = ttk.Frame(parent)
-        header_frame.grid(row=0, column=0, sticky="ew", pady=(0, 20))
-        header_frame.grid_columnconfigure(1, weight=1)
-        
-        # Title
-        title_label = ttk.Label(
-            header_frame, 
-            text="Document Proofreading",
-            font=("Segoe UI", 12),
-            foreground=self.colors['primary']
-        )
-        title_label.grid(row=0, column=0, sticky="w")
-        
-        # Status display
-        self.status_label = ttk.Label(
-            header_frame,
-            textvariable=self.status_var,
-            font=("Segoe UI", 10),
-            foreground=self.colors['primary']
-        )
-        self.status_label.grid(row=0, column=1, sticky="e")
     
     def _create_progress_section(self, parent):
         """Create progress section."""
@@ -620,27 +594,48 @@ class ProofreadingDialog:
             self.context_text.config(state="normal")
             self.context_text.delete("1.0", "end")
             self.context_text.insert("1.0", current_error.context)
+            
+            # Highlight the original error text in the context
+            if current_error.original and current_error.original in current_error.context:
+                # Find the position of the error in the context
+                start_pos = current_error.context.find(current_error.original)
+                if start_pos != -1:
+                    # Calculate Text widget positions
+                    lines_before = current_error.context[:start_pos].count('\n')
+                    char_pos = len(current_error.context[:start_pos].split('\n')[-1])
+                    
+                    start_index = f"{lines_before + 1}.{char_pos}"
+                    end_index = f"{lines_before + 1}.{char_pos + len(current_error.original)}"
+                    
+                    # Configure error highlight tag if not exists
+                    self.context_text.tag_configure("error_highlight", 
+                                                   background="#ffcccc", 
+                                                   foreground="#990000")
+                    
+                    # Apply highlight
+                    self.context_text.tag_add("error_highlight", start_index, end_index)
+            
             self.context_text.config(state="disabled")
             
             # Update button states based on approval and application status
             if current_error.is_applied:
                 # Already applied
-                self.approve_button.config(state="disabled", text="✓ Applied")
+                self.approve_button.config(state="disabled", text="Applied")
                 self.reject_button.config(state="disabled")
                 self.apply_button.config(state="disabled", text="Applied")
                 status_color = self.colors['success']
                 status_text = "Already applied"
             elif current_error.is_approved:
                 # Approved but not applied
-                self.approve_button.config(state="disabled", text="✓ Approved")
-                self.reject_button.config(state="normal", text="✗ Reject")
+                self.approve_button.config(state="disabled", text="Approved")
+                self.reject_button.config(state="normal", text="Reject")
                 self.apply_button.config(state="normal", text="Apply Now")
                 status_color = self.colors['primary']
                 status_text = "Approved - ready to apply"
             else:
                 # Not approved yet
-                self.approve_button.config(state="normal", text="✓ Approve")
-                self.reject_button.config(state="normal", text="✗ Reject") 
+                self.approve_button.config(state="normal", text="Approve")
+                self.reject_button.config(state="normal", text="Reject") 
                 self.apply_button.config(state="disabled", text="Apply Now")
                 status_color = self.colors['muted']
                 status_text = "Pending approval"
@@ -714,8 +709,6 @@ class ProofreadingDialog:
             return
             
         try:
-            self.status_var.set(status)
-            
             if "found" in status.lower():
                 # Analysis complete
                 self.analyze_button.config(state="normal", text="Restart Analysis")
