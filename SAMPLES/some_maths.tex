@@ -1,0 +1,217 @@
+% !TEX program = pdflatex
+\documentclass[12pt,a4paper]{article}
+
+%---------------------------
+% Packages
+%---------------------------
+\usepackage[margin=2.5cm]{geometry}
+\usepackage[french]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{siunitx}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta}
+\hypersetup{colorlinks=true,linkcolor=blue,urlcolor=blue,citecolor=blue}
+
+%---------------------------
+% Macros utiles
+%---------------------------
+\newcommand{\dd}{\mathrm{d}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\vect}[1]{\mathbf{#1}}
+\newcommand{\norm}[1]{\left\lVert #1 \right\rVert}
+
+\title{\textbf{Mathématiques appliquées à la natation}}
+\author{Un court document de synthèse}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+La natation de performance est un terrain fertile pour la modélisation mathématique : hydrodynamique, biomécanique, contrôle optimal du rythme, traitement de signaux et statistique se combinent pour décrire et améliorer le déplacement du nageur. Ce document présente des éléments essentiels, avec des modèles simples mais utiles pour l'analyse et l'entraînement.
+\end{abstract}
+
+\section{Forces et équations de mouvement}
+On considère le mouvement en translation d'un nageur de masse $m$ dans l'axe longitudinal (horizontale). À première approximation,
+\begin{equation}
+ m\,\frac{\dd v}{\dd t} = F_{\mathrm{prop}}(t) - F_{\mathrm{traînée}}(v) - F_{\mathrm{ondes}}(v,h),
+ \label{eq:newton}
+\end{equation}
+où $v$ est la vitesse, $F_{\mathrm{prop}}$ la force propulsive moyenne (bras + jambes), $F_{\mathrm{traînée}}$ la traînée de forme et de frottement, et $F_{\mathrm{ondes}}$ la traînée de vague (dépendant notamment de la profondeur $h$).
+
+La loi classique de traînée quadratique s'écrit
+\begin{equation}
+ F_{\mathrm{traînée}}(v) = \tfrac{1}{2}\,\rho\,C_D\,A\,v^2,
+ \end{equation}
+où $\rho$ est la masse volumique de l'eau, $C_D$ un coefficient de traînée (taille/forme), et $A$ une aire de référence. La puissance dissipée par la traînée vaut alors
+\begin{equation}
+ P_{\mathrm{diss}}(v) = F_{\mathrm{traînée}}(v)\,v = \tfrac{1}{2}\,\rho\,C_D\,A\,v^3.
+ \end{equation}
+
+La traînée d'onde est plus marquée en surface et peut être modélisée par
+\begin{equation}
+ F_{\mathrm{ondes}}(v,h) = k_\mathrm{w}(h)\,v^n, \qquad n\in[2,3],
+ \end{equation}
+où $k_\mathrm{w}(h)$ décroît avec la profondeur $h$ (nager plus profond en coulée réduit $F_{\mathrm{ondes}}$ au prix d'un coût d'apnée).
+
+\section{Efficacité propulsive et coût énergétique}
+On relie la puissance mécanique externe $P_{\mathrm{mech}}$ à la puissance métabolique $P_{\mathrm{met}}$ via un rendement global $\eta\in(0,1)$ :
+\begin{equation}
+ P_{\mathrm{mech}} = \eta\, P_{\mathrm{met}}.
+ \end{equation}
+En régime quasi-stationnaire $v\approx\text{cste}$, on a $P_{\mathrm{mech}}\approx P_{\mathrm{diss}}$, d'où le coût énergétique instantané
+\begin{equation}
+ P_{\mathrm{met}}(v) \approx \frac{\tfrac{1}{2}\,\rho\,C_D\,A\,v^3}{\eta}.
+ \end{equation}
+Le coût massique par unité de distance (coût de transport $\mathrm{COT}$) s'écrit
+\begin{equation}
+ \mathrm{COT}(v) = \frac{P_{\mathrm{met}}(v)}{m\,g\,v} \propto v^2, 
+ \end{equation}
+ce qui illustre qu'aller plus vite devient coûteux de façon superlinéaire.
+
+\section{Modèle simple de performance sur une distance $L$}
+Soit une course de longueur $L$ et un profil de vitesse $v(t)$. Le temps total est
+\begin{equation}
+ T = \int_0^{T} \dd t = \int_0^{L} \frac{\dd x}{v(x)}.
+ \end{equation}
+Nous modélisons les systèmes énergétiques (aérobie/anaérobie) par un réservoir anaérobie $W'$ et une puissance aérobie limite $P_{\max}$ (schéma type ``critique power'') :
+\begin{align}
+ P_{\mathrm{met}}(t) &= P_\mathrm{aéro}(t) + P_\mathrm{ana}(t), \\
+ P_\mathrm{aéro}(t) &\le P_{\max}, \\
+ \int_0^T P_\mathrm{ana}(t)\,\dd t &\le W'.
+ \end{align}
+L'objectif ``classique'' est de minimiser $T$ sous ces contraintes et la dynamique \eqref{eq:newton}.
+
+\subsection{Contrôle optimal du pacing}
+Formellement, on pose un problème de contrôle optimal :
+\begin{align}
+ \min_{F_{\mathrm{prop}}(t)}\; &T \\
+ \text{s.c. }\; &\dot v = \frac{1}{m}\Big(F_{\mathrm{prop}} - \tfrac{1}{2}\rho C_D A v^2 - k_\mathrm{w}(h)v^n\Big), \\
+ &0\le P_\mathrm{aéro}(t)\le P_{\max},\quad W'(T)=W'(0)-\int_0^T P_\mathrm{ana}(t)\,\dd t\ge 0, \\
+ &v(0)=0,\; x(0)=0,\; x(T)=L,\; v(t)\ge 0.
+ \end{align}
+Des solutions typiques prédisent un départ fort, une phase quasi-constante, puis une légère décroissance lorsque $W'$ s'épuise (\emph{positive split} modéré).
+
+\section{Analyse dimensionnelle et mise à l'échelle}
+En notant $U$ une vitesse de référence, on définit un nombre de Froude $\mathrm{Fr}=\frac{U}{\sqrt{g\ell}}$ (longueur caractéristique $\ell$) et un nombre de Reynolds $\mathrm{Re}=\frac{\rho U \ell}{\mu}$. À l'échelle du nageur en piscine, $\mathrm{Re}\gg 1$ et l'inertie domine les effets visqueux locaux, justifiant l'usage de la traînée quadratique.
+
+\section{Interaction avec le mur et coulée}
+La coulée après poussée du mur est efficacement modélisée par un mouvement libre avec traînée :
+\begin{equation}
+ m\,\dot v = - \tfrac{1}{2}\rho C_D A v^2, \quad v(0)=v_0.
+ \end{equation}
+La solution fermée s'écrit
+\begin{equation}
+ v(t) = \frac{v_0}{1+ t/\tau}, \qquad \tau = \frac{2m}{\rho C_D A v_0}.
+ \end{equation}
+La distance parcourue en coulée vaut
+\begin{equation}
+ s(t) = \frac{2m}{\rho C_D A}\,\ln\big(1+t/\tau\big),
+ \end{equation}
+ce qui montre un rendement décroissant : au-delà d'une certaine durée, rester en coulée n'apporte plus de distance ``bon marché''.
+
+\section{Estimation de paramètres à partir de données}
+Supposons que l'on dispose de mesures vitesse-temps $\{t_i,v_i\}$. Un estimateur moindres carrés pour $C_D A$ (en coulée) est obtenu en linéarisant $\dot v = -k v^2$ :
+\begin{equation}
+ \frac{\dd}{\dd t}\Big(\frac{1}{v}\Big) = k, \quad k=\frac{\rho C_D A}{2m}.
+ \end{equation}
+Une régression linéaire de $1/v$ en fonction de $t$ donne alors $k$ et donc $C_D A$.
+
+\subsection{Filtrage des capteurs}
+Des unités inertielle (IMU) et GPS aquatique produisent des signaux bruyants. Un filtre de Kalman discret pour la vitesse $v$ peut s'écrire
+\begin{align}
+ v_{k+1} &= v_k + \Delta t\,a_k + w_k, \\
+ z_k &= v_k + r_k,
+ \end{align}
+où $a_k$ est l'accélération mesurée, $z_k$ une observation (par ex. dérivée de la distance), $w_k\sim\mathcal{N}(0,Q)$ et $r_k\sim\mathcal{N}(0,R)$. Le gain de Kalman $K_k$ pondère la confiance entre modèle et mesure pour fournir une estimation lissée $\hat v_k$.
+
+\section{Exemple numérique minimal}
+Considérons un nageur avec $m=\SI{75}{kg}$, $A=\SI{0.5}{m^2}$, $C_D=0.9$, $\rho=\SI{1000}{kg.m^{-3}}$, $\eta=0.2$. À $v=\SI{2}{m.s^{-1}}$ :
+\begin{align}
+ F_{\mathrm{traînée}} &= \tfrac{1}{2}\,\rho C_D A v^2 = \tfrac{1}{2}\cdot1000\cdot0{,}9\cdot0{,}5\cdot 4 = \SI{900}{N}, \\
+ P_{\mathrm{diss}} &= Fv = \SI{1800}{W}, \qquad P_{\mathrm{met}} \approx \SI{9000}{W}.
+ \end{align}
+Ces ordres de grandeur justifient le rôle de la technique (réduire $C_D A$) et de l'efficacité $\eta$.
+
+\section{Jeu de paramètres typiques}
+\begin{table}[h]
+ \centering
+ \caption{Exemples de paramètres (ordre de grandeur).}
+ \label{tab:param}
+ \begin{tabular}{@{}lll@{}}
+  \toprule
+  Paramètre & Symbole & Valeur typique \\
+  \midrule
+  Masse & $m$ & \SI{60}{}--\SI{85}{kg} \\
+  Aire de référence & $A$ & \SI{0.4}{}--\SI{0.7}{m^2} \\
+  Coefficient de traînée & $C_D$ & $0.7$--$1.1$ \\
+  Densité de l'eau & $\rho$ & \SI{1000}{kg.m^{-3}} \\
+  Rendement global & $\eta$ & $0.15$--$0.25$ \\
+  Puissance aérobie max & $P_{\max}$ & \SI{300}{}--\SI{500}{W} \\
+  Réservoir anaérobie & $W'$ & \SI{10}{}--\SI{25}{kJ} \\
+  \bottomrule
+ \end{tabular}
+\end{table}
+
+\section{Schéma des forces (vue latérale)}
+\begin{figure}[h]
+ \centering
+ \begin{tikzpicture}[scale=1.0]
+  % Nageur simplifié
+  \draw[rounded corners=8pt,fill=gray!20] (0,0) rectangle (4,0.7);
+  \draw (4,0.35) circle (0.25);
+  % Vitesse
+  \draw[-{Latex[length=3mm]}] (-0.5,0.35) -- (0,0.35) node[midway,above]{\small $v$};
+  % Traînée
+  \draw[-{Latex[length=3mm]},red] (1,0.35) -- (2.5,0.35) node[midway,above]{\small $F_{\mathrm{traînée}}$};
+  % Propulsion
+  \draw[-{Latex[length=3mm]},blue] (1.5,1.2) -- (1.5,0.7) node[midway,right]{\small $F_{\mathrm{prop}}$};
+  % Surface
+  \draw[blue!40] (-1,-0.2) -- (6,-0.2);
+ \end{tikzpicture}
+ \caption{Forces principales modélisées le long de l'axe de nage.}
+\end{figure}
+
+\section{Effet de la technique : alignement et roulis}
+Une réduction de l'aire projetée $A$ et de $C_D$ (meilleur alignement, roulis contrôlé, trajectoires des mains plus efficaces) diminue $P_{\mathrm{diss}}\propto v^3$. Mathématiquement, un petit changement $\delta C_D$ induit
+\begin{equation}
+ \frac{\delta P_{\mathrm{diss}}}{P_{\mathrm{diss}}} = \frac{\delta C_D}{C_D}.
+ \end{equation}
+À vitesse donnée, \emph{chaque} point de pourcentage gagné sur $C_D$ se traduit directement en économie d'énergie.
+
+\section{Ondulations et fréquence gestuelle}
+Soit $f$ la fréquence de cycle (bras) et $S$ la distance par cycle. On a l'identité cinématique $v=f\,S$. Optimiser la performance revient à chercher un point de fonctionnement $(f,S)$ où la puissance métabolique reste soutenable tout en maximisant $v$ :
+\begin{equation}
+ \max_{f,S}\; fS \quad \text{s.c.}\quad P_{\mathrm{met}}(f,S)\le P_{\mathrm{tol}},
+ \end{equation}
+où $P_{\mathrm{tol}}$ est une tolérance individuelle liée à l'entraînement. Empiriquement, $S$ décroît souvent avec $f$ (fatigue, coordination), d'où un compromis.
+
+\section{Incertain et variabilité}
+Les paramètres réels varient entre individus et au cours de la course. Un cadre bayésien permet d'exprimer l'incertitude sur $\theta=(C_D,A,\eta,\ldots)$ via une loi a priori $p(\theta)$ et une vraisemblance $p(\text{données}\mid\theta)$, produisant une postérieure $p(\theta\mid\text{données})$. Les décisions (pacing, technique) peuvent alors viser le \emph{risque minimal} (minimisation de la perte espérée) plutôt que l'optimisation ponctuelle.
+
+\section{Conclusion}
+Les mathématiques offrent une boîte à outils cohérente pour comprendre et améliorer la natation : dynamique non linéaire, optimisation sous contraintes énergétiques, estimation statistique et traitement du signal. Même des modèles simples, correctement paramétrés, suffisent souvent pour orienter l'entraînement : réduire la traînée (technique), choisir un pacing soutenable (contrôle optimal) et exploiter les données (capteurs) pour personnaliser les paramètres.
+
+\bigskip
+\noindent\textbf{Remarque pratique.} Ce texte est volontairement synthétique et modulaire. Chaque section peut être étendue (validation expérimentale, variantes par nage — crawl, dos, brasse, papillon —, effets des virages, drafting en eau libre, etc.).
+
+%---------------------------
+% Bibliographie minimale (indicative)
+%---------------------------
+\begin{thebibliography}{9}
+ \bibitem{bejan}
+ A. Bejan et D. Charles, \emph{Design in Nature: How the Constructal Law Governs Evolution in Biology, Physics, Technology, and Social Organization}, Doubleday, 2012.
+ \bibitem{proulx}
+ L. P. Pruvot et al., ``Hydrodynamics and propulsion in human swimming'', \emph{Sports Biomechanics}, 2020.
+ \bibitem{mortimer}
+ T. Mortimer, ``Energy cost and efficiency in swimming'', \emph{Journal of Applied Physiology}, 2019.
+\end{thebibliography}
+
+\end{document}

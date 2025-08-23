@@ -453,7 +453,7 @@ class ProofreadingDialog:
         # Setup callbacks
         self.session.on_status_change = self._on_status_change
         self.session.on_progress_change = self._on_progress_change  
-        self.session.on_chunk_received = self._on_chunk_received
+        self.session.on_chunk_received = None
         self.session.on_errors_found = self._on_errors_found
         self.session.on_error = self._on_analysis_error
         
@@ -482,6 +482,7 @@ class ProofreadingDialog:
         
         self.analysis_text_widget.config(state="normal")
         self.analysis_text_widget.delete("1.0", "end")
+        self.analysis_text_widget.insert("1.0", "Ready to analyze...")
         self.analysis_text_widget.config(state="disabled")
         
         self.analyze_button.config(state="normal", text="Start Analysis")
@@ -727,22 +728,14 @@ class ProofreadingDialog:
             
         try:
             self.progress_var.set(progress)
-        except tk.TclError:
-            pass
-    
-    def _on_chunk_received(self, chunk: str):
-        """Handle text chunk."""
-        if not self._is_window_valid():
-            return
-            
-        try:
+            # Also update analysis text widget with status
             self.analysis_text_widget.config(state="normal")
             self.analysis_text_widget.delete("1.0", "end")
-            self.analysis_text_widget.insert("1.0", chunk)
-            self.analysis_text_widget.see("end")
+            self.analysis_text_widget.insert("1.0", progress)
             self.analysis_text_widget.config(state="disabled")
         except tk.TclError:
             pass
+    
     
     def _on_errors_found(self, errors: List[ProofreadingError]):
         """Handle errors found."""

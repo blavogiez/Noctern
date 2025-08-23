@@ -181,9 +181,11 @@ def _request_gemini_generation(prompt_text, model_name, stream=True, json_schema
                     # Check if response was blocked
                     if hasattr(chunk, 'candidates') and chunk.candidates:
                         candidate = chunk.candidates[0]
-                        if hasattr(candidate, 'finish_reason') and candidate.finish_reason == 1:
+                        # Check for actual safety filtering (finish_reason 3 = SAFETY)
+                        if hasattr(candidate, 'finish_reason') and candidate.finish_reason == 3:
                             yield {"success": False, "error": "Content was filtered by safety settings. Try with different text or a different model.", "done": True}
                             return
+                        # finish_reason 1 = STOP (normal completion), not an error!
                     continue
             
             # Record usage for streaming
@@ -210,9 +212,14 @@ def _request_gemini_generation(prompt_text, model_name, stream=True, json_schema
             # Check if response was blocked before accessing text
             if hasattr(response, 'candidates') and response.candidates:
                 candidate = response.candidates[0]
-                if hasattr(candidate, 'finish_reason') and candidate.finish_reason == 1:
+                if hasattr(candidate, 'finish_reason'):
+                    debug_console.log(f"Gemini finish_reason: {candidate.finish_reason}", level='INFO')
+                
+                # Check for actual safety filtering (finish_reason 3 = SAFETY)
+                if hasattr(candidate, 'finish_reason') and candidate.finish_reason == 3:
                     yield {"success": False, "error": "Content was filtered by safety settings. Try with different text or a different model.", "done": True}
                     return
+                # finish_reason 1 = STOP (normal completion), not an error!
             
             # Try to get text safely
             try:

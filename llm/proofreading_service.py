@@ -6,8 +6,9 @@ from typing import List, Optional, Callable
 
 from llm import state
 from llm import utils
-from llm.streaming_service import start_streaming_request
+from llm import api_client
 from llm.schemas.proofreading import get_proofreading_schema, validate_proofreading_response
+from utils import debug_console
 
 
 class ErrorType:
@@ -315,25 +316,35 @@ class ProofreadingService:
         return self.current_session
     
     def analyze_text(self, session, editor):
+        """Analyze text for proofreading errors using AI."""
         if not session or session.is_processing:
+            debug_console.log("Proofreading analysis skipped - session busy or invalid", level='WARNING')
             return
         
+        debug_console.log("=== STARTING PROOFREADING ANALYSIS ===", level='INFO')
+        debug_console.log(f"Text length: {len(session.original_text)} characters", level='INFO')
+        debug_console.log(f"Custom instructions: '{session.custom_instructions}'", level='INFO')
+        debug_console.log(f"Model: {state.model_proofreading}", level='INFO')
+        
         session.is_processing = True
-        session.status = "Analyzing text..."
+        session.status = "Contacting LLM..."
         
         if session.on_status_change:
             session.on_status_change(session.status)
         
         if session.on_progress_change:
-            session.on_progress_change("Preparing AI analysis...")
+            session.on_progress_change("Contacting LLM...")
         
         prompt_template = state._global_default_prompts.get("proofreading")
         if not prompt_template:
+            debug_console.log("ERROR: Proofreading prompt template not found!", level='ERROR')
             session.is_processing = False
             session.status = "Error: Template not found"
             if session.on_error:
                 session.on_error("Proofreading prompt template not configured")
             return
+        
+        debug_console.log(f"Using prompt template: {prompt_template[:100]}...", level='INFO')
         
         instructions_part = f"Additional instructions: {session.custom_instructions}" if session.custom_instructions.strip() else ""
         full_prompt = prompt_template.format(
@@ -341,51 +352,113 @@ class ProofreadingService:
             custom_instructions=instructions_part
         )
         
-        accumulated_response = ""
+        debug_console.log(f"Full prompt length: {len(full_prompt)} characters", level='INFO')
+        debug_console.log(f"Prompt preview: {full_prompt[:200]}...", level='DEBUG')
         
-        def on_chunk(chunk):
-            nonlocal accumulated_response
-            accumulated_response += chunk
-            if session.on_chunk_received:
-                session.on_chunk_received(accumulated_response)
+        def update_progress(message):
+            if session.on_progress_change:
+                editor.after(0, session.on_progress_change, message)
         
-        def on_success(final_text):
-            session.is_processing = False
-            
+        def process_in_background():
             try:
+                debug_console.log("Background processing started", level='INFO')
+                update_progress("Receiving response...")
+                
+                json_schema = get_proofreading_schema()
+                debug_console.log(f"Using JSON schema with {len(json_schema.get('properties', {}))} properties", level='INFO')
+                
+                debug_console.log(f"Calling API with model: {state.model_proofreading}", level='INFO')
+                generator = api_client.generate_with_structured_output(
+                    full_prompt, 
+                    json_schema, 
+                    model_name=state.model_proofreading, 
+                    stream=False, 
+                    task_type="proofreading"
+                )
+                
+                debug_console.log("API generator created, waiting for response...", level='INFO')
+                response = next(generator)
+                debug_console.log(f"Received response: success={response.get('success')}", level='INFO')
+                
+                if not response.get("success"):
+                    error_msg = response.get("error", "Unknown error")
+                    debug_console.log(f"API ERROR: {error_msg}", level='ERROR')
+                    debug_console.log(f"Full error response: {response}", level='ERROR')
+                    
+                    session.is_processing = False
+                    session.status = "Analysis failed"
+                    if session.on_error:
+                        editor.after(0, session.on_error, error_msg)
+                    return
+                
+                final_text = response.get("data", "")
+                debug_console.log(f"Raw response length: {len(final_text)} characters", level='INFO')
+                debug_console.log(f"Raw response preview: {final_text[:300]}...", level='DEBUG')
+                
+                update_progress("Formatting JSON...")
                 cleaned_response = utils.clean_full_llm_response(final_text)
-                errors_data = json.loads(cleaned_response)
+                debug_console.log(f"Cleaned response length: {len(cleaned_response)} characters", level='INFO')
+                debug_console.log(f"Cleaned response: {cleaned_response[:500]}...", level='DEBUG')
+                
+                try:
+                    errors_data = json.loads(cleaned_response)
+                    debug_console.log(f"JSON parsed successfully, type: {type(errors_data)}", level='INFO')
+                except json.JSONDecodeError as e:
+                    debug_console.log(f"JSON PARSE ERROR: {e}", level='ERROR')
+                    debug_console.log(f"Failed to parse: {cleaned_response}", level='ERROR')
+                    raise
                 
                 is_valid, normalized_errors = validate_proofreading_response(errors_data)
+                debug_console.log(f"Validation result: valid={is_valid}, errors_count={len(normalized_errors)}", level='INFO')
                 
                 if not is_valid:
+                    debug_console.log(f"Validation failed, trying fallback. Data type: {type(errors_data)}", level='WARNING')
+                    debug_console.log(f"Invalid data: {errors_data}", level='WARNING')
+                    
                     if isinstance(errors_data, list):
+                        debug_console.log("Trying array fallback...", level='INFO')
                         is_valid, normalized_errors = validate_proofreading_response({"errors": errors_data})
+                        debug_console.log(f"Fallback result: valid={is_valid}, errors_count={len(normalized_errors)}", level='INFO')
                     
                     if not is_valid:
+                        debug_console.log("VALIDATION FAILED COMPLETELY", level='ERROR')
+                        session.is_processing = False
                         session.status = "AI analysis failed"
                         if session.on_error:
-                            session.on_error("The AI response does not match the expected format.")
+                            editor.after(0, session.on_error, "The AI response does not match the expected format.")
                         return
                 
-                session.errors = [ProofreadingError.from_dict(error_data, session.original_text) for error_data in normalized_errors]
+                update_progress("Processing errors...")
+                debug_console.log(f"Creating {len(normalized_errors)} ProofreadingError objects", level='INFO')
+                
+                session.errors = []
+                for i, error_data in enumerate(normalized_errors):
+                    try:
+                        error = ProofreadingError.from_dict(error_data, session.original_text)
+                        session.errors.append(error)
+                        debug_console.log(f"Error {i+1}: {error.type} - '{error.original}' -> '{error.suggestion}'", level='DEBUG')
+                    except Exception as e:
+                        debug_console.log(f"Failed to create error {i+1}: {e}", level='WARNING')
+                        debug_console.log(f"Error data: {error_data}", level='WARNING')
                 session.current_error_index = 0
                 
                 error_count = len(session.errors)
+                session.is_processing = False
+                
+                debug_console.log(f"Successfully processed {error_count} errors", level='INFO')
+                
                 if error_count == 0:
                     session.status = "No errors found"
-                    if session.on_progress_change:
-                        session.on_progress_change("Analysis complete - text looks good!")
+                    update_progress("Analysis complete - text looks good!")
                 else:
                     session.status = f"Found {error_count} errors"
-                    if session.on_progress_change:
-                        session.on_progress_change(f"Analysis complete - {error_count} errors to review")
+                    update_progress(f"Analysis complete - {error_count} errors to review")
                 
                 if session.on_status_change:
-                    session.on_status_change(session.status)
+                    editor.after(0, session.on_status_change, session.status)
                 
                 if session.on_errors_found:
-                    session.on_errors_found(session.errors)
+                    editor.after(0, session.on_errors_found, session.errors)
                 
                 try:
                     current_filepath = state.get_active_filepath()
@@ -393,39 +466,28 @@ class ProofreadingService:
                 except:
                     pass
                 
-            except json.JSONDecodeError:
+            except json.JSONDecodeError as e:
+                debug_console.log(f"JSON DECODE ERROR: {e}", level='ERROR')
+                session.is_processing = False
                 session.status = "Invalid AI response"
                 if session.on_error:
-                    session.on_error("The AI response is not valid JSON.")
+                    editor.after(0, session.on_error, "The AI response is not valid JSON.")
             except Exception as e:
+                debug_console.log(f"PROCESSING ERROR: {e}", level='ERROR')
+                debug_console.log(f"Error type: {type(e)}", level='ERROR')
+                import traceback
+                debug_console.log(f"Traceback: {traceback.format_exc()}", level='ERROR')
+                session.is_processing = False
                 session.status = "Analysis failed"
                 if session.on_error:
-                    session.on_error(f"Failed to process AI response: {str(e)}")
+                    editor.after(0, session.on_error, f"Failed to process AI response: {str(e)}")
         
-        def on_error(error_msg):
-            session.is_processing = False
-            session.status = "Analysis failed"
-            
-            enhanced_error = error_msg
-            if "filtered by safety settings" in error_msg.lower():
-                enhanced_error = "Content was filtered by safety settings. Try using a different model or smaller text sections."
-            elif "empty response" in error_msg.lower():
-                enhanced_error = "Received empty response. Content may have been filtered by safety settings."
-            
-            if session.on_error:
-                session.on_error(enhanced_error)
-        
-        json_schema = get_proofreading_schema()
-        start_streaming_request(
-            editor=editor,
-            prompt=full_prompt,
-            model_name=state.model_proofreading,
-            on_chunk=on_chunk,
-            on_success=on_success,
-            on_error=on_error,
-            task_type="proofreading",
-            json_schema=json_schema
-        )
+        import threading
+        debug_console.log("Starting background thread for proofreading", level='INFO')
+        thread = threading.Thread(target=process_in_background)
+        thread.daemon = True
+        thread.start()
+        debug_console.log("Background thread started successfully", level='INFO')
     
     def get_current_session(self):
         return self.current_session
