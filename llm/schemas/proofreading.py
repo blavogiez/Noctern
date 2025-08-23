@@ -1,9 +1,5 @@
-"""
-JSON Schema for proofreading errors structured output.
-Defines strict structure for both Ollama and Gemini models.
-"""
+"""JSON Schema for proofreading errors structured output."""
 
-from utils import debug_console
 
 # JSON Schema for proofreading errors (OpenAPI 3.0 subset compatible with Gemini)
 PROOFREADING_SCHEMA = {
@@ -46,10 +42,12 @@ PROOFREADING_SCHEMA = {
 }
 
 def get_proofreading_schema():
+    """Get JSON schema for proofreading structured output."""
     """Get the JSON schema for proofreading structured output."""
     return PROOFREADING_SCHEMA
 
 def validate_proofreading_response(response_data):
+    """Validate response matches proofreading schema."""
     """
     Validate that a response matches the expected proofreading schema.
     
@@ -79,21 +77,17 @@ def validate_proofreading_response(response_data):
     
     for i, error in enumerate(errors):
         if not isinstance(error, dict):
-            debug_console.log(f"Error {i+1}: Not a dict, skipping", level='DEBUG')
             continue
         
         # Check for required fields
         required_fields = ["type", "original", "suggestion", "explanation"]
         missing_fields = [field for field in required_fields if field not in error]
         if missing_fields:
-            debug_console.log(f"Error {i+1}: Missing fields {missing_fields}, skipping", level='DEBUG')
             continue
             
         # Validate type
         error_type = error.get("type", "").lower()
-        debug_console.log(f"Error {i+1}: type='{error_type}', checking against valid types", level='DEBUG')
         if error_type not in valid_types:
-            debug_console.log(f"Error {i+1}: Invalid type '{error_type}', skipping. Valid types: {valid_types}", level='WARNING')
             continue
         
         original = error.get("original", "").strip()
@@ -107,17 +101,14 @@ def validate_proofreading_response(response_data):
         
         # Skip errors with empty required fields (but allow empty suggestion for deletions)
         if not original or not explanation:
-            debug_console.log(f"Error {i+1}: Empty required fields - original: {bool(original)}, explanation: {bool(explanation)}", level='DEBUG')
             continue
         
         # For coherence errors, empty suggestion means deletion (which is valid)
         if not suggestion and error_type != "coherence":
-            debug_console.log(f"Error {i+1}: Empty suggestion for non-coherence error type '{error_type}', skipping", level='DEBUG')
             continue
         
         # Skip if suggestion is identical to original (no actual correction)
         if original == suggestion:
-            debug_console.log(f"Error {i+1}: Suggestion identical to original, skipping", level='DEBUG')
             continue
             
         # Normalize error with required fields and defaults
@@ -132,7 +123,6 @@ def validate_proofreading_response(response_data):
             "context": error.get("context", original)
         }
         
-        debug_console.log(f"Error {i+1}: Successfully normalized as type '{error_type}'", level='DEBUG')
         normalized_errors.append(normalized_error)
     
     return True, normalized_errors

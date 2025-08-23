@@ -5,8 +5,8 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from typing import Optional, List
 
-from utils import debug_console
-from llm.proofreading_service import get_proofreading_service, ProofreadingSession, ProofreadingError
+from llm.proofreading_service import get_proofreading_service, ProofreadingError, ProofreadingSession, ProofreadingCache
+from llm import state
 
 
 class ProofreadingDialog:
@@ -78,7 +78,6 @@ class ProofreadingDialog:
         
         self.window.protocol("WM_DELETE_WINDOW", self._on_close)
         
-        debug_console.log("Proofreading dialog created", level='INFO')
     
     def _setup_layout(self):
         """Create dialog layout."""
@@ -413,6 +412,12 @@ class ProofreadingDialog:
             command=self._restart_analysis
         ).pack(side="right", padx=(0, 10))
         
+        ttk.Button(
+            footer_frame,
+            text="Browse History",
+            command=self._browse_history
+        ).pack(side="right", padx=(0, 10))
+        
         # Apply All Approved Corrections button (initially hidden)
         self.apply_all_button = ttk.Button(
             footer_frame,
@@ -459,7 +464,6 @@ class ProofreadingDialog:
         # Start analysis
         self.proofreading_service.analyze_text(self.session, self.editor)
         
-        debug_console.log("Proofreading analysis started", level='INFO')
     
     def _restart_analysis(self):
         """Restart proofreading analysis."""
@@ -512,7 +516,7 @@ class ProofreadingDialog:
                 if self._is_window_valid():
                     self.window.after(500, self._go_next)
         except tk.TclError:
-            debug_console.log("Window destroyed during correction approval", level='DEBUG')
+            pass
     
     def _reject_current_correction(self):
         """Reject current correction."""
@@ -526,7 +530,7 @@ class ProofreadingDialog:
                 if self._is_window_valid():
                     self.window.after(500, self._go_next)
         except tk.TclError:
-            debug_console.log("Window destroyed during correction rejection", level='DEBUG')
+            pass
     
     def _apply_current_correction(self):
         """Apply current correction immediately (only if approved)."""
@@ -552,7 +556,7 @@ class ProofreadingDialog:
                         "Could not apply the correction. The original text may have been modified.",
                         parent=self.window)
         except tk.TclError:
-            debug_console.log("Window destroyed during correction application", level='DEBUG')
+            pass
     
     def _update_error_navigation(self):
         """Update error navigation."""
@@ -574,8 +578,8 @@ class ProofreadingDialog:
             self.next_button.config(state="normal" if self.session.current_error_index < total - 1 else "disabled")
             
             # Update error details
-            error_color = self.colors.get(f'{current_error.type.value}_color', self.colors['primary'])
-            self.error_type_label.config(text=current_error.type.value.title(), foreground=error_color)
+            error_color = self.colors.get(f'{current_error.type}_color', self.colors['primary'])
+            self.error_type_label.config(text=current_error.type.title(), foreground=error_color)
             
             # Update text widgets
             self.original_error_text.config(state="normal")
@@ -658,7 +662,7 @@ class ProofreadingDialog:
             self._update_apply_all_button()
             
         except tk.TclError:
-            debug_console.log("Window destroyed during error navigation update", level='DEBUG')
+            pass
     
     def _update_apply_all_button(self):
         """Update Apply All button visibility and text."""
@@ -693,7 +697,7 @@ class ProofreadingDialog:
                     if hasattr(self, 'apply_all_button'):
                         self.apply_all_button.pack_forget()
         except tk.TclError:
-            debug_console.log("Window destroyed during Apply All button update", level='DEBUG')
+            pass
     
     def _is_window_valid(self) -> bool:
         """Check if the window and widgets are still valid."""
@@ -714,7 +718,7 @@ class ProofreadingDialog:
                 self.analyze_button.config(state="normal", text="Restart Analysis")
                 self.status_indicator.config(text="Analysis complete", foreground=self.colors['success'])
         except tk.TclError:
-            debug_console.log("Window destroyed during status update", level='DEBUG')
+            pass
     
     def _on_progress_change(self, progress: str):
         """Handle progress change."""
@@ -724,7 +728,7 @@ class ProofreadingDialog:
         try:
             self.progress_var.set(progress)
         except tk.TclError:
-            debug_console.log("Window destroyed during progress update", level='DEBUG')
+            pass
     
     def _on_chunk_received(self, chunk: str):
         """Handle text chunk."""
@@ -738,7 +742,7 @@ class ProofreadingDialog:
             self.analysis_text_widget.see("end")
             self.analysis_text_widget.config(state="disabled")
         except tk.TclError:
-            debug_console.log("Window destroyed during chunk update", level='DEBUG')
+            pass
     
     def _on_errors_found(self, errors: List[ProofreadingError]):
         """Handle errors found."""
@@ -753,9 +757,8 @@ class ProofreadingDialog:
             
             self._create_summary_tab()
             
-            debug_console.log(f"Proofreading UI updated with {len(errors)} errors", level='INFO')
         except tk.TclError:
-            debug_console.log("Window destroyed during errors update", level='DEBUG')
+            pass
     
     def _on_analysis_error(self, error_msg: str):
         """Handle analysis error."""
@@ -768,7 +771,7 @@ class ProofreadingDialog:
             
             messagebox.showerror("Analysis Error", error_msg, parent=self.window)
         except tk.TclError:
-            debug_console.log("Window destroyed during error handling", level='DEBUG')
+            pass
     
     # Utility methods
     def _get_error_stats_text(self, errors: List[ProofreadingError]) -> str:
@@ -778,7 +781,7 @@ class ProofreadingDialog:
         
         stats = {}
         for error in errors:
-            error_type = error.type.value
+            error_type = error.type
             stats[error_type] = stats.get(error_type, 0) + 1
         
         stats_parts = [f"{count} {error_type}" for error_type, count in stats.items()]
@@ -824,6 +827,160 @@ class ProofreadingDialog:
             # Update UI to reflect applied corrections
             self._update_error_navigation()
             self._update_apply_all_button()
+    
+    def _browse_history(self):
+        """Browse proofreading history for current document."""
+        try:
+            try:
+                current_filepath = state.get_active_filepath()
+            except:
+                current_filepath = None
+            
+            if not current_filepath:
+                messagebox.showinfo("No File", "Please save your document first to browse proofreading history.", parent=self.window)
+                return
+            
+            # Get cached sessions
+            sessions = ProofreadingCache.list_sessions(current_filepath)
+            
+            if not sessions:
+                messagebox.showinfo("No History", "No proofreading history found for this document.", parent=self.window)
+                return
+            
+            # Sort sessions by date (newest first)
+            sessions.sort(key=lambda x: x.get('created_at', ''), reverse=True)
+            
+            # Create history dialog
+            self._show_history_dialog(sessions)
+            
+        except Exception as e:
+                messagebox.showerror("Error", f"Failed to browse history: {str(e)}", parent=self.window)
+    
+    def _show_history_dialog(self, sessions: List[dict]):
+        """Show history browsing dialog."""
+        history_window = tk.Toplevel(self.window)
+        history_window.title("Proofreading History")
+        history_window.geometry("700x500")
+        history_window.transient(self.window)
+        history_window.grab_set()
+        
+        # Main container
+        main_frame = ttk.Frame(history_window, padding="10")
+        main_frame.pack(fill="both", expand=True)
+        main_frame.grid_rowconfigure(1, weight=1)
+        main_frame.grid_columnconfigure(0, weight=1)
+        
+        # Header
+        header_label = ttk.Label(main_frame, text="Proofreading History", font=("TkDefaultFont", 12, "bold"))
+        header_label.grid(row=0, column=0, sticky="w", pady=(0, 10))
+        
+        # Sessions list with scrollbar
+        list_frame = ttk.Frame(main_frame)
+        list_frame.grid(row=1, column=0, sticky="nsew", pady=(0, 10))
+        list_frame.grid_rowconfigure(0, weight=1)
+        list_frame.grid_columnconfigure(0, weight=1)
+        
+        # Treeview for sessions
+        columns = ("date", "errors", "applied", "status")
+        sessions_tree = ttk.Treeview(list_frame, columns=columns, show="headings", height=15)
+        
+        sessions_tree.heading("date", text="Date & Time")
+        sessions_tree.heading("errors", text="Errors Found")
+        sessions_tree.heading("applied", text="Applied")
+        sessions_tree.heading("status", text="Status")
+        
+        sessions_tree.column("date", width=200)
+        sessions_tree.column("errors", width=100)
+        sessions_tree.column("applied", width=100)
+        sessions_tree.column("status", width=100)
+        
+        sessions_tree.grid(row=0, column=0, sticky="nsew")
+        
+        # Scrollbar for treeview
+        scrollbar = ttk.Scrollbar(list_frame, orient="vertical", command=sessions_tree.yview)
+        scrollbar.grid(row=0, column=1, sticky="ns")
+        sessions_tree.configure(yscrollcommand=scrollbar.set)
+        
+        # Populate sessions
+        session_data = {}
+        for session in sessions:
+            date_str = session.get('created_at', 'Unknown')
+            # Format date for display
+            if date_str != 'Unknown':
+                try:
+                    from datetime import datetime
+                    dt = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+                    date_display = dt.strftime("%Y-%m-%d %H:%M:%S")
+                except:
+                    date_display = date_str
+            else:
+                date_display = date_str
+            
+            errors_found = session.get('total_errors', 0)
+            errors_applied = session.get('applied_errors', 0)
+            status = "Complete" if errors_applied == errors_found else "Partial"
+            
+            item_id = sessions_tree.insert("", "end", values=(date_display, errors_found, errors_applied, status))
+            session_data[item_id] = session
+        
+        # Buttons frame
+        buttons_frame = ttk.Frame(main_frame)
+        buttons_frame.grid(row=2, column=0, sticky="ew")
+        
+        def load_selected_session():
+            selection = sessions_tree.selection()
+            if not selection:
+                messagebox.showwarning("No Selection", "Please select a session to load.", parent=history_window)
+                return
+            
+            selected_session_data = session_data[selection[0]]
+            session_file = selected_session_data['file']
+            
+            try:
+                # Load session from cache
+                loaded_session = ProofreadingCache.load_session(session_file)
+                if loaded_session:
+                    # Replace current session
+                    self.session = loaded_session
+                    
+                    # Update UI
+                    self.progress_var.set("Loaded from history")
+                    self._create_error_navigation_tab(self.session.errors)
+                    self._update_error_navigation()
+                    self._update_apply_all_button()
+                    
+                    history_window.destroy()
+                else:
+                    messagebox.showerror("Load Error", "Failed to load selected session.", parent=history_window)
+            except Exception as e:
+                messagebox.showerror("Load Error", f"Failed to load session: {str(e)}", parent=history_window)
+        
+        def delete_selected_session():
+            selection = sessions_tree.selection()
+            if not selection:
+                messagebox.showwarning("No Selection", "Please select a session to delete.", parent=history_window)
+                return
+            
+            selected_session_data = session_data[selection[0]]
+            session_file = selected_session_data['file']
+            
+            if messagebox.askyesno("Confirm Delete", "Are you sure you want to delete this session?", parent=history_window):
+                try:
+                    import os
+                    os.remove(session_file)
+                    sessions_tree.delete(selection[0])
+                except Exception as e:
+                    messagebox.showerror("Delete Error", f"Failed to delete session: {str(e)}", parent=history_window)
+        
+        ttk.Button(buttons_frame, text="Load Selected", command=load_selected_session).pack(side="left", padx=(0, 10))
+        ttk.Button(buttons_frame, text="Delete Selected", command=delete_selected_session).pack(side="left", padx=(0, 10))
+        ttk.Button(buttons_frame, text="Close", command=history_window.destroy).pack(side="right")
+        
+        # Focus on first session if any
+        if sessions_tree.get_children():
+            first_item = sessions_tree.get_children()[0]
+            sessions_tree.selection_set(first_item)
+            sessions_tree.focus(first_item)
     
     def _on_close(self):
         """Handle dialog close."""

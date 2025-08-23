@@ -7,7 +7,7 @@ from llm import keywords as llm_keywords
 from llm import prompts as llm_prompts
 from llm import history as llm_history
 from llm import autostyle as llm_autostyle
-from llm import proofreading as llm_proofreading
+from llm import proofreading
 
 def start_autostyle_process(event=None):
     """
@@ -110,4 +110,4 @@ def open_proofreading_dialog(event=None):
     Args:
         event (tk.Event, optional): The Tkinter event object, if called from a binding. Defaults to None.
     """
-    llm_proofreading.open_proofreading_dialog()
+    proofreading.open_proofreading_dialog()
