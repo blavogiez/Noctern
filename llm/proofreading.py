@@ -2,6 +2,7 @@
 from tkinter import messagebox
 from llm import state
 from llm.dialogs.proofreading import ProofreadingDialog
+from app.panels import show_proofreading_panel
 
 
 def open_proofreading_dialog():
@@ -22,15 +23,9 @@ def open_proofreading_dialog():
         messagebox.showwarning("No Content", "No text found to proofread.")
         return
     
-    # Launch dialog
+    # Show the integrated panel instead of dialog
     try:
-        dialog = ProofreadingDialog(
-            parent=state._root_window,
-            theme_getter=state._theme_setting_getter_func,
-            editor=editor,
-            initial_text=text_to_check
-        )
-        dialog.show()
+        show_proofreading_panel(editor, text_to_check)
     except Exception as e:
         messagebox.showerror("Error", f"Failed to open proofreading interface: {str(e)}")
 

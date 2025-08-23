@@ -8,6 +8,7 @@ thereby influencing the LLM's generation or completion behavior.
 from tkinter import messagebox
 from llm import state as llm_state
 from llm.dialogs.keywords import show_set_llm_keywords_dialog
+from app.panels import show_keywords_panel
 from utils import debug_console
 
 def open_set_keywords_dialog():
@@ -32,9 +33,5 @@ def open_set_keywords_dialog():
         debug_console.log("Keyword dialog aborted: No active file path found.", level='WARNING')
         return
 
-    # Open the dialog, passing the file path.
-    show_set_llm_keywords_dialog(
-        root_window=llm_state._root_window,
-        theme_setting_getter_func=llm_state._theme_setting_getter_func,
-        file_path=active_file_path
-    )
+    # Show the integrated panel instead of dialog
+    show_keywords_panel(active_file_path)

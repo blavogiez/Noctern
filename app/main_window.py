@@ -7,6 +7,7 @@ from app import state, actions, config as app_config, theme as interface_theme
 from app.zoom import ZoomManager
 from app.topbar import create_top_buttons_frame
 from app.panes import create_main_paned_window, create_left_pane, create_outline, create_debug_panel, create_notebook, create_console_pane, create_pdf_preview_pane
+from app.panels import PanelManager
 from app.status import create_status_bar, start_gpu_status_loop
 from app.shortcuts import bind_global_shortcuts
 from utils import debug_console, screen as screen_utils
@@ -124,6 +125,14 @@ def setup_gui():
     
     # Preserve legacy error_panel reference for compatibility
     state.error_panel = debug_panel
+    
+    # Initialize integrated panel manager
+    state.panel_manager = PanelManager(
+        left_pane_container=left_pane,
+        outline_widget=state.outline.get_widget(),
+        debug_widget=debug_panel,
+        theme_getter=state.get_theme_setting
+    )
     state.notebook = create_notebook(state.main_pane)
     
     # Setup PDF preview pane only when enabled

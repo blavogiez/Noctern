@@ -5,6 +5,7 @@ Handle custom generation requests and coordinate with streaming service for resp
 from tkinter import messagebox
 from llm import state as llm_state
 from llm.dialogs.generation import show_generate_text_dialog
+from app.panels import show_generation_panel
 from llm import utils as llm_utils
 from llm import keyword_history
 from llm.history import _add_entry_to_history_and_save, _update_history_response_and_save
@@ -93,12 +94,10 @@ def open_generate_text_dialog(initial_prompt_text=None):
             task_type="generation"  # Optimized for generation tasks
         )
 
-    # Display the generation dialog, passing all necessary callbacks.
-    show_generate_text_dialog(
-        root_window=llm_state._root_window,
-        theme_setting_getter_func=llm_state._theme_setting_getter_func,
-        current_prompt_history_list=llm_state._prompt_history_list,
-        on_generate_request_callback=_on_generate_request,
-        on_history_entry_add_callback=lambda p: _add_entry_to_history_and_save(p, "⏳ Generating..."),
-        initial_prompt_text=initial_prompt_text
+    # Show the integrated panel instead of dialog
+    show_generation_panel(
+        prompt_history=llm_state._prompt_history_list,
+        on_generate_callback=_on_generate_request,
+        on_history_add_callback=lambda p: _add_entry_to_history_and_save(p, "⏳ Generating..."),
+        initial_prompt=initial_prompt_text
     )

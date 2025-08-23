@@ -3,7 +3,6 @@
 
 import ttkbootstrap as ttk
 from tkinter import TclError
-from utils import debug_console
 import os
 
 # Global UI component references
@@ -22,6 +21,11 @@ console_output = None
 pdf_preview_interface = None
 pdf_preview_pane = None
 pdf_preview_parent = None
+
+# Panel system references
+panel_manager = None
+outline = None
+debug_panel = None
 
 # Theme and configuration state
 _theme_settings = {}
