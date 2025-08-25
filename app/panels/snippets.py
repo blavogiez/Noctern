@@ -73,7 +73,8 @@ class SnippetsPanel(BasePanel):
         header_frame = ttk.Frame(header_section)
         header_frame.pack(fill="x")
         
-        ttk.Label(header_frame, text="Snippets", font=StandardComponents.TITLE_FONT).pack(side="left")
+        title_label = StandardComponents.create_info_label(header_frame, "Snippets", "title")
+        title_label.pack(side="left")
         
         new_button = StandardComponents.create_button_input(
             header_frame,
@@ -127,14 +128,14 @@ class SnippetsPanel(BasePanel):
         form_frame.grid_columnconfigure(3, weight=1)
         
         # Name and Trigger fields in same row
-        ttk.Label(form_frame, text="Name:", font=StandardComponents.BODY_FONT).grid(
-            row=0, column=0, sticky="w", padx=(0, StandardComponents.ELEMENT_SPACING), pady=StandardComponents.ELEMENT_SPACING//2)
+        name_label = StandardComponents.create_info_label(form_frame, "Name:", "body")
+        name_label.grid(row=0, column=0, sticky="w", padx=(0, StandardComponents.ELEMENT_SPACING), pady=StandardComponents.ELEMENT_SPACING//2)
         self.name_entry = StandardComponents.create_entry_input(form_frame, width=15)
         self.name_entry.grid(row=0, column=1, sticky="ew", padx=(0, StandardComponents.PADDING), pady=StandardComponents.ELEMENT_SPACING//2)
         self.name_entry.bind("<KeyRelease>", self._on_field_changed)
         
-        ttk.Label(form_frame, text="Trigger:", font=StandardComponents.BODY_FONT).grid(
-            row=0, column=2, sticky="w", padx=(0, StandardComponents.ELEMENT_SPACING), pady=StandardComponents.ELEMENT_SPACING//2)
+        trigger_label = StandardComponents.create_info_label(form_frame, "Trigger:", "body")
+        trigger_label.grid(row=0, column=2, sticky="w", padx=(0, StandardComponents.ELEMENT_SPACING), pady=StandardComponents.ELEMENT_SPACING//2)
         self.trigger_entry = StandardComponents.create_entry_input(form_frame, width=12)
         self.trigger_entry.grid(row=0, column=3, sticky="ew", pady=StandardComponents.ELEMENT_SPACING//2)
         self.trigger_entry.bind("<KeyRelease>", self._on_field_changed)
@@ -163,12 +164,12 @@ class SnippetsPanel(BasePanel):
         help_section = ttk.Frame(right_frame)
         help_section.pack(fill="x", pady=(0, StandardComponents.ELEMENT_SPACING))
         
-        ttk.Label(
+        help_label = StandardComponents.create_info_label(
             help_section,
-            text="Use ${cursor} to mark cursor position after snippet insertion",
-            font=StandardComponents.SMALL_FONT,
-            foreground=self.get_theme_color("muted_text", "#666666")
-        ).pack(anchor="w")
+            "Use ${cursor} to mark cursor position after snippet insertion",
+            "small"
+        )
+        help_label.pack(anchor="w")
         
         # Action buttons
         button_section = ttk.Frame(right_frame)

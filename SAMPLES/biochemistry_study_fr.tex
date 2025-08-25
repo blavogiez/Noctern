@@ -1,0 +1,427 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amsfonts,amssymb}
+\usepackage{graphicx}
+\usepackage{geometry}
+\usepackage{setspace}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+
+\geometry{margin=2.5cm}
+\onehalfspacing
+
+\title{Novel Enzymatic Pathways in Metabolic Regulation: Discovery and Characterization of the AMPK-mTOR Crosstalk Mechanism in Cellular Energy Homeostasis (FR)}
+
+\author{Dr. Elena Rodriguez\textsuperscript{1,2} \and 
+        Dr. Michael Chen\textsuperscript{1} \and 
+        Dr. Sarah Johnson\textsuperscript{2,3} \and 
+        Dr. Ahmed Hassan\textsuperscript{1} \and 
+        Prof. David Thompson\textsuperscript{1,2,*}}
+
+\date{\textsuperscript{1}Department of Biochemistry and Molecular Biology, Harvard Medical School, Boston, MA 02115, USA\\
+\textsuperscript{2}Institute for Metabolic Research, Dana-Farber Cancer Institute, Boston, MA 02215, USA\\
+\textsuperscript{3}Department of Cell Biology, MIT, Cambridge, MA 02139, USA\\
+\textsuperscript{*}Corresponding author: david\_thompson@hms.harvard.edu}
+
+\begin{document}
+
+
+\maketitle
+
+\begin{abstract}
+Cellular energy homeostasis represents one of the most fundamental processes governing life at the molecular level. The intricate balance between energy production and consumption is regulated by sophisticated signaling networks that respond to metabolic demands and environmental conditions. In this comprehensive study, we report the discovery and detailed characterization of a novel regulatory mechanism involving the crosstalk between AMP-activated protein kinase (AMPK) and the mechanistic target of rapamycin (mTOR) pathways. Through a combination of biochemical, molecular, and cellular approaches, we have identified a previously unknown intermediate protein complex that serves as a molecular switch in metabolic regulation. Our findings demonstrate that this complex, designated as MARC (Metabolic Adapter Regulatory Complex), directly modulates the phosphorylation status of key regulatory proteins in both pathways, thereby fine-tuning cellular responses to energy stress. The discovery of MARC has profound implications for understanding metabolic diseases, aging, and cancer, and opens new therapeutic avenues for treating conditions characterized by dysregulated energy metabolism. This work represents a significant advancement in our understanding of cellular bioenergetics and provides a foundation for future research in metabolic therapeutics.
+\end{abstract}
+
+\newpage
+
+\tableofcontents
+
+\newpage
+
+\section{Présentation}
+
+\subsection{Historique et justification}
+
+L'homéostasie de l'énergie cellulaire est un processus biologique fondamental qui assure la survie et le bon fonctionnement de tous les organismes vivants. Au cœur de ce processus se trouve un réseau complexe de voies de signalisation qui coordonnent la production, la consommation et le stockage d'énergie en réponse à l'évolution des conditions cellulaires et des exigences environnementales. Le maintien de l'équilibre énergétique est crucial pour la survie cellulaire, car les perturbations de cet équilibre délicat peuvent conduire à diverses conditions pathologiques, y compris les troubles métaboliques, le cancer et le vieillissement prématuré. La voie de la protéine kinase activée par l'AMP (AMPK) est reconnue depuis longtemps comme le capteur d'énergie cellulaire primaire, répondant aux changements du rapport AMP:ATP et initiant les réponses métaboliques appropriées pour rétablir l'équilibre énergétique.
+
+\subsection{Objectifs de recherche}
+
+L'objectif principal de cette recherche était d'élucider les mécanismes moléculaires qui régissent l'interaction entre les voies AMPK et mTOR dans le contexte de l'homéostasie de l'énergie cellulaire.
+
+\begin{enumerate}
+\item Identifier de nouvelles protéines et complexes régulateurs impliqués dans le crosstalk AMPK-mTOR
+\item Caractériser les propriétés biochimiques et les fonctions cellulaires de ces éléments réglementaires
+\item Déterminer la signification physiologique de ce crosstalk dans divers contextes cellulaires
+\item Étudier les implications thérapeutiques potentielles du ciblage de ce réseau réglementaire
+\end{enumerate}
+
+Je veux une pizza peperroni pour 20h, s'il vous plaît avec une margarita.
+
+\subsection{Hypothèse}
+
+Nous avons émis l'hypothèse que la coordination entre les voies AMPK et mTOR est médiée par un complexe protéique auparavant non caractérisé qui sert d'intégrateur moléculaire de signaux métaboliques multiples. Ce complexe, nous avons prédit, contiendrait à la fois des protéines échafaudantes qui facilitent les interactions protéines-protéines et des activités enzymatiques qui modulent le statut phosphorylation des protéines régulatrices clés dans les deux voies.
+
+\subsection{Importance de l'étude}
+
+La dysrégulation des voies métaboliques est impliquée dans de nombreuses affections pathologiques, dont le diabète, l'obésité, les maladies cardiovasculaires, le cancer et les troubles neurodégénératifs. En comprenant les mécanismes fondamentaux qui contrôlent l'équilibre énergétique au niveau cellulaire, nous pouvons développer des stratégies thérapeutiques plus efficaces pour traiter ces affections. De plus, l'identification de nouvelles protéines et voies réglementaires offre des possibilités de développement de médicaments et la conception d'interventions ciblées. La capacité de moduler avec précision l'homéostasie énergétique cellulaire pourrait conduire à des traitements révolutionnaires pour les maladies métaboliques et les affections liées à l'âge.
+
+\section{Revue de littérature}
+
+\subsection{AMPK Voie de signalisation}
+
+L'enzyme est un complexe hétérotrimère composé d'une sous-unité alpha catalytique et de sous-unités bêta et gamma régulatrices, chacune d'elles ayant plusieurs isoformes qui confèrent des propriétés spécifiques aux tissus et des mécanismes de régulation. La sous-unité alpha contient le domaine kinase et est sujette à l'activation de la phosphorylation à Thr172 par des kinases en amont, y compris LKB1, CaMKbeta et TAK1. La sous-unité bêta sert de protéine d'échafaudage et contient un module liant les glucides qui permet à l'AMPK de sentir les niveaux glycogènes. La sous-unité gamma contient quatre domaines de kystathionine bêta-synthase (CBS) qui forment deux domaines Bateman, qui lient les nucléotides de l'adénine sous forme de nucléotides et confèrent la sensibilité de l'AMP/ATP au complexe.
+
+\subsection{Voie de signalisation mTOR}
+
+L'association de la protéine mTORC1 et de la protéine mTORC2 est une sous-unité catalytique de deux complexes protéiques distincts : le complexe mTOR 1 (mTORC1) et le complexe mTOR 2 (mTORC2), chacun ayant une composition, une régulation et des fonctions uniques. mTORC1 se compose de mTOR, Raptor (protéine associée à la régulation de mTOR), mLST8, PRAS40 et DEPTOR. Ce complexe est sensible à la rapamycine et sert de centre de coordination de la croissance cellulaire et du métabolisme en réponse aux facteurs de croissance, aux nutriments, à l'énergie et aux signaux de stress. mTORC1 favorise les processus anaboliques, y compris la synthèse des protéines, la biogenèse des ribosomes, la synthèse des lipides et la synthèse des nucléotides, tout en inhibant les processus cataboliques tels que l'autophagie.
+
+\subsection{AMPK-mTOR Crosstalk}
+
+La relation entre les voies AMPK et mTOR est caractérisée par une régulation antagoniste, avec une activation AMPK conduisant à une inhibition mTOR dans des conditions de stress énergétique. Cette relation assure que les processus anabolisants consommant de l'énergie sont interrompus lorsque les niveaux d'énergie cellulaire sont faibles, ce qui permet de réorienter les ressources vers la production d'énergie et la survie des cellules. Le mécanisme primaire de l'inhibition mTORC1 médiée par AMPK implique la phosphorylation de TSC2 à Ser1387, ce qui améliore l'activité GAP du complexe TSC1-TSC2 vers Rheb, réduisant ainsi l'activation mTORC1. De plus, AMPK directement phosphorylates Raptor à Ser722 et Ser792, ce qui favorise la liaison des protéines 14-3-3 à Raptor et inhibe l'activité mTORC1. Des études récentes ont révélé des couches supplémentaires de complexité dans le crosstalk AMPK-mTOR. Par exemple, mTORC1 peut phosphorylate et inhiber l'AMPK par de multiples mécanismes, y compris la phosphorylation des sous-unités réglementaires AMPK et l'activation de la régulation de S6K.
+
+\subsection{Régulation métabolique et maladie}
+
+Dans le diabète de type 2, la diminution de l'activité de l'AMPK et la signalisation excessive du mTORC1 contribuent à la résistance à l'insuline, à l'homéostasie du glucose et à des complications telles que la néphropathie diabétique et la cardiomyopathie. Les cellules cancéreuses présentent souvent une modification de l'AMPK et de la signalisation du mTOR, avec de nombreuses tumeurs montrant une diminution de l'activité de l'AMPK et une signalisation hyperactivée du mTOR. Cette reprogrammation métabolique soutient les exigences énergétiques élevées des cellules proliférantes et contribue à la résistance au traitement. Les stratégies thérapeutiques ciblant ces voies, y compris la metformine (un activateur de l'AMPK) et les analogues de la rapamycine (inhibiteurs de l'AMPK), ont montré des promesses dans le traitement du cancer.
+
+\section{Matériaux et méthodes}
+
+\subsection{Culture cellulaire et réactifs}
+
+\subsubsection{Lignes cellulaires}
+
+Les cellules HEK293T (ATCC CRL-3216) ont servi de modèle pour l'étude de la régulation métabolique dépendante du cycle cellulaire. Les fibroblastes embryonnaires primaires de souris (MEF) ont été isolés de souris C57BL/6J au jour embryonnaire 13,5 et utilisés dans cinq passages pour maintenir la pertinence physiologique. Les lignées cellulaires spécialisées comprenaient les cellules d'adénocarcinome pulmonaire H1975 (ATCC CRL-5908) pour les études liées au cancer, les myoblastes de souris C2C12 (ATCC CRL-1772) pour les études spécifiques au muscle et les fibroblastes de souris 3T3-L1 (ATCC CCL-92.1) pour les études liées au cancer, toutes les lignées cellulaires ont été vérifiées par profilage STR et testées pour la contamination par mycoplasma à l'aide de méthodes de détection fondées sur le PCR.\% sérum bovin foetal (FBS, Gibco 26140-079), 100 unités/mL de pénicilline et 100 tasse/mL de streptomycine (Gibco 15140-122). Les cultures ont été maintenues à 37degrésC dans une atmosphère humidifiée contenant 5\% CO2.
+
+\subsubsection{Réactifs chimiques}
+
+Des modulateurs pharmacologiques des voies AMPK et mTOR ont été obtenus auprès de plusieurs fournisseurs et utilisés à des concentrations optimisées déterminées par des études dose-réponse. La metformine (Sigma D150959) a été utilisée à 1-10 mM comme activateur alternatif de l'AMPK ayant une pertinence clinique. Les inhibiteurs de la voie mTOR ont inclus la rapamycine (Sigma R8781) à 10-100 nM pour l'inhibition spécifique du mTORC1 et la Torin1 (Tocris 4247) à 100-500 nM pour l'inhibition du double mTORC1/mTORC2. PP242 (Sigma P0037) a été utilisée à 1-5 mM comme inhibiteur supplémentaire du mTOR compétitif de l'ATP. Les cocktails inhibiteurs de la protéase (Sigma P8340) et les inhibiteurs de la phosphatase, y compris le fluorure de sodium (10 mM), l'orthovanadate (1 mM) et le bêta-glycophosphate, à l'aide d'une substance biochimique, ont été utilisés pour l'extraction de 10 m-M.
+
+\subsection{Expression et purification des protéines}
+
+\subsubsection{Expression protéique recombinante}
+
+Les gènes codant les sous-unités AMPK humaines (alpha1, bêta1, gamma1), mTOR, Raptor et les nouvelles protéines identifiées dans cette étude ont été clonés à l'aide de techniques de biologie moléculaire standard. Toutes les constructions ont été vérifiées par séquençage de l'ADN et analyse des enzymes de restriction. L'expression des protéines a été réalisée dans les cellules BL21(DE3) E. coli cultivées en milieu LB et complétées par 50 tasses/mL de kanamycine. Les cultures ont été cultivées à une DO600 de 0,6-0,8 à 37degrésC, puis induites avec 0,5 mM d'ITPG et cultivées pendant 16 heures supplémentaires à 18degrésC afin de maximiser le rendement en protéines solubles. Les cellules bactériennes ont été récoltées par centrifugation et remises en suspension dans un tampon de lyse contenant 50 mM de Tris-HCl pH 7,5, 300 mM de NaCl, 10 mM d'imidazole, 1 mM de PMSF, et 1× d'inhibiteur de protéase.
+
+\subsubsection{Purification des protéines}
+
+Des lysats clarifiés ont été appliqués à des colonnes d'agarose de Ni-NTA (Qiagen) pré-équilibrées avec un tampon de lyse. Après un lavage extensif avec un tampon contenant 20 mM d'imidazole, les protéines ont été éluées avec un tampon contenant 250 mM d'imidazole. On a procédé à une purification plus poussée par chromatographie à l'exclusion de la taille à l'aide d'une colonne Superdex 200 16/60 (GE Healthcare) équilibrée avec un tampon contenant 20 mM Tris-HCl pH 7,5, 150 mM NaCl et 1 mM DTT. La pureté protéique a été évaluée par SDS-PAGE et Coomasie coloration bleue, avec des puretés typiques supérieures à 90\%. Les concentrations de protéines ont été déterminées à l'aide de l'essai Bradford (Bio-Rad) avec l'albumine sérique bovine comme norme. Les protéines purifiées ont été aliquotées, surgelées dans de l'azote liquide et stockées à -80degrésC. La stabilité et l'activité des protéines ont été surveillées au fil du temps, la plupart des préparations maintenant l'activité pendant plusieurs mois lorsqu'elles ont été correctement entreposées.
+
+\subsection{Essais biochimiques}
+
+\subsubsection{Essais d'activité kinase}
+
+L'activité de l'AMPK kinase a été mesurée à l'aide du test peptide SAMS (substrat AMPK synthétique). En bref, des complexes AMPK purifiés ou AMPK immunoprécipités ont été incubés avec 200 muM peptide SAMS (HMRSAMSMGLHLVKRR) dans un tampon kinase contenant 40 mM pH HEPES 7,0, 80 mM NaCl, 8 mM MgCl2, 0,8 mM DTT et 200 mM ATP, y compris [gamma-32P]ATP (activité spécifique 1000-3000 cpm/pmol). Les réactions ont été effectuées à 30degrésC pendant 10 minutes et se sont terminées par la détection de 10 aliquotes de muL sur du papier phosphocellulose P81 (Whatman).\% L'activité de la mTOR kinase a été évaluée à l'aide de 4E-BP1 recombinant comme substrat. Les complexes mTORC1 immunoprécipités ont été incubés avec 2 tasses recombinantes 4E-BP1 dans un tampon de kinase contenant 25 mM HEPES pH 7,4, 100 mM acétate de potassium, 10 mM MgCl2 et 1 mM ATP. Les réactions ont été effectuées à 30 degrésC pendant 30 minutes et analysées par buvardage occidental à l'aide d'anticorps spécifiques à la phosphose sur des sites de phosphorylation 4E-BP1.
+
+\subsubsection{Analyse de l'interaction protéique-protéine}
+
+Des expériences de co-immunoprécipitation ont été effectuées à l'aide de protocoles standard avec des modifications pour l'étude des complexes protéiques métaboliques.\% Les lysats ont été clarifiés par centrifugation à 14 000 × g pendant 10 minutes à 4degrésC. Pour les immunoprécipitations, 500-1000 tasses de lysate protéique ont été incubées avec des anticorps spécifiques du jour au lendemain à 4degrésC avec rotation. Des billes d'agarose A/G protéique (Santa Cruz) ont été ajoutées pendant 2 heures pour capturer des complexes immunitaires. Les perles ont été lavées quatre fois avec un tampon de lyse avant l'élution dans le tampon d'échantillon de SDS et l'analyse par buvardage occidental. Des essais de réduction de la GST ont été effectués à l'aide de protéines de fusion GST à l'expression bactérienne immobilisées sur des billes de glutathion-Sépharose. Les protéines traduites in vitro ou lysats cellulaires ont été incubées avec des protéines de fusion GST pendant 2 heures à 4degrésC avec rotation.
+
+\subsection{Analyse de spectrométrie de masse}
+
+\subsubsection{Préparation de l'échantillon}
+
+Les complexes protéiques isolés par immunoprécipitation ou chromatographie d'affinité ont été soumis à une analyse spectrométrique de masse pour l'identification des protéines et la cartographie des modifications post-traductionnelles. Les protéines ont été séparées par SDS-PAGE et visualisées par coloration bleue de Coomasie.\% acétonitrile dans 25 mM de bicarbonate d'ammonium, réduit avec 10 mM de DTT à 56degrésC pendant 1 heure, et alkylé avec 55 mM d'iodoacétamide à température ambiante pendant 45 minutes dans l'obscurité. Après déshydratation avec l'acétonitrile, les protéines ont été digérées du jour au lendemain à 37degrésC avec 12,5 ng/muL de trypsine dans 25 mM de bicarbonate d'ammonium.\% acétonitrile/5\% Acide formique et concentré avec C18 ZipTips (Millipore). Les échantillons ont été remis en suspension dans 0,1\% acide formique avant l'analyse LC-MS/MS.
+
+\subsubsection{LC-MS/MS Analyse}
+
+Les échantillons de peptide ont été analysés à l'aide d'un système UPLC nanoAcquity couplé à un spectromètre de masse Q Exactive HF (Thermo Fisher Scientific). Les peptides ont été chargés sur une colonne de piégeage (nanoAcquity UPLC 2G-V/M Trap 5 mom Symmetry C18, 180 mom × 20 mm) et séparés sur une colonne analytique (nanoAcquity UPLC BEH 1,7 mum C18, 75 mom × 250 mm) en utilisant un gradient linéaire de 90 minutes à partir de 3\% à 40 ans\% acétonitrile dans 0,1\% Acide formique à un débit de 300 nL/min. Le spectromètre de masse a été actionné en mode d'acquisition dépendant des données avec une gamme complète de balayage MS de m/z 375-1500 à une résolution de 60 000.\%. Les spectres MS/MS ont été acquis à une résolution de 15 000 avec une cible AGC de 1e5 et un temps d'injection maximal de 50 ms. Les fichiers de données brutes ont été traités à l'aide du logiciel MaxQuant version 1.6.3.4 avec le moteur de recherche d'Andromède. Des recherches ont été effectuées sur la base de données UniProt humaine avec des contaminants communs inclus. Les paramètres de recherche comprenaient la spécificité de la trypsine, jusqu'à deux clivages manqués, la carbamidométhylation de la cystéine comme modification fixe, et l'oxydation de la méthionine et l'acétylation de la protéine N-termini comme modifications variables.\% pour les peptides et les protéines.
+
+\subsection{Techniques de biologie cellulaire}
+
+\subsubsection{Microscopie par immunofluorescence}
+
+Les cellules ont été cultivées sur des couvercles en verre et fixées à 4\% paraformaldéhyde dans le PBS pendant 10 minutes à température ambiante.\% Triton X-100 pendant 5 minutes et blocage avec 5\% Les anticorps primaires comprenaient l'anti-AMPK alpha de lapin (Cell Signaling 2532, 1:500), l'anti-mTOR de souris (Cell Signaling 2972, 1:200) et les anticorps contre les protéines nouvellement identifiées (anticorps personnalisés générés pour cette étude, 1:200-1:500). Après lavage avec PBS, les cellules ont été incubées avec des anticorps secondaires fluorescents appropriés pendant 1 heure à température ambiante. Nuclei ont été teints avec DAPI (1 tasse/mL) pendant 5 minutes, et des coverlips ont été montés à l'aide d'un réactif antifade ProLong Gold (Invitrogen). Les images ont été acquises à l'aide d'un microscope à balayage laser confocal (Zeiss LSM 880) équipé de 405 nm, 488 nm, 561 nm et 633 nm de lignes laser.
+
+\subsubsection{Imagerie de cellules vivantes}
+
+Pour les mesures du flux métabolique, les cellules ont été transfectées avec des biocapteurs fluorescents, y compris AMPKAR (rapporteur d'activité de l'AMPK) et des biocapteurs d'activité mTOR. Les transfections ont été effectuées avec Lipofectamine 3000 (Invitrogen) selon le protocole du fabricant. L'imagerie des cellules vivantes a été réalisée avec un système de microscope contrôlé par l'environnement (Nikon Ti-E) équipé d'un stade chauffé et d'un contrôle du CO2.\% Les concentrations de fluorescence ont été mesurées à l'aide d'un logiciel ImageJ avec soustraction de l'arrière-plan et correction de photoblanchiment. Les activités de Kinase ont été calculées en fonction du rapport entre la fluorescence de l'accepteur et celle du donneur pour les biocapteurs à base de FRET, les valeurs étant normalisées aux mesures de base avant le traitement.
+
+\subsection{Techniques de biologie moléculaire}
+
+\subsubsection{Clonage des gènes et mutagenèse}
+
+L'amplification PCR a été effectuée à l'aide du protocole QuikChange (Agilent) pour générer des mutants de site de phosphorylation et des constructions de suppression. Les mutations ont été introduites pour convertir des résidus de sérine et de thréonine en alanine (non phosphorylatables) ou en acide aspartique/acide glutamique (phosphomimétique) pour étudier l'importance fonctionnelle d'événements spécifiques de phosphorylation. Toutes les constructions ont été vérifiées en séquence par séquençage automatique de l'ADN (Systèmes appliqués 3130xl) et par analyse des enzymes de restriction. Les vecteurs d'expression comprenaient des plasmides d'expression de mammifères (pcDNA3.1, pCMV) pour des études de surexpression et des vecteurs d'expression bactériennes (pET28a, pGEX) pour la purification des protéines.
+
+\subsubsection{Interférence de l'ARN}
+
+De petits ARN interférants (siRNA) ciblant des protéines clés ont été obtenus auprès de plusieurs fournisseurs afin d'assurer la spécificité et de minimiser les effets non ciblés. Dharmacon ON-TARGETplus siRNA ont été utilisés comme réactifs primaires, le Silencer Ambion Select siRNA servant d'outils de validation. Les cellules ont été transfectées avec des siRNA (25-50 nM concentration finale) utilisant la Lipofectamine RNAiMAX (Invitrogen) dans un milieu sans sérum.
+
+\subsubsection{Édition de gènes CRISPR/Cas9}
+
+Pour produire des lignées cellulaires stables avec des modifications géniques ciblées, la technologie CRISPR/Cas9 a été utilisée. Les ARN guides ont été conçus à l'aide d'outils en ligne (MIT CRISPR Design, Broad Institute) et clonés dans le vecteur pSpCas9(BB)-2A-Puro (Addgene 48139). Les cellules ont été transfectées avec des constructions CRISPR utilisant la Lipofectamine 3000 et sélectionnées avec la puromycine (2 tasse/mL) pendant 48 heures. Les clones individuels ont été isolés en limitant la dilution et triés par amplification PCR et séquençage de la région cible.
+
+\subsection{Essais métaboliques}
+
+\subsubsection{Mesure de l'énergie cellulaire}
+
+Les cellules ont été rapidement extraites avec 0,5 M d'acide perchlorique sur la glace, et les extraits ont été neutralisés avec 2,5 M de K2CO3. Les nucléotides ont été séparés sur une colonne C18 de phase inverse en utilisant la chromatographie par pairing ionique avec le phosphate de tétrabutylammonium comme agent pairing ionique. La phase mobile comprenait 100 mM de KH2PO4, 8 mM de phosphate de tétrabutylammonium et 1,5 m de phosphate.\% Les nucléotides ont été détectés par absorption UV à 254 nm et quantifiés à l'aide de normes authentiques. La charge d'énergie adénylate a été calculée comme (ATP + 0,5 ADP)/(ATP + ADP + AMP). D'autres mesures de l'état de l'énergie cellulaire ont été effectuées à l'aide de tests ATP à base de luciférase (CellTiter-Glo, Promega) et de capteurs de rapport AMP/ATP fluorescents (Perceval-HR) pour les mesures en temps réel dans les cellules vivantes.
+
+\subsubsection{Prise et utilisation de glucose}
+
+L'absorption du glucose a été mesurée à l'aide de l'analogue fluorescent du glucose 2-NBDG (2-(N-(7-nitrobenz-2-oxa-1,3-diazol-4-yl)amino)-2-désoxyglucose). Les cellules ont été incubées avec 100 muM 2-NBDG pendant 30 minutes à 37degrésC, lavées avec du PBS et analysées par cytométrie en flux ou par microscopie de fluorescence. L'utilisation du glucose a été évaluée en mesurant la consommation de glucose à partir du milieu de culture au moyen d'un dosage à base d'oxydase de glucose (Glucose Assay Kit, Abcam). Des échantillons moyens ont été recueillis à divers moments, et les concentrations de glucose ont été déterminées spectrophotométriquement à 570 nm. La production de lactate a été mesurée comme indicateur de l'activité glycolytique à l'aide d'une trousse d'analyse du lactate (Sigma MAK064).
+
+\subsubsection{Analyse de la fonction mitochondriale}
+
+On a mesuré les taux de consommation d'oxygène (OCR) à l'aide d'un analyseur de flux extracellulaire de Seahorse XF96 (Agilent). On a ensemencé les cellules dans des microplaques de culture cellulaire de XF96 et on les a autorisées à y adhérer du jour au lendemain. Avant les mesures, on a établi l'équilibre des cellules dans un DMEM non tamponné à 37degrésC pendant 1 heure. On a utilisé des injections séquentielles d'oligomycine (1 muM), de cyanure de carbonyle-4-(trifluorométhoxy)phénylhydrazone (FCCP, 1 muM) et de roténone/antimycine A (0,5 muM chacune) pour déterminer la respiration basale, la respiration liée à l'ATP, la capacité respiratoire maximale et la respiration non mitochondrial. On a évalué le potentiel membranaire mitochondrial en utilisant l'ester éthylique tétraméthylrhodamine (TMRE, 25 nM) et analysé par cytométrie de flux ou microscopie de fluorescence.
+
+\subsection{Analyse statistique}
+
+Toutes les expériences ont été effectuées avec des répliques biologiques appropriées (\textit{n} >= 3) et des répliques techniques pour assurer la puissance statistique et la reproductibilité. Les données sont présentées comme une erreur moyenne +/- standard de la moyenne (\textit{SEM}) sauf indication contraire. La signification statistique a été déterminée à l'aide de données non appariées à deux queues \textit{Les étudiants} \texttt{t}-test de comparaison entre deux groupes, ou à sens unique \textit{ANOVA} suivie de \textit{Tukey's} test de comparaison multiple pour les comparaisons entre plusieurs groupes. \textit{ANOVA} avec \textit{Bonferroni} L'analyse post-hoc a été utilisée pour tenir compte de plusieurs variables. \textit{États-Unis} coefficients de corrélation avec 95\% Des analyses statistiques ont été effectuées à l'aide du logiciel GraphPad Prism version 8.0. Une valeur p inférieure à 0,05 a été considérée comme statistiquement significative. La taille des effets a été calculée à l'aide du d de Cohen pour les essais en t et du carré eta pour l'ANOVA pour évaluer l'ampleur des différences observées.\% puissance pour détecter les tailles d'effet observées.
+
+\section{Résultats}
+
+\subsection{Découverte du complexe de réglementation de l'adaptateur métabolique (MARC)}
+
+\subsubsection{Identification des nouvelles protéines agissant sur l'AMPK}
+
+Afin d'identifier les composants précédemment inconnus des réseaux de signalisation AMPK, nous avons effectué une analyse protéomique complète des complexes AMPK isolés des cellules HEK293T dans diverses conditions métaboliques. Les cellules ont été traitées avec le contrôle du véhicule, l'IACAR (1 mM pendant 2 heures pour activer l'AMPK), ou la privation de glucose (4 heures) pour induire le stress métabolique. Les complexes AMPK ont été immunoprécisés à l'aide d'anticorps validés contre la sous-unité alpha AMPK, et les protéines associées ont été analysées par spectrométrie de masse à haute résolution. Dans des conditions basales, nous avons identifié les sous-unités AMPK attendues (alpha1, bêta1, gamma1) ainsi que les protéines régulatrices connues, y compris les sous-unités catalytiques LKB1, STRAD et PP2A. Cependant, l'activation AMPK par le traitement de l'IACAR ou la privation de glucose a entraîné le recrutement de plusieurs protéines précédemment non caractérisées au complexe AMPK.\% Les recherches dans la base de données ont révélé que MARC1 (symbole du gène MARCP1, emplacement chromosomique 12q23.1) code une protéine avec plusieurs domaines reconnaissables, y compris un domaine de répétition riche en leucine-N-terminal (LRR), une région de répétition d'armadillo central, et un domaine C-terminal avec homologie aux sous-unités de régulation de la phosphatase protéique. Deux autres protéines, désignées MARC2 (62 kDa) et MARC3 (48 kDa), ont été identifiées de façon constante en association avec MARC1 et AMPK activé. MARC2 contient un domaine de doigt RING typique des ligas d'ubiquitine E3, tandis que MARC3 présente une similitude avec les protéines d'échafaudage de la famille des répétitions HEAT. La présence simultanée de ces trois protéines suggère qu'elles pourraient former un complexe stable.
+
+\subsubsection{Caractérisation biochimique des composants MARC}
+
+Pour valider les résultats de la spectrométrie de masse et caractériser les propriétés biochimiques des protéines MARC, nous avons cloné des ADNc de pleine longueur codant MARC1, MARC2 et MARC3 et les avons exprimés sous forme de protéines recombinantes dans des systèmes bactériens et mammifères. Des versions taguées par la GST de chaque protéine ont été produites chez E. coli et utilisées pour des études de liaison in vitro. Des expériences de traction de la GST ont démontré que MARC1 se lie directement à la sous-unité alpha d'AMPK avec une affinité élevée (Kd approximativement égale à 150 nM déterminée par résonance plasmonique de surface). Cette interaction a été multipliée approximativement par 4 lorsque l'AMPK était phosphorylé à Thr172, ce qui suggère que MARC1 s'associe préférentiellement à la forme activée de la kinase.
+
+\subsubsection{Formation et dynamique du complexe MARC}
+
+Afin d'étudier l'assemblage et la dynamique des complexes MARC dans les cellules vivantes, nous avons mis au point des versions fluorescentes de chaque protéine et réalisé des études d'imagerie sur cellules vivantes. MARC1 a été étiqueté avec du GFP amélioré, MARC2 avec mCherry et MARC3 avec le PFC, ce qui a permis une surveillance simultanée des trois composantes. Dans des conditions basales, les protéines MARC ont montré une distribution relativement uniforme dans leurs compartiments subcellulaires respectifs. Cependant, dans les 15-30 minutes suivant la privation de glucose, nous avons observé la formation de structures de ponctuation discrètes contenant les trois protéines MARC. Ces structures ont augmenté en taille et en nombre au fil du temps, atteignant une abondance maximale après 2-3 heures de privation de glucose.\% pour MARC1, 72\% pour MARC2, et 91\% Le traitement avec l'inhibiteur de synthèse des protéines cyclohexamide (100 mug/mL) n'a pas empêché la formation du complexe de MARC, ce qui indique que la synthèse des protéines de novo n'est pas nécessaire pour ce processus. De même, le traitement avec l'inhibiteur d'autophagie bafilomycine A1 (100 nM) n'a pas affecté la formation complexe, excluant l'implication de la biogenèse autophagosome.
+
+\subsection{Analyse fonctionnelle des MARC dans la réglementation AMPK}
+
+\subsubsection{MARC module l'activité AMPK}
+
+Pour étudier la signification fonctionnelle de l'association du complexe MARC avec l'AMPK, nous avons examiné comment les composants du MARC affectent l'activité de l'AMPK kinase à l'aide d'essais in vitro et cellulaires. Des complexes AMPK purifiés ont été incubés avec des protéines MARC recombinantes dans des essais kinase à l'aide du substrat peptide SAMS. L'ajout du complexe MARC complet (MARC1+MARC2+MARC3) à des réactions kinases d'AMPK a entraîné une augmentation dose-dépendante de l'activité de la kinase, avec une stimulation maximale d'environ 2,8 fois à un rapport molaire 1:1 du complexe MARC à l'AMPK. Cette stimulation n'a été observée que lorsque l'AMPK était préphosphorylé à Thr172 par les kinases amont, ce qui suggère que MARC augmente l'activité de l'AMPK déjà activé plutôt que de promouvoir son activation initiale.\%Cependant, la combinaison des trois protéines a produit une activation synergique supérieure à la somme des effets individuels, ce qui indique que le complexe MARC intact a des propriétés réglementaires distinctes. Le mécanisme d'activation de l'AMPK par MARC a été étudié par analyse cinétique. Le complexe MARC a augmenté le Vmax de l'AMPK sans affecter significativement le Km pour l'ATP ou le substrat du peptide SAMS, ce qui suggère que MARC améliore l'efficacité catalytique de l'enzyme sans modifier la liaison du substrat.
+
+\subsubsection{Validation cellulaire de la fonction MARC}
+
+Pour valider les résultats in vitro dans un contexte cellulaire, nous avons utilisé des écrasements médiés par le siRNA de composants MARC individuels et évalué les effets sur la signalisation AMPK.\% Une diminution significative de l'activation de l'AMPK en réponse à de multiples stimuli, y compris le traitement par l'IACAR, la privation de glucose et l'exposition à la metformine. La réduction de l'activité de l'AMPK était d'environ 40-60.\% L'activité de la MARC2 a eu des effets plus subtils sur l'activité de l'AMPK mais a significativement modifié la cinétique de l'activation et de l'inactivation de l'AMPK. Bien que l'activité de l'AMPK maximale n'ait été que modestement réduite (20-25)\%Cependant, en réponse à l'IACAR ou à la metformine, l'épuisement de MARC3 a diminué l'activation de l'AMPK, suggérant des mécanismes de régulation spécifiques au stimulus.
+
+\subsubsection{MARC affecte le substrat AMPK Phosphorylation}
+
+La pertinence physiologique de la régulation de l'AMPK médiée par MARC a été évaluée en examinant la phosphorylation des substrats clés de l'AMPK dans les cellules dont l'expression de MARC a été altérée. La surexpression de MARC1 a permis d'améliorer la phosphorylation de tous les substrats de l'AMPK testés dans des conditions basales et activées. Les effets ont été les plus prononcés pour ACC1 et ACC2, avec des niveaux de phosphorylation augmentés 2,5-3,0 fois. Cette phosphorylation accrue du substrat a été accompagnée de changements correspondants dans les activités des enzymes métaboliques, avec une augmentation de l'oxydation des acides gras et une diminution de la synthèse des acides gras. Inversement, MARC1 a réduit la phosphorylation du substrat de l'AMPK même lorsque l'activité totale de l'AMPK (mesurée avec des substrats peptides exogènes) a été augmentée.
+
+\subsection{Règlement MARC de la signalisation mTOR}
+
+\subsubsection{Interactions MARC avec les composants complexes mTOR}
+
+Compte tenu de la relation antagoniste bien établie entre les voies AMPK et mTOR, nous avons étudié si les complexes MARC interagissent également avec les composants du réseau de signalisation mTOR. Des expériences de co-immunoprécipitation utilisant des anticorps contre les protéines MARC ont révélé des associations avec les composants mTORC1 et mTORC2. MARC1 a montré une interaction robuste avec le raptor, la sous-unité de régulation de mTORC1, en particulier dans des conditions de stress énergétique. Cette interaction a été renforcée lorsque le raptor était phosphorylé par AMPK à Ser722 et Ser792, ce qui suggère que la liaison MARC1 est favorisée par la modification du raptor par AMPK. La liaison était spécifique au raptor et n'a pas été observée avec le rictor, la sous-unité de régulation mTORC2. MARC2 a montré un schéma différent d'interactions entre les voies mTOR, montrant à la fois l'association avec le mTOR lui-même et les protéines régulatrices en amont TSC1 et TSC2. L'analyse de spectrométrie de masse des immunoprécipitates MARC2 a permis d'identifier plusieurs composants du complexe TSC, y compris le TTC1D, qui a été identifié comme constituant un troisième composant principal du TSC.
+
+\subsubsection{MARC module l'activité mTORC1}
+
+Pour déterminer les conséquences fonctionnelles des interactions MARC-mTOR, nous avons examiné les effets de la surexpression et de la déplétion de MARC sur l'activité mTORC1 kinase et la signalisation en aval. L'activité mTORC1 a été évaluée en mesurant la phosphorylation de ses substrats directs 4E-BP1 (Thr37/46) et S6K1 (Thr389).\% L'effet a été spécifique pour mTORC1, car la phosphorylation d'Akt chez Ser473 (substrat mTORC2) n'a pas été significativement affectée. Le mécanisme de l'inhibition de mTORC1 par MARC1 a semblé impliquer une liaison accrue de 14-3-3 protéines au raptor phosphorylé. Dans les cellules surexprimant MARC1, nous avons observé une association accrue entre le raptor et 14-3-3 protéines, qui est connu pour inhiber l'activité mTORC1. Cet effet a été évité par des mutations qui bloquent la phosphorylation du raptor par AMPK (S722A, S792A), suggérant que MARC1 stabilise la phosphorylation inhibitrice du raptor. MARC2 a eu des effets plus complexes sur la signalisation mTORC1 qui dépendaient du contexte cellulaire.
+
+\subsubsection{Effets de MARC sur la signalisation mTORC2}
+
+L'activité mTORC2 a été évaluée en mesurant la phosphorylation de ses substrats Akt (Ser473), SGK1 (Ser422) et PKCalpha (Ser657). La surexpression MARC3 a augmenté de façon sélective l'activité mTORC2 tout en ayant des effets minimes sur mTORC1. La phosphorylation de l'Akt Ser473 a été multipliée par 2,2 dans des conditions basales et par 1,8 dans la stimulation des facteurs de croissance. Cette augmentation s'est accompagnée d'une association accrue entre mTOR et rictor, ce qui suggère que MARC3 favorise la stabilité ou l'assemblage complexes de mTORC2. Les effets sélectifs de MARC3 sur mTORC2 ont été étudiés plus avant à l'aide d'inhibiteurs spécifiques complexes.
+
+\subsection{Fonctions physiologiques de MARC dans l'homéostasie énergétique}
+
+\subsubsection{MARC régule le métabolisme cellulaire}
+
+Pour comprendre l'importance physiologique de la régulation par MARC des voies AMPK et mTOR, nous avons examiné les effets de la manipulation de MARC sur les processus métaboliques clés, y compris l'absorption du glucose, l'oxydation des acides gras et la synthèse des protéines. La surexpression de MARC1 dans les cellules HEK293T a entraîné une augmentation significative de l'absorption du glucose dans des conditions basales et stimulées par l'insuline. [14C]Le taux d'oxydation du palmitate a été multiplié par 1,8, ce qui correspond à l'augmentation observée de la phosphorylation ACC et au soulagement résultant de l'inhibition de l'oxydation des acides gras. [14C]-acétate dans les lipides. Les taux de synthèse des protéines ont été significativement réduits dans les cellules surexprimant les composants MARC, ce qui correspond à l'inhibition observée de la signalisation mTORC1. [35S]-l'incorporation de méthionine a diminué de 45-60\% dans les cellules MARC1-overpressing et par 25-35\% Cette réduction de la synthèse des protéines s'est accompagnée d'une augmentation de l'autophagie, comme en témoigne l'augmentation de la formation de la CL3-II et du flux autophagique.
+
+\subsubsection{MARC répond au stress métabolique}
+
+La régulation de la formation et de l'activité du complexe MARC a été examinée dans diverses conditions de stress métabolique afin de comprendre son rôle dans l'adaptation cellulaire à la limitation de l'énergie. Nous avons exposé les cellules à la privation de glucose, à l'hypoxie, aux inhibiteurs mitochondriaux et au stress oxydatif tout en surveillant la formation du complexe MARC et la signalisation en aval.\% La formation induite par l'hypoxie des complexes MARC dépend en partie de la stabilisation de l'HIF-1alpha, comme en témoigne la réduction de la formation complexe dans les cellules ayant un effondrement de l'HIF-1alpha. Le traitement par les inhibiteurs mitochondriaux, y compris l'oligomycine (inhibiteur de la synthase ATP), la FCCP (uncoupler) et la roténone (inhibiteur du complexe I) a tous favorisé la formation du complexe MARC avec des patrons temporels distincts. L'oligomycine a eu l'effet le plus rapide, en accord avec son impact immédiat sur la production de l'ATP, tandis que les effets de la roténone se sont développés plus lentement, en corrélation avec l'appauvrissement progressif de l'ATP cellulaire.
+
+\subsubsection{MARC dans différents types de cellules}
+
+Pour évaluer la généralisabilité de la fonction MARC au-delà des cellules HEK293T, nous avons examiné l'expression et la régulation des MARC dans plusieurs types de cellules présentant des caractéristiques métaboliques différentes, y compris les hépatocytes primaires, les cellules musculaires squelettiques (C2C12) et les adipocytes (3T3-L1). Les hépatocytes primaires ont montré une expression robuste des trois protéines MARC, le MARC1 étant le plus abondant. La privation de glucose a induit des patrons similaires de formation du complexe MARC comme observé dans les cellules HEK293T, mais avec quelques différences quantitatives. L'amplitude de l'activation de l'AMPK était plus grande dans les hépatocytes, probablement en raison de leur activité métabolique élevée et de leur sensibilité au stress énergétique.
+
+\subsection{MARC dans les modèles de maladies}
+
+\subsubsection{Expression MARC dans les cellules cancéreuses}
+
+Compte tenu des rôles bien établis des voies AMPK et mTOR dans la biologie du cancer, nous avons étudié l'expression et la fonction des MARC dans diverses lignées cellulaires cancéreuses représentant différents types de tumeurs et phénotypes métaboliques. L'analyse des niveaux de protéines MARC dans un panel de lignées cellulaires cancéreuses a révélé des variations significatives dans l'expression. Plusieurs lignées cellulaires d'adénocarcinomes pulmonaires (H1975, A549, H460) ont montré une diminution spectaculaire de l'expression MARC1 par rapport aux cellules épithéliales normales, tandis que les niveaux MARC2 et MARC3 ont été affectés de façon variable.
+
+\subsubsection{MARC dans les modèles de maladies métaboliques}
+
+Pour étudier l'implication potentielle des MARC dans les maladies métaboliques, nous avons examiné l'expression et la fonction des MARC dans les modèles cellulaires de diabète et de dysfonction métabolique. Le traitement des cellules à fortes concentrations de glucose (25 mM pendant 48-72 heures) aux conditions diabétiques modèles a entraîné des changements significatifs dans la régulation des MARC.\%Cette dysrégulation a été associée à une diminution de l'activation de l'AMPK en réponse au stress métabolique et à une augmentation de la signalisation mTORC1 même dans des conditions de limitation énergétique. Le traitement par palmitate (utilisé pour modéliser la lipotoxicité) a eu des effets similaires sur l'expression de l'AMPK, avec une réduction sélective des concentrations de MARC1 et des changements compensatoires dans MARC2 et MARC3. Ces changements ont été associés à une augmentation de la signalisation inflammatoire et de la production d'espèces réactives d'oxygène. La résistance à l'insuline a été induite dans les cellules musculaires par une combinaison de glucose élevé et de palmitate.
+
+\subsubsection{Ciblage thérapeutique des MARC}
+
+Nous avons mis au point un essai de dépistage à haut débit basé sur l'interaction entre MARC1 et l'AMPK activé afin d'identifier les petites molécules susceptibles d'améliorer ou d'inhiber cette interaction. Le dépistage d'une bibliothèque de 10 000 composés a permis d'identifier plusieurs pistes prometteuses, dont un dérivé du benzothiazole (composé MT-247) qui a amélioré l'interaction MARC1-AMPK avec une EC50 de 2,3 muM. Le traitement des cellules cancéreuses avec MT-247 a entraîné une augmentation de la signalisation AMPK et une réduction de l'activité mTORC1, semblable aux effets de la surexpression MARC1. Le composé a montré une sélectivité pour les cellules cancéreuses à faible expression MARC1 endogène et a eu des effets minimes sur les cellules normales avec la signalisation MARC intacte. Les inhibiteurs du peptide basés sur le domaine de liaison AMPK de MARC1 ont été conçus pour perturber la fonction complexe MARC.
+
+\section{Débat}
+
+\subsection{Importance de la découverte de MARC}
+
+L'identification et la caractérisation du complexe de régulation des adaptateurs métaboliques (MARC) représentent une avancée significative dans notre compréhension de l'homéostasie de l'énergie cellulaire et de l'intégration des voies de signalisation AMPK et mTOR. Nos constatations révèlent une couche de régulation non reconnue jusqu'alors qui permet d'affiner la réponse cellulaire au stress métabolique par la modulation coordonnée des voies de détection de l'énergie et de croissance. La découverte de MARC répond à une question de longue date dans le domaine de la façon dont les cellules parviennent à un contrôle temporel et spatial précis de la signalisation métabolique. Bien que les mécanismes de base de l'activation AMPK et de la régulation mTOR aient été bien caractérisés, la base moléculaire de leur régulation de coordination et l'intégration des signaux métaboliques multiples reste floue. MARC fournit un cadre moléculaire pour comprendre comment les cellules peuvent simultanément améliorer la production d'énergie (par activation AMPK) tout en limitant la consommation d'énergie (par inhibition mTOR) en réponse aux défis métaboliques.
+
+\subsection{Perspectives mécanistes}
+
+La liaison préférentielle de MARC1 à l'AMPK activé et phosphorylé suggère un mécanisme de rétroaction positif par lequel l'activation initiale de l'AMPK est amplifiée par le recrutement de MARC. Cette amplification se produit par de multiples mécanismes, y compris une activité catalytique accrue, une protection contre les phosphatases et un meilleur ciblage subcellulaire vers les enzymes métaboliques. La protection de l'AMPK contre la déphosphorylation représente un mécanisme particulièrement important, car elle répond au défi de maintenir l'activité de l'AMPK face aux phosphatases actives.
+
+\subsection{Incidences physiologiques}
+
+Les fonctions physiologiques du MARC s'étendent au-delà de la simple régulation métabolique pour englober des aspects plus larges de l'adaptation et de la survie cellulaires.L'augmentation de l'absorption du glucose et de l'oxydation des acides gras dans les cellules qui surpassent le MARC démontre que le MARC peut effectivement reprogrammer le métabolisme cellulaire vers une plus grande efficacité et une plus grande résistance au stress.Ces changements sont compatibles avec les effets connus de l'activation de l'AMPK et de l'inhibition du mTOR, mais se produisent avec une plus grande ampleur et coordination que l'on pourrait attendre d'une activation indépendante de la voie. La régulation de l'autophagie représente une autre fonction physiologique importante du MARC. L'augmentation de l'autophagie observée dans les cellules qui surexpriment le MARC, combinée à une synthèse réduite des protéines, suggère un déplacement coordonné vers le métabolisme catabolique qui serait avantageux pendant les périodes de limitation des nutriments ou de stress cellulaire.
+
+\subsection{Pertinence de la maladie}
+
+La diminution sélective du MARC1 dans plusieurs lignées cellulaires cancéreuses, combinée à la sensibilité accrue au stress observée lors de la restauration du MARC1, suggère que la perte du MARC peut contribuer à la transformation métabolique associée à la malignité. Cette constatation est conforme aux rôles bien établis de la suppression de l'AMPK et de l'activation du mTOR dans le développement et la progression du cancer. Les modèles d'expression différentielle des MARC dans différents sous-types de cancer peuvent avoir des implications importantes pour les stratégies de traitement. L'expression du MARC plus élevée dans les cellules triplement négatives du cancer du sein, qui sont connues pour être plus dépendantes de la glycolyse et plus sensibles aux inhibiteurs métaboliques, suggère que les niveaux du MARC pourraient servir de biomarqueurs pour la vulnérabilité métabolique du cancer. L'implication du MARC dans les modèles de maladies métaboliques, en particulier la régulation altérée observée dans des conditions diabétiques, suggère des rôles potentiels dans la pathogenèse du syndrome métabolique et le diabète de type 2.
+
+\subsection{Incidences thérapeutiques}
+
+L'identification réussie de petites molécules capables de moduler les interactions MARC-AMPK démontre la pharmacovigilance de cette voie et ouvre de nouvelles voies d'intervention thérapeutique. La sélectivité du composé MT-247 pour les cellules cancéreuses à faible expression MARC1 suggère que de tels composés pourraient être efficaces spécifiquement dans les tumeurs à déficit MARC, fournissant une stratégie potentielle de traitement du cancer de précision. Le développement d'inhibiteurs peptidiques de la fonction MARC a également un potentiel thérapeutique, en particulier pour les conditions où une activation excessive de l'AMPK pourrait être préjudiciable.
+
+\subsection{Orientations futures}
+
+Les signaux en amont qui régulent la formation et le démontage du complexe MARC sont mal compris et l'identification de ces mécanismes réglementaires sera cruciale pour comprendre comment le complexe MARC répond aux différents défis métaboliques. L'indépendance apparente de la formation et de l'activation du complexe MARC suggère l'existence de nouveaux mécanismes de détection métabolique qui méritent d'être étudiés plus avant. La base structurelle de l'assemblage et de la fonction du complexe MARC représente un autre domaine important pour la recherche future. Des études structurales à haute résolution de composants MARC individuels et de complexes intacts seront essentielles pour comprendre les mécanismes moléculaires d'action et pour concevoir des interventions thérapeutiques plus efficaces. L'élaboration de modèles structurels peut également révéler des partenaires et des mécanismes réglementaires supplémentaires qui ne ressortaient pas des seules études biochimiques.
+
+\subsection{Considérations techniques}
+
+Plusieurs aspects techniques de nos études méritent d'être commentés, car ils peuvent influer sur l'interprétation des résultats et la conception d'études futures. L'utilisation de systèmes de surexpression pour caractériser la fonction MARC, tout en fournissant des indications mécanistes précieuses, peut ne pas récapituler pleinement la régulation physiologique de ces protéines. Le développement de systèmes d'expression inductable et l'utilisation de niveaux de protéines endogènes seront importants pour valider les résultats clés. La dépendance à l'égard des lignées cellulaires immortalisées pour bon nombre de nos études fonctionnelles peut limiter la généralisation des résultats aux cellules et tissus primaires.
+
+\subsection{Impact plus large}
+
+La découverte de MARC et de son rôle dans la régulation métabolique a des implications qui vont au-delà des découvertes immédiates rapportées ici. L'identification de composantes inconnues des voies de signalisation fondamentales met en évidence le potentiel continu de découverte dans les systèmes biologiques bien étudiés. Ce travail démontre que même les voies étudiées intensivement comme l'AMPK et la signalisation mTOR conservent des surprises mécanistes qui peuvent fondamentalement modifier notre compréhension de leur régulation et de leur fonction. La structure multicomposante, hiérarchiquement organisée de MARC fournit également des informations sur l'évolution et l'organisation des systèmes de signalisation complexes. La capacité de trois protéines distinctes à fonctionner ensemble en tant qu'unité de régulation intégrée suggère des principes d'évolution modulaire qui peuvent s'appliquer à d'autres complexes de signalisation.
+
+\section{Conclusion}
+
+L'étude complète révèle la découverte et la caractérisation du complexe de régulation de l'adaptateur métabolique (CMR), un nouveau complexe à trois protéines qui sert de régulateur critique de l'homéostasie cellulaire par modulation coordonnée de l'AMPK et des voies de signalisation mTOR. Nos résultats révèlent que le CMR fonctionne comme un intégrateur moléculaire qui améliore l'activité de l'AMPK tout en éliminant simultanément le mTORC1 et en modulant sélectivement le mTORC2, ce qui permet d'organiser une réponse cellulaire coordonnée au stress métabolique. L'identification du CMR permet d'aborder des questions fondamentales sur la façon dont les cellules parviennent à un contrôle temporel et spatial précis de la signalisation métabolique.
+
+\section*{Remerciements}
+
+Nous remercions les membres du laboratoire de Thompson pour les discussions utiles et la lecture critique du manuscrit. Nous remercions la Harvard Medical School Proteomics Core Facility pour son aide technique, le HMS Nikon Imaging Center pour le soutien à la microscopie confocale, et la Dana-Farber Flow Cytométrie Core pour son aide technique. Nous remercions la Dre Maria Santos (MIT) pour ses hépatocytes primaires, le Dr James Wilson (Harvard) pour le biosenseur AMPKAR, et la Dre Lisa Chen (DFCI) pour son aide à l'analyse du flux métabolique.
+
+% Bibliography removed for compilation simplicity
+
+\newpage
+
+\section*{Annexes}
+
+\subsection*{Annexe A : Protocoles détaillés}
+
+\subsubsection*{A.1 Protocole d ' immunisation complexe de la MARC}
+
+\textbf{Matériaux requis:}
+\begin{itemize}
+\item Anti-MARC1 anticorps (anticorps personnalisé, 1:100 pour IP)
+\item Perles d'agarose de protéines A/G (Santa Cruz sc-2003)
+\item tampon de lyse NP-40 (recette ci-dessous)
+\item Inhibiteur de protéase cocktail (Sigma P8340)
+\item Inhibiteurs de la phosphatase
+\end{itemize}
+
+\textbf{NP-40 Recette de tampon Lysis:}
+\begin{itemize}
+\item 50 mM Tris-HCl pH 7,5
+\item 150 mM NaCl
+\item 1\% NP-40
+\item 1 mM EDTA
+\item Ajouter les inhibiteurs de protéase frais avant utilisation
+\end{itemize}
+
+\textbf{Protocole:}
+1. Récolter les cellules en grattant à froid le PBS et la centrifugeuse à 1000 × g pendant 5 minutes à 4degrésC. 2. Récupérer les granules de cellules dans le tampon de lyse NP-40 (environ 5 × 106 cellules par mL). 3. Lisser sur la glace pendant 30 minutes avec mélange occasionnel. 4. Clarifier les lysats par centrifugation à 14 000 × g pendant 10 minutes à 4degrésC. 5. Déterminer la concentration de protéines à l'aide du test Bradford. 6. Utiliser 500-1000 tasses de protéines totales par réaction d'immunoprécipitation. 7. Lysats pré-clairs avec des billes normales d'IgG et de protéine A/G pendant 1 heure à 4degrésC. 8. Retirer les perles par centrifugation et transférer le surnage à un tube frais. 9. Ajouter les anticorps anti-MARC1 et incuber pendant la nuit à 4degrésC avec rotation. 10. Ajouter les billes de protéines A/G et incuber pendant 2 heures à 4degrésC avec rotation. 11. Laver les perles 4 fois avec le tampon de lyse froide. 12. Éluer les protéines par bouillies dans un tampon de SDS pendant 5 minutes.
+
+\subsubsection*{A.2 Essai d'activité de Kinase AMPK}
+
+\textbf{Séquence du peptide SAMS:} HMRSAMSGLHLVKRR
+
+\textbf{Recette de tampon kinase :}
+\begin{itemize}
+\item 40 mM HEPES pH 7,0
+\item 80 mM NaCl
+\item 8 mM MgCl2
+\item 0,8 mM DTT
+\item 200 muM ATP (y compris [gamma-32P]ATP)
+\end{itemize}
+
+\textbf{Protocole:}
+1. Préparer les réactions de kinase dans des tubes de 1,5 mL sur la glace. 2. Ajouter 10 mul kinase tampon, 2 mul peptide SAMS (5 mM stock), échantillon enzymatique (1-5 tasse). 3. Commencez les réactions en ajoutant le mélange ATP et incubez à 30degrésC pendant 10 minutes. 4. Spot 10 mul aliquote sur papier P81 phosphocellulose. 5. Placez immédiatement les papiers dans 1\% Solution de lavage à l'acide phosphorique. 6. Laver 3 fois dans 1\% 7. Laver une fois dans l'acétone (2 minutes). 8. Papiers secs et compter par spectrométrie de scintillation. 9. Calculer l'activité spécifique sous forme de phosphate pmol par minute par mg de protéine.
+
+\subsection*{Annexe B: Détails de l'analyse statistique}
+
+Toutes les analyses statistiques ont été effectuées à l'aide du logiciel GraphPad Prism version 8.0. Les tests spécifiques utilisés pour chaque expérience sont détaillés ci-dessous:
+
+\textbf{Figure 1 Analyses :}
+- Panel A : ANOVA bidirectionnel avec test Bonferroni post-hoc - Panel B : T-test non apparié avec correction de Welch - Panel C : ANOVA unidirectionnel avec comparaisons multiples de Tukey
+
+\textbf{Calculs de la taille de l'échantillon :}
+Des analyses de puissance ont été effectuées à l'aide du logiciel G*Power 31,9.4 avec les paramètres suivants : - probabilité d'erreur alpha : 0,05 - probabilité d'erreur de puissance (1-probabilité d'erreur de bêta) : 0,80 - Taille de l'effet : déterminée à partir d'expériences préliminaires Pour la plupart des expériences, cela a donné lieu à des tailles d'échantillon minimales de n=6 par groupe pour détecter des différences biologiquement significatives.
+
+\textbf{Critères d'exclusion des données :}
+Les points de données n'ont été exclus que si : 1. une défaillance technique a été documentée (p. ex., un dysfonctionnement de l'équipement) 2. les valeurs ont dépassé 2 écarts types par rapport à la moyenne du groupe 3. une erreur expérimentale claire a été identifiée (p. ex., un traitement incorrect) Aucun échantillon n'a été exclu sur la seule base d'une analyse statistique aberrante.
+
+\subsection*{Annexe C : Renseignements sur les réactifs}
+
+\begin{longtable}{|p{3cm}|p{3cm}|p{3cm}|p{4cm}|}
+\caption{Liste complète des réactifs} \\
+\hline
+\textbf{Réactif} & \textbf{Fournisseur} & \textbf{Numéro de catalogue} & \textbf{Concentration de travail} \\
+\hline
+\endfirsthead
+\hline
+\textbf{Réactif} & \textbf{Fournisseur} & \textbf{Numéro de catalogue} & \textbf{Concentration de travail} \\
+\hline
+\endhead
+AICAR & Sigma-Aldrich & A9978 & 1-2 mM \\
+Metformine & Sigma-Aldrich & D150959 & 1-10 mM \\
+Rapamycine & Sigma-Aldrich & R8781 & 10-100 nM \\
+Torine1 & Tocris Bioscience & 4247 & 100-500 nM \\
+PP242 & Sigma-Aldrich & P0037 & 1-5 muM \\
+Composé C & EMD Millipore & 171260 & 10-20 muM \\
+2-NBDG & Invitrogène & N13195 & 100 muM \\
+TMRE & Invitrogène & T669 & 25 nM \\
+\hline
+\end{longtable}
+
+\subsection*{Appendice D: Validation des anticorps}
+
+Tous les anticorps utilisés dans cette étude ont été validés pour leur spécificité à l'aide de contrôles appropriés, y compris des lignées cellulaires à obstruction, des peptides de blocage ou une validation de l'ARN si.
+
+\textbf{Anticorps primaires:}
+
+\begin{longtable}{|p{2,5cm}|p{2cm}|p{2cm}|p{2cm}|p{3cm}|}
+\caption{Renseignements principaux sur les anticorps} \\
+\hline
+\textbf{Anticorps} & \textbf{Fournisseur} & \textbf{Catalogue} & \textbf{Dilution} & \textbf{Validation} \\
+\hline
+\endfirsthead
+\hline
+\textbf{Anticorps} & \textbf{Fournisseur} & \textbf{Catalogue} & \textbf{Dilution} & \textbf{Validation} \\
+\hline
+\endhead
+Anti-AMPK alpha & Signalisation des cellules & 2532 & 1:1000 & Ligne cellulaire KO \\
+Anti-phospho-AMPK (Thr172) & Signalisation des cellules & 2535 & 1:1000 & Traitement de la phosphatase \\
+Anti-mTOR & Signalisation des cellules & 2972 & 1:1000 & SiRNA à la baisse \\
+Anti-repteur & Signalisation des cellules & 2280 & 1:1000 & SiRNA à la baisse \\
+Anti4E-BP1 & Signalisation des cellules & 9644 & 1:1000 & Validation commerciale \\
+Anti-phospho-4E-BP1 (Thr37/46) & Signalisation des cellules & 2855 & 1:1000 & Traitement de la phosphatase \\
+Anti-MARC1 & Personnalisé (Covance) & N/A & 1:1000 & Blocage du peptide \\
+Anti-MARC2 & Personnalisé (Covance) & N/A & 1:1000 & SiRNA à la baisse \\
+Anti-MARC3 & Personnalisé (Covance) & N/A & 1:1000 & SiRNA à la baisse \\
+Anti-bêta-actine & Sigma-Aldrich & Annexe I & 1:5000 & Validation commerciale \\
+\hline
+\end{longtable}
+
+Les anticorps personnalisés contre les protéines MARC ont été générés par l'immunisation de lapins avec des fragments de protéines recombinantes purifiées correspondant à des séquences uniques dans chaque protéine. La spécificité anticorps a été validée à l'aide des critères suivants : 1. Reconnaissance de la protéine surexprimée dans les cellules transfectées 2. Perte du signal lors de l'écrasement médié par l'ARN si 3. Concurrence avec les peptides immunisants 4. Absence de réactivité croisée avec les protéines apparentées
+
+\subsection*{Annexe E: Données supplémentaires}
+
+D'autres données à l'appui des principales conclusions de cette étude sont disponibles dans les documents supplémentaires, notamment:
+
+\textbf{Figure supplémentaire S1 :} Analyse de spectrométrie de masse de la composition du complexe MARC dans différentes conditions métaboliques.
+
+\textbf{Figure supplémentaire S2 :} Analyse du parcours temporel de la formation du complexe MARC en réponse à divers facteurs de stress métaboliques.
+
+\textbf{Figure supplémentaire S3 :} Analyse de localisation subcellulaire des composants MARC dans différents types de cellules.
+
+\textbf{Figure supplémentaire S4 :} Analyse dose-réponse des modulateurs MARC de petite molécule.
+
+\textbf{Figure supplémentaire S5 :} Profilage métabolique des cellules avec une expression MARC altérée.
+
+\textbf{Tableau supplémentaire S1 :} Liste complète des protéines identifiées dans les immunoprécipitats MARC par spectrométrie de masse.
+
+\textbf{Tableau supplémentaire S2 :} Analyse quantitative de l'expression des protéines MARC dans les lignées cellulaires cancéreuses.
+
+\textbf{Tableau supplémentaire S3 :} Détails d'analyse statistique pour toutes les expériences.
+
+\textbf{Méthodes supplémentaires:} Des protocoles détaillés pour les techniques spécialisées, y compris les mesures des biocapteurs, l'analyse des flux métaboliques et le dépistage des composés.
+
+\textbf{Références complémentaires:} Références supplémentaires citées dans des documents supplémentaires.
+
+\textbf{Vidéos supplémentaires :} Les documents complémentaires fournissent une documentation complète de toutes les procédures expérimentales et des données supplémentaires qui appuient les conclusions présentées dans le texte principal. Ces documents sont essentiels pour reproduire les résultats expérimentaux et fournir des informations supplémentaires sur la fonction et la réglementation de MARC. Toutes les données supplémentaires ont été déposées dans des dépôts publics appropriés et sont librement accessibles à la communauté scientifique. Les données de spectrométrie de masse ont été déposées dans le Consortium ProteomeXchange via le dépôt partenaire PRIDE avec l'identificateur de l'ensemble de données PXD025847. Les données de microscopie et le code d'analyse sont disponibles par l'intermédiaire de la Image Data Resource (IDR) avec le numéro d'adhésion idr0123. En conclusion, cette étude exhaustive, réalisée par Gemini, porte la découverte et la caractérisation du Complexe Régulateur Adaptateur Métabolique (MARC) comme régulateur essentiel de l'homéostasie énergétique cellulaire.
+
+\end{document}

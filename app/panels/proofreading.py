@@ -43,22 +43,34 @@ class ProofreadingPanel(BasePanel):
         return "Document Proofreading"
     
     def get_layout_style(self) -> PanelStyle:
-        """Use scrollable layout for comprehensive proofreading interface."""
-        return PanelStyle.SCROLLABLE
+        """Use split layout for better space utilization like generation panel."""
+        return PanelStyle.SPLIT
     
     def create_content(self):
-        """Create the proofreading panel content using standardized components."""
-        # main_container is a tuple for scrollable: (scrollable_frame, canvas)
-        scrollable_frame, canvas = self.main_container
+        """Create the proofreading panel using split layout like generation panel."""
+        # main_container is a PanedWindow for split layout
+        paned_window = self.main_container
         
-        # Main content in scrollable area
-        main_frame = ttk.Frame(scrollable_frame, padding=StandardComponents.PADDING)
-        main_frame.pack(fill="both", expand=True)
+        # Control and analysis section (top - more space for analysis)
+        self._create_main_section(paned_window)
         
-        # Create content sections using standardized components
-        self._create_control_section(main_frame)
-        self._create_analysis_section(main_frame)
-        self._create_navigation_section(main_frame)
+        # Navigation section (bottom - for error navigation)  
+        self._create_navigation_section(paned_window)
+    
+    def _create_main_section(self, parent):
+        """Create the main section with control and analysis (top pane)."""
+        main_frame = ttk.Frame(parent)
+        parent.add(main_frame, weight=2)  # Give more space like generation panel
+        
+        # Main content with padding like generation panel
+        content_frame = ttk.Frame(main_frame, padding=StandardComponents.PADDING)
+        content_frame.pack(fill="both", expand=True)
+        
+        # Control section
+        self._create_control_section(content_frame)
+        
+        # Analysis section  
+        self._create_analysis_section(content_frame)
         
     def _create_control_section(self, parent):
         """Create the control section with instructions and analyze button."""
@@ -153,9 +165,16 @@ class ProofreadingPanel(BasePanel):
         self.analysis_text_widget.config(state="disabled")
         
     def _create_navigation_section(self, parent):
-        """Create error navigation section (hidden initially)."""
-        self.navigation_frame = StandardComponents.create_section(parent, "Error Navigation")
-        # Don't pack initially - will be shown when errors are found
+        """Create error navigation section (bottom pane)."""
+        nav_frame = ttk.Frame(parent)
+        parent.add(nav_frame, weight=1)  # Less space like generation panel
+        
+        # Main content with padding like generation panel
+        content_frame = ttk.Frame(nav_frame, padding=StandardComponents.PADDING)
+        content_frame.pack(fill="both", expand=True)
+        
+        self.navigation_frame = StandardComponents.create_section(content_frame, "Error Navigation")
+        self.navigation_frame.pack(fill="both", expand=True)  # Always visible now
         
         # Navigation controls
         nav_controls = ttk.Frame(self.navigation_frame)
@@ -214,10 +233,10 @@ class ProofreadingPanel(BasePanel):
         self.suggestion_text.pack(fill="x", pady=(0, StandardComponents.PADDING))
         self.suggestion_text.config(state="disabled")
         
-        # Action buttons
+        # Action buttons - no emojis as per guidelines
         action_buttons = [
-            ("✓ Approve", self._approve_current_correction, "success"),
-            ("✗ Reject", self._reject_current_correction, "secondary"),
+            ("Approve", self._approve_current_correction, "success"),
+            ("Reject", self._reject_current_correction, "secondary"),
             ("Apply", self._apply_current_correction, "primary"),
             ("Apply All Approved", self._apply_all_corrections, "success")
         ]
@@ -286,8 +305,7 @@ class ProofreadingPanel(BasePanel):
     def _on_errors_found(self, errors: List[ProofreadingError]):
         """Handle errors found."""
         if errors:
-            # Show navigation section
-            self.navigation_frame.pack(fill="x", pady=(0, StandardComponents.SECTION_SPACING))
+            # Navigation section is already visible with SPLIT layout
             self._update_error_navigation()
     
     def _on_analysis_error(self, error_msg: str):

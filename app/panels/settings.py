@@ -54,7 +54,7 @@ class SettingsPanel(BasePanel):
     def _create_display_interface_section(self, parent):
         """Create the display and interface settings section (top)."""
         display_frame = ttk.Frame(parent)
-        parent.add(display_frame, weight=1)
+        parent.add(display_frame, weight=2)  # More space for display settings
         
         # Main scrollable content
         main_frame = ttk.Frame(display_frame, padding=StandardComponents.PADDING)

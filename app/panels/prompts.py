@@ -90,27 +90,27 @@ class PromptsPanel(BasePanel):
             header_frame.grid_columnconfigure(1, weight=1)
             
             # Prompt type label
-            type_label = ttk.Label(
+            type_label = StandardComponents.create_info_label(
                 header_frame,
-                text=f"{prompt_name} Prompt Template",
-                font=("Segoe UI", 10, "bold")
+                f"{prompt_name} Prompt Template",
+                "title"
             )
             type_label.grid(row=0, column=0, sticky="w")
             
             # Reset to default button
-            reset_button = ttk.Button(
+            reset_button = StandardComponents.create_button_input(
                 header_frame,
                 text="Reset to Default",
-                command=lambda k=prompt_key: self._reset_to_default(k)
+                command=lambda k=prompt_key: self._reset_to_default(k),
+                width=15
             )
             reset_button.grid(row=0, column=2, sticky="e")
             
             # Placeholder info
-            placeholder_info = ttk.Label(
+            placeholder_info = StandardComponents.create_info_label(
                 header_frame,
-                text=f"Available placeholders: {placeholders[prompt_key]}",
-                font=("Segoe UI", 8),
-                foreground=self.get_theme_color("muted_text", "#666666")
+                f"Available placeholders: {placeholders[prompt_key]}",
+                "small"
             )
             placeholder_info.grid(row=1, column=0, columnspan=3, sticky="w", pady=(5, 0))
             
@@ -120,28 +120,18 @@ class PromptsPanel(BasePanel):
             text_frame.grid_rowconfigure(0, weight=1)
             text_frame.grid_columnconfigure(0, weight=1)
             
-            text_widget = tk.Text(
+            text_widget = StandardComponents.create_text_input(
                 text_frame,
-                wrap="word",
-                font=("Courier New", 10),
-                bg=self.get_theme_color("editor_bg", "#ffffff"),
-                fg=self.get_theme_color("editor_fg", "#000000"),
-                selectbackground=self.get_theme_color("sel_bg", "#0078d4"),
-                selectforeground=self.get_theme_color("sel_fg", "#ffffff"),
-                insertbackground=self.get_theme_color("editor_insert_bg", "#000000"),
-                relief="solid",
-                borderwidth=1
+                f"Enter your {prompt_name.lower()} prompt template here...",
+                height=15
             )
             text_widget.grid(row=0, column=0, sticky="nsew")
             
-            # Scrollbar
-            scrollbar = ttk.Scrollbar(text_frame, orient="vertical", command=text_widget.yview)
-            scrollbar.grid(row=0, column=1, sticky="ns")
-            text_widget.config(yscrollcommand=scrollbar.set)
-            
-            # Insert current prompt content
+            # Insert current prompt content (override placeholder)
             current_prompt = self.current_prompts.get(prompt_key, "")
-            text_widget.insert("1.0", current_prompt)
+            if current_prompt:
+                text_widget.delete("1.0", "end")
+                text_widget.insert("1.0", current_prompt)
             
             # Store reference to widget
             self.prompt_widgets[prompt_key] = text_widget
@@ -156,28 +146,25 @@ class PromptsPanel(BasePanel):
         action_frame.grid(row=1, column=0, sticky="ew")
         action_frame.grid_columnconfigure(1, weight=1)
         
-        # Save button
-        self.save_button = ttk.Button(
-            action_frame,
-            text="Save Changes",
-            command=self._handle_save
-        )
-        self.save_button.grid(row=0, column=0, sticky="w")
+        # Save button using StandardComponents
+        save_buttons = [("Save Changes", self._handle_save, "primary")]
+        save_row = StandardComponents.create_button_row(action_frame, save_buttons)
+        save_row.grid(row=0, column=0, sticky="w")
+        self.save_button = save_row.winfo_children()[0]  # Get button reference
         
         # Status label
-        self.status_label = ttk.Label(
+        self.status_label = StandardComponents.create_info_label(
             action_frame,
-            text="Ready",
-            foreground=self.get_theme_color("muted_text", "#666666")
+            "Ready",
+            "small"
         )
         self.status_label.grid(row=0, column=2, sticky="e")
         
         # Help text
-        help_label = ttk.Label(
+        help_label = StandardComponents.create_info_label(
             action_frame,
-            text="Changes are applied immediately to the current session",
-            font=("Segoe UI", 8),
-            foreground=self.get_theme_color("muted_text", "#666666")
+            "Changes are applied immediately to the current session",
+            "small"
         )
         help_label.grid(row=1, column=0, columnspan=3, pady=(10, 0))
         
@@ -214,10 +201,10 @@ class PromptsPanel(BasePanel):
         
         if has_changes:
             self.save_button.config(state="normal")
-            self.status_label.config(text="Unsaved changes", foreground=self.get_theme_color("warning_text", "#ff6600"))
+            self.status_label.config(text="Unsaved changes")
         else:
             self.save_button.config(state="disabled")
-            self.status_label.config(text="No changes", foreground=self.get_theme_color("muted_text", "#666666"))
+            self.status_label.config(text="No changes")
     
     def _has_unsaved_changes(self) -> bool:
         """Check if there are unsaved changes."""
@@ -252,11 +239,11 @@ class PromptsPanel(BasePanel):
         
         # Update UI
         self.save_button.config(state="disabled")
-        self.status_label.config(text="Saved", foreground=self.get_theme_color("success_text", "#006600"))
+        self.status_label.config(text="Saved")
         
         # Reset status after delay
         self.panel_frame.after(2000, lambda: (
-            self.status_label.config(text="Ready", foreground=self.get_theme_color("muted_text", "#666666"))
+            self.status_label.config(text="Ready")
             if self.status_label and self.status_label.winfo_exists() else None
         ))
     

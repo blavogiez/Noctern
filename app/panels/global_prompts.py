@@ -77,59 +77,34 @@ class GlobalPromptsPanel(BasePanel):
             
             # Placeholder information
             placeholder_text = self.placeholders.get(key, "No specific placeholders for this prompt.")
-            placeholder_label = ttk.Label(
+            placeholder_label = StandardComponents.create_info_label(
                 tab, 
-                text=placeholder_text, 
-                font=("Segoe UI", 9), 
-                foreground="gray"
+                placeholder_text, 
+                "small"
             )
-            placeholder_label.pack(fill="x", pady=(0, 5), anchor="w")
+            placeholder_label.pack(fill="x", pady=(0, StandardComponents.PADDING//2), anchor="w")
             
-            # Text widget for editing
-            text_widget = tk.Text(
+            # Text widget for editing using StandardComponents
+            text_widget = StandardComponents.create_text_input(
                 tab, 
-                wrap="word", 
-                font=("Consolas", 10), 
-                undo=True,
-                height=15  # Set a reasonable height
+                f"Enter {key.replace('_', ' ')} prompt template here...",
+                height=15
             )
+            text_widget.pack(fill="both", expand=True, pady=(0, StandardComponents.PADDING))
             
-            # Add scrollbar
-            scrollbar = ttk.Scrollbar(tab, orient="vertical", command=text_widget.yview)
-            text_widget.configure(yscrollcommand=scrollbar.set)
-            
-            # Pack text widget and scrollbar
-            text_frame = ttk.Frame(tab)
-            text_frame.pack(fill="both", expand=True)
-            
-            text_widget.pack(side="left", fill="both", expand=True)
-            scrollbar.pack(side="right", fill="y")
-            
-            # Insert content
-            text_widget.insert("1.0", value)
+            # Insert content (override placeholder)
+            if value:
+                text_widget.delete("1.0", "end")
+                text_widget.insert("1.0", value)
             self.text_widgets[key] = text_widget
         
-        # Buttons frame
-        button_frame = ttk.Frame(main_frame)
-        button_frame.pack(fill="x", pady=(10, 0))
-        
-        # Save button
-        save_button = ttk.Button(
-            button_frame, 
-            text="Save and Apply", 
-            command=self._save_prompts,
-            bootstyle="success"
-        )
-        save_button.pack(side="right", padx=(5, 0))
-        
-        # Cancel button
-        cancel_button = ttk.Button(
-            button_frame, 
-            text="Cancel", 
-            command=self._handle_close,
-            bootstyle="secondary"
-        )
-        cancel_button.pack(side="right")
+        # Action buttons using StandardComponents
+        action_buttons = [
+            ("Cancel", self._handle_close, "secondary"),
+            ("Save and Apply", self._save_prompts, "success")
+        ]
+        button_row = StandardComponents.create_button_row(self.main_container.master, action_buttons)
+        button_row.pack(fill="x", pady=(StandardComponents.SECTION_SPACING, 0))
         
     def focus_main_widget(self):
         """Focus the first text widget."""

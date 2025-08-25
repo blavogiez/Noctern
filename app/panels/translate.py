@@ -59,25 +59,29 @@ class TranslatePanel(BasePanel):
         
     def _create_language_section(self, parent):
         """Create the language selection section."""
-        lang_frame = ttk.LabelFrame(parent, text=" Translation Language ", padding="10")
-        lang_frame.grid(row=0, column=0, sticky="ew", pady=(0, 10))
-        lang_frame.grid_columnconfigure(0, weight=1)
+        lang_section = StandardComponents.create_section(parent, "Translation Language")
+        lang_section.pack(fill="x", pady=(0, StandardComponents.SECTION_SPACING))
         
         # Language selection label
-        ttk.Label(lang_frame, text="Select translation language pair:").grid(row=0, column=0, sticky="w", pady=(0, 5))
+        lang_label = StandardComponents.create_info_label(
+            lang_section,
+            "Select translation language pair:",
+            "body"
+        )
+        lang_label.pack(anchor="w", pady=(0, StandardComponents.PADDING//2))
         
         # Language combobox
         selected_pair_var = tk.StringVar()
         display_options = list(self.supported_translations.keys())
         
-        self.lang_combobox = ttk.Combobox(
-            lang_frame,
-            textvariable=selected_pair_var,
+        self.lang_combobox = StandardComponents.create_combobox_input(
+            lang_section,
             values=display_options,
-            state="readonly",
-            width=40
+            width=40,
+            state="readonly"
         )
-        self.lang_combobox.grid(row=1, column=0, sticky="ew")
+        self.lang_combobox.config(textvariable=selected_pair_var)
+        self.lang_combobox.pack(fill="x")
         
         if display_options:
             self.lang_combobox.set(display_options[0])
@@ -85,112 +89,88 @@ class TranslatePanel(BasePanel):
         # Store the variable for later access
         self.selected_pair_var = selected_pair_var
         
+        # Set as main widget for focus
+        self.main_widget = self.lang_combobox
+        
     def _create_options_section(self, parent):
         """Create the translation options section."""
-        options_frame = ttk.LabelFrame(parent, text=" Translation Options ", padding="10")
-        options_frame.grid(row=1, column=0, sticky="ew", pady=(0, 10))
+        options_section = StandardComponents.create_section(parent, "Translation Options")
+        options_section.pack(fill="x", pady=(0, StandardComponents.SECTION_SPACING))
         
         # Skip preamble option
         self.skip_preamble_var = tk.BooleanVar(value=True)
         preamble_checkbox = ttk.Checkbutton(
-            options_frame,
+            options_section,
             text="Skip preamble (don't translate before first \\section)",
             variable=self.skip_preamble_var
         )
-        preamble_checkbox.pack(anchor="w")
+        preamble_checkbox.pack(anchor="w", pady=(0, StandardComponents.PADDING//2))
         
         # Help text with proper wrapping
-        help_label = ttk.Label(
-            options_frame,
-            text="Recommended: Preserves document structure and LaTeX commands",
-            font=StandardComponents.SMALL_FONT,
-            foreground=self.get_theme_color("muted_text", "#666666"),
-            wraplength=350  # Wrap text for better fit
+        help_label = StandardComponents.create_info_label(
+            options_section,
+            "Recommended: Preserves document structure and LaTeX commands",
+            "small"
         )
-        help_label.pack(anchor="w", pady=(2, 0))
+        help_label.pack(anchor="w")
         
     def _create_preview_section(self, parent):
         """Create the document preview section."""
-        preview_frame = ttk.LabelFrame(parent, text=" Document Preview ", padding="10")
-        preview_frame.grid(row=2, column=0, sticky="nsew", pady=(0, 10))
-        preview_frame.grid_rowconfigure(0, weight=1)
-        preview_frame.grid_columnconfigure(0, weight=1)
-        
-        # Configure parent to expand this section
-        parent.grid_rowconfigure(2, weight=1)
-        
-        # Text widget with scrollbar
-        text_container = ttk.Frame(preview_frame)
-        text_container.grid(row=0, column=0, sticky="nsew")
-        text_container.grid_rowconfigure(0, weight=1)
-        text_container.grid_columnconfigure(0, weight=1)
-        
-        preview_text = tk.Text(
-            text_container,
-            height=8,
-            wrap="word",
-            bg=self.get_theme_color("editor_bg", "#ffffff"),
-            fg=self.get_theme_color("editor_fg", "#000000"),
-            font=("Courier New", 9),
-            state="disabled",
-            relief="solid",
-            borderwidth=1
-        )
-        preview_text.grid(row=0, column=0, sticky="nsew")
-        
-        # Scrollbar
-        scrollbar = ttk.Scrollbar(text_container, orient="vertical", command=preview_text.yview)
-        scrollbar.grid(row=0, column=1, sticky="ns")
-        preview_text.config(yscrollcommand=scrollbar.set)
-        
-        # Show preview of source text (first 500 chars)
-        preview_text.config(state="normal")
-        preview_content = self.source_text[:500] + ("..." if len(self.source_text) > 500 else "")
-        preview_text.insert("1.0", preview_content)
-        preview_text.config(state="disabled")
+        preview_section = StandardComponents.create_section(parent, "Document Preview")
+        preview_section.pack(fill="both", expand=True, pady=(0, StandardComponents.SECTION_SPACING))
         
         # Document info
         char_count = len(self.source_text)
         word_count = len(self.source_text.split())
-        info_label = ttk.Label(
-            preview_frame,
-            text=f"Document: {char_count:,} characters, ~{word_count:,} words",
-            font=("Segoe UI", 8),
-            foreground=self.get_theme_color("muted_text", "#666666")
+        info_label = StandardComponents.create_info_label(
+            preview_section,
+            f"Document: {char_count:,} characters, ~{word_count:,} words",
+            "small"
         )
-        info_label.grid(row=1, column=0, sticky="w", pady=(5, 0))
+        info_label.pack(anchor="w", pady=(0, StandardComponents.PADDING//2))
+        
+        # Preview text widget using StandardComponents
+        preview_text = StandardComponents.create_text_input(
+            preview_section,
+            "Document preview will appear here...",
+            height=8
+        )
+        preview_text.pack(fill="both", expand=True)
+        
+        # Show preview of source text (first 500 chars) and make readonly
+        preview_text.config(state="normal")
+        preview_content = self.source_text[:500] + ("..." if len(self.source_text) > 500 else "")
+        preview_text.delete("1.0", "end")
+        preview_text.insert("1.0", preview_content)
+        preview_text.config(state="disabled")
         
     def _create_action_section(self, parent):
         """Create the action buttons section."""
-        action_frame = ttk.Frame(parent)
-        action_frame.grid(row=3, column=0, sticky="ew", pady=(10, 0))
-        action_frame.grid_columnconfigure(0, weight=1)
-        
-        # Device info and translate button
-        device_info = ttk.Label(
-            action_frame,
-            text=f"Translation will run on: {self.device}",
-            font=("Segoe UI", 9),
-            foreground=self.get_theme_color("muted_text", "#666666")
+        # Device info
+        device_info = StandardComponents.create_info_label(
+            parent,
+            f"Translation will run on: {self.device}",
+            "small"
         )
-        device_info.grid(row=0, column=0, pady=(0, 10))
-        
-        # Translate button
-        self.translate_button = ttk.Button(
-            action_frame,
-            text=f"Start Translation on {self.device}",
-            command=self._handle_translate
-        )
-        self.translate_button.grid(row=1, column=0)
+        device_info.pack(anchor="w", pady=(0, StandardComponents.PADDING//2))
         
         # Warning text
-        warning_label = ttk.Label(
-            action_frame,
-            text="Note: Translation may take several minutes depending on document size",
-            font=("Segoe UI", 8),
-            foreground=self.get_theme_color("warning_text", "#ff6600")
+        warning_label = StandardComponents.create_info_label(
+            parent,
+            "Note: Translation may take several minutes depending on document size",
+            "small"
         )
-        warning_label.grid(row=2, column=0, pady=(10, 0))
+        warning_label.pack(anchor="w", pady=(0, StandardComponents.PADDING))
+        
+        # Translate button
+        translate_buttons = [(
+            f"Start Translation on {self.device}", 
+            self._handle_translate, 
+            "primary"
+        )]
+        translate_row = StandardComponents.create_button_row(parent, translate_buttons)
+        translate_row.pack(fill="x")
+        self.translate_button = translate_row.winfo_children()[0]  # Get button reference
         
     def focus_main_widget(self):
         """Focus the main interactive widget."""

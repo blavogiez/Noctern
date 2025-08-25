@@ -127,12 +127,17 @@ class KeywordsPanel(BasePanel):
         
         debug_console.log(f"Saved keywords for {os.path.basename(self.file_path)}: {new_keywords}", level='SUCCESS')
         
-        # Visual feedback
-        original_text = self.save_button.cget("text")
-        self.save_button.config(text="Saved!", state="disabled")
-        
-        # Restore button after delay
-        self.panel_frame.after(1500, lambda: (
-            self.save_button.config(text=original_text, state="normal")
-            if self.save_button and self.save_button.winfo_exists() else None
-        ))
+        # Get button reference from the button row
+        button_row = self.main_container.winfo_children()[-2]  # Second to last child
+        if button_row.winfo_children():
+            save_button = button_row.winfo_children()[0]
+            
+            # Visual feedback
+            original_text = save_button.cget("text")
+            save_button.config(text="Saved!", state="disabled")
+            
+            # Restore button after delay
+            self.panel_frame.after(1500, lambda: (
+                save_button.config(text=original_text, state="normal")
+                if save_button and save_button.winfo_exists() else None
+            ))
