@@ -3,7 +3,7 @@
 import tkinter as tk
 from tkinter import ttk
 from .session_tracker import SessionTracker
-from .file_metrics_dialog import show_file_metrics_dialog
+# Import dynamically to avoid circular imports
 
 
 class MetricsStatusDisplay:
@@ -111,7 +111,9 @@ class MetricsStatusDisplay:
         if self.tracker and self.tracker.file_path:
             # Save current session before showing dialog
             self.save_current_session()
-            show_file_metrics_dialog(self.root, self.tracker.file_path)
+            # Import dynamically to avoid circular imports
+            from app.panels import show_metrics_panel
+            show_metrics_panel()
     
     def destroy(self):
         """Clean up metrics display."""

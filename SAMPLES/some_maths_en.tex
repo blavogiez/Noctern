@@ -1,0 +1,221 @@
+\documentclass[12pt,a4paper]{article}
+
+%---------------------------
+% Packages
+%---------------------------
+\usepackage[margin=2.5cm]{geometry}
+\usepackage[english]{babel} % Changed to English for consistency with content
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath,amsfonts,amssymb}
+\usepackage{siunitx}
+\usepackage{graphicx}
+\usepackage{setspace}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta}
+\hypersetup{colorlinks=true,linkcolor=blue,urlcolor=blue,citecolor=blue}
+
+%---------------------------
+% Macros utiles
+%---------------------------
+\newcommand{\dd}{\mathrm{d}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\vect}[1]{\mathbf{#1}}
+\newcommand{\norm}[1]{\left\lVert #1 \right\rVert}
+
+\title{\textbf{Mathématiques appliquées à la natation (anglais !)}}
+\author{Un court document de synthèse}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Mathematical modeling, integrating hydrodynamics, biomechanics, rhythm control, signal processing, and statistics, is crucial for optimizing movement in performance swimming. This document presents simple yet useful models for analysis and training!
+
+Mathematical modeling, integrating hydrodynamics, biomechanics, rhythm control, signal processing, and statistics, is crucial for optimizing movement in performance swimming. This document presents simple yet useful models for analysis and training!
+
+We love how mathematics can enhance performance.
+\end{abstract}
+
+\section{Movement forces and equations}
+The translational movement of a swimmer with mass $m$ is considered in the longitudinal (horizontal) axis.
+\begin{equation}
+ m\,\frac{\dd v}{\dd t} = F_{\mathrm{prop}}(t) - F_{\mathrm{dragged}}(v) - F_{\mathrm{waves}}(v,h),
+ \label{eq:newton}
+\end{equation}
+where $v$ is the speed, $F_{\mathrm{prop}}$ the average propelling force (arms + legs), $F_{\mathrm{dragged}}$ the form and friction drag, and $F_{\mathrm{waves}}$ the wave drag (depending in particular on the depth $h$). The classical quadratic drag law is written:
+\begin{equation}
+ F_{\mathrm{dragged}}(v) = \tfrac{1}{2}\,\rho\,C_D\,A\,v^2,
+ \end{equation}
+where $\rho$ is the density of the water, $C_D$ a drag coefficient (size/form), and $A$ a reference area. The power dissipated by the drag is then:
+\begin{equation}
+ P_{\mathrm{dissipated}}(v) = F_{\mathrm{dragged}}(v)\,v = \tfrac{1}{2}\,\rho\,C_D\,A\,v^3.
+ \end{equation}
+
+The wave drag is more marked on the surface and can be modelled by:
+\begin{equation}
+ F_{\mathrm{waves}}(v,h) = k_\mathrm{w}(h)\,v^n, \qquad n\in[2,3],
+ \end{equation}
+where $k_\mathrm{w}(h)$ decreases with depth $h$ (deep swimming reduces wave drag, but at the cost of an apnea).
+
+\section{Propellant efficiency and energy cost}
+External mechanical power $P_{\mathrm{mech}}$ is connected to metabolic power $P_{\mathrm{met}}$ via an overall efficiency $\eta\in(0,1)$:
+\begin{equation}
+ P_{\mathrm{mech}} = \eta\, P_{\mathrm{met}}.
+ \end{equation}
+Under quasi-stationary regime $v\approx\text{cste}$, we have $P_{\mathrm{mech}}\approx P_{\mathrm{dissipated}}$, hence the instantaneous energy cost:
+\begin{equation}
+ P_{\mathrm{met}}(v) \approx \frac{\tfrac{1}{2}\,\rho\,C_D\,A\,v^3}{\eta}.
+ \end{equation}
+The Cost of Transport (COT) per unit distance is written:
+\begin{equation}
+ \mathrm{COT}(v) = \frac{P_{\mathrm{met}}(v)}{m\,g\,v} \propto v^2, 
+ \end{equation}
+This illustrates that moving faster becomes superlinearly expensive.
+
+\section{Simple performance model over a distance $L$}
+Over a distance of length $L$ and a speed profile $v(t)$. Total time is:
+\begin{equation}
+ T = \int_0^{T} \dd t = \int_0^{L} \frac{\dd x}{v(x)}.
+ \end{equation}
+We model energy systems (aerobic/anaerobic) with an anaerobic reservoir $W'$ and limited aerobic power $P_{\max}$ (a "critical power" type schedule):
+\begin{align}
+ P_{\mathrm{met}}(t) &= P_{\mathrm{Aero}}(t) + P_{\mathrm{ana}}(t), \\
+ P_{\mathrm{Aero}}(t) &\le P_{\max}, \\
+ \int_0^T P_{\mathrm{ana}}(t)\,\dd t &\le W'.
+ \end{align}
+The "classical" objective is to minimize $T$ under these constraints and dynamics \eqref{eq:newton}.
+
+\subsection{Optimal control of pacing}
+Formally, there is an optimal control problem:
+\begin{align}
+ \min_{F_{\mathrm{prop}}(t)}\; &T \\
+ \text{Subject to: }\; &\dot v = \frac{1}{m}\Big(F_{\mathrm{prop}} - \tfrac{1}{2}\rho C_D A v^2 - k_\mathrm{w}(h)v^n\Big), \\
+ &0\le P_{\mathrm{Aero}}(t)\le P_{\max},\quad W'(T)=W'(0)-\int_0^T P_{\mathrm{ana}}(t)\,\dd t\ge 0, \\
+ &v(0)=0,\; x(0)=0,\; x(T)=L,\; v(t)\ge 0.
+ \end{align}
+Typical solutions predict a strong start, a quasi-constant phase, and then a slight decline as $W'$ is exhausted (moderate \emph{positive split}).
+
+\section{Dimensional analysis and scale-up}
+A reference velocity $U$ defines the Froude number $\mathrm{Fr}=\frac{U}{\sqrt{g\ell}}$ (characteristic length $\ell$) and Reynolds number $\mathrm{Re}=\frac{\rho U \ell}{\mu}$. At pool scale, $\mathrm{Re}\gg 1$ signifies inertia's dominance over local viscous effects, thus justifying quadratic drag.
+
+\section{Interaction with the wall and casting}
+The casting after pushing off the wall is effectively modelled by a free movement with drag:
+\begin{equation}
+ m\,\dot v = - \tfrac{1}{2}\rho C_D A v^2, \quad v(0)=v_0.
+ \end{equation}
+The closed solution is given by:
+\begin{equation}
+ v(t) = \frac{v_0}{1+ t/\tau}, \qquad \tau = \frac{2m}{\rho C_D A v_0}.
+ \end{equation}
+The distance travelled in casting is equal to:
+\begin{equation}
+ s(t) = \frac{2m}{\rho C_D A}\,\ln\big(1+t/\tau\big),
+ \end{equation}
+which shows decreasing efficiency: beyond a certain duration, remaining in casting no longer yields a "good" distance.
+
+\section{Estimation of parameters from data}
+Suppose speed-time measurements are available $\{t_i,v_i\}$. A least-squares estimator for $C_D A$ (in casting) is obtained by linearising $\dot v = -k v^2$:
+\begin{equation}
+ \frac{\dd}{\dd t}\Big(\frac{1}{v}\Big) = k, \quad k=\frac{\rho C_D A}{2m}.
+ \end{equation}
+A linear regression of $1/v$ based on $t$ then gives $k$ and thus $C_D A$.
+
+\subsection{Sensor filtering}
+Inertial Measurement Units (IMU) and aquatic GPS produce noisy signals. A discrete Kalman filter for speed $v$ can be written:
+\begin{align}
+ v_{k+1} &= v_k + \Delta t\,a_k + w_k, \\
+ z_k &= v_k + r_k,
+ \end{align}
+where $a_k$ is the measured acceleration, $z_k$ is an observation (e.g., derived from distance), $w_k\sim\mathcal{N}(0,Q)$ and $r_k\sim\mathcal{N}(0,R)$. Kalman's gain $K_k$ weights the confidence between the model and measurement to provide a smooth estimate $\hat v_k$.
+
+\section{Minimum numerical example}
+Consider a swimmer with $m=\SI{75}{kg}$, $A=\SI{0.5}{m^2}$, $C_D=0.9$, $\rho=\SI{1000}{kg.m^{-3}}$, $\eta=0.2$. At $v=\SI{2}{m.s^{-1}}$:
+\begin{align}
+ F_{\mathrm{dragged}} &= \tfrac{1}{2}\,\rho C_D A v^2 = \tfrac{1}{2}\cdot1000\cdot0.9\cdot0.5\cdot 4 = \SI{900}{N}, \\
+ P_{\mathrm{dissipated}} &= Fv = \SI{1800}{W}, \qquad P_{\mathrm{met}} \approx \SI{9000}{W}.
+ \end{align}
+These orders of magnitude justify the role of technique (reducing $C_D A$) and efficiency $\eta$.
+
+\section{Set of typical parameters}
+\begin{table}[h]
+ \centering
+ \caption{Examples of parameters (order of magnitude).}
+ \label{tab:param}
+ \begin{tabular}{@{}lll@{}} % Changed Ill to lll for valid column types
+  \toprule
+  Parameter & Symbol & Typical value \\
+  \midrule
+  Mass & $m$ & \SI{60}{}--\SI{85}{kg} \\
+  Reference area & $A$ & \SI{0.4}{}--\SI{0.7}{m^2} \\
+  Drag coefficient & $C_D$ & $0.7$--$1.1$ \\
+  Water density & $\rho$ & \SI{1000}{kg.m^{-3}} \\
+  Overall efficiency & $\eta$ & $0.15$--$0.25$ \\
+  Max aerobic power & $P_{\max}$ & \SI{300}{}--\SI{500}{W} \\
+  Anaerobic tank & $W'$ & \SI{10}{}--\SI{25}{kJ} \\
+  \bottomrule
+ \end{tabular}
+\end{table}
+
+\section{Figure of forces (side view)}
+\begin{figure}[h]
+ \centering
+ \begin{tikzpicture}[scale=1.0]
+  % Simplified swimmer
+  \draw[Rounded corners=8pt,fill=gray!20] (0,0) rectangle (4,0.7);
+  \draw (4,0.35) circle (0.25);
+  % Speed
+  \draw[-{Latex[length=3mm]}] (-0.5,0.35) -- (0,0.35) node[midway,above]{\small $v$};
+  % Drag
+  \draw[-{Latex[length=3mm]},red] (1,0.35) -- (2.5,0.35) node[midway,above]{\small $F_{\mathrm{dragged}}$};
+  % Propulsion
+  \draw[-{Latex[length=3mm]},blue] (1.5,1.2) -- (1.5,0.7) node[midway,right]{\small $F_{\mathrm{prop}}$};
+  % Surface
+  \draw[blue!40] (-1,-0.2) -- (6,-0.2);
+ \end{tikzpicture}
+ \caption{Main forces modelled along the swimming axis.}
+\end{figure}
+
+\section{Effect of the technique: alignment and roll}
+A reduction of the projected area $A$ and $C_D$ (better alignment, controlled roll, more effective hand trajectories) decreases $P_{\mathrm{dissipated}}\propto v^3$. Mathematically, a small change $\delta C_D$ implies:
+\begin{equation}
+ \frac{\delta P_{\mathrm{dissipated}}}{P_{\mathrm{dissipated}}} = \frac{\delta C_D}{C_D}.
+ \end{equation}
+At a specified speed, \emph{each} percentage point gained on $C_D$ translates directly into energy saving.
+
+\section{Waves and gesture frequency}
+Let $f$ be the stroke frequency (arms) and $S$ the stroke length. The kinematic identity is $v=f\,S$. Optimizing performance involves seeking an operating point $(f,S)$ where metabolic power remains sustainable while maximizing $v$:
+\begin{equation}
+ \max_{f,S}\; fS \quad \text{S.c.}\quad P_{\mathrm{met}}(f,S)\le P_{\mathrm{tol}},
+ \end{equation}
+where $P_{\mathrm{tol}}$ is an individual tolerance related to training. Empirically, $S$ often decreases with $f$ (fatigue, coordination), hence a compromise is needed.
+
+\section{Uncertainty and Variability}
+Real parameters vary between individuals and during a race. A Bayesian framework allows expressing uncertainty about $\theta=(C_D,A,\eta,\ldots)$ via a prior distribution $p(\theta)$ and a likelihood $p(\text{data}\mid\theta)$, producing a posterior distribution $p(\theta\mid\text{data})$. Decisions (pacing, technique) can then be aimed at \emph{minimum risk} (minimization of the expected loss) rather than point optimization.
+
+\section{Conclusion}
+Mathematics offers a coherent toolbox to understand and improve swimming: non-linear dynamics, energy-intensive optimization, statistical estimation and signal processing. Even simple models, properly configured, are often enough to guide training: reduce drag (technical), choose sustainable pacing (optimal control) and use data (sensors) to customize parameters. To go beyond simplified models, a Bayesian approach is particularly relevant. It not only quantifies the uncertainty inherent in individual parameters and running conditions, but also makes more robust decisions. By moving from one-off optimisation to risk minimisation, swimmers and coaches can refine pacing and technical strategies, leading to personalized and adaptive action plans that maximize the chances of success in the face of real-world uncertainty.
+
+\bigskip
+\noindent\textbf{Practical note.} This text is deliberately synthetic and modular. Each section can be extended (experimental validation, variations by stroke type — freestyle, backstroke, breaststroke, butterfly — effects of turns, open water drafting, etc.).
+
+%---------------------------
+% Minimal bibliography (indicative)
+%---------------------------
+\begin{thebibliography}{9}
+ \bibitem{Bejan}
+ A. Bejan and D. Charles, \emph{Design in Nature: How the Constructal Law Governs Evolution in Biology, Physics, Technology, and Social Organization}, Doubleday, 2012.
+ \bibitem{proulx}
+ L. P. Pruvot et al., ``Hydrodynamics and propulsion in human swimming'', \emph{Sports Biomechanics}, 2020.
+ \bibitem{mortimation}
+ T. Mortimer, ``Energy cost and efficiency in swimming'', \emph{Journal of Applied Physiology}, 2019.
+\end{thebibliography}
+
+\end{document}

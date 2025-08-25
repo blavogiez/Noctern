@@ -14,7 +14,7 @@ from llm import rephrase as llm_rephrase
 from editor import snippets as editor_snippets
 from app import settings_window
 from utils.animations import move_widget
-from metrics import dialog as metrics_dialog
+from app.panels import show_metrics_panel, show_settings_panel
 
 def _log_action(action_name):
     """Helper function to log user actions triggered from the UI elements."""
@@ -79,7 +79,7 @@ def create_top_buttons_frame(root):
     # LaTeX Processing
     create_animated_button("Compile", lambda: [_log_action("Compile LaTeX"), latex_compiler.compile_latex()], "info-outline", "tool.svg")
     create_animated_button("View PDF", lambda: [_log_action("View PDF"), latex_compiler.view_pdf_external()], "info-outline", "file-text.svg")
-    create_animated_button("Translate", lambda: [_log_action("Translate Text"), latex_translator.open_translate_dialog()], "info-outline", "globe.svg")
+    create_animated_button("Translate", lambda: [_log_action("Translate Text"), latex_translator.open_translate_panel()], "info-outline", "globe.svg")
 
     # Add some spacing between groups
     spacer2 = ttk.Frame(top_frame, width=10)
@@ -88,7 +88,7 @@ def create_top_buttons_frame(root):
     
     # LLM Interaction
     create_animated_button("Complete", lambda: [_log_action("LLM Complete Text"), llm_service.request_llm_to_complete_text()], "success-outline", "complete.svg")
-    create_animated_button("Generate", lambda: [_log_action("LLM Generate Text"), llm_service.open_generate_text_dialog()], "success-outline", "generate.svg")
+    create_animated_button("Generate", lambda: [_log_action("LLM Generate Text"), llm_service.open_generate_text_panel()], "success-outline", "generate.svg")
     
     # Add some spacing between groups
     spacer3 = ttk.Frame(top_frame, width=10)
@@ -152,16 +152,16 @@ def create_top_buttons_frame(root):
     # --- Populate Menus ---
     tools_menu.add_command(label="Smart Style (Ctrl+Shift+S)...", command=lambda: [_log_action("Tools: Smart Style"), interface.style_selected_text()])
     tools_menu.add_separator()
-    tools_menu.add_command(label="Rephrase Selected Text (Ctrl+R)", command=lambda: [_log_action("Tools: Rephrase Text"), llm_rephrase.open_rephrase_dialog()])
-    tools_menu.add_command(label="Proofread Document (Ctrl+Shift+P)", command=lambda: [_log_action("Tools: Proofread Document"), llm_service.open_proofreading_dialog()])
+    tools_menu.add_command(label="Rephrase Selected Text (Ctrl+R)", command=lambda: [_log_action("Tools: Rephrase Text"), llm_rephrase.open_rephrase_panel()])
+    tools_menu.add_command(label="Proofread Document (Ctrl+Shift+P)", command=lambda: [_log_action("Tools: Proofread Document"), llm_service.open_proofreading_panel()])
     tools_menu.add_command(label="Paste Image from Clipboard (Ctrl+Shift+V)", command=lambda: [_log_action("Tools: Paste Image"), interface.paste_image()])
     tools_menu.add_command(label="Insert Table (Ctrl+Shift+B)", command=lambda: [_log_action("Tools: Insert Table"), interface.insert_table()])
     tools_menu.add_separator()
     tools_menu.add_command(label="Clean Project Directory", command=lambda: [_log_action("Tools: Clean Project"), latex_compiler.clean_project_directory()])
     tools_menu.add_separator()
-    tools_menu.add_command(label="AI Usage Metrics...", command=lambda: [_log_action("Tools: AI Usage Metrics"), metrics_dialog.open_metrics_dialog(root)])
+    tools_menu.add_command(label="Usage Metrics...", command=lambda: [_log_action("Tools: Usage Metrics"), show_metrics_panel()])
 
-    settings_menu.add_command(label="Preferences...", command=lambda: [_log_action("Settings: Open Preferences"), settings_window.open_settings_window(root)])
+    settings_menu.add_command(label="Preferences...", command=lambda: [_log_action("Settings: Open Preferences"), show_settings_panel()])
     settings_menu.add_separator()
     
     theme_menu = ttk.Menu(settings_menu, tearoff=False)
@@ -180,8 +180,8 @@ def create_top_buttons_frame(root):
     theme_menu.add_command(label="Journal", command=lambda: set_theme("journal"))
     
     settings_menu.add_separator()
-    settings_menu.add_command(label="Set LLM Keywords...", command=lambda: [_log_action("Settings: Set LLM Keywords"), llm_service.open_set_keywords_dialog()])
-    settings_menu.add_command(label="Edit LLM Prompts (Ctrl+Shift+E)...", command=lambda: [_log_action("Settings: Edit LLM Prompts"), llm_service.open_edit_prompts_dialog()])
+    settings_menu.add_command(label="Set LLM Keywords...", command=lambda: [_log_action("Settings: Set LLM Keywords"), llm_service.open_set_keywords_panel()])
+    settings_menu.add_command(label="Edit LLM Prompts (Ctrl+Shift+E)...", command=lambda: [_log_action("Settings: Edit LLM Prompts"), llm_service.open_edit_prompts_panel()])
     settings_menu.add_command(label="Edit Snippets...", command=lambda: [_log_action("Settings: Edit Snippets"), editor_snippets.open_snippet_editor(root, state.get_theme_settings())])
     settings_menu.add_separator()
     

@@ -11,6 +11,7 @@ from app import config as app_config
 from utils import debug_console
 from llm import api_client
 from llm import prompts as llm_prompts
+from app.panels import show_global_prompts_panel
 
 def open_settings_window(root):
     """
@@ -139,7 +140,7 @@ def open_settings_window(root):
     global_prompts_button = ttk.Button(
         llm_frame, 
         text="Manage Global Prompts...", 
-        command=llm_prompts.open_global_prompts_editor
+        command=show_global_prompts_panel
     )
     global_prompts_button.grid(row=len(model_labels), column=0, columnspan=3, pady=10)
 

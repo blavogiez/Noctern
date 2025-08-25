@@ -1,10 +1,9 @@
 """
-Text generation using LLM with dialog interface.
+Text generation using LLM with integrated sidebar panel.
 Handle custom generation requests and coordinate with streaming service for response handling.
 """
 from tkinter import messagebox
 from llm import state as llm_state
-from llm.dialogs.generation import show_generate_text_dialog
 from app.panels import show_generation_panel
 from llm import utils as llm_utils
 from llm import keyword_history
@@ -13,11 +12,11 @@ from llm.interactive import start_new_interactive_session
 from llm.streaming_service import start_streaming_request
 from utils import debug_console
 
-def open_generate_text_dialog(initial_prompt_text=None):
+def open_generate_text_panel(initial_prompt_text=None):
     """
-    Open dialog for custom LLM text generation.
+    Open generation panel for custom LLM text generation.
     """
-    debug_console.log("Opening LLM text generation dialog.", level='ACTION')
+    debug_console.log("Opening LLM text generation panel.", level='ACTION')
     
     if not callable(llm_state._active_editor_getter_func):
         messagebox.showerror("LLM Service Error", "LLM Service not fully initialized.")
@@ -30,7 +29,7 @@ def open_generate_text_dialog(initial_prompt_text=None):
 
     def _on_generate_request(user_prompt, lines_before, lines_after, is_latex_mode):
         """
-        Callback executed when user confirms generation request from dialog.
+        Callback executed when user confirms generation request from panel.
         Prepare prompt and call streaming service.
         """
         # Determine prompt template and model
@@ -94,7 +93,7 @@ def open_generate_text_dialog(initial_prompt_text=None):
             task_type="generation"  # Optimized for generation tasks
         )
 
-    # Show the integrated panel instead of dialog
+    # Show the integrated panel
     show_generation_panel(
         prompt_history=llm_state._prompt_history_list,
         on_generate_callback=_on_generate_request,

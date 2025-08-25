@@ -8,11 +8,11 @@ from tkinter import messagebox
 
 from llm import state as llm_state
 from llm import interactive as llm_interactive
-from llm.dialogs.rephrase import show_rephrase_dialog
+from app.panels import show_rephrase_panel
 from llm.streaming_service import start_streaming_request
 from utils import debug_console
 
-def open_rephrase_dialog(initial_text=None):
+def open_rephrase_panel(initial_text=None):
     """
     Entry point for the rephrase feature.
     
@@ -55,12 +55,10 @@ def open_rephrase_dialog(initial_text=None):
         
         _request_rephrase_for_text(editor, selected_text, start_index, end_index, instruction, on_discard_generation)
 
-    show_rephrase_dialog(
-        root_window=llm_state._root_window,
-        theme_setting_getter_func=llm_state._theme_setting_getter_func,
+    show_rephrase_panel(
         original_text=selected_text,
         on_rephrase_callback=on_confirm,
-        on_cancel_callback=lambda: debug_console.log("Rephrase cancelled by user from dialog.", level='INFO')
+        on_cancel_callback=lambda: debug_console.log("Rephrase cancelled by user from panel.", level='INFO')
     )
 
 def _request_rephrase_for_text(editor, original_text, start_index, end_index, instruction, on_discard_callback=None):

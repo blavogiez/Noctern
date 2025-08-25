@@ -49,9 +49,9 @@ class PanelManager:
         Args:
             panel: The panel to display
         """
-        # Hide current panel if any
+        # Hide current panel if any (but don't destroy for potential reuse)
         if self.current_panel:
-            self.current_panel.destroy()
+            self.current_panel.hide()
             self.current_panel = None
             
         # Hide original widgets (outline + debug)
@@ -65,18 +65,34 @@ class PanelManager:
         # Set the parent container for the panel
         panel.parent_container = self.panel_container
         
-        # Create and show the new panel
+        # Create and show the new panel efficiently
         panel.on_close_callback = self._on_panel_closed
         panel_widget = panel.create_panel()
         
+        # Show immediately for ultra-fluid experience
         panel.show()
-        
         self.current_panel = panel
+        
+        # Focus immediately without delay for maximum responsiveness
+        try:
+            panel.focus_main_widget()
+        except:
+            # Fallback with minimal delay if immediate focus fails
+            self.left_pane.after(1, panel.focus_main_widget)
         
     def _create_panel_container(self):
         """Create the container for panels."""
         self.panel_container = ttk.Frame(self.left_pane)
+        # Set minimum width to ensure panels are usable
+        self.panel_container.configure(width=420)  # Slightly larger than STANDARD_WIDTH
         self.left_pane.add(self.panel_container, weight=1)
+        
+        # Configure minimum size efficiently
+        try:
+            self.left_pane.paneconfigure(self.panel_container, minsize=400)
+        except tk.TclError:
+            # Fallback: just set width if minsize is not supported
+            pass
         
     def _hide_original_widgets(self):
         """Hide outline and debug widgets."""

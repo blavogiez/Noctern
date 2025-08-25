@@ -136,7 +136,7 @@ def create_notebook(parent):
         ClosableNotebook: The configured closable notebook widget.
     """
     notebook = ClosableNotebook(parent)
-    parent.add(notebook, weight=4) # Add to paned window with a weight
+    parent.add(notebook, weight=3) # Reduced from 4 to 3 to give more space to left pane
     return notebook
 
 def create_console_pane(parent):

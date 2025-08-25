@@ -7,26 +7,24 @@ import tkinter as tk
 import re
 from utils import debug_console
 from snippets import manager as snippet_manager
-from snippets.editor_dialog import SnippetEditorDialog
+from app.panels import show_snippets_panel
 from editor.placeholder_navigation import PlaceholderManager, handle_placeholder_navigation
 
 
 def open_snippet_editor(root_window, theme_settings):
     """
-    Opens the snippet editor dialog, allowing users to view, add, edit, or delete code snippets.
+    Opens the integrated snippet editor panel in the left sidebar.
 
-    This function initializes and displays the `SnippetEditorDialog`, passing it the necessary
-    application context, current snippet data, and a callback function for saving changes.
+    This function displays the SnippetsPanel, passing it the current snippet data 
+    and a callback function for saving changes.
     """
-    debug_console.log("Attempting to open snippet editor dialog.", level='ACTION')
-    # Create and show the SnippetEditorDialog, passing required data and callbacks.
-    SnippetEditorDialog(
-        parent=root_window,  # The main application window as the parent.
-        theme_settings=theme_settings,  # Current theme settings for consistent UI.
+    debug_console.log("Attempting to open snippet editor panel.", level='ACTION')
+    # Show the integrated snippets panel
+    show_snippets_panel(
         current_snippets=snippet_manager.get_snippets(),  # The current dictionary of snippets.
         save_callback=snippet_manager.save_snippets  # Callback function to save modified snippets.
     )
-    debug_console.log("Snippet editor dialog opened.", level='INFO')
+    debug_console.log("Snippet editor panel opened.", level='INFO')
 
 
 def handle_snippet_expansion(event):

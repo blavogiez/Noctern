@@ -253,8 +253,10 @@ def _perform_translation_threaded(source_text, model_name, original_filepath, di
 
     threading.Thread(target=run_translation, daemon=True).start()
 
-def open_translate_dialog():
-    """Open dialog for user to select translation language pair and options."""
+def open_translate_panel():
+    """Open integrated translate panel in left sidebar."""
+    from app.panels import show_translate_panel
+    
     # Initialize translator before use
     if not _ensure_translator_initialized():
         messagebox.showerror("Translation Error", "Failed to initialize translation service.")
@@ -270,48 +272,24 @@ def open_translate_dialog():
         messagebox.showwarning("Translation", "The editor is empty.")
         return
 
-    dialog = tk.Toplevel(_root)
-    dialog.title("Translate Document")
-    dialog.transient(_root)
-    dialog.grab_set()
-    dialog.geometry("500x280")
-
-    bg_color = _theme_setting_getter_func("root_bg", "#f0f0f0")
-    dialog.configure(bg=bg_color)
-
-    main_frame = ttk.Frame(dialog, padding=15)
-    main_frame.pack(fill="both", expand=True)
-
-    ttk.Label(main_frame, text="Select Translation:").pack(pady=(0, 5), anchor="w")
-
-    selected_pair_var = tk.StringVar(dialog)
-    display_options = list(SUPPORTED_TRANSLATIONS.keys())
-    lang_combobox = ttk.Combobox(main_frame, textvariable=selected_pair_var, values=display_options, state="readonly")
-    lang_combobox.pack(fill="x", pady=(0, 15))
-    if display_options:
-        lang_combobox.set(display_options[0])
-
-    options_frame = ttk.LabelFrame(main_frame, text="Translation Options", padding=10)
-    options_frame.pack(fill="x", pady=(0, 15))
-
-    skip_preamble_var = tk.BooleanVar(value=True)
-    ttk.Checkbutton(options_frame, text="Skip preamble (don't translate before first \\section)", variable=skip_preamble_var).pack(anchor="w")
-    ttk.Label(options_frame, text="Recommended: Preserves document structure and LaTeX commands", font=("TkDefaultFont", 8), foreground="gray").pack(anchor="w", pady=(2, 0))
-
-    def on_translate():
-        selection = selected_pair_var.get()
-        if not selection:
-            messagebox.showwarning("Selection Error", "Please select a translation pair.", parent=dialog)
-            return
-        
-        model_name = SUPPORTED_TRANSLATIONS[selection]
+    def on_translate_callback(selected_pair, skip_preamble):
+        """Handle translation request from panel."""
+        model_name = SUPPORTED_TRANSLATIONS[selected_pair]
         filepath = _active_filepath_getter_func()
-        skip_preamble = skip_preamble_var.get()
         
-        _perform_translation_threaded(source_text, model_name, filepath, dialog, skip_preamble)
+        # Create a minimal dialog window for the threaded operation status
+        status_dialog = tk.Toplevel(_root)
+        status_dialog.title("Translating...")
+        status_dialog.transient(_root)
+        status_dialog.grab_set()
+        status_dialog.geometry("300x100")
+        
+        bg_color = _theme_setting_getter_func("root_bg", "#f0f0f0")
+        status_dialog.configure(bg=bg_color)
+        
+        ttk.Label(status_dialog, text="Translation in progress...").pack(expand=True)
+        
+        _perform_translation_threaded(source_text, model_name, filepath, status_dialog, skip_preamble)
 
-    translate_button = ttk.Button(main_frame, text=f"Translate on {_device.upper()}", command=on_translate)
-    translate_button.pack(pady=10)
-
-    dialog.protocol("WM_DELETE_WINDOW", dialog.destroy)
-    dialog.wait_window()
+    # Show the integrated translate panel  
+    show_translate_panel(source_text, SUPPORTED_TRANSLATIONS, on_translate_callback, _device)

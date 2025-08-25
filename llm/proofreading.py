@@ -1,12 +1,11 @@
 """Proofreading entry point."""
 from tkinter import messagebox
 from llm import state
-from llm.dialogs.proofreading import ProofreadingDialog
 from app.panels import show_proofreading_panel
 
 
-def open_proofreading_dialog():
-    """Open proofreading dialog for active document."""
+def open_proofreading_panel():
+    """Open proofreading panel for active document."""
     # Check services ready
     if not callable(state._active_editor_getter_func):
         messagebox.showerror("Error", "AI service not initialized.")

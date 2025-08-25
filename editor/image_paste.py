@@ -5,76 +5,8 @@ import re
 from PIL import ImageGrab, Image
 from editor import structure as editor_structure
 from utils import debug_console
+from app.panels import show_image_details_panel
 
-class ImageDetailsDialog(tk.Toplevel):
-    """Modal dialog for collecting image details including caption and label."""
-    def __init__(self, parent, suggested_label, get_theme_setting):
-        """Initialize dialog with parent window and suggested label."""
-        super().__init__(parent)
-        self.transient(parent)
-        self.title("Image Details")
-        self.geometry("400x180")
-        self.grab_set()
-
-        self.caption = ""
-        self.label = ""
-        self.cancelled = True  # Assume cancellation until OK is pressed
-        self.get_theme_setting = get_theme_setting
-
-        self._configure_styles()
-        self._create_widgets(suggested_label)
-        
-        self.protocol("WM_DELETE_WINDOW", self._on_cancel)
-        self.wait_window(self)
-
-    def _configure_styles(self):
-        """Configure dialog appearance based on application theme."""
-        try:
-            bg_color = self.get_theme_setting("root_bg", "#f0f0f0")
-            self.configure(bg=bg_color)
-        except Exception:
-            self.configure(bg="#f0f0f0")
-
-    def _create_widgets(self, suggested_label):
-        """Create and layout dialog widgets."""
-        frame = ttk.Frame(self, padding=15)
-        frame.pack(fill="both", expand=True)
-
-        ttk.Label(frame, text="Image Caption:").grid(row=0, column=0, sticky="w", pady=2)
-        self.caption_entry = ttk.Entry(frame, width=50)
-        self.caption_entry.grid(row=1, column=0, sticky="ew", pady=(0, 10))
-
-        ttk.Label(frame, text="Image Label:").grid(row=2, column=0, sticky="w", pady=2)
-        self.label_entry = ttk.Entry(frame, width=50)
-        self.label_entry.grid(row=3, column=0, sticky="ew")
-        self.label_entry.insert(0, suggested_label)
-
-        button_frame = ttk.Frame(frame)
-        button_frame.grid(row=4, column=0, pady=(15, 0), sticky="e")
-        
-        ok_button = ttk.Button(button_frame, text="OK", command=self._on_ok)
-        ok_button.pack(side="left", padx=5)
-        cancel_button = ttk.Button(button_frame, text="Cancel", command=self._on_cancel)
-        cancel_button.pack(side="left")
-        
-        self.caption_entry.focus_set()
-        self.bind("<Return>", lambda e: self._on_ok())
-        self.bind("<Escape>", lambda e: self._on_cancel())
-
-    def _on_ok(self):
-        """Handle OK button click, store values and close dialog."""
-        self.caption = self.caption_entry.get().strip()
-        self.label = self.label_entry.get().strip()
-        if not self.label:
-            messagebox.showwarning("Missing Label", "The image label cannot be empty.", parent=self)
-            return
-        self.cancelled = False
-        self.destroy()
-
-    def _on_cancel(self):
-        """Handle Cancel button click or window close."""
-        self.cancelled = True
-        self.destroy()
 
 def paste_image_from_clipboard(root, get_current_tab, get_theme_setting):
     """Handle pasting image from clipboard with structured directory and LaTeX generation."""
@@ -122,31 +54,54 @@ def paste_image_from_clipboard(root, get_current_tab, get_theme_setting):
             image_index += 1
 
         suggested_label = f"fig:{sanitize_for_path(section)}_{sanitize_for_path(subsection)}_{image_index}"
-        details_dialog = ImageDetailsDialog(root, suggested_label, get_theme_setting)
         
-        if details_dialog.cancelled:
-            debug_console.log("Image paste cancelled by user via details dialog.", level='INFO')
-            return
-            
-        caption_text = details_dialog.caption or "Caption here"
-        label_text = details_dialog.label  # Already validated in dialog
+        # Store image data and paths for later use in callback
+        image_data = {
+            'image': image,
+            'full_file_path': full_file_path,
+            'latex_image_path': None,  # Will be calculated later
+            'base_directory': base_directory,
+            'editor': editor
+        }
+        
+        def on_image_details_ok(caption, label):
+            """Handle OK from image details panel."""
+            try:
+                # Save the image
+                image_data['image'].save(image_data['full_file_path'], "PNG")
+                debug_console.log(f"Image saved to: {image_data['full_file_path']}", level='SUCCESS')
 
-        image.save(full_file_path, "PNG")
-        debug_console.log(f"Image saved to: {full_file_path}", level='SUCCESS')
-
-        latex_image_path = os.path.relpath(full_file_path, base_directory).replace("\\", "/")
+                # Calculate LaTeX path
+                latex_image_path = os.path.relpath(image_data['full_file_path'], image_data['base_directory']).replace("\\", "/")
+                
+                # Use provided caption or default
+                caption_text = caption or "Caption here"
+                
+                # Generate LaTeX code
+                latex_code = (
+                    f"\n\\begin{{figure}}[h!]\n"
+                    f"    \\centering\n"
+                    f"    \\includegraphics[width=0.8\\textwidth]{{{latex_image_path}}}\n"
+                    f"    \\caption{{{caption_text}}}\n"
+                    f"    \\label{{{label}}}\n"
+                    f"\\end{{figure}}\n"
+                )
+                
+                # Insert LaTeX code
+                image_data['editor'].insert(tk.INSERT, latex_code)
+                debug_console.log("LaTeX figure code inserted into editor.", level='INFO')
+                
+            except Exception as e:
+                error_message = f"An unexpected error occurred during the image paste operation: {str(e)}"
+                debug_console.log(error_message, level='ERROR')
+                messagebox.showerror("Error Pasting Image", error_message)
         
-        latex_code = (
-            f"\n\\begin{{figure}}[h!]\n"
-            f"    \\centering\n"
-            f"    \\includegraphics[width=0.8\\textwidth]{{{latex_image_path}}}\n"
-            f"    \\caption{{{caption_text}}}\n"
-            f"    \\label{{{label_text}}}\n"
-            f"\\end{{figure}}\n"
-        )
+        def on_image_details_cancel():
+            """Handle cancel from image details panel."""
+            debug_console.log("Image paste cancelled by user via details panel.", level='INFO')
         
-        editor.insert(tk.INSERT, latex_code)
-        debug_console.log("LaTeX figure code inserted into editor.", level='INFO')
+        # Show the integrated image details panel
+        show_image_details_panel(suggested_label, on_image_details_ok, on_image_details_cancel)
 
     except Exception as e:
         error_message = f"An unexpected error occurred during the image paste operation: {str(e)}"

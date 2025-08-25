@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 import tkinter as tk
 from tkinter import ttk
 from typing import Optional, Callable
+from .panel_factory import PanelFactory, StandardComponents, PanelStyle, StandardPanelBehavior
 
 
 class BasePanel(ABC):
@@ -55,6 +56,15 @@ class BasePanel(ABC):
         """Focus the main interactive widget of this panel."""
         pass
     
+    @abstractmethod
+    def get_layout_style(self) -> PanelStyle:
+        """Get the layout style for this panel."""
+        pass
+    
+    def has_unsaved_changes(self) -> bool:
+        """Check if panel has unsaved changes. Override in subclass if needed."""
+        return False
+    
     def create_panel(self) -> tk.Widget:
         """
         Create the complete panel with header and content.
@@ -70,28 +80,35 @@ class BasePanel(ABC):
         # Create header with title and close button
         self._create_header()
         
-        # Create content area
+        # Create content area using standardized layout
         self.content_frame = ttk.Frame(self.panel_frame)
         self.content_frame.grid(row=1, column=0, sticky="nsew", padx=5, pady=5)
         self.content_frame.grid_rowconfigure(0, weight=1)
         self.content_frame.grid_columnconfigure(0, weight=1)
         
+        # Create standardized layout based on panel style
+        layout_style = self.get_layout_style()
+        self.main_container = PanelFactory.create_panel_structure(self.content_frame, layout_style)
+        
         # Let subclass create its content
         self.create_content()
+        
+        # Setup standard behaviors
+        self._setup_standard_behaviors()
         
         return self.panel_frame
     
     def _create_header(self):
         """Create the panel header with title and close button."""
-        self.header_frame = ttk.Frame(self.panel_frame, padding=(5, 5, 5, 0))
+        self.header_frame = ttk.Frame(self.panel_frame, padding=(StandardComponents.PADDING//2, StandardComponents.PADDING//2, StandardComponents.PADDING//2, 0))
         self.header_frame.grid(row=0, column=0, sticky="ew")
         self.header_frame.grid_columnconfigure(0, weight=1)
         
-        # Panel title
+        # Panel title using standard font
         title_label = ttk.Label(
             self.header_frame,
             text=self.get_panel_title(),
-            font=("Segoe UI", 9, "bold")
+            font=StandardComponents.TITLE_FONT
         )
         title_label.grid(row=0, column=0, sticky="w")
         
@@ -105,7 +122,16 @@ class BasePanel(ABC):
         self.close_button.grid(row=0, column=1, sticky="e")
     
     def _handle_close(self):
-        """Handle close button click."""
+        """Handle close button click with unsaved changes check."""
+        # Check for unsaved changes
+        if self.has_unsaved_changes():
+            action = StandardPanelBehavior.create_standard_close_confirm(self.get_panel_title(), True)
+            if action == "save":
+                self._save_changes()
+            elif action == "cancel":
+                return  # Don't close
+            # "close" continues to close without saving
+        
         self.hide()
         if self.on_close_callback:
             self.on_close_callback(self)
@@ -147,3 +173,27 @@ class BasePanel(ABC):
         if self.theme_getter:
             return self.theme_getter(color_name, default)
         return default
+    
+    def close_panel(self):
+        """Close this panel (alias for _handle_close)."""
+        self._handle_close()
+    
+    def _setup_standard_behaviors(self):
+        """Setup standard panel behaviors including escape binding."""
+        if self.panel_frame:
+            # Bind Escape key to close panel
+            self.panel_frame.bind('<Escape>', lambda e: self.close_panel())
+            if self.content_frame:
+                self.content_frame.bind('<Escape>', lambda e: self.close_panel())
+            
+            # Setup standard behaviors
+            main_widget = getattr(self, 'main_widget', self.content_frame)
+            StandardPanelBehavior.setup_common_bindings(self, main_widget)
+            
+            # Make sure frames can receive focus for key events
+            self.panel_frame.focus_set()
+            self.content_frame.focus_set()
+    
+    def _save_changes(self):
+        """Save changes. Override in subclass if panel supports saving."""
+        pass

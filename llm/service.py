@@ -42,27 +42,27 @@ def load_prompts_for_current_file():
     """
     llm_prompts.load_prompts_for_current_file()
 
-def open_set_keywords_dialog(event=None):
+def open_set_keywords_panel(event=None):
     """
-    Opens the dialog for users to set or update global LLM keywords.
+    Opens the panel for users to set or update global LLM keywords.
 
     This function acts as a wrapper, delegating the call to the `llm_keywords` module.
 
     Args:
         event (tk.Event, optional): The Tkinter event object, if called from a binding. Defaults to None.
     """
-    llm_keywords.open_set_keywords_dialog()
+    llm_keywords.open_set_keywords_panel()
 
-def open_edit_prompts_dialog(event=None):
+def open_edit_prompts_panel(event=None):
     """
-    Opens the dialog for users to edit the LLM prompt templates.
+    Opens the panel for users to edit the LLM prompt templates.
 
     This function acts as a wrapper, delegating the call to the `llm_prompts` module.
 
     Args:
         event (tk.Event, optional): The Tkinter event object, if called from a binding. Defaults to None.
     """
-    llm_prompts.open_edit_prompts_dialog()
+    llm_prompts.open_edit_prompts_panel()
 
 def load_prompt_history_for_current_file():
     """
@@ -84,24 +84,24 @@ def request_llm_to_complete_text(event=None):
     """
     llm_completion.request_llm_to_complete_text()
 
-def open_generate_text_dialog(event=None, initial_prompt_text=None):
+def open_generate_text_panel(event=None, initial_prompt_text=None):
     """
-    Opens the dialog for custom text generation using the LLM.
+    Opens the panel for custom text generation using the LLM.
 
     This function acts as a wrapper, delegating the call to the `llm_generation` module.
     It supports pre-filling the prompt text if `initial_prompt_text` is provided.
 
     Args:
         event (tk.Event, optional): The Tkinter event object, if called from a binding. Defaults to None.
-        initial_prompt_text (str, optional): Initial text to pre-fill the prompt input area in the dialog.
+        initial_prompt_text (str, optional): Initial text to pre-fill the prompt input area in the panel.
                                              Defaults to None.
     """
     # Include event parameter for shortcut binding consistency
-    llm_generation.open_generate_text_dialog(initial_prompt_text=initial_prompt_text)
+    llm_generation.open_generate_text_panel(initial_prompt_text=initial_prompt_text)
 
-def open_proofreading_dialog(event=None):
+def open_proofreading_panel(event=None):
     """
-    Opens the dialog for document proofreading to detect grammar and spelling errors.
+    Opens the panel for document proofreading to detect grammar and spelling errors.
     
     This function acts as a wrapper, delegating the call to the `llm_proofreading` module.
     The proofreading functionality analyzes selected text or the entire document for errors
@@ -110,4 +110,4 @@ def open_proofreading_dialog(event=None):
     Args:
         event (tk.Event, optional): The Tkinter event object, if called from a binding. Defaults to None.
     """
-    proofreading.open_proofreading_dialog()
+    proofreading.open_proofreading_panel()

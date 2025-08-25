@@ -7,7 +7,7 @@ updating them, and saving them back to file. It also integrates with the prompt 
 from tkinter import messagebox
 from llm import state as llm_state
 from llm import prompt_manager as llm_prompt_manager
-from llm.dialogs.prompts import show_edit_prompts_dialog
+from app.panels import show_prompts_panel
 from utils import debug_console
 
 def load_prompts_for_current_file():
@@ -83,37 +83,34 @@ def update_prompts(completion_template_text, generation_template_text, styling_t
     else:
         debug_console.log("Cannot save prompt templates: No active file path available.", level='WARNING')
 
-from llm.dialogs.prompts import show_edit_prompts_dialog
-from llm.dialogs.global_prompts import open_global_prompts_editor as open_global_prompts_editor_dialog
+from app.panels import show_prompts_panel
+from app.panels import show_global_prompts_panel
 
 def open_global_prompts_editor(event=None):
     """
-    Opens the dialog for users to edit the global default LLM prompt templates.
+    Opens the integrated global prompts editor panel in the left sidebar.
     """
-    debug_console.log("Opening global LLM prompt templates editing dialog.", level='ACTION')
-    root = llm_state.get_root_window()
-    open_global_prompts_editor_dialog(root)
+    debug_console.log("Opening global LLM prompt templates editing panel.", level='ACTION')
+    
+    # Import and show the global prompts panel
+    from app.panels import show_global_prompts_panel
+    show_global_prompts_panel()
 
-def open_edit_prompts_dialog(event=None):
+def open_edit_prompts_panel(event=None):
     """
-    Opens the dialog for users to edit the LLM prompt templates for the current file.
+    Opens the integrated prompts editor panel in the left sidebar.
     """
-    debug_console.log("Opening LLM prompt templates editing dialog.", level='ACTION')
-    # Get the root window reference from llm_state.
-    root = llm_state.get_root_window()
-    if not root:
-        debug_console.log("Cannot open prompt editor: No root window reference.", level='ERROR')
-        return
-
-    # Get the necessary getter functions and current state from llm_state.
-    theme_getter = llm_state._theme_setting_getter_func
+    debug_console.log("Opening LLM prompt templates editing panel.", level='ACTION')
+    
+    # Import the integrated panel function
+    from app.panels import show_prompts_panel
+    
+    # Get current prompts and defaults
     current_prompts = get_current_prompts()
     default_prompts = llm_state.get_global_default_prompts()
     
-    # Show the dialog with the required parameters.
-    show_edit_prompts_dialog(
-        root_window=root,
-        theme_setting_getter_func=theme_getter,
+    # Show the integrated prompts panel
+    show_prompts_panel(
         current_prompts=current_prompts,
         default_prompts=default_prompts,
         on_save_callback=update_prompts

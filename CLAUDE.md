@@ -40,6 +40,7 @@ pip install -r requirements.txt
 - `actions.py`: User action handlers and event routing
 - `theme.py`: UI theming and visual customization
 - `zoom.py`: Text scaling and zoom functionality
+- `panels/`: Integrated sidebar panels for all AI interactions (NO popup dialogs)
 - Tab operations, shortcuts, and UI visibility controls
 
 **editor/**: Text editing engine and LaTeX support
@@ -59,7 +60,7 @@ pip install -r requirements.txt
 - `service.py`: Centralized LLM API facade
 - `api_client.py`: Ollama and external API communication
 - `completion.py`, `generation.py`, `proofreading.py`: Core AI features
-- `dialogs/`: AI interaction dialogs and user interfaces
+- `panels/`: Integrated sidebar panels for AI interactions
 - `schemas/`: Data validation and response parsing
 
 **pdf_preview/**: Integrated PDF viewer
@@ -83,8 +84,9 @@ pip install -r requirements.txt
 
 **AI Integration**:
 - Local-first approach using Ollama for privacy
-- Modular service architecture with dialog-based interactions
+- Modular service architecture with integrated sidebar panels (NO popup dialogs)
 - Streaming responses for real-time feedback
+- All AI features accessed via sidebar panels (generation, proofreading, rephrase, etc.)
 
 **State Management**:
 - Centralized application state with getter functions
@@ -93,9 +95,11 @@ pip install -r requirements.txt
 
 ## Critical Implementation Notes
 
+**UI Guidelines**: NEVER use emojis in any UI elements, titles, labels, or text content. Keep all interface text clean and professional without emoji characters.
+
 **Syntax Highlighting**: Uses differential highlighting system that only processes changed lines. The `syntax_tracker.py` module maintains line state to optimize performance on large documents.
 
-**AI Service**: Initialized through `llm/service.py` with dependency injection of UI components. All AI features route through this central service for consistent behavior.
+**AI Service**: Initialized through `llm/service.py` with dependency injection of UI components. All AI features route through this central service using integrated sidebar panels instead of popup dialogs. Functions like `open_generate_text_panel()`, `open_proofreading_panel()`, etc. manage the panel display.
 
 **PDF Preview**: Automatically synchronizes with LaTeX compilation. Uses pdf2image for rendering and caches pages for performance.
 

@@ -6,6 +6,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from typing import Optional, List
 from .base_panel import BasePanel
+from .panel_factory import PanelStyle, StandardComponents
 
 from llm.proofreading_service import get_proofreading_service, ProofreadingError, ProofreadingSession, load_session_from_cache, list_cached_sessions
 from llm import state
@@ -41,168 +42,197 @@ class ProofreadingPanel(BasePanel):
     def get_panel_title(self) -> str:
         return "Document Proofreading"
     
+    def get_layout_style(self) -> PanelStyle:
+        """Use scrollable layout for comprehensive proofreading interface."""
+        return PanelStyle.SCROLLABLE
+    
     def create_content(self):
-        """Create the proofreading panel content."""
-        # Main scrollable area
-        main_canvas = tk.Canvas(self.content_frame, highlightthickness=0)
-        scrollbar = ttk.Scrollbar(self.content_frame, orient="vertical", command=main_canvas.yview)
-        scrollable_frame = ttk.Frame(main_canvas)
+        """Create the proofreading panel content using standardized components."""
+        # main_container is a tuple for scrollable: (scrollable_frame, canvas)
+        scrollable_frame, canvas = self.main_container
         
-        scrollable_frame.bind(
-            "<Configure>",
-            lambda e: main_canvas.configure(scrollregion=main_canvas.bbox("all"))
-        )
+        # Main content in scrollable area
+        main_frame = ttk.Frame(scrollable_frame, padding=StandardComponents.PADDING)
+        main_frame.pack(fill="both", expand=True)
         
-        main_canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
-        main_canvas.configure(yscrollcommand=scrollbar.set)
-        
-        main_canvas.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
-        
-        # Create content sections in scrollable frame
-        self._create_control_section(scrollable_frame)
-        self._create_analysis_section(scrollable_frame)
-        self._create_navigation_section(scrollable_frame)
-        
-        # Bind mousewheel to canvas
-        def _on_mousewheel(event):
-            main_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
-        main_canvas.bind_all("<MouseWheel>", _on_mousewheel)
+        # Create content sections using standardized components
+        self._create_control_section(main_frame)
+        self._create_analysis_section(main_frame)
+        self._create_navigation_section(main_frame)
         
     def _create_control_section(self, parent):
         """Create the control section with instructions and analyze button."""
-        control_frame = ttk.LabelFrame(parent, text=" Analysis Control ", padding="10")
-        control_frame.pack(fill="x", padx=5, pady=5)
+        control_section = StandardComponents.create_section(parent, "Analysis Control")
+        control_section.pack(fill="x", pady=(0, StandardComponents.SECTION_SPACING))
         
         # Status indicator
-        self.status_indicator = ttk.Label(
-            control_frame,
-            text="Ready to analyze",
-            foreground=self.get_theme_color("muted_text", "#666666")
+        self.status_indicator = StandardComponents.create_info_label(
+            control_section,
+            "Ready to analyze",
+            "body"
         )
-        self.status_indicator.pack(anchor="w", pady=(0, 10))
+        self.status_indicator.pack(anchor="w", pady=(0, StandardComponents.PADDING))
         
         # Instructions
-        ttk.Label(control_frame, text="Instructions (optional):").pack(anchor="w")
-        self.instructions_entry = ttk.Entry(control_frame, width=40)
-        self.instructions_entry.pack(fill="x", pady=(5, 10))
+        instructions_label = StandardComponents.create_info_label(
+            control_section, 
+            "Custom instructions (optional):", 
+            "body"
+        )
+        instructions_label.pack(anchor="w", pady=(0, StandardComponents.PADDING//2))
+        
+        self.instructions_entry = StandardComponents.create_entry_input(
+            control_section, 
+            "Add specific instructions for analysis..."
+        )
+        self.instructions_entry.pack(fill="x", pady=(0, StandardComponents.PADDING))
+        
+        # Set as main widget for focus
+        self.main_widget = self.instructions_entry
         
         # Analyze button
-        self.analyze_button = ttk.Button(
-            control_frame,
-            text="Start Analysis",
-            command=self._start_proofreading
-        )
-        self.analyze_button.pack(anchor="w")
+        analyze_buttons = [(
+            "Start Analysis", 
+            self._start_proofreading, 
+            "primary"
+        )]
+        analyze_row = StandardComponents.create_button_row(control_section, analyze_buttons)
+        analyze_row.pack(fill="x", pady=(0, StandardComponents.PADDING))
+        self.analyze_button = analyze_row.winfo_children()[0]  # Get the button reference
         
         # Progress display
-        progress_label = ttk.Label(control_frame, textvariable=self.progress_var, wraplength=300)
-        progress_label.pack(fill="x", pady=(10, 0))
+        progress_label = StandardComponents.create_info_label(
+            control_section, 
+            "", 
+            "small"
+        )
+        progress_label.pack(anchor="w")
+        # Update the textvariable after creation
+        progress_label.config(textvariable=self.progress_var)
         
     def _create_analysis_section(self, parent):
         """Create the analysis display section."""
-        analysis_frame = ttk.LabelFrame(parent, text=" Analysis Results ", padding="10")
-        analysis_frame.pack(fill="both", expand=True, padx=5, pady=5)
+        analysis_section = StandardComponents.create_section(parent, "Analysis Results")
+        analysis_section.pack(fill="both", expand=True, pady=(0, StandardComponents.SECTION_SPACING))
         
         # Original text display
-        ttk.Label(analysis_frame, text="Original Text:").pack(anchor="w", pady=(0, 5))
-        
-        original_frame = ttk.Frame(analysis_frame)
-        original_frame.pack(fill="x", pady=(0, 10))
-        
-        self.original_text_widget = tk.Text(
-            original_frame,
-            height=4,
-            wrap="word",
-            bg=self.get_theme_color("editor_bg", "#ffffff"),
-            fg=self.get_theme_color("editor_fg", "#000000"),
-            state="disabled",
-            relief="solid",
-            borderwidth=1
+        original_label = StandardComponents.create_info_label(
+            analysis_section, 
+            "Original Text (preview):", 
+            "body"
         )
-        self.original_text_widget.pack(fill="x")
+        original_label.pack(anchor="w", pady=(0, StandardComponents.PADDING//2))
         
-        # Show original text
+        self.original_text_widget = StandardComponents.create_text_input(
+            analysis_section,
+            "Original text will appear here...",
+            height=4
+        )
+        self.original_text_widget.pack(fill="x", pady=(0, StandardComponents.PADDING))
+        
+        # Show original text (disabled for readonly)
         self.original_text_widget.config(state="normal")
+        self.original_text_widget.delete("1.0", "end")
         self.original_text_widget.insert("1.0", self.initial_text[:500] + ("..." if len(self.initial_text) > 500 else ""))
         self.original_text_widget.config(state="disabled")
         
         # Analysis output
-        ttk.Label(analysis_frame, text="AI Analysis:").pack(anchor="w", pady=(10, 5))
+        analysis_label = StandardComponents.create_info_label(
+            analysis_section, 
+            "Analysis:", 
+            "body"
+        )
+        analysis_label.pack(anchor="w", pady=(0, StandardComponents.PADDING//2))
         
-        self.analysis_text_widget = tk.Text(
-            analysis_frame,
-            height=6,
-            wrap="word",
-            bg="#f8f9fa",
-            fg=self.get_theme_color("editor_fg", "#000000"),
-            state="disabled",
-            relief="solid",
-            borderwidth=1
+        self.analysis_text_widget = StandardComponents.create_text_input(
+            analysis_section,
+            "Analysis results will appear here...",
+            height=6
         )
         self.analysis_text_widget.pack(fill="x")
+        self.analysis_text_widget.config(state="disabled")
         
     def _create_navigation_section(self, parent):
         """Create error navigation section (hidden initially)."""
-        self.navigation_frame = ttk.LabelFrame(parent, text=" Error Navigation ", padding="10")
+        self.navigation_frame = StandardComponents.create_section(parent, "Error Navigation")
         # Don't pack initially - will be shown when errors are found
         
         # Navigation controls
         nav_controls = ttk.Frame(self.navigation_frame)
-        nav_controls.pack(fill="x", pady=(0, 10))
+        nav_controls.pack(fill="x", pady=(0, StandardComponents.PADDING))
         
-        self.prev_button = ttk.Button(nav_controls, text="Previous", command=self._go_previous)
-        self.prev_button.pack(side="left", padx=(0, 5))
+        # Navigation buttons
+        nav_buttons = [
+            ("Previous", self._go_previous, "secondary"),
+            ("Next", self._go_next, "secondary")
+        ]
+        nav_button_row = StandardComponents.create_button_row(nav_controls, nav_buttons)
+        nav_button_row.pack(side="left")
         
-        self.next_button = ttk.Button(nav_controls, text="Next", command=self._go_next)
-        self.next_button.pack(side="left", padx=(0, 10))
+        # Store button references
+        buttons = nav_button_row.winfo_children()
+        self.prev_button = buttons[0]
+        self.next_button = buttons[1]
         
-        self.counter_label = ttk.Label(nav_controls, textvariable=self.error_counter_var)
-        self.counter_label.pack(side="left")
+        # Counter label
+        self.counter_label = StandardComponents.create_info_label(
+            nav_controls, 
+            "", 
+            "body"
+        )
+        self.counter_label.pack(side="right")
+        self.counter_label.config(textvariable=self.error_counter_var)
         
         # Current error display
-        ttk.Label(self.navigation_frame, text="Current Error:").pack(anchor="w", pady=(0, 5))
-        
-        self.current_error_text = tk.Text(
-            self.navigation_frame,
-            height=3,
-            wrap="word",
-            bg="#ffeeee",
-            state="disabled",
-            relief="solid",
-            borderwidth=1
+        error_label = StandardComponents.create_info_label(
+            self.navigation_frame, 
+            "Current Error:", 
+            "body"
         )
-        self.current_error_text.pack(fill="x", pady=(0, 5))
+        error_label.pack(anchor="w", pady=(0, StandardComponents.PADDING//2))
         
-        ttk.Label(self.navigation_frame, text="Suggestion:").pack(anchor="w", pady=(5, 5))
-        
-        self.suggestion_text = tk.Text(
+        self.current_error_text = StandardComponents.create_text_input(
             self.navigation_frame,
-            height=3,
-            wrap="word",
-            bg=self.get_theme_color("editor_bg", "#ffffff"),
-            state="disabled",
-            relief="solid",
-            borderwidth=1
+            "Error text will appear here...",
+            height=3
         )
-        self.suggestion_text.pack(fill="x", pady=(0, 10))
+        self.current_error_text.pack(fill="x", pady=(0, StandardComponents.PADDING//2))
+        self.current_error_text.config(state="disabled")
+        
+        suggestion_label = StandardComponents.create_info_label(
+            self.navigation_frame, 
+            "Suggestion:", 
+            "body"
+        )
+        suggestion_label.pack(anchor="w", pady=(0, StandardComponents.PADDING//2))
+        
+        self.suggestion_text = StandardComponents.create_text_input(
+            self.navigation_frame,
+            "Suggestion will appear here...",
+            height=3
+        )
+        self.suggestion_text.pack(fill="x", pady=(0, StandardComponents.PADDING))
+        self.suggestion_text.config(state="disabled")
         
         # Action buttons
-        action_frame = ttk.Frame(self.navigation_frame)
-        action_frame.pack(fill="x")
+        action_buttons = [
+            ("✓ Approve", self._approve_current_correction, "success"),
+            ("✗ Reject", self._reject_current_correction, "secondary"),
+            ("Apply", self._apply_current_correction, "primary"),
+            ("Apply All Approved", self._apply_all_corrections, "success")
+        ]
+        action_row = StandardComponents.create_button_row(self.navigation_frame, action_buttons)
+        action_row.pack(fill="x")
         
-        self.approve_button = ttk.Button(action_frame, text="✓ Approve", command=self._approve_current_correction)
-        self.approve_button.pack(side="left", padx=(0, 5))
+        # Store button references
+        action_buttons_widgets = action_row.winfo_children()
+        self.approve_button = action_buttons_widgets[0]
+        self.reject_button = action_buttons_widgets[1]
+        self.apply_button = action_buttons_widgets[2]
+        self.apply_all_button = action_buttons_widgets[3]
         
-        self.reject_button = ttk.Button(action_frame, text="✗ Reject", command=self._reject_current_correction)
-        self.reject_button.pack(side="left", padx=(0, 5))
-        
-        self.apply_button = ttk.Button(action_frame, text="Apply", command=self._apply_current_correction, state="disabled")
-        self.apply_button.pack(side="left", padx=(0, 10))
-        
-        # Apply all button
-        self.apply_all_button = ttk.Button(action_frame, text="Apply All Approved", command=self._apply_all_corrections)
-        self.apply_all_button.pack(side="right")
+        # Set initial state
+        self.apply_button.config(state="disabled")
         
     def focus_main_widget(self):
         """Focus the main interactive widget."""
@@ -257,7 +287,7 @@ class ProofreadingPanel(BasePanel):
         """Handle errors found."""
         if errors:
             # Show navigation section
-            self.navigation_frame.pack(fill="x", padx=5, pady=5)
+            self.navigation_frame.pack(fill="x", pady=(0, StandardComponents.SECTION_SPACING))
             self._update_error_navigation()
     
     def _on_analysis_error(self, error_msg: str):

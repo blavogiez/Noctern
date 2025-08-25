@@ -7,7 +7,7 @@ from tkinter import messagebox
 
 from llm import state as llm_state
 from llm.interactive import start_new_interactive_session
-from llm.dialogs.autostyle import StyleIntensityDialog
+from app.panels import show_style_intensity_panel
 from llm.streaming_service import start_streaming_request
 from utils import debug_console
 
@@ -39,15 +39,39 @@ def autostyle_selection():
         messagebox.showinfo("Smart Style", "Please select some text to style.")
         return
 
-    # Open dialog to get intensity
-    dialog = StyleIntensityDialog(editor, title="Smart Styling")
-    intensity = dialog.result
-
-    if intensity is None:
+    # Show the integrated style intensity panel
+    from app.panels import show_style_intensity_panel
+    
+    # Keep track of whether intensity was confirmed
+    intensity_result = {'value': None, 'confirmed': False}
+    
+    def on_intensity_confirm(intensity_value):
+        """Handle intensity confirmation from panel."""
+        intensity_result['value'] = intensity_value
+        intensity_result['confirmed'] = True
+        
+        # Continue with styling process
+        _perform_styling(editor, selected_text, selection_indices, intensity_value)
+    
+    def on_intensity_cancel():
+        """Handle intensity cancellation from panel."""
         debug_console.log("Smart Styling cancelled by user.", level='INFO')
-        return
+    
+    # Show panel and return early (styling continues in callback)
+    show_style_intensity_panel(
+        last_intensity=getattr(llm_state, 'last_style_intensity', 5),
+        on_confirm_callback=on_intensity_confirm,
+        on_cancel_callback=on_intensity_cancel
+    )
+    return  # Exit early, styling continues in callback
 
-    # 4. Check for ongoing generation and prepare prompt
+
+def _perform_styling(editor, selected_text, selection_indices, intensity):
+    """Perform the actual styling operation."""
+    # Save the intensity for next time
+    llm_state.last_style_intensity = intensity
+    
+    # Check for ongoing generation and prepare prompt
     if llm_state.is_generating():
         messagebox.showinfo("LLM Busy", "LLM is currently generating. Please wait.")
         return

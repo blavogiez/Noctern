@@ -27,6 +27,7 @@ from editor import image_manager as editor_image_manager
 from latex import compiler as latex_compiler
 from editor import wordcount as editor_wordcount
 from editor import table_insertion as editor_table_insertion
+from app.panels import show_table_insertion_panel
 from utils import debug_console, animations
 from utils.unsaved_changes_dialog import show_unsaved_changes_dialog_multiple_files
 
@@ -115,11 +116,8 @@ def insert_table(event=None):
             debug_console.log(f"Error inserting table: {e}", level='ERROR')
             show_temporary_status_message("❌ Failed to insert table")
     
-    # Show simplified table dialog
-    editor_table_insertion.show_table_dialog(
-        parent=state.root,
-        insert_callback=insert_callback
-    )
+    # Show integrated table panel
+    show_table_insertion_panel(insert_callback)
 
 def zoom_in(_=None):
     """Increase font size of active editor tab."""

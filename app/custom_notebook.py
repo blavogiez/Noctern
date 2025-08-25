@@ -96,8 +96,8 @@ class ClosableNotebook(ttk.Notebook):
                                 "side": "top",
                                 "sticky": "nswe",
                                 "children": [
-                                    ("Closable.TNotebook.label", {"side": "left", "sticky": ''}),
-                                    ("close", {"side": "right", "sticky": 'e'}),
+                                    ("Closable.TNotebook.label", {"side": "left", "sticky": 'w'}),
+                                    ("close", {"side": "right", "sticky": 'ns'}),
                                 ]
                             })
                         ]

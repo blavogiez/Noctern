@@ -2,7 +2,7 @@
 This module is reserved for future functionalities related to debugging LaTeX code
 with the assistance of a Large Language Model (LLM).
 """
-from llm.dialogs.debug import show_debug_dialog
+from app.panels import show_debug_panel
 from llm import state as llm_state
 from tkinter import messagebox
 
@@ -14,10 +14,8 @@ def analyze_compilation_diff(diff_content: str, log_content: str):
         messagebox.showwarning("LLM Service Not Ready", "The LLM service is not fully initialized. Cannot perform analysis.")
         return
 
-    # Dialog now handles AI analysis part
-    show_debug_dialog(
-        llm_state._root_window,
-        llm_state._theme_setting_getter_func,
+    # Panel now handles analysis part  
+    show_debug_panel(
         diff_content,
         log_content,
         llm_state._active_editor_getter_func

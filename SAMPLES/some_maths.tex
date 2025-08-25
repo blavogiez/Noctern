@@ -1,13 +1,3 @@
-\documentclass[11pt,a4paper]{article}
-\usepackage[utf8]{inputenc}
-\usepackage[T1]{fontenc}
-\usepackage{amsmath,amsfonts,amssymb}
-\usepackage{graphicx}
-\usepackage{geometry}
-\usepackage{setspace}
-\usepackage{booktabs}
-\usepackage{longtable}
-\usepackage{array}% !TEX program = pdflatex
 \documentclass[12pt,a4paper]{article}
 
 %---------------------------
@@ -18,10 +8,13 @@
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
-\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{amsmath,amsfonts,amssymb}
 \usepackage{siunitx}
 \usepackage{graphicx}
+\usepackage{setspace}
 \usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
 \usepackage{xcolor}
 \usepackage{hyperref}
 \usepackage{tikz}
@@ -41,10 +34,24 @@
 \date{\today}
 
 \begin{document}
-\maketitle
+
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.8\textwidth]{figures/default/default/default/fig_1.png}
+    \caption{ff}
+    \label{fig:default_default_1}
+\end{figure}
+
 
 \begin{abstract}
-La natation de performance est un terrain fertile pour la modélisation mathématique : hydrodynamique, biomécanique, contrôle optimal du rythme, traitement de signaux et statistique se combinent pour décrire et améliorer le déplacement du nageur. Ce document présente des éléments essentiels, avec des modèles simples mais utiles pour l'analyse et l'entraînement.
+MMathematical modeling, integrating hydrodynamics, biomechanics, rhythm control, signal processing, and statistics, is crucial for optimizing movement in performance swimming. This document presents simple yet useful models for analysis and training!
+
+MMathematical modeling, integrating hydrodynamics, biomechanics, rhythm control, signal processing, and statistics, is crucial for optimizing movement in performance swimming. This document presents simple yet useful models for analysis and training!
+
+We love  how mathematics can enhance performance.
+
+
 \end{abstract}
 
 \section{Forces et équations de mouvement}
@@ -207,6 +214,8 @@ Les paramètres réels varient entre individus et au cours de la course. Un cadr
 
 \section{Conclusion}
 Les mathématiques offrent une boîte à outils cohérente pour comprendre et améliorer la natation : dynamique non linéaire, optimisation sous contraintes énergétiques, estimation statistique et traitement du signal. Même des modèles simples, correctement paramétrés, suffisent souvent pour orienter l'entraînement : réduire la traînée (technique), choisir un pacing soutenable (contrôle optimal) et exploiter les données (capteurs) pour personnaliser les paramètres.
+
+Pour aller au-delà des modèles simplifiés, une approche bayésienne s'avère particulièrement pertinente. Elle permet non seulement de quantifier l'incertitude inhérente aux paramètres individuels et aux conditions de course, mais aussi de prendre des décisions plus robustes. En passant d'une optimisation ponctuelle à une minimisation du risque, les nageurs et entraîneurs peuvent affiner les stratégies de pacing et de technique, aboutissant à des plans d'action personnalisés et adaptatifs qui maximisent les chances de succès face à l'incertitude du monde réel.
 
 \bigskip
 \noindent\textbf{Remarque pratique.} Ce texte est volontairement synthétique et modulaire. Chaque section peut être étendue (validation expérimentale, variantes par nage — crawl, dos, brasse, papillon —, effets des virages, drafting en eau libre, etc.).
