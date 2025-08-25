@@ -64,7 +64,7 @@ def create_debug_panel(parent, on_goto_line=None):
         from utils import logs_console
         logs_console.log("Creating debug panel", level='INFO')
         
-        from debug_system.coordinator import create_debug_system
+        from latex_debug_system.coordinator import create_debug_system
         
         # Create complete debug system with all features
         coordinator, debug_panel = create_debug_system(

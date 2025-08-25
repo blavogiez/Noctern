@@ -2,12 +2,12 @@
 
 from typing import Optional, Callable
 from utils import logs_console
-from debug_system.core import DebugContext, AnalysisResult, QuickFix
-from debug_system.error_parser import LaTeXErrorParser
-from debug_system.llm_analyzer import LLMAnalyzer
-from debug_system.quick_fixes import LaTeXQuickFixProvider, EditorFixApplicator
-from debug_system.diff_service import CachedDiffGenerator
-from debug_system.debug_ui import TabbedDebugUI
+from latex_debug_system.core import DebugContext, AnalysisResult, QuickFix
+from latex_debug_system.error_parser import LaTeXErrorParser
+from latex_debug_system.llm_analyzer import LLMAnalyzer
+from latex_debug_system.quick_fixes import LaTeXQuickFixProvider, EditorFixApplicator
+from latex_debug_system.diff_service import CachedDiffGenerator
+from latex_debug_system.debug_ui import TabbedDebugUI
 
 
 class DebugCoordinator:

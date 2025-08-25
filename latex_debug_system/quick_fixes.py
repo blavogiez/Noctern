@@ -6,7 +6,7 @@ Provides pattern-based fixes and applies them to the editor.
 import re
 from typing import List, Optional
 from utils import logs_console
-from debug_system.core import QuickFixProvider, FixApplicator, QuickFix, LaTeXError, DebugContext
+from latex_debug_system.core import QuickFixProvider, FixApplicator, QuickFix, LaTeXError, DebugContext
 
 
 class LaTeXQuickFixProvider(QuickFixProvider):

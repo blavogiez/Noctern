@@ -1,6 +1,6 @@
 """
 Debug panel that integrates the original perfect debug system into the left sidebar.
-Uses the complete debug_system module with TabbedDebugUI for maximum functionality.
+Uses the complete latex_debug_system module with TabbedDebugUI for maximum functionality.
 """
 
 import tkinter as tk
@@ -43,7 +43,7 @@ class DebugPanel(BasePanel):
         """Create the debug panel by embedding the original perfect debug system."""
         try:
             # Import the original debug system
-            from debug_system.coordinator import create_debug_system
+            from latex_debug_system.coordinator import create_debug_system
             
             # Create the original debug system
             self.debug_coordinator, self.debug_ui = create_debug_system(

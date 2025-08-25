@@ -7,7 +7,7 @@ import json
 import re
 from typing import Optional, Dict, Any, List
 from utils import logs_console
-from debug_system.core import AnalysisEngine, AnalysisResult, DebugContext, QuickFix
+from latex_debug_system.core import AnalysisEngine, AnalysisResult, DebugContext, QuickFix
 
 
 class LLMAnalyzer(AnalysisEngine):

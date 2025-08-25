@@ -7,7 +7,7 @@ import os
 import difflib
 from typing import Optional, Tuple
 from utils import logs_console
-from debug_system.core import DiffGenerator
+from latex_debug_system.core import DiffGenerator
 
 
 class CachedDiffGenerator(DiffGenerator):
@@ -78,7 +78,7 @@ class CachedDiffGenerator(DiffGenerator):
             return
         
         try:
-            from debug_system.diff_service import DiffViewer
+            from latex_debug_system.diff_service import DiffViewer
             
             logs_console.log("Opening diff viewer window", level='INFO')
             logs_console.log(f"Diff summary: {len(diff_content.splitlines())} lines changed", level='INFO')

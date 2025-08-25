@@ -6,7 +6,7 @@ Supports TeXstudio-style error recognition and categorization.
 import re
 from typing import List, Optional
 from utils import logs_console
-from debug_system.core import ErrorParser, LaTeXError
+from latex_debug_system.core import ErrorParser, LaTeXError
 
 
 class LaTeXErrorParser(ErrorParser):
