@@ -8,7 +8,7 @@ import json
 from llm import state as llm_state
 from llm import history as llm_history
 from llm import prompts as llm_prompts
-from utils import debug_console
+from utils import logs_console
 
 def _load_global_default_prompts():
     """
@@ -22,7 +22,7 @@ def _load_global_default_prompts():
 
     if not os.path.exists(prompts_dir_path) or not os.path.isdir(prompts_dir_path):
         error_msg = f"Critical error: Prompts directory not found at '{prompts_dir_path}'. Please restore the directory."
-        debug_console.log(error_msg, level='CRITICAL')
+        logs_console.log(error_msg, level='CRITICAL')
         tkinter.messagebox.showerror("Critical Error", error_msg)
         llm_state._global_default_prompts = {}
         return
@@ -37,11 +37,11 @@ def _load_global_default_prompts():
                     loaded_prompts[prompt_name] = file_handle.read()
         
         llm_state._global_default_prompts = loaded_prompts
-        debug_console.log(f"Global default LLM prompts loaded successfully from '{prompts_dir_path}'.", level='INFO')
+        logs_console.log(f"Global default LLM prompts loaded successfully from '{prompts_dir_path}'.", level='INFO')
 
     except Exception as e:
         error_msg = f"Critical error: Failed to load one or more prompts from '{prompts_dir_path}': {e}."
-        debug_console.log(error_msg, level='CRITICAL')
+        logs_console.log(error_msg, level='CRITICAL')
         tkinter.messagebox.showerror("Critical Error", error_msg)
         llm_state._global_default_prompts = {}
 
@@ -70,7 +70,7 @@ def initialize_llm_service(root_window_ref, progress_bar_widget_ref,
     llm_state._theme_setting_getter_func = theme_setting_getter_func
     llm_state._active_editor_getter_func = active_editor_getter_func
     llm_state._active_filepath_getter_func = active_filepath_getter_func
-    debug_console.log("LLM service core references successfully initialized.", level='INFO')
+    logs_console.log("LLM service core references successfully initialized.", level='INFO')
 
     # Load model configuration from settings
     llm_state.model_completion = app_config.get("model_completion", "default")
@@ -79,9 +79,9 @@ def initialize_llm_service(root_window_ref, progress_bar_widget_ref,
     llm_state.model_debug = app_config.get("model_debug", "default")
     llm_state.model_style = app_config.get("model_style", "default")
     llm_state.model_proofreading = app_config.get("model_proofreading", "default")
-    debug_console.log(f"LLM models loaded: completion='{llm_state.model_completion}', generation='{llm_state.model_generation}', proofreading='{llm_state.model_proofreading}', etc.", level='INFO')
+    logs_console.log(f"LLM models loaded: completion='{llm_state.model_completion}', generation='{llm_state.model_generation}', proofreading='{llm_state.model_proofreading}', etc.", level='INFO')
 
     # Load global default prompts from the configuration file.
     _load_global_default_prompts()
     # Defer loading file-specific history and prompts until needed
-    debug_console.log("LLM service core initialized and ready.", level='SUCCESS')
+    logs_console.log("LLM service core initialized and ready.", level='SUCCESS')

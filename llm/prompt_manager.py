@@ -4,7 +4,7 @@ It uses a cache directory (`document_name.cache/prompts/`) alongside the documen
 """
 
 import os
-from utils import debug_console
+from utils import logs_console
 
 def get_document_cache_dir(tex_filepath):
     """Returns the path to the document's cache directory."""
@@ -25,7 +25,7 @@ def save_prompts_to_file(prompts_to_save, global_defaults, tex_filepath):
     """
     custom_prompts_dir = get_custom_prompts_dir(tex_filepath)
     if not custom_prompts_dir:
-        debug_console.log("Skipping custom prompts save: No valid .tex file path.", level='INFO')
+        logs_console.log("Skipping custom prompts save: No valid .tex file path.", level='INFO')
         return
 
     os.makedirs(custom_prompts_dir, exist_ok=True)
@@ -39,16 +39,16 @@ def save_prompts_to_file(prompts_to_save, global_defaults, tex_filepath):
             try:
                 with open(custom_prompt_path, 'w', encoding='utf-8') as f:
                     f.write(value)
-                debug_console.log(f"Saved custom prompt '{key}' for {os.path.basename(tex_filepath)}.", level='INFO')
+                logs_console.log(f"Saved custom prompt '{key}' for {os.path.basename(tex_filepath)}.", level='INFO')
             except Exception as e:
-                debug_console.log(f"Error saving custom prompt '{key}': {e}", level='ERROR')
+                logs_console.log(f"Error saving custom prompt '{key}': {e}", level='ERROR')
         # If the prompt is same as default and a custom file exists, remove it
         elif os.path.exists(custom_prompt_path):
             try:
                 os.remove(custom_prompt_path)
-                debug_console.log(f"Removed default prompt override '{key}' for {os.path.basename(tex_filepath)}.", level='INFO')
+                logs_console.log(f"Removed default prompt override '{key}' for {os.path.basename(tex_filepath)}.", level='INFO')
             except Exception as e:
-                debug_console.log(f"Error removing custom prompt file '{key}': {e}", level='ERROR')
+                logs_console.log(f"Error removing custom prompt file '{key}': {e}", level='ERROR')
 
 def load_prompts_from_file(tex_filepath, global_defaults):
     """
@@ -70,9 +70,9 @@ def load_prompts_from_file(tex_filepath, global_defaults):
             try:
                 with open(custom_prompt_path, 'r', encoding='utf-8') as f:
                     loaded_prompts[key] = f.read()
-                debug_console.log(f"Loaded custom prompt override '{key}' for {os.path.basename(tex_filepath)}.", level='INFO')
+                logs_console.log(f"Loaded custom prompt override '{key}' for {os.path.basename(tex_filepath)}.", level='INFO')
             except Exception as e:
-                debug_console.log(f"Error loading custom prompt '{key}': {e}", level='ERROR')
+                logs_console.log(f"Error loading custom prompt '{key}': {e}", level='ERROR')
                 # Keep the default value if loading fails
 
     return loaded_prompts

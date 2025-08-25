@@ -9,7 +9,7 @@ from typing import Optional
 from .base_panel import BasePanel
 from .panel_factory import PanelStyle, StandardComponents
 from llm import keyword_history
-from utils import debug_console
+from utils import logs_console
 
 
 class KeywordsPanel(BasePanel):
@@ -125,7 +125,7 @@ class KeywordsPanel(BasePanel):
         # Save keywords for the file
         keyword_history.set_keywords_for_file(self.file_path, new_keywords)
         
-        debug_console.log(f"Saved keywords for {os.path.basename(self.file_path)}: {new_keywords}", level='SUCCESS')
+        logs_console.log(f"Saved keywords for {os.path.basename(self.file_path)}: {new_keywords}", level='SUCCESS')
         
         # Get button reference from the button row
         button_row = self.main_container.winfo_children()[-2]  # Second to last child

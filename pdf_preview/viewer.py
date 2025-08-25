@@ -10,7 +10,7 @@ from PIL import Image, ImageTk
 import os
 import threading
 import time
-from utils import debug_console
+from utils import logs_console
 
 try:
     import fitz  # PyMuPDF
@@ -238,10 +238,10 @@ class PDFPreviewViewer:
                     self.total_pages = info.get('Pages', 1)
                     self.parent.after(0, self._initialize_layout)
             except Exception as fallback_e:
-                debug_console.log(f"Error with fallback PDF loading: {fallback_e}", level='ERROR')
+                logs_console.log(f"Error with fallback PDF loading: {fallback_e}", level='ERROR')
                 self.parent.after(0, self._create_placeholder)
         except Exception as e:
-            debug_console.log(f"Error loading PDF: {e}", level='ERROR')
+            logs_console.log(f"Error loading PDF: {e}", level='ERROR')
             self.parent.after(0, self._create_placeholder)
     
     def _initialize_layout(self):
@@ -322,7 +322,7 @@ class PDFPreviewViewer:
                 if images:
                     return images[0].size
         except Exception as e:
-            debug_console.log(f"Error getting page dimensions: {e}", level='ERROR')
+            logs_console.log(f"Error getting page dimensions: {e}", level='ERROR')
         return None, None
         
     def _render_page(self, page_num):
@@ -345,7 +345,7 @@ class PDFPreviewViewer:
                 if images:
                     return images[0]
         except Exception as e:
-            debug_console.log(f"Error rendering page {page_num}: {e}", level='ERROR')
+            logs_console.log(f"Error rendering page {page_num}: {e}", level='ERROR')
         return None
         
     def _get_cached_page(self, page_num):

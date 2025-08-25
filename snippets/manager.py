@@ -3,7 +3,7 @@
 
 import json
 import os
-from utils import debug_console
+from utils import logs_console
 
 # Configuration and global state
 SNIPPETS_FILE = "data/snippets.json"  # File where snippets are stored
@@ -14,7 +14,7 @@ def initialize_snippets():
     """Load snippet definitions from snippets.json file into memory."""
     global _snippets
     if not os.path.exists(SNIPPETS_FILE):
-        debug_console.log(f"Snippet file '{SNIPPETS_FILE}' not found. Creating a complete default set of snippets.", level='INFO')
+        logs_console.log(f"Snippet file '{SNIPPETS_FILE}' not found. Creating a complete default set of snippets.", level='INFO')
         
         # Define dictionary of default snippets with common LaTeX environments
         # Using ⟨placeholder⟩ format for enhanced navigation
@@ -79,7 +79,7 @@ def initialize_snippets():
             # If file exists, load snippets from it
             with open(SNIPPETS_FILE, 'r', encoding='utf-8') as file_handle:
                 _snippets = json.load(file_handle)
-            debug_console.log(f"Successfully loaded {len(_snippets)} snippets from '{SNIPPETS_FILE}'.", level='SUCCESS')
+            logs_console.log(f"Successfully loaded {len(_snippets)} snippets from '{SNIPPETS_FILE}'.", level='SUCCESS')
             
             # Convert legacy placeholders if needed
             converted_count = 0
@@ -92,12 +92,12 @@ def initialize_snippets():
             
             # Save updated snippets if any conversions occurred
             if converted_count > 0:
-                debug_console.log(f"Converted {converted_count} legacy snippets to new placeholder format", level='INFO')
+                logs_console.log(f"Converted {converted_count} legacy snippets to new placeholder format", level='INFO')
                 save_snippets(_snippets)
                 
         except (json.JSONDecodeError, IOError) as e:
             # Handle errors during file reading or JSON parsing
-            debug_console.log(f"Error reading or parsing snippet file '{SNIPPETS_FILE}': {e}. No snippets will be available.", level='ERROR')
+            logs_console.log(f"Error reading or parsing snippet file '{SNIPPETS_FILE}': {e}. No snippets will be available.", level='ERROR')
             _snippets = {}  # Reset snippets to empty dictionary on error
 
 def get_snippets():
@@ -112,8 +112,8 @@ def save_snippets(new_snippets_dict):
         with open(SNIPPETS_FILE, 'w', encoding='utf-8') as file_handle:
             json.dump(new_snippets_dict, file_handle, indent=4, sort_keys=True)
         _snippets = new_snippets_dict  # Update in-memory cache
-        debug_console.log("Snippets file saved and in-memory snippets reloaded successfully.", level='SUCCESS')
+        logs_console.log("Snippets file saved and in-memory snippets reloaded successfully.", level='SUCCESS')
         return True
     except IOError as e:
-        debug_console.log(f"Failed to save snippets to '{SNIPPETS_FILE}': {e}", level='ERROR')
+        logs_console.log(f"Failed to save snippets to '{SNIPPETS_FILE}': {e}", level='ERROR')
         return False

@@ -4,7 +4,7 @@ Handles synchronization between the LaTeX editor and PDF preview.
 """
 
 import re
-from utils import debug_console
+from utils import logs_console
 
 
 class PDFSyncManager:
@@ -19,7 +19,7 @@ class PDFSyncManager:
         """
         self.sync_points = {}  # Maps editor positions to PDF positions
         self.inverse_sync_points = {}  # Maps PDF positions to editor positions
-        debug_console.log("PDF Synchronization Manager initialized", level='INFO')
+        logs_console.log("PDF Synchronization Manager initialized", level='INFO')
     
     def create_sync_map(self, tex_content, pdf_pages):
         """
@@ -39,7 +39,7 @@ class PDFSyncManager:
         # In a full implementation, this would also parse the PDF for 
         # Parse PDF to find corresponding positions using synctex or similar tools
         
-        debug_console.log(f"Created sync map with {len(self.sync_points)} points", level='DEBUG')
+        logs_console.log(f"Created sync map with {len(self.sync_points)} points", level='DEBUG')
     
     def _parse_latex_structure(self, tex_content):
         """
@@ -155,7 +155,7 @@ class PDFSyncManager:
         """
         pdf_position = self.get_pdf_position(line_number)
         if pdf_position:
-            debug_console.log(
+            logs_console.log(
                 f"Editor navigation to line {line_number} -> PDF page ~{pdf_position.get('pdf_page_hint', 1)}", 
                 level='DEBUG'
             )
@@ -173,7 +173,7 @@ class PDFSyncManager:
         """
         editor_line = self.get_editor_position(pdf_page)
         if editor_line:
-            debug_console.log(
+            logs_console.log(
                 f"PDF navigation to page {pdf_page} -> Editor line ~{editor_line}", 
                 level='DEBUG'
             )
@@ -231,8 +231,8 @@ class PDFSyncManager:
                             
             return None
         except ImportError:
-            debug_console.log("pdfplumber not installed. Cannot search text in PDF.", level='ERROR')
+            logs_console.log("pdfplumber not installed. Cannot search text in PDF.", level='ERROR')
             return None
         except Exception as e:
-            debug_console.log(f"Error searching text in PDF: {e}", level='ERROR')
+            logs_console.log(f"Error searching text in PDF: {e}", level='ERROR')
             return None

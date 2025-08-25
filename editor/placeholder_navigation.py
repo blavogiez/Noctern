@@ -5,7 +5,7 @@ Uses mathematical angle brackets to avoid conflicts with LaTeX $ symbols.
 
 import tkinter as tk
 import re
-from utils import debug_console
+from utils import logs_console
 
 
 class PlaceholderManager:
@@ -35,7 +35,7 @@ class PlaceholderManager:
                 'end_offset': match.end()
             })
         
-        debug_console.log(f"Found {len(self.snippet_placeholders)} placeholders in snippet", level='DEBUG')
+        logs_console.log(f"Found {len(self.snippet_placeholders)} placeholders in snippet", level='DEBUG')
         
     def navigate_next(self):
         """Find and navigate to the closest ⟨placeholder⟩ from current cursor position."""
@@ -54,7 +54,7 @@ class PlaceholderManager:
         all_matches = list(re.finditer(self.PLACEHOLDER_PATTERN, full_text))
         
         if not all_matches:
-            debug_console.log("No placeholders found in document", level='DEBUG')
+            logs_console.log("No placeholders found in document", level='DEBUG')
             return False
         
         # Convert current position to character index for distance calculation
@@ -138,11 +138,11 @@ class PlaceholderManager:
             # Update position for next search
             self.current_search_pos = end_pos
             
-            debug_console.log(f"Navigated to closest placeholder: {match.group()}", level='INFO')
+            logs_console.log(f"Navigated to closest placeholder: {match.group()}", level='INFO')
             return True
             
         except tk.TclError as e:
-            debug_console.log(f"Error navigating to placeholder: {e}", level='WARNING')
+            logs_console.log(f"Error navigating to placeholder: {e}", level='WARNING')
             return False
     
     def navigate_to_next_placeholder(self):
@@ -158,7 +158,7 @@ class PlaceholderManager:
         """Find placeholders in specified text range (for backward compatibility)."""
         text_range = self.text_widget.get(start_pos, end_pos)
         placeholders = list(re.finditer(self.PLACEHOLDER_PATTERN, text_range))
-        debug_console.log(f"Found {len(placeholders)} placeholders in range {start_pos}-{end_pos}", level='DEBUG')
+        logs_console.log(f"Found {len(placeholders)} placeholders in range {start_pos}-{end_pos}", level='DEBUG')
         return len(placeholders) > 0
     
     def reset(self):

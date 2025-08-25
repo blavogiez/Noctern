@@ -1,2 +1,2 @@
 """Utils package."""
-from . import debug_console
+from . import logs_console

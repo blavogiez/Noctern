@@ -8,7 +8,7 @@ import time
 import weakref
 from collections import defaultdict
 from typing import Optional, Dict, List, Tuple, Set
-from utils import debug_console
+from utils import logs_console
 
 class DeltaTracker:
     """Track only changed document parts like Monaco Editor."""

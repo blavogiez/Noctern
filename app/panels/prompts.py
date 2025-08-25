@@ -7,7 +7,7 @@ from tkinter import ttk, messagebox
 from typing import Optional, Dict, Callable
 from .base_panel import BasePanel
 from .panel_factory import PanelStyle, StandardComponents
-from utils import debug_console
+from utils import logs_console
 
 
 class PromptsPanel(BasePanel):
@@ -192,7 +192,7 @@ class PromptsPanel(BasePanel):
                 text_widget.delete("1.0", tk.END)
                 text_widget.insert("1.0", default_prompt)
                 self._on_text_changed()
-                debug_console.log(f"Reset {prompt_key} prompt to default", level='ACTION')
+                logs_console.log(f"Reset {prompt_key} prompt to default", level='ACTION')
     
     def _on_text_changed(self, event=None):
         """Handle text change events."""
@@ -224,7 +224,7 @@ class PromptsPanel(BasePanel):
         for prompt_key, text_widget in self.prompt_widgets.items():
             new_prompts[prompt_key] = text_widget.get("1.0", tk.END + "-1c").strip()
         
-        debug_console.log("Saving prompt templates", level='ACTION')
+        logs_console.log("Saving prompt templates", level='ACTION')
         
         # Call the save callback
         if self.on_save_callback:

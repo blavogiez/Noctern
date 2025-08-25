@@ -28,12 +28,12 @@ from latex import compiler as latex_compiler
 from editor import wordcount as editor_wordcount
 from editor import table_insertion as editor_table_insertion
 from app.panels import show_table_insertion_panel
-from utils import debug_console, animations
+from utils import logs_console, animations
 from utils.unsaved_changes_dialog import show_unsaved_changes_dialog_multiple_files
 
 def style_selected_text(event=None):
     """Apply automatic styling to selected text via LLM service."""
-    debug_console.log("Initiating Smart Styling action.", level='ACTION')
+    logs_console.log("Initiating Smart Styling action.", level='ACTION')
     llm_service.start_autostyle_process()
 
 def perform_heavy_updates():
@@ -45,7 +45,7 @@ def perform_heavy_updates():
     if not current_tab:
         if state.outline:
             state.outline.update_outline(None)
-        debug_console.log("Heavy update skipped: No active editor tab.", level='DEBUG')
+        logs_console.log("Heavy update skipped: No active editor tab.", level='DEBUG')
         return
 
     # Update debug system with current document
@@ -54,7 +54,7 @@ def perform_heavy_updates():
             content = current_tab.editor.get("1.0", tk.END)
             state.debug_coordinator.set_current_document(current_tab.file_path, content)
         except Exception as e:
-            debug_console.log(f"Error updating debug system: {e}", level='WARNING')
+            logs_console.log(f"Error updating debug system: {e}", level='WARNING')
     
     # Use optimized performance system
     from app.performance_optimizer import schedule_optimized_update, UpdateType
@@ -77,11 +77,11 @@ def paste_image(event=None):
 
 def insert_table(event=None):
     """Open table insertion dialog and insert LaTeX table with snippet navigation."""
-    debug_console.log("Table insertion action triggered.", level='ACTION')
+    logs_console.log("Table insertion action triggered.", level='ACTION')
     
     current_tab = state.get_current_tab()
     if not current_tab or not current_tab.editor:
-        debug_console.log("No active editor tab found for table insertion.", level='WARNING')
+        logs_console.log("No active editor tab found for table insertion.", level='WARNING')
         return
     
     def insert_callback(latex_code):
@@ -104,16 +104,16 @@ def insert_table(event=None):
             
             # Navigate to first placeholder
             if manager.navigate_next():
-                debug_console.log("Navigating to first table placeholder", level='INFO')
+                logs_console.log("Navigating to first table placeholder", level='INFO')
             
             # Update syntax highlighting
             schedule_heavy_updates()
             
             show_temporary_status_message("✅ Table inserted - use Tab to navigate placeholders")
-            debug_console.log("Table with placeholders inserted successfully.", level='SUCCESS')
+            logs_console.log("Table with placeholders inserted successfully.", level='SUCCESS')
             
         except Exception as e:
-            debug_console.log(f"Error inserting table: {e}", level='ERROR')
+            logs_console.log(f"Error inserting table: {e}", level='ERROR')
             show_temporary_status_message("❌ Failed to insert table")
     
     # Show integrated table panel
@@ -121,12 +121,12 @@ def insert_table(event=None):
 
 def zoom_in(_=None):
     """Increase font size of active editor tab."""
-    debug_console.log("Zoom In action triggered.", level='ACTION')
+    logs_console.log("Zoom In action triggered.", level='ACTION')
     state.zoom_manager.zoom_in()
 
 def zoom_out(_=None):
     """Decrease font size of active editor tab."""
-    debug_console.log("Zoom Out action triggered.", level='ACTION')
+    logs_console.log("Zoom Out action triggered.", level='ACTION')
     state.zoom_manager.zoom_out()
 
 def show_console(content):
@@ -197,9 +197,9 @@ def save_session():
     try:
         with open(CONFIG_FILE, "w") as configfile:
             config.write(configfile)
-        debug_console.log(f"Session state saved to {CONFIG_FILE}", level='INFO')
+        logs_console.log(f"Session state saved to {CONFIG_FILE}", level='INFO')
     except Exception as e:
-        debug_console.log(f"Error saving session state: {e}", level='ERROR')
+        logs_console.log(f"Error saving session state: {e}", level='ERROR')
 
 def load_session():
     """
@@ -220,17 +220,17 @@ def load_session():
                         if os.path.exists(file_path):
                             create_new_tab(file_path)
                         else:
-                            debug_console.log(f"File not found, not reopening: {file_path}", level='WARNING')
+                            logs_console.log(f"File not found, not reopening: {file_path}", level='WARNING')
                 # Skip creating empty tab if no file is open
             # Skip creating empty tab if session section doesn't exist
         # Skip creating empty tab if config file doesn't exist
     except Exception as e:
-        debug_console.log(f"Error loading session state: {e}", level='ERROR')
+        logs_console.log(f"Error loading session state: {e}", level='ERROR')
         # Skip creating empty tab on error
 
 def on_close_request():
     """Handle application close request with unsaved changes check."""
-    debug_console.log("Application close request received.", level='INFO')
+    logs_console.log("Application close request received.", level='INFO')
     if not state.root:
         return
     
@@ -265,10 +265,10 @@ def restore_last_closed_tab(event=None):
     """
     if state._closed_tabs_stack:
         file_path_to_restore = state._closed_tabs_stack.pop()
-        debug_console.log(f"Attempting to restore closed tab: {file_path_to_restore or 'Untitled'}", level='ACTION')
+        logs_console.log(f"Attempting to restore closed tab: {file_path_to_restore or 'Untitled'}", level='ACTION')
         create_new_tab(file_path=file_path_to_restore)
     else:
-        debug_console.log("No recently closed tabs available for restoration.", level='INFO')
+        logs_console.log("No recently closed tabs available for restoration.", level='INFO')
         show_temporary_status_message("ℹ️ No recently closed tabs to restore.")
 
 def open_file(event=None):
@@ -308,7 +308,7 @@ def on_tab_changed(event=None):
         return
         
     tab_name = os.path.basename(current_tab.file_path) if current_tab and current_tab.file_path else "Untitled"
-    debug_console.log(f"Active tab changed to: '{tab_name}'.", level='ACTION')
+    logs_console.log(f"Active tab changed to: '{tab_name}'.", level='ACTION')
     
     # Update metrics tracking for the new file
     if hasattr(state, 'metrics_display') and state.metrics_display:
@@ -325,11 +325,11 @@ def on_tab_changed(event=None):
 
 def restart_application():
     """Restart the entire application with unsaved changes check."""
-    debug_console.log("Application restart requested.", level='ACTION')
+    logs_console.log("Application restart requested.", level='ACTION')
     
     from app.exit_handler import restart_application as clean_restart
     if not clean_restart():
-        debug_console.log("Application restart cancelled by user.", level='INFO')
+        logs_console.log("Application restart cancelled by user.", level='INFO')
 
 def go_to_line_in_pdf(event=None):
     """
@@ -337,17 +337,17 @@ def go_to_line_in_pdf(event=None):
     """
     current_tab = state.get_current_tab()
     if not current_tab or not current_tab.editor:
-        debug_console.log("No active editor tab found.", level='WARNING')
+        logs_console.log("No active editor tab found.", level='WARNING')
         return
         
     # Get selected text
     try:
         selected_text = current_tab.editor.get("sel.first", "sel.last")
         if not selected_text.strip():
-            debug_console.log("No text selected.", level='INFO')
+            logs_console.log("No text selected.", level='INFO')
             return
     except tk.TclError:
-        debug_console.log("No text selected.", level='INFO')
+        logs_console.log("No text selected.", level='INFO')
         return
         
     # Get context around selected text
@@ -376,7 +376,7 @@ def go_to_line_in_pdf(event=None):
             context_after = current_tab.editor.get(f"{end_line}.end", f"{context_end_line}.end")
             
     except Exception as e:
-        debug_console.log(f"Error getting context: {e}", level='WARNING')
+        logs_console.log(f"Error getting context: {e}", level='WARNING')
         context_before = ""
         context_after = ""
         
@@ -384,7 +384,7 @@ def go_to_line_in_pdf(event=None):
     if hasattr(state, 'pdf_preview_interface') and state.pdf_preview_interface:
         state.pdf_preview_interface.go_to_text_in_pdf(selected_text, context_before, context_after)
     else:
-        debug_console.log("PDF preview interface not available.", level='WARNING')
+        logs_console.log("PDF preview interface not available.", level='WARNING')
 
 def apply_theme(theme_name=None, event=None):
     """
@@ -393,7 +393,7 @@ def apply_theme(theme_name=None, event=None):
     if theme_name is None:
         theme_name = state.current_theme
 
-    debug_console.log(f"Attempting to apply theme: '{theme_name}'.", level='ACTION')
+    logs_console.log(f"Attempting to apply theme: '{theme_name}'.", level='ACTION')
     
     new_theme, new_settings = interface_theme.apply_theme(
         theme_name, state.root, state.main_pane, state.tabs, perform_heavy_updates, state.console_output,

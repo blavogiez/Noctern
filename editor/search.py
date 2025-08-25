@@ -8,7 +8,7 @@ from tkinter import ttk
 import re
 from typing import Optional, List, Tuple
 from app import state
-from utils import debug_console
+from utils import logs_console
 from utils.icons import IconButton
 
 
@@ -60,7 +60,7 @@ class SearchEngine:
                 self.matches.append((str(start_line), start_col, end_col))
                 
         except re.error as e:
-            debug_console.log(f"Regex error in search: {e}", level='ERROR')
+            logs_console.log(f"Regex error in search: {e}", level='ERROR')
             
         return self.matches
     

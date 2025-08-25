@@ -7,7 +7,7 @@ from typing import List, Optional, Dict, Any
 
 from llm import state, utils, api_client
 from llm.schemas.proofreading import get_proofreading_schema, validate_proofreading_response
-from utils import debug_console
+from utils import logs_console
 
 
 class ProofreadingError:
@@ -215,10 +215,10 @@ class ProofreadingService:
     def analyze_text(self, session: ProofreadingSession, editor):
         """Analyze text for errors using AI."""
         if not session or session.is_processing:
-            debug_console.log("Skipping analysis - session busy", level='WARNING')
+            logs_console.log("Skipping analysis - session busy", level='WARNING')
             return
         
-        debug_console.log(f"Starting proofreading analysis: {len(session.original_text)} chars", level='INFO')
+        logs_console.log(f"Starting proofreading analysis: {len(session.original_text)} chars", level='INFO')
         
         session.is_processing = True
         update_session_status(session, "Contacting LLM...")
@@ -226,13 +226,13 @@ class ProofreadingService:
         # Get prompt template
         prompt_template = state._global_default_prompts.get("proofreading")
         if not prompt_template:
-            debug_console.log("Proofreading prompt template not found", level='ERROR')
+            logs_console.log("Proofreading prompt template not found", level='ERROR')
             finish_session_with_error(session, "Proofreading prompt template not configured")
             return
         
         # Build full prompt
         full_prompt = build_proofreading_prompt(prompt_template, session)
-        debug_console.log(f"Built prompt: {len(full_prompt)} chars", level='INFO')
+        logs_console.log(f"Built prompt: {len(full_prompt)} chars", level='INFO')
         
         # Start analysis in background thread
         thread = threading.Thread(target=run_ai_analysis, args=(session, editor, full_prompt))
@@ -301,7 +301,7 @@ def build_proofreading_prompt(template: str, session: ProofreadingSession) -> st
 def run_ai_analysis(session: ProofreadingSession, editor, full_prompt: str):
     """Run AI analysis in background thread."""
     try:
-        debug_console.log("Starting AI analysis", level='INFO')
+        logs_console.log("Starting AI analysis", level='INFO')
         
         # Call AI with structured output
         json_schema = get_proofreading_schema()
@@ -315,11 +315,11 @@ def run_ai_analysis(session: ProofreadingSession, editor, full_prompt: str):
         
         # Get response
         response = next(generator)
-        debug_console.log(f"AI response received: {response.get('success')}", level='INFO')
+        logs_console.log(f"AI response received: {response.get('success')}", level='INFO')
         
         if not response.get("success"):
             error_msg = response.get("error", "Unknown AI error")
-            debug_console.log(f"AI analysis failed: {error_msg}", level='ERROR')
+            logs_console.log(f"AI analysis failed: {error_msg}", level='ERROR')
             editor.after(0, finish_session_with_error, session, error_msg)
             return
         
@@ -327,14 +327,14 @@ def run_ai_analysis(session: ProofreadingSession, editor, full_prompt: str):
         process_ai_response(session, editor, response.get("data", ""))
         
     except Exception as e:
-        debug_console.log(f"Analysis error: {e}", level='ERROR')
+        logs_console.log(f"Analysis error: {e}", level='ERROR')
         editor.after(0, finish_session_with_error, session, f"Analysis failed: {str(e)}")
 
 
 def process_ai_response(session: ProofreadingSession, editor, response_text: str):
     """Process AI response and create error objects."""
     try:
-        debug_console.log(f"Processing AI response: {len(response_text)} chars", level='INFO')
+        logs_console.log(f"Processing AI response: {len(response_text)} chars", level='INFO')
         
         # Update status
         editor.after(0, update_session_status, session, "Formatting JSON...")
@@ -351,13 +351,13 @@ def process_ai_response(session: ProofreadingSession, editor, response_text: str
                 is_valid, normalized_errors = validate_proofreading_response({"errors": errors_data})
             
             if not is_valid:
-                debug_console.log("Response validation failed", level='ERROR')
+                logs_console.log("Response validation failed", level='ERROR')
                 editor.after(0, finish_session_with_error, session, "Invalid AI response format")
                 return
         
         # Create error objects
         editor.after(0, update_session_status, session, "Processing errors...")
-        debug_console.log(f"Creating {len(normalized_errors)} error objects", level='INFO')
+        logs_console.log(f"Creating {len(normalized_errors)} error objects", level='INFO')
         
         session.errors = []
         for i, error_data in enumerate(normalized_errors):
@@ -365,16 +365,16 @@ def process_ai_response(session: ProofreadingSession, editor, response_text: str
                 error = ProofreadingError.from_dict(error_data, session.original_text)
                 session.errors.append(error)
             except Exception as e:
-                debug_console.log(f"Failed to create error {i+1}: {e}", level='WARNING')
+                logs_console.log(f"Failed to create error {i+1}: {e}", level='WARNING')
         
         # Finish processing
         finish_successful_analysis(session, editor)
         
     except json.JSONDecodeError as e:
-        debug_console.log(f"JSON parsing failed: {e}", level='ERROR')
+        logs_console.log(f"JSON parsing failed: {e}", level='ERROR')
         editor.after(0, finish_session_with_error, session, "Invalid AI response format")
     except Exception as e:
-        debug_console.log(f"Response processing failed: {e}", level='ERROR')
+        logs_console.log(f"Response processing failed: {e}", level='ERROR')
         editor.after(0, finish_session_with_error, session, f"Failed to process response: {str(e)}")
 
 
@@ -384,7 +384,7 @@ def finish_successful_analysis(session: ProofreadingSession, editor):
     error_count = len(session.errors)
     session.is_processing = False
     
-    debug_console.log(f"Analysis complete: {error_count} errors found", level='INFO')
+    logs_console.log(f"Analysis complete: {error_count} errors found", level='INFO')
     
     # Update status
     if error_count == 0:
@@ -437,7 +437,7 @@ def save_session_to_cache(session: ProofreadingSession, filepath: Optional[str] 
         
         return session_file
     except Exception as e:
-        debug_console.log(f"Cache save failed: {e}", level='WARNING')
+        logs_console.log(f"Cache save failed: {e}", level='WARNING')
         return ""
 
 
@@ -448,7 +448,7 @@ def load_session_from_cache(session_file: str) -> Optional[ProofreadingSession]:
             data = json.load(f)
         return ProofreadingSession.from_dict(data)
     except Exception as e:
-        debug_console.log(f"Cache load failed: {e}", level='WARNING')
+        logs_console.log(f"Cache load failed: {e}", level='WARNING')
         return None
 
 

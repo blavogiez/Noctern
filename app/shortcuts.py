@@ -6,14 +6,14 @@ from llm import service as llm_service
 from latex import translator as latex_translator
 from app import actions as interface
 from llm import rephrase as llm_rephrase
-from utils import debug_console
+from utils import logs_console
 from editor import snippets as editor_snippets
 from editor import search as editor_search
 import tkinter as tk
 
 def bind_global_shortcuts(root):
     """Binds all global keyboard shortcuts for the application."""
-    debug_console.log("Binding global shortcuts.", level='INFO')
+    logs_console.log("Binding global shortcuts.", level='INFO')
     
     # Initialize the search bar
     editor_search.initialize_search_bar(root)
@@ -23,7 +23,7 @@ def bind_global_shortcuts(root):
         Wrapper to log shortcut execution and prevent conflicts by checking focus.
         """
         def wrapper(event=None):
-            debug_console.log(f"Global Shortcut: {name}", level='ACTION')
+            logs_console.log(f"Global Shortcut: {name}", level='ACTION')
             if pass_event:
                 func(event)
             else:
@@ -70,4 +70,4 @@ def bind_global_shortcuts(root):
     root.bind_all("<Control-equal>", interface.zoom_in)
     root.bind_all("<Control-minus>", interface.zoom_out)
 
-    debug_console.log("Global shortcuts have been bound.", level='INFO')
+    logs_console.log("Global shortcuts have been bound.", level='INFO')

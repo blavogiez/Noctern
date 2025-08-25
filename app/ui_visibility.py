@@ -5,7 +5,7 @@ like the status bar and PDF preview pane.
 
 import ttkbootstrap as ttk
 from app import state
-from utils import debug_console
+from utils import logs_console
 
 
 def toggle_status_bar():
@@ -28,7 +28,7 @@ def toggle_status_bar():
         # Start GPU status loop
         from app.status import start_gpu_status_loop
         start_gpu_status_loop(state.gpu_status_label, state.root)
-        debug_console.log("Status bar created and shown.", level='INFO')
+        logs_console.log("Status bar created and shown.", level='INFO')
         # Show temporary feedback to user
         from app import status_utils
         if state.status_label:
@@ -42,12 +42,12 @@ def toggle_status_bar():
         # Check if the status bar is currently packed
         if state.status_bar_frame.winfo_viewable():
             state.status_bar_frame.pack_forget()
-            debug_console.log("Status bar hidden.", level='INFO')
+            logs_console.log("Status bar hidden.", level='INFO')
             # Show temporary feedback in debug console since status bar is hidden
-            debug_console.log("Status bar disabled by user", level='INFO')
+            logs_console.log("Status bar disabled by user", level='INFO')
         else:
             state.status_bar_frame.pack(side="bottom", fill="x")
-            debug_console.log("Status bar shown.", level='INFO')
+            logs_console.log("Status bar shown.", level='INFO')
             # Update status when showing
             from app import status_utils
             status_utils.update_status_bar_text()
@@ -105,7 +105,7 @@ def toggle_pdf_preview():
         state._app_config["show_pdf_preview"] = "True"
         app_config.save_config(state._app_config)
         
-        debug_console.log("PDF preview created and shown.", level='INFO')
+        logs_console.log("PDF preview created and shown.", level='INFO')
         
         # Load PDF for current tab
         current_tab = state.get_current_tab()
@@ -114,7 +114,7 @@ def toggle_pdf_preview():
         return
     
     if not state.pdf_preview_pane or not state.pdf_preview_parent:
-        debug_console.log("PDF preview pane or parent not found.", level='WARNING')
+        logs_console.log("PDF preview pane or parent not found.", level='WARNING')
         return
     
     # Check if the PDF preview is currently in the paned window
@@ -136,13 +136,13 @@ def toggle_pdf_preview():
             state._app_config["show_pdf_preview"] = "False"
             app_config.save_config(state._app_config)
             
-            debug_console.log("PDF preview hidden and destroyed.", level='INFO')
+            logs_console.log("PDF preview hidden and destroyed.", level='INFO')
         else:
             # Add it back to the paned window with appropriate weight
             state.pdf_preview_parent.add(pdf_preview_master_frame, weight=2)
-            debug_console.log("PDF preview shown.", level='INFO')
+            logs_console.log("PDF preview shown.", level='INFO')
     except Exception as e:
-        debug_console.log(f"Error toggling PDF preview: {e}", level='ERROR')
+        logs_console.log(f"Error toggling PDF preview: {e}", level='ERROR')
 
 
 def is_pdf_preview_visible():

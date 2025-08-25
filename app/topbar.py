@@ -9,7 +9,7 @@ from latex import compiler as latex_compiler
 from llm import service as llm_service
 from latex import translator as latex_translator
 from app import actions as interface, state, icons
-from utils import debug_console
+from utils import logs_console
 from llm import rephrase as llm_rephrase
 from editor import snippets as editor_snippets
 from app import settings_window
@@ -18,7 +18,7 @@ from app.panels import show_metrics_panel, show_settings_panel
 
 def _log_action(action_name):
     """Helper function to log user actions triggered from the UI elements."""
-    debug_console.log(f"UI Action: User triggered '{action_name}'.", level='ACTION')
+    logs_console.log(f"UI Action: User triggered '{action_name}'.", level='ACTION')
 
 def create_top_buttons_frame(root):
     """
@@ -186,7 +186,7 @@ def create_top_buttons_frame(root):
     settings_menu.add_separator()
     
     
-    settings_menu.add_command(label="Show Debug Console", command=lambda: [_log_action("Settings: Show Debug Console"), debug_console.show_console()])
+    settings_menu.add_command(label="Show Debug Console", command=lambda: [_log_action("Settings: Show Debug Console"), logs_console.show_console()])
     settings_menu.add_command(label="Restart Application", command=lambda: [_log_action("Settings: Restart Application"), interface.restart_application()])
     
     # Add separator before UI visibility options

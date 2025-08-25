@@ -7,7 +7,7 @@ from tkinter import ttk
 from typing import Optional, Callable
 from .base_panel import BasePanel
 from .panel_factory import PanelStyle, StandardComponents
-from utils import debug_console
+from utils import logs_console
 
 
 class InteractiveGridSelector(tk.Frame):
@@ -162,7 +162,7 @@ class TableGenerator:
     @staticmethod
     def generate(rows, cols, has_header=True, alignment='c', caption='', label=''):
         """Generate LaTeX table with enhanced formatting."""
-        debug_console.log(f"Generating {rows}×{cols} table", level='INFO')
+        logs_console.log(f"Generating {rows}×{cols} table", level='INFO')
         
         # Build column spec
         col_spec = '|' + alignment + '|' * cols
@@ -388,7 +388,7 @@ class TableInsertionPanel(BasePanel):
         """Handle grid selection change."""
         self.current_rows = rows
         self.current_cols = cols
-        debug_console.log(f"Table dimensions changed to {rows}×{cols}", level='DEBUG')
+        logs_console.log(f"Table dimensions changed to {rows}×{cols}", level='DEBUG')
         self._update_preview()
     
     def _update_preview(self):
@@ -414,7 +414,7 @@ class TableInsertionPanel(BasePanel):
             self.preview_text.config(state="disabled")
             
         except Exception as e:
-            debug_console.log(f"Error updating preview: {e}", level='ERROR')
+            logs_console.log(f"Error updating preview: {e}", level='ERROR')
     
     def _handle_insert(self):
         """Handle table insertion."""
@@ -424,7 +424,7 @@ class TableInsertionPanel(BasePanel):
         # Get the generated table code
         table_code = self.preview_text.get("1.0", "end-1c")
         
-        debug_console.log(f"Inserting {self.current_rows}×{self.current_cols} table", level='ACTION')
+        logs_console.log(f"Inserting {self.current_rows}×{self.current_cols} table", level='ACTION')
         
         # Call insert callback
         if self.insert_callback:

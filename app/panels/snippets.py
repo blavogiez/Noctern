@@ -8,7 +8,7 @@ import re
 from typing import Optional, Dict, Callable, List
 from .base_panel import BasePanel
 from .panel_factory import PanelStyle, StandardComponents
-from utils import debug_console
+from utils import logs_console
 
 
 class SnippetsPanel(BasePanel):
@@ -347,7 +347,7 @@ class SnippetsPanel(BasePanel):
                 
             # Add/update snippet
             self.snippets[trigger] = content
-            debug_console.log(f"Saved snippet: {trigger}", level='ACTION')
+            logs_console.log(f"Saved snippet: {trigger}", level='ACTION')
         else:
             # List format - check all snippets
             for i, snippet in enumerate(self.snippets):
@@ -370,11 +370,11 @@ class SnippetsPanel(BasePanel):
             if self.is_editing and 0 <= self.current_snippet_index < len(self.snippets):
                 # Update existing snippet
                 self.snippets[self.current_snippet_index] = snippet_data
-                debug_console.log(f"Updated snippet: {name}", level='ACTION')
+                logs_console.log(f"Updated snippet: {name}", level='ACTION')
             else:
                 # Add new snippet
                 self.snippets.append(snippet_data)
-                debug_console.log(f"Added new snippet: {name}", level='ACTION')
+                logs_console.log(f"Added new snippet: {name}", level='ACTION')
                 self.current_snippet_index = len(self.snippets) - 1
                 self.is_editing = True
         
@@ -411,7 +411,7 @@ class SnippetsPanel(BasePanel):
                 
                 if result:
                     del self.snippets[trigger]
-                    debug_console.log(f"Deleted snippet: {trigger}", level='ACTION')
+                    logs_console.log(f"Deleted snippet: {trigger}", level='ACTION')
         else:
             snippet_name = self.snippets[self.current_snippet_index].get("name", "Unnamed")
             
@@ -423,7 +423,7 @@ class SnippetsPanel(BasePanel):
             
             if result:
                 del self.snippets[self.current_snippet_index]
-                debug_console.log(f"Deleted snippet: {snippet_name}", level='ACTION')
+                logs_console.log(f"Deleted snippet: {snippet_name}", level='ACTION')
         
         self._populate_listbox()
         self._new_snippet()
@@ -433,7 +433,7 @@ class SnippetsPanel(BasePanel):
         if self.save_callback:
             self.save_callback(self.snippets)
             
-        debug_console.log(f"Saved {len(self.snippets)} snippets to file", level='SUCCESS')
+        logs_console.log(f"Saved {len(self.snippets)} snippets to file", level='SUCCESS')
         
         messagebox.showinfo(
             "Snippets Saved",

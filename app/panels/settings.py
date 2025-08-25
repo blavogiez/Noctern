@@ -7,7 +7,7 @@ from tkinter import ttk, messagebox
 from typing import Optional, Dict
 from .base_panel import BasePanel
 from .panel_factory import PanelStyle, StandardComponents
-from utils import screen, debug_console
+from utils import screen, logs_console
 from app import config as app_config
 from llm import api_client
 
@@ -158,7 +158,7 @@ class SettingsPanel(BasePanel):
         def set_all_models_to(model_name):
             for key in self.model_vars:
                 self.model_vars[key].set(model_name)
-            debug_console.log(f"All models set to '{model_name}' in the UI.", level='INFO')
+            logs_console.log(f"All models set to '{model_name}' in the UI.", level='INFO')
         
         for i, (key, label) in enumerate(model_labels.items()):
             ttk.Label(llm_config_frame, text=label, font=StandardComponents.BODY_FONT).grid(row=i, column=0, sticky="w", padx=(0, StandardComponents.ELEMENT_SPACING), pady=2)
@@ -238,7 +238,7 @@ class SettingsPanel(BasePanel):
                 for combo in self.model_comboboxes.values():
                     combo.configure(values=available_models, state="readonly")
                 
-                debug_console.log(f"Refreshed {len(available_models)} available models", level='INFO')
+                logs_console.log(f"Refreshed {len(available_models)} available models", level='INFO')
                 messagebox.showinfo(
                     "Success", 
                     f"Successfully refreshed {len(available_models)} models.",
@@ -247,7 +247,7 @@ class SettingsPanel(BasePanel):
             else:
                 for combo in self.model_comboboxes.values():
                     combo.configure(state="readonly")
-                debug_console.log("No models found during refresh", level='WARNING')
+                logs_console.log("No models found during refresh", level='WARNING')
                 messagebox.showwarning(
                     "No Models", 
                     "No models found. Please check your Ollama installation.",
@@ -257,7 +257,7 @@ class SettingsPanel(BasePanel):
         except Exception as e:
             for combo in self.model_comboboxes.values():
                 combo.configure(state="readonly")
-            debug_console.log(f"Error refreshing models: {e}", level='ERROR')
+            logs_console.log(f"Error refreshing models: {e}", level='ERROR')
             messagebox.showerror(
                 "Error", 
                 f"Failed to refresh models:\n{str(e)}",
@@ -286,11 +286,11 @@ class SettingsPanel(BasePanel):
             self.current_config.update(updated_config)
             app_config.save_config(self.current_config)
             
-            debug_console.log("Settings saved successfully", level='INFO')
+            logs_console.log("Settings saved successfully", level='INFO')
             messagebox.showinfo("Settings Saved", "Your settings have been saved successfully.", parent=self.panel_frame)
             
         except Exception as e:
-            debug_console.log(f"Error saving settings: {e}", level='ERROR')
+            logs_console.log(f"Error saving settings: {e}", level='ERROR')
             messagebox.showerror("Save Error", f"Failed to save settings:\n{str(e)}", parent=self.panel_frame)
 
     def _reset_settings(self):
@@ -306,11 +306,11 @@ class SettingsPanel(BasePanel):
                 # Update UI with default values
                 self._update_ui_from_config()
                 
-                debug_console.log("Settings reset to defaults", level='INFO')
+                logs_console.log("Settings reset to defaults", level='INFO')
                 messagebox.showinfo("Settings Reset", "All settings have been reset to defaults.", parent=self.panel_frame)
                 
             except Exception as e:
-                debug_console.log(f"Error resetting settings: {e}", level='ERROR')
+                logs_console.log(f"Error resetting settings: {e}", level='ERROR')
                 messagebox.showerror("Reset Error", f"Failed to reset settings:\n{str(e)}", parent=self.panel_frame)
 
     def _update_ui_from_config(self):

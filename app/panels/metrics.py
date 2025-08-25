@@ -9,7 +9,7 @@ import os
 from typing import Optional
 from .base_panel import BasePanel
 from .panel_factory import PanelStyle, StandardComponents, PanelLayoutManager
-from utils import debug_console
+from utils import logs_console
 
 
 class MetricsPanel(BasePanel):
@@ -257,10 +257,10 @@ class MetricsPanel(BasePanel):
                 # Update summary
                 self._update_token_summary(total_input, total_output, len(sorted_dates))
                 
-                debug_console.log(f"Refreshed token metrics: {len(sorted_dates)} days, {total_all:,} total tokens", level='INFO')
+                logs_console.log(f"Refreshed token metrics: {len(sorted_dates)} days, {total_all:,} total tokens", level='INFO')
                 
         except Exception as e:
-            debug_console.log(f"Error refreshing token metrics: {e}", level='ERROR')
+            logs_console.log(f"Error refreshing token metrics: {e}", level='ERROR')
             
             # Show error in treeview
             if self.token_tree:
@@ -313,10 +313,10 @@ class MetricsPanel(BasePanel):
             # Update productivity summary
             self._update_productivity_summary(total_duration, total_words, len(sessions))
             
-            debug_console.log(f"Refreshed productivity metrics: {len(sessions)} sessions", level='INFO')
+            logs_console.log(f"Refreshed productivity metrics: {len(sessions)} sessions", level='INFO')
             
         except Exception as e:
-            debug_console.log(f"Error refreshing productivity metrics: {e}", level='ERROR')
+            logs_console.log(f"Error refreshing productivity metrics: {e}", level='ERROR')
             
             # Show error in treeview
             if self.productivity_tree:

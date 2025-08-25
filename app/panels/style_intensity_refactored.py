@@ -9,7 +9,7 @@ import tkinter as tk
 from tkinter import ttk
 from .base_panel import BasePanel
 from .panel_factory import PanelStyle, StandardComponents
-from utils import debug_console
+from utils import logs_console
 
 
 class StyleIntensityPanel(BasePanel):
@@ -157,7 +157,7 @@ class StyleIntensityPanel(BasePanel):
         self.intensity = int(self.intensity_var.get())
         self.cancelled = False
         
-        debug_console.log(f"Style intensity selected: {self.intensity}/10", level='INFO')
+        logs_console.log(f"Style intensity selected: {self.intensity}/10", level='INFO')
         
         if self.on_confirm_callback:
             self.on_confirm_callback(self.intensity)
@@ -168,7 +168,7 @@ class StyleIntensityPanel(BasePanel):
         """Handle cancel button click."""
         self.cancelled = True
         
-        debug_console.log("Style intensity selection cancelled", level='INFO')
+        logs_console.log("Style intensity selection cancelled", level='INFO')
         
         if self.on_cancel_callback:
             self.on_cancel_callback()

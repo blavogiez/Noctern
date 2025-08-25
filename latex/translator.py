@@ -5,7 +5,7 @@ from tkinter import ttk, messagebox
 import os
 import threading
 import re
-from utils import debug_console
+from utils import logs_console
 
 try:
     import torch
@@ -13,7 +13,7 @@ try:
     _TRANSFORMERS_AVAILABLE = True
 except ImportError:
     _TRANSFORMERS_AVAILABLE = False
-    debug_console.log("The 'transformers' or 'torch' module was not found. Translation functionality will be disabled.", level='WARNING')
+    logs_console.log("The 'transformers' or 'torch' module was not found. Translation functionality will be disabled.", level='WARNING')
 
 # Global variables for service configuration
 _root = None
@@ -71,15 +71,15 @@ def _ensure_translator_initialized():
     # Initialize now if not done at startup
     if (_root is None or _theme_setting_getter_func is None or _show_temporary_status_message_func is None or 
         _active_editor_getter_func is None or _active_filepath_getter_func is None):
-        debug_console.log("Translator service not properly configured.", level='ERROR')
+        logs_console.log("Translator service not properly configured.", level='ERROR')
         return False
 
     if _TRANSFORMERS_AVAILABLE:
         is_gpu_available = torch.cuda.is_available()
         _device = "cuda" if is_gpu_available else "cpu"
-        debug_console.log(f"Translator service initialized. Device set to: {_device.upper()}", level='INFO')
+        logs_console.log(f"Translator service initialized. Device set to: {_device.upper()}", level='INFO')
     else:
-        debug_console.log("Transformers library not available. Translation is disabled.", level='ERROR')
+        logs_console.log("Transformers library not available. Translation is disabled.", level='ERROR')
         return False
     
     _is_initialized = True
@@ -97,7 +97,7 @@ def initialize_translator(root_ref, theme_getter, status_message_func, active_ed
     _active_filepath_getter_func = active_filepath_getter
 
     # Defer device initialization to speed up startup
-    debug_console.log("Translator service configured for on-demand initialization.", level='INFO')
+    logs_console.log("Translator service configured for on-demand initialization.", level='INFO')
     _is_initialized = False  # Mark as not fully initialized
 
 def _get_model_and_tokenizer(model_name):
@@ -132,7 +132,7 @@ def _translate_text_chunk(text, model, tokenizer):
         translated_text = tokenizer.batch_decode(translated_ids, skip_special_tokens=True)[0]
         return leading_ws + translated_text + trailing_ws
     except Exception as e:
-        debug_console.log(f"Error translating text chunk: {e}", level='WARNING')
+        logs_console.log(f"Error translating text chunk: {e}", level='WARNING')
         return text
 
 def _find_first_section(text):
@@ -246,7 +246,7 @@ def _perform_translation_threaded(source_text, model_name, original_filepath, di
             _root.after(0, lambda: messagebox.showinfo("Translation Success", f"Document translated and saved to:\n{translated_filepath}", parent=dialog_window))
 
         except Exception as e:
-            debug_console.log(f"An error occurred during translation: {e}", level='ERROR')
+            logs_console.log(f"An error occurred during translation: {e}", level='ERROR')
             _root.after(0, lambda: messagebox.showerror("Translation Error", f"An error occurred during translation: {e}", parent=dialog_window))
         finally:
             _root.after(0, dialog_window.destroy)

@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 import time
 import hashlib
-from utils import debug_console
+from utils import logs_console
 from app.config import get_treeview_font_settings
 
 class Outline:

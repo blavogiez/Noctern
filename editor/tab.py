@@ -5,7 +5,7 @@ from tkinter import ttk
 from tkinter.font import Font
 import os
 from tkinter import messagebox
-from utils import debug_console
+from utils import logs_console
 from editor.image_preview import ImagePreview
 from editor.shortcuts import setup_editor_shortcuts # Correct import
 
@@ -90,8 +90,8 @@ class LineNumbers(tk.Canvas):
         except Exception as e:
             # Production error handling - log and continue
             try:
-                from utils import debug_console
-                debug_console.log(f"Line numbers redraw error: {e}", level='WARNING')
+                from utils import logs_console
+                logs_console.log(f"Line numbers redraw error: {e}", level='WARNING')
             except:
                 pass
     

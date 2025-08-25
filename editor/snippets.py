@@ -5,7 +5,7 @@ It acts as a controller, orchestrating interactions between the UI (dialogs) and
 
 import tkinter as tk
 import re
-from utils import debug_console
+from utils import logs_console
 from snippets import manager as snippet_manager
 from app.panels import show_snippets_panel
 from editor.placeholder_navigation import PlaceholderManager, handle_placeholder_navigation
@@ -18,13 +18,13 @@ def open_snippet_editor(root_window, theme_settings):
     This function displays the SnippetsPanel, passing it the current snippet data 
     and a callback function for saving changes.
     """
-    debug_console.log("Attempting to open snippet editor panel.", level='ACTION')
+    logs_console.log("Attempting to open snippet editor panel.", level='ACTION')
     # Show the integrated snippets panel
     show_snippets_panel(
         current_snippets=snippet_manager.get_snippets(),  # The current dictionary of snippets.
         save_callback=snippet_manager.save_snippets  # Callback function to save modified snippets.
     )
-    debug_console.log("Snippet editor panel opened.", level='INFO')
+    logs_console.log("Snippet editor panel opened.", level='INFO')
 
 
 def handle_snippet_expansion(event):
@@ -45,7 +45,7 @@ def handle_snippet_expansion(event):
     """
     # Ensure the event originated from a Tkinter Text widget.
     if not isinstance(event.widget, tk.Text):
-        debug_console.log("Snippet expansion event not from a Text widget.", level='DEBUG')
+        logs_console.log("Snippet expansion event not from a Text widget.", level='DEBUG')
         return
 
     editor = event.widget
@@ -58,7 +58,7 @@ def handle_snippet_expansion(event):
     # \w+ matches one or more word characters (alphanumeric + underscore).
     matches = re.findall(r'(\w+)', text_before_cursor)
     if not matches:
-        debug_console.log("No potential snippet keyword found before cursor.", level='DEBUG')
+        logs_console.log("No potential snippet keyword found before cursor.", level='DEBUG')
         return
 
 
@@ -67,7 +67,7 @@ def handle_snippet_expansion(event):
     
     # Check if keyword exists in snippets
     if keyword in all_snippets:
-        debug_console.log(f"Snippet keyword '{keyword}' detected. Attempting expansion.", level='ACTION')
+        logs_console.log(f"Snippet keyword '{keyword}' detected. Attempting expansion.", level='ACTION')
         # Calculate keyword start position for replacement
         keyword_position_in_line = text_before_cursor.rfind(keyword)
         keyword_start_index = f"{line_start_index} + {keyword_position_in_line} chars"
@@ -81,7 +81,7 @@ def handle_snippet_expansion(event):
         
         # If conversion happened, update the snippet in memory and save
         if converted_snippet != snippet_content:
-            debug_console.log(f"Converted legacy placeholders in snippet '{keyword}'", level='INFO')
+            logs_console.log(f"Converted legacy placeholders in snippet '{keyword}'", level='INFO')
             all_snippets[keyword] = converted_snippet
             snippet_manager.save_snippets(all_snippets)
             snippet_content = converted_snippet
@@ -108,9 +108,9 @@ def handle_snippet_expansion(event):
                 # Navigate to the first placeholder
                 editor.placeholder_manager.navigate_to_next_placeholder()
 
-        debug_console.log(f"Snippet '{keyword}' successfully expanded.", level='INFO')
+        logs_console.log(f"Snippet '{keyword}' successfully expanded.", level='INFO')
         # Return "break" to prevent Tkinter from processing the event further (e.g., inserting a space).
         return "break"
     
-    debug_console.log(f"Keyword '{keyword}' is not a registered snippet. No expansion performed.", level='DEBUG')
+    logs_console.log(f"Keyword '{keyword}' is not a registered snippet. No expansion performed.", level='DEBUG')
     return

@@ -10,7 +10,7 @@ from llm import state as llm_state
 from llm import interactive as llm_interactive
 from app.panels import show_rephrase_panel
 from llm.streaming_service import start_streaming_request
-from utils import debug_console
+from utils import logs_console
 
 def open_rephrase_panel(initial_text=None):
     """
@@ -19,7 +19,7 @@ def open_rephrase_panel(initial_text=None):
     If `initial_text` is provided, it's used for rephrasing. Otherwise,
     it gets the selected text from the active editor.
     """
-    debug_console.log("Rephrase dialog initiated.", level='ACTION')
+    logs_console.log("Rephrase dialog initiated.", level='ACTION')
     
     if not llm_state._active_editor_getter_func:
         messagebox.showerror("LLM Error", "LLM service not fully initialized.")
@@ -49,7 +49,7 @@ def open_rephrase_panel(initial_text=None):
     def on_confirm(instruction):
         """Callback for when the user confirms the rephrase instruction."""
         def on_discard_generation():
-            debug_console.log("Rephrase session discarded. Restoring original text.", level='INFO')
+            logs_console.log("Rephrase session discarded. Restoring original text.", level='INFO')
             if editor.winfo_exists():
                 editor.insert(start_index, selected_text)
         
@@ -58,7 +58,7 @@ def open_rephrase_panel(initial_text=None):
     show_rephrase_panel(
         original_text=selected_text,
         on_rephrase_callback=on_confirm,
-        on_cancel_callback=lambda: debug_console.log("Rephrase cancelled by user from panel.", level='INFO')
+        on_cancel_callback=lambda: logs_console.log("Rephrase cancelled by user from panel.", level='INFO')
     )
 
 def _request_rephrase_for_text(editor, original_text, start_index, end_index, instruction, on_discard_callback=None):
@@ -69,7 +69,7 @@ def _request_rephrase_for_text(editor, original_text, start_index, end_index, in
         messagebox.showinfo("LLM Busy", "LLM is currently generating. Please wait.")
         return
 
-    debug_console.log(f"Requesting rephrase with instruction: '{instruction}'", level='INFO')
+    logs_console.log(f"Requesting rephrase with instruction: '{instruction}'", level='INFO')
 
     # Delete the original text to make way for the interactive session
     editor.delete(start_index, end_index)
@@ -78,7 +78,7 @@ def _request_rephrase_for_text(editor, original_text, start_index, end_index, in
     prompt_template = llm_state._global_default_prompts.get("rephrase")
     if not prompt_template:
         messagebox.showerror("LLM Error", "The 'rephrase' prompt template is missing.")
-        debug_console.log("Rephrase failed: 'rephrase' template not found.", level='ERROR')
+        logs_console.log("Rephrase failed: 'rephrase' template not found.", level='ERROR')
         editor.insert(start_index, original_text) # Restore original text
         return
     

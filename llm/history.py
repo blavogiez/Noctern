@@ -6,7 +6,7 @@ ensuring persistence across application sessions.
 
 from llm import state as llm_state
 from llm import prompt_history as llm_prompt_history
-from utils import debug_console
+from utils import logs_console
 
 def _get_active_tex_filepath():
     """
@@ -31,10 +31,10 @@ def load_prompt_history_for_current_file():
     The loaded history is stored in `llm_state._prompt_history_list`.
     """
     active_filepath = _get_active_tex_filepath()
-    debug_console.log(f"Attempting to load prompt history for: {active_filepath or 'new/untitled file'}.", level='INFO')
+    logs_console.log(f"Attempting to load prompt history for: {active_filepath or 'new/untitled file'}.", level='INFO')
     # Load history from the file using llm_prompt_history module.
     llm_state._prompt_history_list = llm_prompt_history.load_prompt_history_from_file(active_filepath)
-    debug_console.log(f"Loaded {len(llm_state._prompt_history_list)} history entries.", level='DEBUG')
+    logs_console.log(f"Loaded {len(llm_state._prompt_history_list)} history entries.", level='DEBUG')
 
 def _add_entry_to_history_and_save(user_prompt_text, response_placeholder="⏳ Generating..."):
     """
@@ -49,7 +49,7 @@ def _add_entry_to_history_and_save(user_prompt_text, response_placeholder="⏳ G
         response_placeholder (str, optional): A placeholder text for the response, used
                                               while the LLM is generating. Defaults to "⏳ Generating...".
     """
-    debug_console.log(f"Adding new entry to prompt history: '{user_prompt_text[:50]}...'", level='DEBUG')
+    logs_console.log(f"Adding new entry to prompt history: '{user_prompt_text[:50]}...'", level='DEBUG')
     
     # Remove any existing entry with the same user prompt to ensure uniqueness and freshness.
     new_history_list = []
@@ -64,7 +64,7 @@ def _add_entry_to_history_and_save(user_prompt_text, response_placeholder="⏳ G
     # Enforce maximum history size.
     if len(llm_state._prompt_history_list) > llm_prompt_history.MAX_PROMPT_HISTORY_SIZE:
         llm_state._prompt_history_list = llm_state._prompt_history_list[:llm_prompt_history.MAX_PROMPT_HISTORY_SIZE]
-        debug_console.log(f"Prompt history truncated to {llm_prompt_history.MAX_PROMPT_HISTORY_SIZE} entries.", level='DEBUG')
+        logs_console.log(f"Prompt history truncated to {llm_prompt_history.MAX_PROMPT_HISTORY_SIZE} entries.", level='DEBUG')
 
     # Save the updated history to the file associated with the current document.
     active_filepath = _get_active_tex_filepath()
@@ -81,7 +81,7 @@ def _update_history_response_and_save(user_prompt_key, new_response_text):
         user_prompt_key (str): The user's prompt text that serves as the key to find the entry.
         new_response_text (str): The complete LLM-generated response text.
     """
-    debug_console.log(f"Updating history response for prompt: '{user_prompt_key[:50]}...'", level='DEBUG')
+    logs_console.log(f"Updating history response for prompt: '{user_prompt_key[:50]}...'", level='DEBUG')
     
     # Update the response for the matching user prompt in the history list.
     llm_prompt_history.update_response_in_history(llm_state._prompt_history_list, user_prompt_key, new_response_text)

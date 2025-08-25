@@ -5,7 +5,7 @@ Handles navigation to specific text within PDF documents and highlights the foun
 
 import os
 import tkinter as tk
-from utils import debug_console
+from utils import logs_console
 import pdfplumber
 
 class PDFTextNavigator:
@@ -22,7 +22,7 @@ class PDFTextNavigator:
         """
         self.pdf_viewer = pdf_viewer
         self.highlight_rectangles = []  # Store highlight rectangles for cleanup
-        debug_console.log("PDF Text Navigator initialized", level='INFO')
+        logs_console.log("PDF Text Navigator initialized", level='INFO')
     
     def clear_highlights(self):
         """
@@ -59,15 +59,15 @@ class PDFTextNavigator:
                     page_width = page.width
                     page_height = page.height
                 else:
-                    debug_console.log(f"Page {page_num} not found in PDF.", level='WARNING')
+                    logs_console.log(f"Page {page_num} not found in PDF.", level='WARNING')
                     return
         except Exception as e:
-            debug_console.log(f"Error getting page dimensions: {e}", level='ERROR')
+            logs_console.log(f"Error getting page dimensions: {e}", level='ERROR')
             return
 
         # Ensure dimensions are not zero to avoid division by zero
         if not page_width or not page_height:
-            debug_console.log(f"Invalid page dimensions for page {page_num}.", level='WARNING')
+            logs_console.log(f"Invalid page dimensions for page {page_num}.", level='WARNING')
             return
 
         scale_x = layout['width'] / float(page_width)
@@ -113,7 +113,7 @@ class PDFTextNavigator:
                 # Bring the rectangle to the front
                 self.pdf_viewer.canvas.tag_raise(rect)
                 
-                debug_console.log(f"Highlighted text on page {page_num}", level='INFO')
+                logs_console.log(f"Highlighted text on page {page_num}", level='INFO')
     
     def go_to_text(self, text, context_before="", context_after=""):
         """
@@ -128,7 +128,7 @@ class PDFTextNavigator:
         self.clear_highlights()
         
         if not self.pdf_viewer.pdf_path or not os.path.exists(self.pdf_viewer.pdf_path):
-            debug_console.log("No PDF loaded for text search.", level='WARNING')
+            logs_console.log("No PDF loaded for text search.", level='WARNING')
             return
             
         # Try to use the sync manager from the viewer if available, otherwise create a new one
@@ -162,7 +162,7 @@ class PDFTextNavigator:
                     position['text_length']
                 )
                 
-                debug_console.log(f"Found and highlighted text on page {page_num}", level='INFO')
+                logs_console.log(f"Found and highlighted text on page {page_num}", level='INFO')
                 return
         
         # Fallback to simple search if sync manager fails
@@ -192,11 +192,11 @@ class PDFTextNavigator:
                                     len(text)
                                 )
                             
-                            debug_console.log(f"Found text on page {page_num + 1}", level='INFO')
+                            logs_console.log(f"Found text on page {page_num + 1}", level='INFO')
                             return
                         
-            debug_console.log(f"Text '{text}' not found in PDF", level='INFO')
+            logs_console.log(f"Text '{text}' not found in PDF", level='INFO')
         except ImportError:
-            debug_console.log("pdfplumber not installed. Cannot search text in PDF.", level='ERROR')
+            logs_console.log("pdfplumber not installed. Cannot search text in PDF.", level='ERROR')
         except Exception as e:
-            debug_console.log(f"Error searching text in PDF: {e}", level='ERROR')
+            logs_console.log(f"Error searching text in PDF: {e}", level='ERROR')

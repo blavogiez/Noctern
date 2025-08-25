@@ -7,7 +7,7 @@ from tkinter import ttk, messagebox
 from typing import Optional, Callable, Dict
 from .base_panel import BasePanel
 from .panel_factory import PanelStyle, StandardComponents
-from utils import debug_console
+from utils import logs_console
 
 
 class TranslatePanel(BasePanel):
@@ -192,7 +192,7 @@ class TranslatePanel(BasePanel):
         model_name = self.supported_translations[selection]
         skip_preamble = self.skip_preamble_var.get()
         
-        debug_console.log(f"Starting translation: {selection}, model: {model_name}", level='ACTION')
+        logs_console.log(f"Starting translation: {selection}, model: {model_name}", level='ACTION')
         
         # Disable translate button during translation
         self.translate_button.config(state="disabled", text="Translating...")

@@ -11,7 +11,7 @@ import os
 from tkinter import messagebox
 from .base_panel import BasePanel
 from .panel_factory import PanelStyle, StandardComponents
-from utils import debug_console
+from utils import logs_console
 
 
 class GlobalPromptsPanel(BasePanel):
@@ -116,7 +116,7 @@ class GlobalPromptsPanel(BasePanel):
         """Load prompts from the .txt files in the prompts directory."""
         loaded_prompts = {}
         if not os.path.isdir(self.PROMPTS_DIR):
-            debug_console.log(f"Prompts directory not found: {self.PROMPTS_DIR}", level='ERROR')
+            logs_console.log(f"Prompts directory not found: {self.PROMPTS_DIR}", level='ERROR')
             return {}
         
         for filename in sorted(os.listdir(self.PROMPTS_DIR)):
@@ -127,9 +127,9 @@ class GlobalPromptsPanel(BasePanel):
                     with open(file_path, 'r', encoding='utf-8') as f:
                         loaded_prompts[prompt_name] = f.read()
                 except Exception as e:
-                    debug_console.log(f"Could not read prompt file {filename}: {e}", level='ERROR')
+                    logs_console.log(f"Could not read prompt file {filename}: {e}", level='ERROR')
         
-        debug_console.log(f"Loaded {len(loaded_prompts)} global prompts", level='INFO')
+        logs_console.log(f"Loaded {len(loaded_prompts)} global prompts", level='INFO')
         return loaded_prompts
         
     def _save_prompts(self):
@@ -145,7 +145,7 @@ class GlobalPromptsPanel(BasePanel):
                 saved_count += 1
             except Exception as e:
                 error_msg = f"Failed to save prompt: {key}\n{e}"
-                debug_console.log(error_msg, level='ERROR')
+                logs_console.log(error_msg, level='ERROR')
                 messagebox.showerror("Error", error_msg, parent=self.content_frame)
                 return  # Stop saving if one file fails
         
@@ -156,9 +156,9 @@ class GlobalPromptsPanel(BasePanel):
             llm_init._load_global_default_prompts()
             success_msg = f"Global prompts have been saved and applied. ({saved_count} prompts saved)"
             messagebox.showinfo("Success", success_msg, parent=self.content_frame)
-            debug_console.log("Global prompts saved and reloaded.", level='SUCCESS')
+            logs_console.log("Global prompts saved and reloaded.", level='SUCCESS')
             self._close_panel()
         except Exception as e:
             error_msg = f"Failed to reload prompts: {e}"
-            debug_console.log(error_msg, level='ERROR')
+            logs_console.log(error_msg, level='ERROR')
             messagebox.showerror("Error", error_msg, parent=self.content_frame)

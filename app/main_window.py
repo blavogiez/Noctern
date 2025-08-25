@@ -10,7 +10,7 @@ from app.panes import create_main_paned_window, create_left_pane, create_outline
 from app.panels import PanelManager
 from app.status import create_status_bar, start_gpu_status_loop
 from app.shortcuts import bind_global_shortcuts
-from utils import debug_console, screen as screen_utils
+from utils import logs_console, screen as screen_utils
 from editor import syntax as editor_syntax
 from editor.monaco_optimizer import initialize_monaco_optimization, apply_monaco_highlighting, suppress_monaco_updates
 from pdf_preview.interface import PDFPreviewInterface
@@ -30,7 +30,7 @@ def _apply_startup_window_settings(window, config):
             if 0 <= monitor_index < len(monitors):
                 selected_monitor = monitors[monitor_index]
         except (ValueError, IndexError):
-            debug_console.log(f"Could not parse monitor name '{monitor_name}'. Falling back to primary.", level='WARNING')
+            logs_console.log(f"Could not parse monitor name '{monitor_name}'. Falling back to primary.", level='WARNING')
 
     window_state = config.get("window_state", "Normal")
     x, y = selected_monitor.x, selected_monitor.y
@@ -67,7 +67,7 @@ def setup_gui():
 
     state.root.title("AutomaTeX v1.0")
     _apply_startup_window_settings(state.root, state._app_config) # RESTORED THIS CALL
-    debug_console.log("GUI initialization process started.", level='INFO')
+    logs_console.log("GUI initialization process started.", level='INFO')
 
     
     # Force flatly theme as default instead of litera
@@ -77,9 +77,9 @@ def setup_gui():
     state.current_theme = saved_theme
     state._theme_settings = interface_theme.get_theme_colors(state.root.style, state.current_theme)
 
-    debug_console.initialize(state.root)
+    logs_console.initialize(state.root)
     # Configure minimum log level to reduce console output
-    debug_console.set_min_level('INFO')
+    logs_console.set_min_level('INFO')
     create_top_buttons_frame(state.root)
     
     # Check if PDF preview should be enabled before initialization
@@ -116,7 +116,7 @@ def setup_gui():
             editor.mark_set("insert", f"{line_number}.0")
             editor.focus()
         except ttk.TclError as e:
-            debug_console.log(f"Error navigating to line: {e}", level='ERROR')
+            logs_console.log(f"Error navigating to line: {e}", level='ERROR')
 
     # Initialize optimized debug system with line navigation
     debug_coordinator, debug_panel = create_debug_panel(left_pane, on_goto_line=go_to_line)
@@ -225,7 +225,7 @@ def setup_gui():
             tab.editor.bind("<<Modified>>", on_text_modified)
             # Bind KeyRelease for comprehensive change detection
             tab.editor.bind("<KeyRelease>", on_text_modified, add='+')
-            debug_console.log(f"Bound <<Modified>> and <KeyRelease> events to tab: {tab.file_path if tab.file_path else 'Untitled'}", level='TRACE')
+            logs_console.log(f"Bound <<Modified>> and <KeyRelease> events to tab: {tab.file_path if tab.file_path else 'Untitled'}", level='TRACE')
 
     def on_tab_changed(event):
         actions.on_tab_changed(event)
@@ -287,5 +287,5 @@ def setup_gui():
     if show_status_bar and state.gpu_status_label:
         start_gpu_status_loop(state.gpu_status_label, state.root)
     
-    debug_console.log("GUI setup completed successfully.", level='SUCCESS')
+    logs_console.log("GUI setup completed successfully.", level='SUCCESS')
     return state.root

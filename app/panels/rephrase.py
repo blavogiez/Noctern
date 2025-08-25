@@ -7,7 +7,7 @@ from tkinter import ttk, messagebox
 from typing import Optional, Callable
 from .base_panel import BasePanel
 from .panel_factory import PanelStyle, StandardComponents
-from utils import debug_console
+from utils import logs_console
 
 
 class RephrasePanel(BasePanel):
@@ -153,7 +153,7 @@ class RephrasePanel(BasePanel):
             )
             return
         
-        debug_console.log(f"Rephrase instruction: '{instruction}'", level='ACTION')
+        logs_console.log(f"Rephrase instruction: '{instruction}'", level='ACTION')
         
         # Call the callback
         if self.on_rephrase_callback:
@@ -164,7 +164,7 @@ class RephrasePanel(BasePanel):
     
     def _handle_cancel(self):
         """Handle cancel action."""
-        debug_console.log("Rephrase cancelled by user from panel.", level='INFO')
+        logs_console.log("Rephrase cancelled by user from panel.", level='INFO')
         
         if self.on_cancel_callback:
             self.on_cancel_callback()

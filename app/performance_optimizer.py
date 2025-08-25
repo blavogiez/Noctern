@@ -10,7 +10,7 @@ import threading
 import tkinter as tk
 from collections import defaultdict, namedtuple
 from tkinter import TclError
-from utils import debug_console
+from utils import logs_console
 
 # Performance thresholds and configuration
 class PerfConfig:
@@ -204,13 +204,13 @@ class PerformanceOptimizer:
                         if avg_time > 0.5:  # Very slow operations
                             self.adaptive_thresholds[category]['delay_multiplier'] *= 1.2
                             self.adaptive_thresholds[category]['skip_threshold'] *= 1.1
-                            debug_console.log(f"Increased thresholds for {category} files due to slow performance", level='DEBUG')
+                            logs_console.log(f"Increased thresholds for {category} files due to slow performance", level='DEBUG')
                         elif avg_time < 0.05:  # Very fast operations
                             self.adaptive_thresholds[category]['delay_multiplier'] = max(0.5, 
                                 self.adaptive_thresholds[category]['delay_multiplier'] * 0.9)
-                            debug_console.log(f"Decreased thresholds for {category} files due to fast performance", level='DEBUG')
+                            logs_console.log(f"Decreased thresholds for {category} files due to fast performance", level='DEBUG')
         except Exception as e:
-            debug_console.log(f"Error in performance adaptation: {e}", level='WARNING')
+            logs_console.log(f"Error in performance adaptation: {e}", level='WARNING')
         
     def get_file_size_category(self, line_count):
         """Categorize file size for adaptive performance."""
@@ -331,7 +331,7 @@ class PerformanceOptimizer:
             'context': context
         }
         
-        debug_console.log(f"Scheduled updates {merged_types} with delay {delay}ms for {context.line_count} lines", level='DEBUG')
+        logs_console.log(f"Scheduled updates {merged_types} with delay {delay}ms for {context.line_count} lines", level='DEBUG')
     
     def _execute_intelligent_update(self, editor, update_types, context):
         """Execute the actual updates with performance monitoring."""
@@ -379,10 +379,10 @@ class PerformanceOptimizer:
             if len(self.performance_metrics[category]) > 100:
                 self.performance_metrics[category] = self.performance_metrics[category][-100:]
                 
-            debug_console.log(f"Completed intelligent update in {duration*1000:.2f}ms", level='DEBUG')
+            logs_console.log(f"Completed intelligent update in {duration*1000:.2f}ms", level='DEBUG')
             
         except Exception as e:
-            debug_console.log(f"Error in intelligent update: {e}", level='ERROR')
+            logs_console.log(f"Error in intelligent update: {e}", level='ERROR')
     
     def _update_syntax_intelligent(self, editor, context, category):
         """Intelligently update syntax highlighting."""
@@ -408,14 +408,14 @@ class PerformanceOptimizer:
             from app import state
             
             if not hasattr(state, 'outline') or not state.outline:
-                debug_console.log("Outline not available, skipping update", level='DEBUG')
+                logs_console.log("Outline not available, skipping update", level='DEBUG')
                 return
                 
             # Check cache first
             cached_outline = self.content_cache.get_cached_outline(context.content_hash)
             if cached_outline is not None:
                 # Apply cached outline (implementation depends on outline structure)
-                debug_console.log("Using cached outline", level='DEBUG')
+                logs_console.log("Using cached outline", level='DEBUG')
                 return
                 
             # For huge files, skip outline updates during rapid editing
@@ -427,7 +427,7 @@ class PerformanceOptimizer:
             # Note: Actual caching would require outline data structure access
             
         except (ImportError, AttributeError) as e:
-            debug_console.log(f"Could not update outline: {e}", level='DEBUG')
+            logs_console.log(f"Could not update outline: {e}", level='DEBUG')
         
         self.last_update_times[editor][UpdateType.OUTLINE] = time.time()
     
@@ -439,7 +439,7 @@ class PerformanceOptimizer:
         cached_count = self.content_cache.get_cached_wordcount(context.content_hash)
         if cached_count is not None:
             # Use cached word count (would need status_utils modification)
-            debug_console.log(f"Using cached word count: {cached_count}", level='DEBUG')
+            logs_console.log(f"Using cached word count: {cached_count}", level='DEBUG')
         
         # Update normally (caching would be implemented in status_utils)
         status_utils.update_status_bar_text()

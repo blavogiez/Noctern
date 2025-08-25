@@ -8,13 +8,13 @@ from llm import utils as llm_utils
 from llm import keyword_history
 from llm.interactive import start_new_interactive_session
 from llm.streaming_service import start_streaming_request
-from utils import debug_console
+from utils import logs_console
 
 def request_llm_to_complete_text():
     """
     Initiate streaming text completion request to LLM.
     """
-    debug_console.log("LLM Text Completion request initiated.", level='ACTION')
+    logs_console.log("LLM Text Completion request initiated.", level='ACTION')
     
     # Validate state and get editor
     if not callable(llm_state._active_editor_getter_func):
@@ -49,7 +49,7 @@ def request_llm_to_complete_text():
         current_phrase_start=current_phrase_start,
         keywords=keywords_str
     )
-    debug_console.log(f"LLM Completion Request - Formatted Prompt (first 200 chars): '{full_llm_prompt[:200]}...'", level='INFO')
+    logs_console.log(f"LLM Completion Request - Formatted Prompt (first 200 chars): '{full_llm_prompt[:200]}...'", level='INFO')
 
     # 3. Start interactive session to get callbacks
     session_callbacks = start_new_interactive_session(editor, is_completion=True, completion_phrase=current_phrase_start)

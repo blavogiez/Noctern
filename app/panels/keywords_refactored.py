@@ -12,7 +12,7 @@ from typing import Optional
 from .base_panel import BasePanel
 from .panel_factory import PanelStyle, StandardComponents
 from llm import keyword_history
-from utils import debug_console
+from utils import logs_console
 
 
 class KeywordsPanel(BasePanel):
@@ -113,10 +113,10 @@ class KeywordsPanel(BasePanel):
                 self.main_widget.delete("1.0", "end")
                 self.main_widget.insert("1.0", "\n".join(keywords))
             
-            debug_console.log(f"Loaded {len(keywords)} keywords for file: {self.file_path}", level='INFO')
+            logs_console.log(f"Loaded {len(keywords)} keywords for file: {self.file_path}", level='INFO')
             
         except Exception as e:
-            debug_console.log(f"Error loading keywords: {e}", level='ERROR')
+            logs_console.log(f"Error loading keywords: {e}", level='ERROR')
     
     def _save_keywords(self):
         """Save the current keywords."""
@@ -135,11 +135,11 @@ class KeywordsPanel(BasePanel):
             self.original_keywords = keywords.copy()
             self.current_keywords = keywords.copy()
             
-            debug_console.log(f"Saved {len(keywords)} keywords for file: {self.file_path}", level='SUCCESS')
+            logs_console.log(f"Saved {len(keywords)} keywords for file: {self.file_path}", level='SUCCESS')
             return True
             
         except Exception as e:
-            debug_console.log(f"Error saving keywords: {e}", level='ERROR')
+            logs_console.log(f"Error saving keywords: {e}", level='ERROR')
             from tkinter import messagebox
             messagebox.showerror("Save Error", f"Failed to save keywords: {str(e)}")
             return False

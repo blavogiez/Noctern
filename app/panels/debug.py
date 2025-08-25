@@ -7,7 +7,7 @@ import tkinter as tk
 from typing import Optional, Callable
 from .base_panel import BasePanel
 from .panel_factory import PanelStyle, StandardComponents
-from utils import debug_console
+from utils import logs_console
 
 
 class DebugPanel(BasePanel):
@@ -57,10 +57,10 @@ class DebugPanel(BasePanel):
             # Parse the compilation results and initialize the debug system
             self._initialize_debug_context()
             
-            debug_console.log("Original debug system integrated successfully", level='SUCCESS')
+            logs_console.log("Original debug system integrated successfully", level='SUCCESS')
             
         except Exception as e:
-            debug_console.log(f"Failed to initialize original debug system: {e}", level='ERROR')
+            logs_console.log(f"Failed to initialize original debug system: {e}", level='ERROR')
             self._create_fallback_ui()
     
     def _initialize_debug_context(self):
@@ -90,7 +90,7 @@ class DebugPanel(BasePanel):
                 )
                 
         except Exception as e:
-            debug_console.log(f"Error initializing debug context: {e}", level='ERROR')
+            logs_console.log(f"Error initializing debug context: {e}", level='ERROR')
     
     def _create_fallback_ui(self):
         """Create a simple fallback UI if the original system fails."""

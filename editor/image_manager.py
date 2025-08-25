@@ -1,7 +1,7 @@
 import os
 import re
 from tkinter import messagebox
-from utils import debug_console
+from utils import logs_console
 import threading
 import time
 import hashlib
@@ -42,7 +42,7 @@ def _parse_for_images(content):
             if cleaned_path:  # Only add non-empty paths
                 found_paths.add(cleaned_path)
     
-    debug_console.log(f"Images found in content: {found_paths}", level='DEBUG')
+    logs_console.log(f"Images found in content: {found_paths}", level='DEBUG')
     return found_paths
 
 def _get_content_hash(content):
@@ -78,11 +78,11 @@ def _find_orphaned_images(tex_file_path, current_images):
         # Return files that exist but are no longer referenced
         orphaned = existing_files - current_images
         if orphaned:
-            debug_console.log(f"Found {len(orphaned)} orphaned images: {orphaned}", level='INFO')
+            logs_console.log(f"Found {len(orphaned)} orphaned images: {orphaned}", level='INFO')
         return orphaned
         
     except Exception as e:
-        debug_console.log(f"Error finding orphaned images: {e}", level='ERROR')
+        logs_console.log(f"Error finding orphaned images: {e}", level='ERROR')
         return set()
 
 def _resolve_image_path(tex_file_path, image_path_in_tex):
@@ -101,7 +101,7 @@ def _resolve_image_path(tex_file_path, image_path_in_tex):
     normalized_path = os.path.normpath(clean_image_path.replace("/", os.sep).replace("\\", os.sep))
     absolute_path = os.path.join(base_directory, normalized_path)
     
-    debug_console.log(f"Path resolved: '{image_path_in_tex}' -> '{absolute_path}'", level='DEBUG')
+    logs_console.log(f"Path resolved: '{image_path_in_tex}' -> '{absolute_path}'", level='DEBUG')
     
     return absolute_path
 
@@ -115,18 +115,18 @@ def _cleanup_empty_dirs(path, base_figures_dir):
         try:
             if not os.listdir(current_path):
                 os.rmdir(current_path)
-                debug_console.log(f"Removed empty directory: {current_path}", level='TRACE')
+                logs_console.log(f"Removed empty directory: {current_path}", level='TRACE')
                 current_path = os.path.dirname(current_path)
             else:
                 break  # Stop if directory not empty
         except OSError as e:
-            debug_console.log(f"Failed to remove directory '{current_path}': {e}", level='ERROR')
+            logs_console.log(f"Failed to remove directory '{current_path}': {e}", level='ERROR')
             break  # Stop on error
 
 def _prompt_for_image_deletion(image_path_to_delete, tex_file_path):
     """Display confirmation dialog for image deletion with preview and cleanup."""
     if not os.path.exists(image_path_to_delete):
-        debug_console.log(f"Image file '{image_path_to_delete}' does not exist, skipping deletion prompt.", level='INFO')
+        logs_console.log(f"Image file '{image_path_to_delete}' does not exist, skipping deletion prompt.", level='INFO')
         return
     
     base_directory = os.path.dirname(tex_file_path) if tex_file_path else os.getcwd()
@@ -136,7 +136,7 @@ def _prompt_for_image_deletion(image_path_to_delete, tex_file_path):
         # Handle different drives on Windows
         display_path = image_path_to_delete
         
-    debug_console.log(f"Prompting user for deletion of image file: {display_path}", level='ACTION')
+    logs_console.log(f"Prompting user for deletion of image file: {display_path}", level='ACTION')
     
     # Get image file information
     file_size = "Unknown size"
@@ -244,26 +244,26 @@ def _prompt_for_image_deletion(image_path_to_delete, tex_file_path):
     response = result[0]
     
     if response:
-        debug_console.log(f"User confirmed deletion of file: {image_path_to_delete}", level='ACTION')
+        logs_console.log(f"User confirmed deletion of file: {image_path_to_delete}", level='ACTION')
         try:
             image_dir = os.path.dirname(image_path_to_delete)
             os.remove(image_path_to_delete)
-            debug_console.log(f"Image file successfully deleted: {image_path_to_delete}", level='SUCCESS')
+            logs_console.log(f"Image file successfully deleted: {image_path_to_delete}", level='SUCCESS')
             
             # Define base figures directory for cleanup boundary
             base_figures_dir = os.path.join(base_directory, 'figures')
             _cleanup_empty_dirs(image_dir, base_figures_dir)
         except OSError as e:
             messagebox.showerror("Deletion Error", f"Could not delete the file:\n{e}")
-            debug_console.log(f"Error deleting file '{image_path_to_delete}': {e}", level='ERROR')
+            logs_console.log(f"Error deleting file '{image_path_to_delete}': {e}", level='ERROR')
     else:
-        debug_console.log(f"User chose not to delete file: {image_path_to_delete}", level='INFO')
+        logs_console.log(f"User chose not to delete file: {image_path_to_delete}", level='INFO')
 
 def _monitor_changes():
     """Background thread monitoring image reference changes with enhanced error handling."""
     global _monitoring_active, _tracked_tabs, _pending_deletions
     
-    debug_console.log("Image monitoring thread started", level='TRACE')
+    logs_console.log("Image monitoring thread started", level='TRACE')
     
     while _monitoring_active:
         try:
@@ -288,22 +288,22 @@ def _monitor_changes():
                         tab_data['last_check_time'] = current_time
                         
                 except Exception as e:
-                    debug_console.log(f"Error monitoring tab {tab_id}: {e}", level='ERROR')
+                    logs_console.log(f"Error monitoring tab {tab_id}: {e}", level='ERROR')
                     tabs_to_remove.append(tab_id)
             
             # Clean up dead tabs
             for tab_id in tabs_to_remove:
                 if tab_id in _tracked_tabs:
-                    debug_console.log(f"Removing dead tab {tab_id} from monitoring", level='TRACE')
+                    logs_console.log(f"Removing dead tab {tab_id} from monitoring", level='TRACE')
                     del _tracked_tabs[tab_id]
             
             time.sleep(0.1)  # Short pause for responsiveness
             
         except Exception as e:
-            debug_console.log(f"Critical error in monitoring thread: {e}", level='ERROR')
+            logs_console.log(f"Critical error in monitoring thread: {e}", level='ERROR')
             time.sleep(0.5)
     
-    debug_console.log("Image monitoring thread stopped", level='TRACE')
+    logs_console.log("Image monitoring thread stopped", level='TRACE')
 
 def _check_tab_for_deletions(tab_id, tab_ref, tab_data):
     """
@@ -332,7 +332,7 @@ def _check_tab_for_deletions(tab_id, tab_ref, tab_data):
         added_images = current_images - previous_images
         
         if deleted_images:
-            debug_console.log(f"Deleted images detected in tab {tab_id}: {deleted_images}", level='INFO')
+            logs_console.log(f"Deleted images detected in tab {tab_id}: {deleted_images}", level='INFO')
             
             # Process each deleted image
             for image_path in deleted_images:
@@ -347,18 +347,18 @@ def _check_tab_for_deletions(tab_id, tab_ref, tab_data):
                             root = tab_ref.winfo_toplevel()
                             root.after(0, lambda img=image_path, tab=tab_ref, key=image_key: _handle_image_deletion(img, tab, key))
                     except Exception as e:
-                        debug_console.log(f"Could not schedule image deletion prompt: {e}", level='ERROR')
+                        logs_console.log(f"Could not schedule image deletion prompt: {e}", level='ERROR')
                         _handle_image_deletion(image_path, tab_ref, image_key)
         
         if added_images:
-            debug_console.log(f"New images detected in tab {tab_id}: {added_images}", level='TRACE')
+            logs_console.log(f"New images detected in tab {tab_id}: {added_images}", level='TRACE')
         
         # Update tracking data
         tab_data['images'] = current_images
         tab_data['last_content_hash'] = current_hash
             
     except Exception as e:
-        debug_console.log(f"Error checking tab {tab_id} for deletions: {e}", level='ERROR')
+        logs_console.log(f"Error checking tab {tab_id} for deletions: {e}", level='ERROR')
 
 def _handle_image_deletion(image_path, tab_ref, pending_key):
     """Handle image deletion in main thread."""
@@ -373,14 +373,14 @@ def _handle_image_deletion(image_path, tab_ref, pending_key):
         _prompt_for_image_deletion(absolute_path, tab_ref.file_path)
         
     except Exception as e:
-        debug_console.log(f"Error handling image deletion for '{image_path}': {e}", level='ERROR')
+        logs_console.log(f"Error handling image deletion for '{image_path}': {e}", level='ERROR')
 
 def start_image_monitoring(current_tab):
     """Start monitoring editor tab for image reference changes."""
     global _tracked_tabs, _monitor_thread, _monitoring_active
     
     if not current_tab:
-        debug_console.log("Cannot start monitoring: no tab provided", level='WARNING')
+        logs_console.log("Cannot start monitoring: no tab provided", level='WARNING')
         return
         
     try:
@@ -399,7 +399,7 @@ def start_image_monitoring(current_tab):
             'tab_ref': current_tab
         }
         
-        debug_console.log(f"Started monitoring tab {tab_id} with {len(current_images)} images", level='INFO')
+        logs_console.log(f"Started monitoring tab {tab_id} with {len(current_images)} images", level='INFO')
         
         # Start monitoring thread if not active
         if not _monitor_thread or not _monitor_thread.is_alive():
@@ -408,7 +408,7 @@ def start_image_monitoring(current_tab):
             _monitor_thread.start()
             
     except Exception as e:
-        debug_console.log(f"Error starting image monitoring: {e}", level='ERROR')
+        logs_console.log(f"Error starting image monitoring: {e}", level='ERROR')
 
 def stop_image_monitoring(current_tab):
     """Stop monitoring editor tab."""
@@ -418,7 +418,7 @@ def stop_image_monitoring(current_tab):
         tab_id = id(current_tab)
         if tab_id in _tracked_tabs:
             del _tracked_tabs[tab_id]
-            debug_console.log(f"Stopped monitoring tab {tab_id}", level='INFO')
+            logs_console.log(f"Stopped monitoring tab {tab_id}", level='INFO')
 
 def force_check_current_tab(current_tab):
     """Force immediate check of current tab for image deletions."""
@@ -439,13 +439,13 @@ def force_check_current_tab(current_tab):
             _check_tab_for_deletions(tab_id, current_tab, tab_data)
             
     except Exception as e:
-        debug_console.log(f"Error in force check: {e}", level='ERROR')
+        logs_console.log(f"Error in force check: {e}", level='ERROR')
 
 def shutdown_image_monitoring():
     """Properly shut down image monitoring system."""
     global _monitoring_active, _monitor_thread, _tracked_tabs, _pending_deletions
     
-    debug_console.log("Shutting down image monitoring system", level='TRACE')
+    logs_console.log("Shutting down image monitoring system", level='TRACE')
     
     _monitoring_active = False
     if _monitor_thread and _monitor_thread.is_alive():
@@ -453,14 +453,14 @@ def shutdown_image_monitoring():
     
     _tracked_tabs.clear()
     _pending_deletions.clear()
-    debug_console.log("Image monitoring system shut down", level='TRACE')
+    logs_console.log("Image monitoring system shut down", level='TRACE')
 
 def check_for_deleted_images(current_tab):
     """Legacy function ensuring monitoring is active and checking orphaned images once."""
-    debug_console.log("Check for deleted images called - ensuring monitoring is active", level='INFO')
+    logs_console.log("Check for deleted images called - ensuring monitoring is active", level='INFO')
     
     if not current_tab:
-        debug_console.log("Skipping image deletion check: No active tab", level='DEBUG')
+        logs_console.log("Skipping image deletion check: No active tab", level='DEBUG')
         return
     
     try:
@@ -469,7 +469,7 @@ def check_for_deleted_images(current_tab):
         if tab_id not in _tracked_tabs:
             start_image_monitoring(current_tab)
         else:
-            debug_console.log("Tab already being monitored - real-time detection active", level='DEBUG')
+            logs_console.log("Tab already being monitored - real-time detection active", level='DEBUG')
         
         # Check orphaned images once per file
         if hasattr(current_tab, 'file_path') and current_tab.file_path:
@@ -488,4 +488,4 @@ def check_for_deleted_images(current_tab):
                             _prompt_for_image_deletion(absolute_path, current_tab.file_path)
             
     except Exception as e:
-        debug_console.log(f"Error in check_for_deleted_images: {e}", level='ERROR')
+        logs_console.log(f"Error in check_for_deleted_images: {e}", level='ERROR')

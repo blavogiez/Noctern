@@ -4,7 +4,7 @@ from typing import List, Tuple, Optional
 from tkinter import messagebox
 
 from llm import state
-from utils import debug_console
+from utils import logs_console
 
 
 def apply_all_corrections(errors, original_text: str, parent_window=None) -> Tuple[bool, Optional[str]]:
@@ -16,7 +16,7 @@ def apply_all_corrections(errors, original_text: str, parent_window=None) -> Tup
             messagebox.showwarning("No Corrections", "No corrections have been approved.", parent=parent_window)
         return False, None
     
-    debug_console.log(f"Applying {len(approved_errors)} approved corrections", level='INFO')
+    logs_console.log(f"Applying {len(approved_errors)} approved corrections", level='INFO')
     
     try:
         # Apply corrections to text
@@ -32,7 +32,7 @@ def apply_all_corrections(errors, original_text: str, parent_window=None) -> Tup
         for error in approved_errors:
             error.is_applied = True
         
-        debug_console.log(f"Successfully applied corrections to {corrected_filepath}", level='INFO')
+        logs_console.log(f"Successfully applied corrections to {corrected_filepath}", level='INFO')
         
         if parent_window:
             messagebox.showinfo(
@@ -44,7 +44,7 @@ def apply_all_corrections(errors, original_text: str, parent_window=None) -> Tup
         return True, corrected_filepath
         
     except Exception as e:
-        debug_console.log(f"Failed to apply corrections: {e}", level='ERROR')
+        logs_console.log(f"Failed to apply corrections: {e}", level='ERROR')
         error_msg = f"Failed to apply corrections: {str(e)}"
         if parent_window:
             messagebox.showerror("Error", error_msg, parent=parent_window)
@@ -53,7 +53,7 @@ def apply_all_corrections(errors, original_text: str, parent_window=None) -> Tup
 
 def apply_corrections_to_text(original_text: str, errors: List) -> str:
     """Apply corrections to text content."""
-    debug_console.log(f"Processing {len(errors)} corrections", level='INFO')
+    logs_console.log(f"Processing {len(errors)} corrections", level='INFO')
     
     # Find all correction positions
     corrections = []
@@ -76,14 +76,14 @@ def apply_corrections_to_text(original_text: str, errors: List) -> str:
                 })
                 used_positions.add(position_key)
     
-    debug_console.log(f"Found {len(corrections)} unique correction positions", level='INFO')
+    logs_console.log(f"Found {len(corrections)} unique correction positions", level='INFO')
     
     # Sort corrections by position (reverse order for safe replacement)
     corrections.sort(key=lambda x: x['start'], reverse=True)
     
     # Remove overlapping corrections (keep longer ones)
     filtered_corrections = remove_overlapping_corrections(corrections)
-    debug_console.log(f"After overlap filtering: {len(filtered_corrections)} corrections", level='INFO')
+    logs_console.log(f"After overlap filtering: {len(filtered_corrections)} corrections", level='INFO')
     
     # Apply corrections to text
     corrected_text = original_text
@@ -161,7 +161,7 @@ def save_corrected_file(corrected_text: str, filepath: str):
     """Save corrected text to file."""
     with open(filepath, 'w', encoding='utf-8') as f:
         f.write(corrected_text)
-    debug_console.log(f"Saved corrected text to {filepath}", level='INFO')
+    logs_console.log(f"Saved corrected text to {filepath}", level='INFO')
 
 
 # Legacy compatibility - global applier instance

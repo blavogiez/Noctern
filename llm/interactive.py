@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import messagebox
 from llm import state as llm_state
 from llm import utils as llm_utils
-from utils import debug_console
+from utils import logs_console
 from app import state as main_window
 import uuid
 
@@ -16,7 +16,7 @@ class InteractiveSession:
     """Manages the UI and interaction for an LLM generation session."""
     def __init__(self, editor, start_index, **kwargs):
         self.session_id = uuid.uuid4()
-        debug_console.log(f"Creating new interactive LLM session: {self.session_id}", level='INFO')
+        logs_console.log(f"Creating new interactive LLM session: {self.session_id}", level='INFO')
         self.editor = editor
         self.is_discarded = False
         self.full_response_text = ""
@@ -111,7 +111,7 @@ class InteractiveSession:
 
     def accept(self):
         if self.is_discarded or llm_state._is_generating: return
-        debug_console.log(f"User ACCEPTED LLM suggestion for session {self.session_id}.", level='ACTION')
+        logs_console.log(f"User ACCEPTED LLM suggestion for session {self.session_id}.", level='ACTION')
 
         # --- FIX 1: Immediately stop progress bar ---
         progress_bar = llm_state._llm_progress_bar_widget
@@ -141,7 +141,7 @@ class InteractiveSession:
 
     def discard(self):
         if self.is_discarded: return
-        debug_console.log(f"User DISCARDED LLM suggestion for session {self.session_id}. Forcing state reset.", level='ACTION')
+        logs_console.log(f"User DISCARDED LLM suggestion for session {self.session_id}. Forcing state reset.", level='ACTION')
         self.is_discarded = True
         llm_state._is_generation_cancelled = True
         llm_state._is_generating = False

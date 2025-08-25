@@ -8,7 +8,7 @@ import tkinter as tk
 from tkinter import ttk
 from utils import screen
 from app import config as app_config
-from utils import debug_console
+from utils import logs_console
 from llm import api_client
 from llm import prompts as llm_prompts
 from app.panels import show_global_prompts_panel
@@ -110,7 +110,7 @@ def open_settings_window(root):
         """Helper function to set all model variables to a specific model."""
         for key in model_vars:
             model_vars[key].set(model_name)
-        debug_console.log(f"All models set to '{model_name}' in the UI.", level='INFO')
+        logs_console.log(f"All models set to '{model_name}' in the UI.", level='INFO')
 
     for i, (key, label) in enumerate(model_labels.items()):
         ttk.Label(llm_frame, text=label).grid(row=i, column=0, sticky="w", padx=5, pady=5)
@@ -126,7 +126,7 @@ def open_settings_window(root):
         if current_value in available_models:
             combo.set(current_value)
         else:
-            debug_console.log(f"Model '{current_value}' for {key} not in available models list", level='WARNING')
+            logs_console.log(f"Model '{current_value}' for {key} not in available models list", level='WARNING')
         
         # Button to set all models to the value of this combobox
         set_all_button = ttk.Button(
@@ -167,11 +167,11 @@ def open_settings_window(root):
         for key, var in model_vars.items():
             temp_config[key] = var.get()
         app_config.save_config(temp_config)
-        debug_console.log("API key and current model selections saved before refresh", level='INFO')
+        logs_console.log("API key and current model selections saved before refresh", level='INFO')
 
         # 2. Fetch the new, updated list of models
         new_models = api_client.get_available_models()
-        debug_console.log(f"Model list refreshed. Found: {new_models}", level='INFO')
+        logs_console.log(f"Model list refreshed. Found: {new_models}", level='INFO')
 
         # 3. Update all model comboboxes with the new list
         for key, combo in model_comboboxes.items():
@@ -182,7 +182,7 @@ def open_settings_window(root):
             else:
                 # Keep current selection even if not in new list
                 # User can manually change if needed
-                debug_console.log(f"Model '{current_selection}' not found in new list, keeping current selection", level='WARNING')
+                logs_console.log(f"Model '{current_selection}' not found in new list, keeping current selection", level='WARNING')
         
         from tkinter import messagebox
         messagebox.showinfo("Models Refreshed", f"Found {len(new_models)} available models.", parent=settings_win)
@@ -210,15 +210,15 @@ def open_settings_window(root):
         updated_config["show_pdf_preview"] = str(show_pdf_preview_var.get())
         for key, var in model_vars.items():
             updated_config[key] = var.get()
-            debug_console.log(f"Saving model {key}: {var.get()}", level='DEBUG')
+            logs_console.log(f"Saving model {key}: {var.get()}", level='DEBUG')
         
         app_config.save_config(updated_config)
-        debug_console.log("Settings saved successfully:", level='SUCCESS')
+        logs_console.log("Settings saved successfully:", level='SUCCESS')
         
         # Log what was actually saved for debugging
-        debug_console.log("Saved models:", level='INFO')
+        logs_console.log("Saved models:", level='INFO')
         for key, var in model_vars.items():
-            debug_console.log(f"  {key}: {var.get()}", level='INFO')
+            logs_console.log(f"  {key}: {var.get()}", level='INFO')
         
         # CRITICAL: Update llm_state with new model settings
         # This prevents restart from overwriting with old values
@@ -235,7 +235,7 @@ def open_settings_window(root):
             llm_state.model_style = updated_config['model_style']
         if 'model_proofreading' in updated_config:
             llm_state.model_proofreading = updated_config['model_proofreading']
-        debug_console.log("LLM state updated with new model settings", level='INFO')
+        logs_console.log("LLM state updated with new model settings", level='INFO')
         
         # Apply font change immediately if changed
         old_font = current_config.get("editor_font_family", "Consolas")
@@ -245,7 +245,7 @@ def open_settings_window(root):
             from app import state
             if hasattr(state, 'zoom_manager') and state.zoom_manager:
                 state.zoom_manager.update_font_family(new_font)
-                debug_console.log(f"Editor font changed from {old_font} to {new_font}", level='INFO')
+                logs_console.log(f"Editor font changed from {old_font} to {new_font}", level='INFO')
         
         settings_win.destroy()
         

@@ -2,7 +2,7 @@
 
 import configparser
 import os
-from utils import debug_console
+from utils import logs_console
 
 CONFIG_FILE = "settings.conf"
 DEFAULT_SECTION = "Settings"
@@ -34,7 +34,7 @@ def load_config():
     
     # Create configuration file with defaults when missing
     if not os.path.exists(CONFIG_FILE):
-        debug_console.log(f"Config file not found. Creating default '{CONFIG_FILE}'.", level='INFO')
+        logs_console.log(f"Config file not found. Creating default '{CONFIG_FILE}'.", level='INFO')
         config[DEFAULT_SECTION] = DEFAULT_VALUES
         save_config(config[DEFAULT_SECTION])
         return dict(DEFAULT_VALUES)
@@ -54,14 +54,14 @@ def load_config():
                 updated = True
         
         if updated:
-            debug_console.log("Added missing keys to config file.", level='INFO')
+            logs_console.log("Added missing keys to config file.", level='INFO')
             save_config(settings)
 
         # Convert settings to dictionary format
         return dict(settings)
 
     except configparser.Error as e:
-        debug_console.log(f"Error reading config file: {e}. Using default settings.", level='ERROR')
+        logs_console.log(f"Error reading config file: {e}. Using default settings.", level='ERROR')
         return dict(DEFAULT_VALUES)
 
 def save_config(settings_dict):
@@ -78,9 +78,9 @@ def save_config(settings_dict):
     try:
         with open(CONFIG_FILE, "w") as configfile:
             config.write(configfile)
-        debug_console.log(f"Configuration saved to {CONFIG_FILE}: {log_dict}", level='INFO')
+        logs_console.log(f"Configuration saved to {CONFIG_FILE}: {log_dict}", level='INFO')
     except IOError as e:
-        debug_console.log(f"Error saving config file: {e}", level='ERROR')
+        logs_console.log(f"Error saving config file: {e}", level='ERROR')
 
 def get_bool(value_str):
     """Convert configuration string to boolean value."""

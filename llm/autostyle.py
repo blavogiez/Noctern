@@ -9,7 +9,7 @@ from llm import state as llm_state
 from llm.interactive import start_new_interactive_session
 from app.panels import show_style_intensity_panel
 from llm.streaming_service import start_streaming_request
-from utils import debug_console
+from utils import logs_console
 
 def autostyle_selection():
     """
@@ -55,7 +55,7 @@ def autostyle_selection():
     
     def on_intensity_cancel():
         """Handle intensity cancellation from panel."""
-        debug_console.log("Smart Styling cancelled by user.", level='INFO')
+        logs_console.log("Smart Styling cancelled by user.", level='INFO')
     
     # Show panel and return early (styling continues in callback)
     show_style_intensity_panel(
@@ -82,7 +82,7 @@ def _perform_styling(editor, selected_text, selection_indices, intensity):
         return
         
     full_prompt = prompt_template.format(text=selected_text, intensity=f"{intensity}/10")
-    debug_console.log(f"LLM Styling Request - Intensity: {intensity}/10", level='INFO')
+    logs_console.log(f"LLM Styling Request - Intensity: {intensity}/10", level='INFO')
 
     # 5. Start interactive session and define callbacks
     session_callbacks = start_new_interactive_session(

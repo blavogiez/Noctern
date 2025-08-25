@@ -8,25 +8,25 @@ from editor import outline as editor_outline
 from latex import compiler as latex_compiler
 from latex import translator as latex_translator
 from llm import service as llm_service
-from utils import debug_console
+from utils import logs_console
 from snippets import manager as snippet_manager 
 
 def main():
     """Start application with GUI setup and subsystem initialization."""
-    debug_console.log("AutomaTeX application starting...", level='INFO')
+    logs_console.log("AutomaTeX application starting...", level='INFO')
     
     # Configure Windows DPI awareness for HiDPI displays
     if platform.system() == "Windows":
         try:
             ctypes.windll.shcore.SetProcessDpiAwareness(1)
-            debug_console.log("DPI awareness set for Windows operating system.", level='DEBUG')
+            logs_console.log("DPI awareness set for Windows operating system.", level='DEBUG')
         except Exception as e:
-            debug_console.log(f"Warning: Could not set DPI awareness for Windows - {e}", level='WARNING')
+            logs_console.log(f"Warning: Could not set DPI awareness for Windows - {e}", level='WARNING')
 
     # Initialize main GUI window and components
     root_window = main_window.setup_gui()
     if not root_window:
-        debug_console.log("GUI setup failed. Exiting application.", level='ERROR')
+        logs_console.log("GUI setup failed. Exiting application.", level='ERROR')
         return
 
     # Initialize application subsystems with getter functions for modularity
@@ -70,9 +70,9 @@ def main():
     from app.exit_handler import exit_application
     root_window.protocol("WM_DELETE_WINDOW", exit_application)
     
-    debug_console.log("Entering main Tkinter event loop.", level='INFO')
+    logs_console.log("Entering main Tkinter event loop.", level='INFO')
     root_window.mainloop()
-    debug_console.log("Application has exited main event loop. Shutting down.", level='INFO')
+    logs_console.log("Application has exited main event loop. Shutting down.", level='INFO')
 
 if __name__ == "__main__":
     main()

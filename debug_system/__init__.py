@@ -1,16 +1,27 @@
 """
-Clean debug system for LaTeX error analysis and correction.
-Provides a complete solution for debugging LaTeX compilation issues.
+Debug system for LaTeX compilation error analysis and quick fixes.
 """
 
-from .coordinator import create_debug_system, DebugCoordinator
-from .core import LaTeXError, QuickFix, AnalysisResult, DebugContext
+from .core import DebugContext, AnalysisResult, QuickFix, LaTeXError, DebugUI
+from .coordinator import DebugCoordinator, create_debug_system
+from .error_parser import LaTeXErrorParser
+from .llm_analyzer import LLMAnalyzer
+from .quick_fixes import LaTeXQuickFixProvider, EditorFixApplicator
+from .diff_service import CachedDiffGenerator
+from .debug_ui import TabbedDebugUI
 
 __all__ = [
-    'create_debug_system',
-    'DebugCoordinator', 
+    'DebugContext',
+    'AnalysisResult', 
+    'QuickFix',
     'LaTeXError',
-    'QuickFix', 
-    'AnalysisResult',
-    'DebugContext'
+    'DebugUI',
+    'DebugCoordinator',
+    'create_debug_system',
+    'LaTeXErrorParser',
+    'LLMAnalyzer',
+    'LaTeXQuickFixProvider',
+    'EditorFixApplicator',
+    'CachedDiffGenerator',
+    'TabbedDebugUI'
 ]

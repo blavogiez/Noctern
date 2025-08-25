@@ -61,12 +61,12 @@ def create_debug_panel(parent, on_goto_line=None):
         tuple: (debug_coordinator, debug_panel_widget)
     """
     try:
-        from utils import debug_console
-        debug_console.log("Creating debug panel", level='INFO')
+        from utils import logs_console
+        logs_console.log("Creating debug panel", level='INFO')
         
         from debug_system.coordinator import create_debug_system
         
-        # Create debug system with proper error handling
+        # Create complete debug system with all features
         coordinator, debug_panel = create_debug_system(
             parent_window=parent,
             on_goto_line=on_goto_line
@@ -75,26 +75,41 @@ def create_debug_panel(parent, on_goto_line=None):
         # Add panel to parent container
         parent.add(debug_panel, weight=1)
         
-        debug_console.log("Debug panel created successfully", level='SUCCESS')
+        logs_console.log("Debug panel created successfully", level='SUCCESS')
         return coordinator, debug_panel
         
     except Exception as e:
         # Fallback to TeXstudio system if main system fails
-        from utils import debug_console
-        debug_console.log(f"Failed to create debug panel, falling back: {e}", level='WARNING')
+        from utils import logs_console
+        logs_console.log(f"Failed to create debug panel, falling back: {e}", level='WARNING')
         
         try:
-            from debug_system.texstudio_debug_coordinator import TeXstudioDebugCoordinatorFactory
+            from pre_compiler.error_panel import ErrorPanel
             
-            coordinator, debug_panel = TeXstudioDebugCoordinatorFactory.create_default_coordinator(
-                parent_window=parent,
-                on_goto_line=on_goto_line
-            )
-            parent.add(debug_panel, weight=1)
-            return coordinator, debug_panel
+            # Fallback to the simple pre-compiler error panel
+            error_panel = ErrorPanel(parent, on_goto_line)
+            parent.add(error_panel, weight=1)
+            
+            # Create minimal coordinator for compatibility
+            class MinimalCoordinator:
+                def __init__(self, panel):
+                    self.error_panel = panel
+                def handle_compilation_result(self, success, log_content, file_path, current_content):
+                    if success:
+                        panel.clear_errors()
+                    else:
+                        panel.display_errors(log_content)
+                def set_current_document(self, file_path, content):
+                    """Compatibility method."""
+                    pass
+                def get_error_panel(self):
+                    return self.error_panel
+            
+            coordinator = MinimalCoordinator(error_panel)
+            return coordinator, error_panel
             
         except Exception as e2:
-            debug_console.log(f"Fallback also failed: {e2}", level='ERROR')
+            logs_console.log(f"All fallbacks failed: {e2}", level='ERROR')
             return create_error_panel_fallback(parent, on_goto_line)
 
 def create_error_panel_fallback(parent, on_goto_line=None):

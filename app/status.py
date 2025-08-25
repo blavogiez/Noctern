@@ -7,7 +7,7 @@ and session productivity metrics.
 
 import ttkbootstrap as ttk
 import GPUtil
-from utils import debug_console
+from utils import logs_console
 from metrics.status_display import MetricsStatusDisplay
 
 def create_status_bar(root):
@@ -65,7 +65,7 @@ def update_gpu_status(gpu_label):
             gpu_label.config(text="GPU: N/A")
     except Exception as e:
         # Log the error but don't crash the status loop
-        debug_console.log(f"Could not update GPU status: {e}", level='WARNING')
+        logs_console.log(f"Could not update GPU status: {e}", level='WARNING')
         gpu_label.config(text="GPU: Error")
 
 def start_gpu_status_loop(gpu_label, root):

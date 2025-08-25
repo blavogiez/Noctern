@@ -7,7 +7,7 @@ import tkinter as tk
 from tkinter import ttk
 from typing import Optional
 import os
-from utils import debug_console
+from utils import logs_console
 
 
 def get_icon_path(icon_name: str) -> Optional[str]:
@@ -66,7 +66,7 @@ def get_icon_path(icon_name: str) -> Optional[str]:
         if os.path.exists(full_path):
             return full_path
             
-    debug_console.log(f"Icon not found: {icon_name}", level='WARNING')
+    logs_console.log(f"Icon not found: {icon_name}", level='WARNING')
     return None
 
 
@@ -101,7 +101,7 @@ class IconButton(ttk.Button):
                 self.icon_photo = ImageTk.PhotoImage(img)
                 self.config(image=self.icon_photo)
             except Exception as e:
-                debug_console.log(f"Error loading icon {self.icon_name}: {e}", level='ERROR')
+                logs_console.log(f"Error loading icon {self.icon_name}: {e}", level='ERROR')
                 # Fallback to text
                 self.config(text=self.icon_name[:1].upper())
         elif icon_path and icon_path.endswith('.svg'):

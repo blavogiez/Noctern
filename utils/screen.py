@@ -1,20 +1,20 @@
 """Provide utility functions for screen-related operations."""
 
 import screeninfo
-from utils import debug_console
+from utils import logs_console
 
 def get_monitors():
     """Return list of all connected monitors."""
     try:
         return screeninfo.get_monitors()
     except screeninfo.common.ScreenInfoError as e:
-        debug_console.log(f"Could not get screen info: {e}", level='WARNING')
+        logs_console.log(f"Could not get screen info: {e}", level='WARNING')
         return []
 
 def has_multiple_monitors() -> bool:
     """Check if more than one monitor is connected to system."""
     monitors = get_monitors()
-    debug_console.log(f"Detected monitors: {len(monitors)}", level='INFO')
+    logs_console.log(f"Detected monitors: {len(monitors)}", level='INFO')
     return len(monitors) > 1
 
 def get_secondary_monitor_index() -> int | None:
@@ -26,11 +26,11 @@ def get_secondary_monitor_index() -> int | None:
     for i, monitor in enumerate(monitors):
         if not monitor.is_primary:
             # SumatraPDF monitor indices are 1-based
-            debug_console.log(f"Found secondary monitor at index {i+1}", level='INFO')
+            logs_console.log(f"Found secondary monitor at index {i+1}", level='INFO')
             return i + 1
             
     # Fallback: if no monitor is explicitly primary, return second one
-    debug_console.log("No primary monitor designated. Falling back to monitor 2.", level='INFO')
+    logs_console.log("No primary monitor designated. Falling back to monitor 2.", level='INFO')
     return 2
 
 import tkinter as tk
@@ -39,7 +39,7 @@ def show_screen_numbers(root):
     """Display large number on each monitor for identification."""
     monitors = get_monitors()
     if not monitors:
-        debug_console.log("No monitors found to display numbers on.", level='WARNING')
+        logs_console.log("No monitors found to display numbers on.", level='WARNING')
         return
 
     for i, monitor in enumerate(monitors):

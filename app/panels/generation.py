@@ -6,7 +6,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from .base_panel import BasePanel
 from .panel_factory import PanelStyle, StandardComponents
-from utils import debug_console
+from utils import logs_console
 from typing import List, Tuple, Callable, Optional
 
 
@@ -259,7 +259,7 @@ class GenerationPanel(BasePanel):
         
         latex_mode = self.latex_mode_var.get()
         
-        debug_console.log(f"Generate request: '{prompt_text[:50]}...', LaTeX mode: {latex_mode}", level='ACTION')
+        logs_console.log(f"Generate request: '{prompt_text[:50]}...', LaTeX mode: {latex_mode}", level='ACTION')
         
         # Add to history
         if self.on_history_add_callback:

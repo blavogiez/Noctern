@@ -7,7 +7,7 @@ and allows for dynamic color changes to match the application's theme.
 from PIL import Image, ImageTk
 import tksvg
 import os
-from utils import debug_console
+from utils import logs_console
 
 # Cache for loaded icons to prevent redundant disk I/O and processing.
 _icon_cache = {}
@@ -34,7 +34,7 @@ def get_icon(icon_name: str, size: int = 16, color: str = None):
     try:
         path = os.path.join("resources", "icons", icon_name)
         if not os.path.exists(path):
-            debug_console.log(f"Icon not found at path: {path}", level='WARNING')
+            logs_console.log(f"Icon not found at path: {path}", level='WARNING')
             return None
 
         image = None
@@ -59,5 +59,5 @@ def get_icon(icon_name: str, size: int = 16, color: str = None):
         return image
 
     except Exception as e:
-        debug_console.log(f"Error loading icon '{icon_name}': {e}", level='ERROR')
+        logs_console.log(f"Error loading icon '{icon_name}': {e}", level='ERROR')
         return None

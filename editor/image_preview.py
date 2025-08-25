@@ -2,7 +2,7 @@ import os
 import tkinter as tk
 from PIL import Image, ImageTk
 import re
-from utils import debug_console
+from utils import logs_console
 
 class ImagePreview(tk.Toplevel):
     def __init__(self, parent, file_path_getter=None):
@@ -120,7 +120,7 @@ class ImagePreview(tk.Toplevel):
             
             # Make window visible
             self.deiconify()
-            debug_console.log(f"Image preview displayed at position: {position}", level='INFO')
+            logs_console.log(f"Image preview displayed at position: {position}", level='INFO')
         except Exception as e:
             # Hide on any error (invalid image file, etc.)
             self.hide()

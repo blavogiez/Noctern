@@ -8,7 +8,7 @@ from tkinter import messagebox
 from llm import state as llm_state
 from llm import prompt_manager as llm_prompt_manager
 from app.panels import show_prompts_panel
-from utils import debug_console
+from utils import logs_console
 
 def load_prompts_for_current_file():
     """
@@ -20,7 +20,7 @@ def load_prompts_for_current_file():
     """
     # Safely get the active file path using the getter function from llm_state.
     active_filepath = llm_state._active_filepath_getter_func() if llm_state._active_filepath_getter_func else None
-    debug_console.log(f"Attempting to load prompt templates for: {active_filepath or 'new/untitled file'}.", level='INFO')
+    logs_console.log(f"Attempting to load prompt templates for: {active_filepath or 'new/untitled file'}.", level='INFO')
     
     # Load prompts using the llm_prompt_manager, providing global defaults as fallback.
     loaded_prompts = llm_prompt_manager.load_prompts_from_file(active_filepath, llm_state._global_default_prompts)
@@ -29,7 +29,7 @@ def load_prompts_for_current_file():
     llm_state._completion_prompt_template = loaded_prompts.get("completion", "")
     llm_state._generation_prompt_template = loaded_prompts.get("generation", "")
     llm_state._styling_prompt_template = loaded_prompts.get("styling", "")
-    debug_console.log("Prompt templates loaded into LLM state.", level='DEBUG')
+    logs_console.log("Prompt templates loaded into LLM state.", level='DEBUG')
 
 def get_current_prompts():
     """
@@ -60,7 +60,7 @@ def update_prompts(completion_template_text, generation_template_text, styling_t
         completion_template_text (str): The new template string for completion prompts.
         generation_template_text (str): The new template string for generation prompts.
     """
-    debug_console.log("Updating LLM prompt templates and saving changes.", level='CONFIG')
+    logs_console.log("Updating LLM prompt templates and saving changes.", level='CONFIG')
     
     # Update the in-memory prompt templates in the global state.
     llm_state._completion_prompt_template = completion_template_text
@@ -79,9 +79,9 @@ def update_prompts(completion_template_text, generation_template_text, styling_t
         }
         # Save the prompts to the file using the llm_prompt_manager.
         llm_prompt_manager.save_prompts_to_file(prompts_to_save, llm_state.get_global_default_prompts(), active_filepath)
-        debug_console.log("Prompt templates saved successfully.", level='SUCCESS')
+        logs_console.log("Prompt templates saved successfully.", level='SUCCESS')
     else:
-        debug_console.log("Cannot save prompt templates: No active file path available.", level='WARNING')
+        logs_console.log("Cannot save prompt templates: No active file path available.", level='WARNING')
 
 from app.panels import show_prompts_panel
 from app.panels import show_global_prompts_panel
@@ -90,7 +90,7 @@ def open_global_prompts_editor(event=None):
     """
     Opens the integrated global prompts editor panel in the left sidebar.
     """
-    debug_console.log("Opening global LLM prompt templates editing panel.", level='ACTION')
+    logs_console.log("Opening global LLM prompt templates editing panel.", level='ACTION')
     
     # Import and show the global prompts panel
     from app.panels import show_global_prompts_panel
@@ -100,7 +100,7 @@ def open_edit_prompts_panel(event=None):
     """
     Opens the integrated prompts editor panel in the left sidebar.
     """
-    debug_console.log("Opening LLM prompt templates editing panel.", level='ACTION')
+    logs_console.log("Opening LLM prompt templates editing panel.", level='ACTION')
     
     # Import the integrated panel function
     from app.panels import show_prompts_panel

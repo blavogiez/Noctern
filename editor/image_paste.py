@@ -4,18 +4,18 @@ import os
 import re
 from PIL import ImageGrab, Image
 from editor import structure as editor_structure
-from utils import debug_console
+from utils import logs_console
 from app.panels import show_image_details_panel
 
 
 def paste_image_from_clipboard(root, get_current_tab, get_theme_setting):
     """Handle pasting image from clipboard with structured directory and LaTeX generation."""
-    debug_console.log("Attempting to paste image from clipboard.", level='ACTION')
+    logs_console.log("Attempting to paste image from clipboard.", level='ACTION')
 
     
     current_tab = get_current_tab()
     if not current_tab:
-        debug_console.log("Image paste aborted: No active editor tab.", level='WARNING')
+        logs_console.log("Image paste aborted: No active editor tab.", level='WARNING')
         messagebox.showwarning("No Active Tab", "Please open a document before pasting an image.")
         return
 
@@ -25,7 +25,7 @@ def paste_image_from_clipboard(root, get_current_tab, get_theme_setting):
         image = ImageGrab.grabclipboard()
         if not isinstance(image, Image.Image):
             message = "No image found in the clipboard." if image is None else "The clipboard content is not a recognizable image."
-            debug_console.log(f"Image paste aborted: {message}", level='INFO')
+            logs_console.log(f"Image paste aborted: {message}", level='INFO')
             messagebox.showinfo("Clipboard Information", message)
             return
 
@@ -34,7 +34,7 @@ def paste_image_from_clipboard(root, get_current_tab, get_theme_setting):
         char_index = editor.count("1.0", editor.index(tk.INSERT))[0]
         
         section, subsection, subsubsection = editor_structure.extract_section_structure(document_content, char_index)
-        debug_console.log(f"Document structure for image: Section='{section}', Subsection='{subsection}', Subsubsection='{subsubsection}'.", level='DEBUG')
+        logs_console.log(f"Document structure for image: Section='{section}', Subsection='{subsection}', Subsubsection='{subsubsection}'.", level='DEBUG')
 
         def sanitize_for_path(text):
             text = text.lower().replace(" ", "_")
@@ -43,7 +43,7 @@ def paste_image_from_clipboard(root, get_current_tab, get_theme_setting):
         path_components = ["figures", sanitize_for_path(section), sanitize_for_path(subsection), sanitize_for_path(subsubsection)]
         image_directory_path = os.path.join(base_directory, *path_components)
         os.makedirs(image_directory_path, exist_ok=True)
-        debug_console.log(f"Image directory ensured at: {image_directory_path}", level='DEBUG')
+        logs_console.log(f"Image directory ensured at: {image_directory_path}", level='DEBUG')
 
         image_index = 1
         while True:
@@ -69,7 +69,7 @@ def paste_image_from_clipboard(root, get_current_tab, get_theme_setting):
             try:
                 # Save the image
                 image_data['image'].save(image_data['full_file_path'], "PNG")
-                debug_console.log(f"Image saved to: {image_data['full_file_path']}", level='SUCCESS')
+                logs_console.log(f"Image saved to: {image_data['full_file_path']}", level='SUCCESS')
 
                 # Calculate LaTeX path
                 latex_image_path = os.path.relpath(image_data['full_file_path'], image_data['base_directory']).replace("\\", "/")
@@ -89,21 +89,21 @@ def paste_image_from_clipboard(root, get_current_tab, get_theme_setting):
                 
                 # Insert LaTeX code
                 image_data['editor'].insert(tk.INSERT, latex_code)
-                debug_console.log("LaTeX figure code inserted into editor.", level='INFO')
+                logs_console.log("LaTeX figure code inserted into editor.", level='INFO')
                 
             except Exception as e:
                 error_message = f"An unexpected error occurred during the image paste operation: {str(e)}"
-                debug_console.log(error_message, level='ERROR')
+                logs_console.log(error_message, level='ERROR')
                 messagebox.showerror("Error Pasting Image", error_message)
         
         def on_image_details_cancel():
             """Handle cancel from image details panel."""
-            debug_console.log("Image paste cancelled by user via details panel.", level='INFO')
+            logs_console.log("Image paste cancelled by user via details panel.", level='INFO')
         
         # Show the integrated image details panel
         show_image_details_panel(suggested_label, on_image_details_ok, on_image_details_cancel)
 
     except Exception as e:
         error_message = f"An unexpected error occurred during the image paste operation: {str(e)}"
-        debug_console.log(error_message, level='ERROR')
+        logs_console.log(error_message, level='ERROR')
         messagebox.showerror("Error Pasting Image", error_message)

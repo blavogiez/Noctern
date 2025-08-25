@@ -5,7 +5,7 @@ import ttkbootstrap as ttk
 from pdf_preview.manager import PDFPreviewManager
 from pdf_preview.viewer import PDFPreviewViewer
 from pdf_preview.sync import PDFSyncManager
-from utils import debug_console
+from utils import logs_console
 
 
 class PDFPreviewInterface:
@@ -28,7 +28,7 @@ class PDFPreviewInterface:
         self.preview_viewer = None
         self.toggle_button = None
         
-        debug_console.log("PDF Preview Interface initialized", level='INFO')
+        logs_console.log("PDF Preview Interface initialized", level='INFO')
     
     def integrate_into_main_window(self, main_pane):
         """

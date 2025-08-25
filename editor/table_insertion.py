@@ -3,7 +3,7 @@ Simple LaTeX table generation for AutomaTeX.
 This module provides the TableGenerator class for creating LaTeX table code.
 """
 
-from utils import debug_console
+from utils import logs_console
 
 
 class TableGenerator:
@@ -12,7 +12,7 @@ class TableGenerator:
     @staticmethod
     def generate(rows, cols, has_header=True, alignment='c', caption='', label=''):
         """Generate LaTeX table with navigation placeholders."""
-        debug_console.log(f"Generating {rows}x{cols} table", level='INFO')
+        logs_console.log(f"Generating {rows}x{cols} table", level='INFO')
         
         # Build column spec
         col_spec = alignment * cols

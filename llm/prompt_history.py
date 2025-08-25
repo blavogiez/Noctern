@@ -6,7 +6,7 @@ associated with specific LaTeX document files, using JSON for storage.
 
 import json
 import os
-from utils import debug_console
+from utils import logs_console
 from llm.prompt_manager import get_document_cache_dir
 
 # Maximum number of prompt-response pairs to store in the history for each document.
@@ -17,7 +17,7 @@ def _get_prompt_history_filepath(tex_document_filepath):
     Generates the absolute file path for the prompt history JSON file inside the doc's cache dir.
     """
     if not tex_document_filepath:
-        debug_console.log("Cannot generate history filepath: No .tex document path provided.", level='DEBUG')
+        logs_console.log("Cannot generate history filepath: No .tex document path provided.", level='DEBUG')
         return None
     
     cache_dir = get_document_cache_dir(tex_document_filepath)
@@ -28,7 +28,7 @@ def _get_prompt_history_filepath(tex_document_filepath):
     os.makedirs(cache_dir, exist_ok=True)
     
     history_file_path = os.path.join(cache_dir, "prompt_history.json")
-    debug_console.log(f"Generated prompt history filepath: {history_file_path}", level='DEBUG')
+    logs_console.log(f"Generated prompt history filepath: {history_file_path}", level='DEBUG')
     return history_file_path
 
 def save_prompt_history_to_file(prompt_history_list, tex_document_filepath):
@@ -44,16 +44,16 @@ def save_prompt_history_to_file(prompt_history_list, tex_document_filepath):
     """
     history_filepath = _get_prompt_history_filepath(tex_document_filepath)
     if not history_filepath:
-        debug_console.log("Skipping history save: No valid .tex file path to associate history with.", level='INFO')
+        logs_console.log("Skipping history save: No valid .tex file path to associate history with.", level='INFO')
         return
 
     try:
         # Write the history list to the JSON file with pretty-printing.
         with open(history_filepath, 'w', encoding='utf-8') as file_handle:
             json.dump(prompt_history_list, file_handle, ensure_ascii=False, indent=4)
-        debug_console.log(f"Prompt history successfully saved to {os.path.basename(history_filepath)}.", level='DEBUG')
+        logs_console.log(f"Prompt history successfully saved to {os.path.basename(history_filepath)}.", level='DEBUG')
     except Exception as e:
-        debug_console.log(f"Error saving prompt history to '{history_filepath}': {e}", level='ERROR')
+        logs_console.log(f"Error saving prompt history to '{history_filepath}': {e}", level='ERROR')
 
 def load_prompt_history_from_file(tex_document_filepath):
     """
@@ -83,15 +83,15 @@ def load_prompt_history_from_file(tex_document_filepath):
                     if isinstance(item, (list, tuple)) and len(item) == 2:
                         validated_data.append((item[0], item[1]))
                 loaded_history_list = validated_data
-            debug_console.log(f"Loaded {len(loaded_history_list)} entries from prompt history file {os.path.basename(history_filepath)}.", level='INFO')
+            logs_console.log(f"Loaded {len(loaded_history_list)} entries from prompt history file {os.path.basename(history_filepath)}.", level='INFO')
         except json.JSONDecodeError as e:
-            debug_console.log(f"Error decoding JSON from prompt history file '{history_filepath}': {e}. File might be corrupted.", level='ERROR')
+            logs_console.log(f"Error decoding JSON from prompt history file '{history_filepath}': {e}. File might be corrupted.", level='ERROR')
             loaded_history_list = [] # Reset history on JSON error.
         except Exception as e:
-            debug_console.log(f"An unexpected error occurred loading prompt history from '{history_filepath}': {e}", level='ERROR')
+            logs_console.log(f"An unexpected error occurred loading prompt history from '{history_filepath}': {e}", level='ERROR')
             loaded_history_list = [] # Reset history on other errors.
     else:
-        debug_console.log(f"No prompt history file found for '{tex_document_filepath or 'new file'}'. Starting with empty history.", level='DEBUG')
+        logs_console.log(f"No prompt history file found for '{tex_document_filepath or 'new file'}'. Starting with empty history.", level='DEBUG')
 
     return loaded_history_list
 
@@ -110,7 +110,7 @@ def update_response_in_history(prompt_history_list, user_prompt_key, new_respons
     for index, (prompt_text, _) in enumerate(prompt_history_list):
         if prompt_text == user_prompt_key:
             prompt_history_list[index] = (prompt_text, new_response_text)
-            debug_console.log(f"Updated response for prompt '{user_prompt_key[:50]}...' in history.", level='DEBUG')
+            logs_console.log(f"Updated response for prompt '{user_prompt_key[:50]}...' in history.", level='DEBUG')
             break
     else:
-        debug_console.log(f"Prompt '{user_prompt_key[:50]}...' not found in history for update.", level='WARNING')
+        logs_console.log(f"Prompt '{user_prompt_key[:50]}...' not found in history for update.", level='WARNING')

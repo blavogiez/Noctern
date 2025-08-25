@@ -10,13 +10,13 @@ from llm import keyword_history
 from llm.history import _add_entry_to_history_and_save, _update_history_response_and_save
 from llm.interactive import start_new_interactive_session
 from llm.streaming_service import start_streaming_request
-from utils import debug_console
+from utils import logs_console
 
 def open_generate_text_panel(initial_prompt_text=None):
     """
     Open generation panel for custom LLM text generation.
     """
-    debug_console.log("Opening LLM text generation panel.", level='ACTION')
+    logs_console.log("Opening LLM text generation panel.", level='ACTION')
     
     if not callable(llm_state._active_editor_getter_func):
         messagebox.showerror("LLM Service Error", "LLM Service not fully initialized.")
@@ -58,7 +58,7 @@ def open_generate_text_panel(initial_prompt_text=None):
             keywords=keywords_str,
             context=editor_context
         )
-        debug_console.log(f"LLM Generation Request - Prompt (first 200 chars): '{full_prompt[:200]}...'", level='INFO')
+        logs_console.log(f"LLM Generation Request - Prompt (first 200 chars): '{full_prompt[:200]}...'", level='INFO')
         
         # 3. Start interactive session and define callbacks
         session_callbacks = start_new_interactive_session(editor)

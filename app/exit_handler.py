@@ -4,7 +4,7 @@ Clean, minimal exit handling with unsaved changes detection.
 
 from tkinter import TclError
 from utils.unsaved_changes_dialog import show_unsaved_changes_dialog_multiple_files
-from utils import debug_console
+from utils import logs_console
 from app import state
 import os
 

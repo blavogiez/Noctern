@@ -6,7 +6,7 @@ import threading
 from llm import state as llm_state
 from llm import api_client
 from llm import utils as llm_utils
-from utils import debug_console
+from utils import logs_console
 
 def start_streaming_request(editor, prompt, model_name, on_chunk, on_success, on_error, task_type="general", json_schema=None):
     """
@@ -29,7 +29,7 @@ def start_streaming_request(editor, prompt, model_name, on_chunk, on_success, on
         try:
             # Choose appropriate generation function
             if json_schema:
-                debug_console.log("Using structured output generation", level='INFO')
+                logs_console.log("Using structured output generation", level='INFO')
                 generator = api_client.generate_with_structured_output(
                     prompt, json_schema, model_name=model_name, 
                     stream=True, task_type=task_type
@@ -64,7 +64,7 @@ def start_streaming_request(editor, prompt, model_name, on_chunk, on_success, on
                     return
         except Exception as e:
             error_msg = f"Streaming error: {e}"
-            debug_console.log(error_msg, level='ERROR')
+            logs_console.log(error_msg, level='ERROR')
             if not llm_state._is_generation_cancelled:
                 editor.after(0, on_error, error_msg)
 
@@ -74,5 +74,5 @@ def start_streaming_request(editor, prompt, model_name, on_chunk, on_success, on
         progress_bar.start(10)
     
     # Start background thread
-    debug_console.log(f"Starting LLM streaming (task: {task_type}, structured: {json_schema is not None})", level='INFO')
+    logs_console.log(f"Starting LLM streaming (task: {task_type}, structured: {json_schema is not None})", level='INFO')
     threading.Thread(target=stream_worker, daemon=True).start()
