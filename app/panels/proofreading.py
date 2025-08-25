@@ -39,6 +39,11 @@ class ProofreadingPanel(BasePanel):
         self.status_indicator: Optional[tk.Label] = None
         self.notebook: Optional[ttk.Notebook] = None
         
+        # New widgets for context and explanation display
+        self.context_text: Optional[tk.Text] = None
+        self.explanation_label: Optional[tk.Label] = None
+        self.error_type_label: Optional[tk.Label] = None
+        
     def get_panel_title(self) -> str:
         return "Document Proofreading"
     
@@ -101,6 +106,9 @@ class ProofreadingPanel(BasePanel):
         
         # Set as main widget for focus
         self.main_widget = self.instructions_entry
+        
+        # Bind keyboard shortcuts for the panel
+        self._bind_keyboard_shortcuts()
         
         # Analyze button
         analyze_buttons = [(
@@ -180,7 +188,7 @@ class ProofreadingPanel(BasePanel):
         nav_controls = ttk.Frame(self.navigation_frame)
         nav_controls.pack(fill="x", pady=(0, StandardComponents.PADDING))
         
-        # Navigation buttons
+        # Navigation buttons - Previous left, Next right (logical order)
         nav_buttons = [
             ("Previous", self._go_previous, "secondary"),
             ("Next", self._go_next, "secondary")
@@ -188,10 +196,10 @@ class ProofreadingPanel(BasePanel):
         nav_button_row = StandardComponents.create_button_row(nav_controls, nav_buttons)
         nav_button_row.pack(side="left")
         
-        # Store button references
+        # Store button references - Previous is left (0), Next is right (1)
         buttons = nav_button_row.winfo_children()
-        self.prev_button = buttons[0]
-        self.next_button = buttons[1]
+        self.prev_button = buttons[0]  # Previous button (left)
+        self.next_button = buttons[1]  # Next button (right)
         
         # Counter label
         self.counter_label = StandardComponents.create_info_label(
@@ -202,36 +210,86 @@ class ProofreadingPanel(BasePanel):
         self.counter_label.pack(side="right")
         self.counter_label.config(textvariable=self.error_counter_var)
         
-        # Current error display
+        # Error type and details section
+        details_frame = StandardComponents.create_section(self.navigation_frame, "Error Details")
+        details_frame.pack(fill="x", pady=(0, StandardComponents.PADDING))
+        
+        # Error type
+        type_frame = ttk.Frame(details_frame)
+        type_frame.pack(fill="x", pady=(0, StandardComponents.PADDING//2))
+        
+        ttk.Label(type_frame, text="Type:").pack(side="left")
+        self.error_type_label = StandardComponents.create_info_label(
+            type_frame,
+            "",
+            "body"
+        )
+        self.error_type_label.pack(side="left", padx=(10, 0))
+        
+        # Original error text
         error_label = StandardComponents.create_info_label(
-            self.navigation_frame, 
-            "Current Error:", 
+            details_frame, 
+            "Original:", 
             "body"
         )
         error_label.pack(anchor="w", pady=(0, StandardComponents.PADDING//2))
         
         self.current_error_text = StandardComponents.create_text_input(
-            self.navigation_frame,
+            details_frame,
             "Error text will appear here...",
-            height=3
+            height=2
         )
         self.current_error_text.pack(fill="x", pady=(0, StandardComponents.PADDING//2))
         self.current_error_text.config(state="disabled")
         
+        # Explanation
+        explanation_label = StandardComponents.create_info_label(
+            details_frame, 
+            "Explanation:", 
+            "body"
+        )
+        explanation_label.pack(anchor="w", pady=(0, StandardComponents.PADDING//2))
+        
+        self.explanation_label = StandardComponents.create_info_label(
+            details_frame,
+            "Explanation will appear here...",
+            "small"
+        )
+        self.explanation_label.pack(anchor="w", fill="x", pady=(0, StandardComponents.PADDING))
+        self.explanation_label.config(wraplength=400)
+        
+        # Suggestion
         suggestion_label = StandardComponents.create_info_label(
-            self.navigation_frame, 
+            details_frame, 
             "Suggestion:", 
             "body"
         )
         suggestion_label.pack(anchor="w", pady=(0, StandardComponents.PADDING//2))
         
         self.suggestion_text = StandardComponents.create_text_input(
-            self.navigation_frame,
+            details_frame,
             "Suggestion will appear here...",
-            height=3
+            height=2
         )
         self.suggestion_text.pack(fill="x", pady=(0, StandardComponents.PADDING))
         self.suggestion_text.config(state="disabled")
+        
+        # Context display section
+        context_section = StandardComponents.create_section(self.navigation_frame, "Context")
+        context_section.pack(fill="both", expand=True, pady=(0, StandardComponents.PADDING))
+        
+        self.context_text = StandardComponents.create_text_input(
+            context_section,
+            "Context will appear here...",
+            height=4
+        )
+        self.context_text.pack(fill="both", expand=True)
+        self.context_text.config(state="disabled")
+        
+        # Configure text highlighting tags
+        self.context_text.tag_configure("error_highlight", 
+                                       background="#ffcccc", 
+                                       foreground="#990000")
         
         # Action buttons - no emojis as per guidelines
         action_buttons = [
@@ -257,6 +315,26 @@ class ProofreadingPanel(BasePanel):
         """Focus the main interactive widget."""
         if self.instructions_entry:
             self.instructions_entry.focus_set()
+            # Enable keyboard shortcuts when panel has focus
+            self.panel_frame.focus_set()
+    
+    def _bind_keyboard_shortcuts(self):
+        """Bind keyboard shortcuts for navigation and actions."""
+        # Bind to the panel frame to capture keyboard events
+        self.panel_frame.bind("<Left>", lambda e: self._go_previous())
+        self.panel_frame.bind("<Right>", lambda e: self._go_next())
+        self.panel_frame.bind("<KeyPress-a>", lambda e: self._approve_current_correction())
+        self.panel_frame.bind("<KeyPress-r>", lambda e: self._reject_current_correction())
+        
+        # Make sure the panel can receive focus for keyboard events
+        self.panel_frame.config(takefocus=True)
+        
+        # Also bind to main container for broader capture
+        if hasattr(self, 'main_container'):
+            self.main_container.bind("<Left>", lambda e: self._go_previous())
+            self.main_container.bind("<Right>", lambda e: self._go_next())
+            self.main_container.bind("<KeyPress-a>", lambda e: self._approve_current_correction())
+            self.main_container.bind("<KeyPress-r>", lambda e: self._reject_current_correction())
     
     # Proofreading methods (simplified from original dialog)
     def _start_proofreading(self):
@@ -375,7 +453,7 @@ class ProofreadingPanel(BasePanel):
             self._update_error_navigation()
     
     def _update_error_navigation(self):
-        """Update error navigation display."""
+        """Update error navigation display with context and explanation."""
         if not self.session or not self.session.errors:
             return
         
@@ -392,17 +470,63 @@ class ProofreadingPanel(BasePanel):
         self.prev_button.config(state="normal" if self.session.current_error_index > 0 else "disabled")
         self.next_button.config(state="normal" if self.session.current_error_index < total - 1 else "disabled")
         
+        # Update error type with color coding
+        if hasattr(current_error, 'type') and current_error.type:
+            error_type_text = current_error.type.value.title() if hasattr(current_error.type, 'value') else str(current_error.type)
+            self.error_type_label.config(text=error_type_text)
+            # Set color based on error type
+            type_colors = {
+                'grammar': self.get_theme_color("danger", "#cc0000"),
+                'spelling': self.get_theme_color("warning", "#ff6600"),
+                'punctuation': self.get_theme_color("primary", "#6600cc"),
+                'style': self.get_theme_color("info", "#0066cc"),
+                'clarity': self.get_theme_color("success", "#006600"),
+                'syntax': self.get_theme_color("danger", "#990000"),
+                'coherence': self.get_theme_color("warning", "#cc6600")
+            }
+            error_type_lower = error_type_text.lower()
+            color = type_colors.get(error_type_lower, self.get_theme_color("text", "#000000"))
+            self.error_type_label.config(foreground=color)
+        
         # Update error display
         self.current_error_text.config(state="normal")
         self.current_error_text.delete("1.0", "end")
         self.current_error_text.insert("1.0", current_error.original)
         self.current_error_text.config(state="disabled")
         
+        # Update explanation
+        explanation_text = getattr(current_error, 'explanation', '') or "No explanation provided"
+        self.explanation_label.config(text=explanation_text)
+        
+        # Update suggestion
         self.suggestion_text.config(state="normal")
         self.suggestion_text.delete("1.0", "end")
         suggestion_text = current_error.suggestion if current_error.suggestion else "[DELETE]"
         self.suggestion_text.insert("1.0", suggestion_text)
         self.suggestion_text.config(state="disabled")
+        
+        # Update context with highlighting
+        self.context_text.config(state="normal")
+        self.context_text.delete("1.0", "end")
+        
+        context = getattr(current_error, 'context', '') or current_error.original
+        self.context_text.insert("1.0", context)
+        
+        # Highlight the original error text in the context
+        if current_error.original and current_error.original in context:
+            start_pos = context.find(current_error.original)
+            if start_pos != -1:
+                # Calculate Text widget positions
+                lines_before = context[:start_pos].count('\n')
+                char_pos = len(context[:start_pos].split('\n')[-1])
+                
+                start_index = f"{lines_before + 1}.{char_pos}"
+                end_index = f"{lines_before + 1}.{char_pos + len(current_error.original)}"
+                
+                # Apply highlight
+                self.context_text.tag_add("error_highlight", start_index, end_index)
+        
+        self.context_text.config(state="disabled")
         
         # Update button states
         if current_error.is_applied:
@@ -417,3 +541,6 @@ class ProofreadingPanel(BasePanel):
             self.approve_button.config(state="normal", text="Approve")
             self.reject_button.config(state="normal", text="Reject")
             self.apply_button.config(state="disabled", text="Apply")
+        
+        # Ensure the panel can receive keyboard focus
+        self.panel_frame.focus_set()
