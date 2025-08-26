@@ -7,7 +7,6 @@ updating them, and saving them back to file. It also integrates with the prompt 
 from tkinter import messagebox
 from llm import state as llm_state
 from llm import prompt_manager as llm_prompt_manager
-from app.panels import show_prompts_panel
 from utils import logs_console
 
 def load_prompts_for_current_file():
@@ -83,35 +82,52 @@ def update_prompts(completion_template_text, generation_template_text, styling_t
     else:
         logs_console.log("Cannot save prompt templates: No active file path available.", level='WARNING')
 
-from app.panels import show_prompts_panel
-from app.panels import show_global_prompts_panel
-
-def open_global_prompts_editor(event=None):
+def prepare_global_prompts_editor(event=None, panel_callback=None):
     """
+    Prepare global prompts editor - pure business logic.
+    
+    Args:
+        event: Optional event parameter for compatibility
+        panel_callback: Callback to show the UI panel
+        
     Opens the integrated global prompts editor panel in the left sidebar.
     """
     logs_console.log("Opening global LLM prompt templates editing panel.", level='ACTION')
     
-    # Import and show the global prompts panel
-    from app.panels import show_global_prompts_panel
-    show_global_prompts_panel()
+    # Call UI callback if provided
+    if panel_callback:
+        panel_callback()
 
-def open_edit_prompts_panel(event=None):
+def prepare_edit_prompts_panel(event=None, panel_callback=None):
     """
+    Prepare edit prompts panel - pure business logic.
+    
+    Args:
+        event: Optional event parameter for compatibility
+        panel_callback: Callback to show the UI panel
+        
     Opens the integrated prompts editor panel in the left sidebar.
     """
     logs_console.log("Opening LLM prompt templates editing panel.", level='ACTION')
-    
-    # Import the integrated panel function
-    from app.panels import show_prompts_panel
     
     # Get current prompts and defaults
     current_prompts = get_current_prompts()
     default_prompts = llm_state.get_global_default_prompts()
     
-    # Show the integrated prompts panel
-    show_prompts_panel(
-        current_prompts=current_prompts,
-        default_prompts=default_prompts,
-        on_save_callback=update_prompts
-    )
+    # Call UI callback if provided
+    if panel_callback:
+        panel_callback(
+            current_prompts=current_prompts,
+            default_prompts=default_prompts,
+            on_save_callback=update_prompts
+        )
+
+
+# Backward compatibility wrappers
+def open_global_prompts_editor(event=None):
+    """Legacy function name for backward compatibility."""
+    prepare_global_prompts_editor(event)
+
+def open_edit_prompts_panel(event=None):
+    """Legacy function name for backward compatibility.""" 
+    prepare_edit_prompts_panel(event)

@@ -1,11 +1,14 @@
-"""Proofreading entry point."""
+"""Proofreading entry point - Pure business logic."""
 from tkinter import messagebox
 from llm import state
-from app.panels import show_proofreading_panel
 
 
-def open_proofreading_panel():
-    """Open proofreading panel for active document."""
+def prepare_proofreading(panel_callback=None):
+    """Prepare proofreading - pure business logic.
+    
+    Args:
+        panel_callback: Callback to show the UI panel
+    """
     # Check services ready
     if not callable(state._active_editor_getter_func):
         messagebox.showerror("Error", "AI service not initialized.")
@@ -22,11 +25,18 @@ def open_proofreading_panel():
         messagebox.showwarning("No Content", "No text found to proofread.")
         return
     
-    # Show the integrated panel instead of dialog
-    try:
-        show_proofreading_panel(editor, text_to_check)
-    except Exception as e:
-        messagebox.showerror("Error", f"Failed to open proofreading interface: {str(e)}")
+    # Call UI callback if provided
+    if panel_callback:
+        try:
+            panel_callback(editor, text_to_check)
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to open proofreading interface: {str(e)}")
+
+
+# Backward compatibility wrapper
+def open_proofreading_panel():
+    """Legacy function name for backward compatibility."""
+    prepare_proofreading()
 
 
 def get_text_for_analysis(editor):

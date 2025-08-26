@@ -22,6 +22,13 @@ from app import config as app_config
 from editor.tab import EditorTab
 from llm import service as llm_service
 from llm import autostyle as llm_autostyle
+from llm import generation as llm_generation
+from llm import proofreading as llm_proofreading
+from llm import rephrase as llm_rephrase
+from llm import keywords as llm_keywords
+from llm import prompts as llm_prompts
+from llm import latex_debug as llm_latex_debug
+from app import panels
 from editor import syntax as editor_syntax
 from editor import image_manager as editor_image_manager
 from latex import compiler as latex_compiler
@@ -31,10 +38,66 @@ from app.panels import show_table_insertion_panel
 from utils import logs_console, animations
 from utils.unsaved_changes_dialog import show_unsaved_changes_dialog_multiple_files
 
+# =============================================================================
+# LLM + UI ORCHESTRATION - Central hub for all AI interactions
+# =============================================================================
+
+def open_generate_text_panel(event=None, initial_prompt_text=None):
+    """Open text generation panel with LLM integration."""
+    def panel_callback(prompt_history, on_generate_callback, on_history_add_callback, initial_prompt):
+        panels.show_generation_panel(prompt_history, on_generate_callback, on_history_add_callback, initial_prompt)
+    
+    llm_generation.prepare_text_generation(initial_prompt_text, panel_callback)
+
+def open_proofreading_panel(event=None):
+    """Open proofreading panel with LLM integration."""
+    def panel_callback(editor, text_to_check):
+        panels.show_proofreading_panel(editor, text_to_check)
+    
+    llm_proofreading.prepare_proofreading(panel_callback)
+
+def open_rephrase_panel(event=None):
+    """Open rephrase panel with LLM integration."""
+    def panel_callback(editor, selected_text):
+        panels.show_rephrase_panel(editor, selected_text)
+    
+    llm_rephrase.prepare_rephrase(panel_callback)
+
+def open_set_keywords_panel(event=None):
+    """Open keywords panel with LLM integration."""
+    def panel_callback(active_file_path):
+        panels.show_keywords_panel(active_file_path)
+    
+    llm_keywords.prepare_keywords_panel(panel_callback)
+
+def open_edit_prompts_panel(event=None):
+    """Open prompts editing panel with LLM integration."""
+    def panel_callback(theme_getter, active_file_path, prompts, default_prompts, load_callback, save_callback):
+        panels.show_prompts_panel(theme_getter, active_file_path, prompts, default_prompts, load_callback, save_callback)
+    
+    llm_prompts.prepare_edit_prompts_panel(panel_callback)
+
+def open_global_prompts_editor(event=None):
+    """Open global prompts editor panel with LLM integration."""
+    def panel_callback():
+        panels.show_global_prompts_panel()
+    
+    llm_prompts.prepare_global_prompts_editor(panel_callback)
+
 def style_selected_text(event=None):
     """Apply automatic styling to selected text via LLM service."""
     logs_console.log("Initiating Smart Styling action.", level='ACTION')
-    llm_service.start_autostyle_process()
+    def panel_callback(editor, selected_text, apply_callback):
+        panels.show_style_intensity_panel(editor, selected_text, apply_callback)
+    
+    llm_autostyle.prepare_autostyle(panel_callback)
+
+def analyze_compilation_diff(event=None):
+    """Analyze LaTeX compilation differences with LLM integration."""
+    def panel_callback(diff_info):
+        panels.show_debug_panel(diff_info)
+    
+    llm_latex_debug.prepare_compilation_analysis(panel_callback)
 
 def perform_heavy_updates():
     """Execute heavy updates using optimized performance system."""

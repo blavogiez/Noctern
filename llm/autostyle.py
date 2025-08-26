@@ -1,18 +1,23 @@
 """
 Smart Style feature for text styling and rephrasing.
-Handle user interaction and coordinate with streaming service for text enhancement.
+Handle user interaction through callbacks and coordinate with streaming service for text enhancement.
+UI integration through callbacks provided by app layer.
 """
 import tkinter as tk
 from tkinter import messagebox
 
 from llm import state as llm_state
 from llm.interactive import start_new_interactive_session
-from app.panels import show_style_intensity_panel
 from llm.streaming_service import start_streaming_request
 from utils import logs_console
 
-def autostyle_selection():
+def prepare_autostyle(panel_callback=None):
     """
+    Prepare autostyle feature - pure business logic.
+    
+    Args:
+        panel_callback: Callback to show the UI panel
+        
     Main entry point for autostyle feature.
     Retrieve active editor, prompt for intensity, and initiate styling.
     """
@@ -39,17 +44,8 @@ def autostyle_selection():
         messagebox.showinfo("Smart Style", "Please select some text to style.")
         return
 
-    # Show the integrated style intensity panel
-    from app.panels import show_style_intensity_panel
-    
-    # Keep track of whether intensity was confirmed
-    intensity_result = {'value': None, 'confirmed': False}
-    
     def on_intensity_confirm(intensity_value):
         """Handle intensity confirmation from panel."""
-        intensity_result['value'] = intensity_value
-        intensity_result['confirmed'] = True
-        
         # Continue with styling process
         _perform_styling(editor, selected_text, selection_indices, intensity_value)
     
@@ -57,13 +53,13 @@ def autostyle_selection():
         """Handle intensity cancellation from panel."""
         logs_console.log("Smart Styling cancelled by user.", level='INFO')
     
-    # Show panel and return early (styling continues in callback)
-    show_style_intensity_panel(
-        last_intensity=getattr(llm_state, 'last_style_intensity', 5),
-        on_confirm_callback=on_intensity_confirm,
-        on_cancel_callback=on_intensity_cancel
-    )
-    return  # Exit early, styling continues in callback
+    # Call UI callback if provided
+    if panel_callback:
+        panel_callback(
+            last_intensity=getattr(llm_state, 'last_style_intensity', 5),
+            on_confirm_callback=on_intensity_confirm,
+            on_cancel_callback=on_intensity_cancel
+        )
 
 
 def _perform_styling(editor, selected_text, selection_indices, intensity):
@@ -101,3 +97,9 @@ def _perform_styling(editor, selected_text, selection_indices, intensity):
         on_error=session_callbacks['on_error'],
         task_type="rephrase"  # Use rephrase profile for styling (similar focused rewriting)
     )
+
+
+# Backward compatibility wrapper
+def autostyle_selection():
+    """Legacy function name for backward compatibility."""
+    prepare_autostyle()

@@ -1,20 +1,25 @@
 """
 This module provides functionality for rephrasing selected text using a Large Language Model (LLM).
-It orchestrates the UI dialog, prompt construction, and then uses the generic
+It orchestrates the UI interaction through callbacks, prompt construction, and uses the generic
 streaming service to perform the rephrasing.
+UI integration through callbacks provided by app layer.
 """
 import tkinter as tk
 from tkinter import messagebox
 
 from llm import state as llm_state
 from llm import interactive as llm_interactive
-from app.panels import show_rephrase_panel
 from llm.streaming_service import start_streaming_request
 from utils import logs_console
 
-def open_rephrase_panel(initial_text=None):
+def prepare_rephrase(initial_text=None, panel_callback=None):
     """
-    Entry point for the rephrase feature.
+    Prepare rephrase functionality - pure business logic.
+    
+    Args:
+        initial_text: Optional initial text to rephrase. If not provided, 
+                     uses selected text from active editor
+        panel_callback: Callback to show the UI panel
     
     If `initial_text` is provided, it's used for rephrasing. Otherwise,
     it gets the selected text from the active editor.
@@ -55,11 +60,13 @@ def open_rephrase_panel(initial_text=None):
         
         _request_rephrase_for_text(editor, selected_text, start_index, end_index, instruction, on_discard_generation)
 
-    show_rephrase_panel(
-        original_text=selected_text,
-        on_rephrase_callback=on_confirm,
-        on_cancel_callback=lambda: logs_console.log("Rephrase cancelled by user from panel.", level='INFO')
-    )
+    # Call UI callback if provided
+    if panel_callback:
+        panel_callback(
+            original_text=selected_text,
+            on_rephrase_callback=on_confirm,
+            on_cancel_callback=lambda: logs_console.log("Rephrase cancelled by user from panel.", level='INFO')
+        )
 
 def _request_rephrase_for_text(editor, original_text, start_index, end_index, instruction, on_discard_callback=None):
     """
@@ -106,3 +113,9 @@ def _request_rephrase_for_text(editor, original_text, start_index, end_index, in
         on_error=session_callbacks['on_error'],
         task_type="rephrase"  # Optimized for rephrasing tasks
     )
+
+
+# Backward compatibility wrapper
+def open_rephrase_panel(initial_text=None):
+    """Legacy function name for backward compatibility."""
+    prepare_rephrase(initial_text)

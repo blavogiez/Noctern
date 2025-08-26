@@ -1,10 +1,10 @@
 """
-Text generation using LLM with integrated sidebar panel.
+Text generation using LLM - Pure business logic.
 Handle custom generation requests and coordinate with streaming service for response handling.
+UI integration through callbacks provided by app layer.
 """
 from tkinter import messagebox
 from llm import state as llm_state
-from app.panels import show_generation_panel
 from llm import utils as llm_utils
 from llm import keyword_history
 from llm.history import _add_entry_to_history_and_save, _update_history_response_and_save
@@ -12,11 +12,15 @@ from llm.interactive import start_new_interactive_session
 from llm.streaming_service import start_streaming_request
 from utils import logs_console
 
-def open_generate_text_panel(initial_prompt_text=None):
+def prepare_text_generation(initial_prompt_text=None, panel_callback=None):
     """
-    Open generation panel for custom LLM text generation.
+    Prepare text generation - pure business logic.
+    
+    Args:
+        initial_prompt_text: Optional initial prompt text
+        panel_callback: Callback to show the UI panel
     """
-    logs_console.log("Opening LLM text generation panel.", level='ACTION')
+    logs_console.log("Preparing LLM text generation.", level='ACTION')
     
     if not callable(llm_state._active_editor_getter_func):
         messagebox.showerror("LLM Service Error", "LLM Service not fully initialized.")
@@ -93,10 +97,17 @@ def open_generate_text_panel(initial_prompt_text=None):
             task_type="generation"  # Optimized for generation tasks
         )
 
-    # Show the integrated panel
-    show_generation_panel(
-        prompt_history=llm_state._prompt_history_list,
-        on_generate_callback=_on_generate_request,
-        on_history_add_callback=lambda p: _add_entry_to_history_and_save(p, "⏳ Generating..."),
-        initial_prompt=initial_prompt_text
-    )
+    # Call UI callback if provided
+    if panel_callback:
+        panel_callback(
+            prompt_history=llm_state._prompt_history_list,
+            on_generate_callback=_on_generate_request,
+            on_history_add_callback=lambda p: _add_entry_to_history_and_save(p, "⏳ Generating..."),
+            initial_prompt=initial_prompt_text
+        )
+
+
+# Backward compatibility wrapper
+def open_generate_text_panel(initial_prompt_text=None):
+    """Legacy function name for backward compatibility."""
+    prepare_text_generation(initial_prompt_text)

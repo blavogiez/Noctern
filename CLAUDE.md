@@ -37,7 +37,7 @@ pip install -r requirements.txt
 **app/**: GUI components and application state
 - `main_window.py`: Primary window setup and configuration  
 - `state.py`: Global application state management
-- `actions.py`: User action handlers and event routing
+- `actions.py`: CENTRAL ORCHESTRATOR - All LLM+UI coordination here
 - `theme.py`: UI theming and visual customization
 - `zoom.py`: Text scaling and zoom functionality
 - `panels/`: Integrated sidebar panels for all AI interactions (NO popup dialogs)
@@ -56,12 +56,12 @@ pip install -r requirements.txt
 - `error_parser.py`: LaTeX error parsing and user-friendly messages
 - `translator.py`: Document translation services
 
-**llm/**: AI/LLM integration layer
-- `service.py`: Centralized LLM API facade
+**llm/**: AI/LLM integration layer (PURE BUSINESS LOGIC)
+- `service.py`: Centralized LLM API facade with callback support
 - `api_client.py`: Ollama and external API communication
-- `completion.py`, `generation.py`, `proofreading.py`: Core AI features
-- `panels/`: Integrated sidebar panels for AI interactions
+- `completion.py`, `generation.py`, `proofreading.py`: Core AI features with callbacks
 - `schemas/`: Data validation and response parsing
+- NO UI IMPORTS: All panel management handled by app/actions.py
 
 **pdf_preview/**: Integrated PDF viewer
 - `manager.py`: PDF compilation and synchronization
@@ -99,7 +99,7 @@ pip install -r requirements.txt
 
 **Syntax Highlighting**: Uses differential highlighting system that only processes changed lines. The `syntax_tracker.py` module maintains line state to optimize performance on large documents.
 
-**AI Service**: Initialized through `llm/service.py` with dependency injection of UI components. All AI features route through this central service using integrated sidebar panels instead of popup dialogs. Functions like `open_generate_text_panel()`, `open_proofreading_panel()`, etc. manage the panel display.
+**AI Service**: Clean separation between LLM logic and UI orchestration. The `llm/` module provides pure business logic with callback support, while `app/actions.py` handles all UI orchestration and panel management. LLM modules never directly call UI components - they use callbacks provided by the app layer.
 
 **PDF Preview**: Automatically synchronizes with LaTeX compilation. Uses pdf2image for rendering and caches pages for performance.
 
@@ -116,3 +116,16 @@ pip install -r requirements.txt
 Core: ttkbootstrap, Pillow, PyPDF2, pdf2image
 AI: ollama, google-generativeai
 LaTeX: Requires system pdflatex installation (MiKTeX/TeX Live)
+
+## Refactor Plan: LLM/App Responsibility Separation
+
+### Architecture Pattern
+- **LLM module**: Pure business logic with callback parameters
+- **App/Actions**: Central orchestrator for all LLM+UI interactions
+- **No Bridge Pattern**: Direct callback-based communication
+
+### Implementation Rules
+1. LLM modules NEVER import `app.panels`
+2. All `show_*_panel()` calls happen in `app/actions.py`
+3. LLM functions accept optional callbacks for UI integration
+4. Simple, comprehensible, production-ready code

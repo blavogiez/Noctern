@@ -3,17 +3,21 @@
 This module provides functionality for managing global keywords used by the Large Language Model (LLM).
 It allows users to set and update a list of keywords that can be incorporated into LLM prompts,
 thereby influencing the LLM's generation or completion behavior.
+UI integration through callbacks provided by app layer.
 """
 
 from tkinter import messagebox
 from llm import state as llm_state
-from app.panels import show_keywords_panel
 from utils import logs_console
 
-def open_set_keywords_panel():
+def prepare_keywords_panel(panel_callback=None):
     """
+    Prepare keywords panel - pure business logic.
+    
+    Args:
+        panel_callback: Callback to show the UI panel
+        
     Opens the keywords panel for setting LLM keywords for the currently active file.
-
     Retrieves the active file path and passes it to the keywords panel.
     If no file is active, it displays an error message.
     """
@@ -32,5 +36,12 @@ def open_set_keywords_panel():
         logs_console.log("Keyword dialog aborted: No active file path found.", level='WARNING')
         return
 
-    # Show the integrated panel instead of dialog
-    show_keywords_panel(active_file_path)
+    # Call UI callback if provided
+    if panel_callback:
+        panel_callback(active_file_path)
+
+
+# Backward compatibility wrapper
+def open_set_keywords_panel():
+    """Legacy function name for backward compatibility."""
+    prepare_keywords_panel()
