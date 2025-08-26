@@ -4,7 +4,7 @@ This module is responsible for binding global keyboard shortcuts.
 from latex import compiler as latex_compiler
 from llm import service as llm_service
 from latex import translator as latex_translator
-from app import actions as interface
+from app import actions as interface, state
 from llm import rephrase as llm_rephrase
 from utils import logs_console
 from editor import snippets as editor_snippets
@@ -17,6 +17,27 @@ def bind_global_shortcuts(root):
     
     # Initialize the search bar
     editor_search.initialize_search_bar(root)
+    
+    # Panel management functions
+    def switch_to_next_panel():
+        """Switch to the next panel in the tab order."""
+        if state.panel_manager:
+            state.panel_manager.switch_to_next_panel()
+    
+    def switch_to_previous_panel():
+        """Switch to the previous panel in the tab order."""
+        if state.panel_manager:
+            state.panel_manager.switch_to_previous_panel()
+    
+    def close_current_panel():
+        """Close the currently visible panel."""
+        if state.panel_manager:
+            state.panel_manager.close_current_panel()
+    
+    def close_all_panels():
+        """Close all active panels."""
+        if state.panel_manager:
+            state.panel_manager.close_all_panels()
     
     def log_and_run(func, name, pass_event=False):
         """
@@ -58,6 +79,11 @@ def bind_global_shortcuts(root):
         "<Control-Shift-B>": (interface.insert_table, "Insert Table"),
         "<Control-t>": (latex_translator.open_translate_panel, "Translate Panel"),
         "<Control-f>": (toggle_search_bar, "Find"),
+        # Panel navigation shortcuts
+        "<Control-Tab>": (switch_to_next_panel, "Next Panel"),
+        "<Control-Shift-Tab>": (switch_to_previous_panel, "Previous Panel"),
+        "<Control-Shift-W>": (close_current_panel, "Close Current Panel"),
+        "<Control-Shift-Alt-W>": (close_all_panels, "Close All Panels"),
     }
 
     for key, (func, name) in simple_shortcuts.items():

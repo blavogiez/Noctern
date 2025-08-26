@@ -35,7 +35,6 @@ class BasePanel(ABC):
         self.panel_frame: Optional[tk.Widget] = None
         self.header_frame: Optional[tk.Widget] = None
         self.content_frame: Optional[tk.Widget] = None
-        self.close_button: Optional[tk.Widget] = None
         
         # Panel state
         self.is_visible = False
@@ -113,13 +112,13 @@ class BasePanel(ABC):
         title_label.grid(row=0, column=0, sticky="w")
         
         # Close button
-        self.close_button = ttk.Button(
+        close_button = ttk.Button(
             self.header_frame,
             text="×",
             width=3,
             command=self._handle_close
         )
-        self.close_button.grid(row=0, column=1, sticky="e")
+        close_button.grid(row=0, column=1, sticky="e", padx=(StandardComponents.PADDING//2, 0))
     
     def _handle_close(self):
         """Handle close button click with unsaved changes check."""

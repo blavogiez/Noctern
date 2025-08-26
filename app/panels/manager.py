@@ -1,22 +1,24 @@
 """
 Panel manager for the left sidebar container.
 
-Manages the display of different panels in the left sidebar area,
-showing only one panel at a time with a close button.
+Manages the display of different panels in the left sidebar area using
+pure superposition. Multiple panels can be active but only the most recent
+one is visible, overlaying the others.
 """
 
 import tkinter as tk
 from tkinter import ttk
-from typing import Optional, Dict, Callable
+from typing import Optional, Dict, Callable, List
 from .base_panel import BasePanel
 
 
 class PanelManager:
     """
-    Manages panels in the left sidebar container.
+    Manages panels in the left sidebar container using pure superposition.
     
-    Shows one panel at a time, replacing the outline/debug content
-    when a dialog is opened, and restoring it when closed.
+    Multiple panels can be active simultaneously, but only the most recently
+    opened panel is visible. Panels are superimposed on the same space,
+    with the newest one on top.
     """
     
     def __init__(self, left_pane_container: tk.Widget, outline_widget: tk.Widget, 
@@ -35,8 +37,11 @@ class PanelManager:
         self.debug_widget = debug_widget
         self.theme_getter = theme_getter
         
-        # Panel management
-        self.current_panel: Optional[BasePanel] = None
+        # Panel management - pure superposition
+        self.active_panels: Dict[int, BasePanel] = {}  # panel_id -> panel
+        self.panel_stack: List[int] = []  # Stack of panel IDs (newest last)
+        
+        # UI components
         self.panel_container: Optional[tk.Widget] = None
         
         # Store original widgets state
@@ -44,54 +49,86 @@ class PanelManager:
         
     def show_panel(self, panel: BasePanel) -> None:
         """
-        Show a panel in the left sidebar, hiding outline/debug.
+        Show a panel using pure superposition. Only the newest panel is visible.
         
         Args:
             panel: The panel to display
         """
-        # Hide current panel if any (but don't destroy for potential reuse)
-        if self.current_panel:
-            self.current_panel.hide()
-            self.current_panel = None
+        panel_id = id(panel)
+        
+        # If this panel is already active, bring it to front
+        if panel_id in self.active_panels:
+            self._bring_to_front(panel_id)
+            return
             
-        # Hide original widgets (outline + debug)
-        if self._original_widgets_visible:
+        # Hide original widgets on first panel
+        if not self.active_panels and self._original_widgets_visible:
             self._hide_original_widgets()
         
         # Create panel container if needed
         if not self.panel_container:
             self._create_panel_container()
             
-        # Set the parent container for the panel
+        # Hide current top panel if any
+        if self.panel_stack:
+            current_top = self.active_panels[self.panel_stack[-1]]
+            current_top.hide()
+            
+        # Set up the new panel
         panel.parent_container = self.panel_container
+        panel.on_close_callback = lambda panel: self._on_panel_closed(panel_id)
         
-        # Create and show the new panel efficiently
-        panel.on_close_callback = self._on_panel_closed
+        # Create and show the panel
         panel_widget = panel.create_panel()
-        
-        # Show immediately for ultra-fluid experience
         panel.show()
-        self.current_panel = panel
         
-        # Focus immediately without delay for maximum responsiveness
+        # Add to active panels and stack
+        self.active_panels[panel_id] = panel
+        self.panel_stack.append(panel_id)
+        
+        # Focus the new panel
         try:
             panel.focus_main_widget()
         except:
             # Fallback with minimal delay if immediate focus fails
-            self.left_pane.after(1, panel.focus_main_widget)
+            self.left_pane.after(10, panel.focus_main_widget)
+            
+    def _bring_to_front(self, panel_id: int):
+        """Bring an existing panel to the front of the stack."""
+        if panel_id not in self.active_panels:
+            return
+            
+        # Hide current top panel
+        if self.panel_stack and self.panel_stack[-1] != panel_id:
+            current_top = self.active_panels[self.panel_stack[-1]]
+            current_top.hide()
+            
+        # Move panel to front of stack
+        if panel_id in self.panel_stack:
+            self.panel_stack.remove(panel_id)
+        self.panel_stack.append(panel_id)
         
+        # Show the panel
+        panel = self.active_panels[panel_id]
+        panel.show()
+        
+        # Focus the panel
+        try:
+            panel.focus_main_widget()
+        except:
+            self.left_pane.after(10, panel.focus_main_widget)
+            
     def _create_panel_container(self):
-        """Create the container for panels."""
+        """Create the container for superimposed panels."""
+        # Single container that fills the left pane - panels will superimpose here
         self.panel_container = ttk.Frame(self.left_pane)
-        # Set minimum width to ensure panels are usable
-        self.panel_container.configure(width=420)  # Slightly larger than STANDARD_WIDTH
+        self.panel_container.configure(width=420)
         self.left_pane.add(self.panel_container, weight=1)
         
-        # Configure minimum size efficiently
+        # Configure minimum size
         try:
             self.left_pane.paneconfigure(self.panel_container, minsize=400)
         except tk.TclError:
-            # Fallback: just set width if minsize is not supported
             pass
         
     def _hide_original_widgets(self):
@@ -117,24 +154,54 @@ class PanelManager:
         self.left_pane.add(self.debug_widget, weight=1)
         self._original_widgets_visible = True
         
-    def _on_panel_closed(self, panel: BasePanel):
+    def _on_panel_closed(self, panel_id: int):
         """Handle panel close event."""
-        if panel == self.current_panel:
-            self.current_panel.destroy()
-            self.current_panel = None
+        if panel_id not in self.active_panels:
+            return
             
-            # Restore original widgets
+        # Remove panel from active list and stack
+        panel = self.active_panels[panel_id]
+        panel.destroy()
+        del self.active_panels[panel_id]
+        
+        if panel_id in self.panel_stack:
+            self.panel_stack.remove(panel_id)
+        
+        # If there are remaining panels, show the new top panel
+        if self.panel_stack:
+            new_top_id = self.panel_stack[-1]
+            new_top_panel = self.active_panels[new_top_id]
+            new_top_panel.show()
+            try:
+                new_top_panel.focus_main_widget()
+            except:
+                pass
+        else:
+            # No panels left - restore original widgets
             self._show_original_widgets()
             
     def is_panel_active(self) -> bool:
-        """Check if a panel is currently active."""
-        return self.current_panel is not None and self.current_panel.is_visible
+        """Check if any panel is currently active."""
+        return len(self.active_panels) > 0
+        
+    def get_active_panels(self) -> Dict[int, BasePanel]:
+        """Get all currently active panels."""
+        return self.active_panels.copy()
         
     def get_current_panel(self) -> Optional[BasePanel]:
-        """Get the currently active panel."""
-        return self.current_panel
+        """Get the currently visible panel (top of stack)."""
+        if self.panel_stack:
+            return self.active_panels[self.panel_stack[-1]]
+        return None
         
     def close_current_panel(self):
-        """Close the current panel if any."""
-        if self.current_panel:
-            self._on_panel_closed(self.current_panel)
+        """Close the currently visible panel."""
+        if self.panel_stack:
+            top_panel_id = self.panel_stack[-1]
+            self._on_panel_closed(top_panel_id)
+    
+    def close_all_panels(self):
+        """Close all active panels."""
+        panel_ids = list(self.active_panels.keys())
+        for panel_id in panel_ids:
+            self._on_panel_closed(panel_id)

@@ -1,8 +1,8 @@
 \documentclass[12pt,a4paper]{article}
 
-%---------------------------
-% Packages
-%---------------------------
+
+
+
 \usepackage[margin=2.5cm]{geometry}
 \usepackage[french]{babel}
 \usepackage[utf8]{inputenc}
@@ -21,9 +21,9 @@
 \usetikzlibrary{arrows.meta}
 \hypersetup{colorlinks=true,linkcolor=blue,urlcolor=blue,citecolor=blue}
 
-%---------------------------
-% Macros utiles
-%---------------------------
+
+
+
 \newcommand{\dd}{\mathrm{d}}
 \newcommand{\R}{\mathbb{R}}
 \newcommand{\vect}[1]{\mathbf{#1}}
@@ -36,27 +36,46 @@
 \begin{document}
 
 \begin{abstract}
-MMathematical modeling, integrating hydrodynamics, biomechanics, rhythm control, signal processing, and statistics, is crucial for optimizing movement in performance swimming. This document presents simple yet useful models for analysis and training!
+% <1> Original: "MMathematical"
+Mathematical modeling, integrating hydrodynamics, biomechanics, rhythm control, signal processing, and statistics, is crucial for optimizing movement in performance swimming. This document presents simple yet useful models for analysis and % <2> Original: "training!"
+training.
 
 MMathematical modeling, integrating hydrodynamics, biomechanics, rhythm control, signal processing, and statistics, is crucial for optimizing movement in performance swimming. This document presents simple yet useful models for analysis and training!
 
 We love  how mathematics can enhance performance.
 
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=0.8\textwidth]{figures/default/default/default/fig_1.png}
+    \caption{% <6> Original: "Enter image caption..."
+Figure 1: Swimmer in water, depicting relevant forces.}
+    \label{fig:default_default_1}
+\end{figure}
+
+
+
 \end{abstract}
 
-\section{Forces et équations de mouvement}
-On considère le mouvement en translation d'un nageur de masse $m$ dans l'axe longitudinal (horizontale). À première approximation,
+\section{% <7> Original: "Forces et équations de mouvement"
+Forces and Equations of Motion}
+% <8> Original: "On considère le mouvement en translation d'un nageur de masse $m$ dans l'axe longitudinal (horizontale)."
+We consider the translational movement of a swimmer of mass $m$ along the longitudinal axis (horizontal). % <10> Original: "À première approximation,"
+To a first approximation,
 \begin{equation}
  m\,\frac{\dd v}{\dd t} = F_{\mathrm{prop}}(t) - F_{\mathrm{traînée}}(v) - F_{\mathrm{ondes}}(v,h),
  \label{eq:newton}
 \end{equation}
-où $v$ est la vitesse, $F_{\mathrm{prop}}$ la force propulsive moyenne (bras + jambes), $F_{\mathrm{traînée}}$ la traînée de forme et de frottement, et $F_{\mathrm{ondes}}$ la traînée de vague (dépendant notamment de la profondeur $h$).
+% <11> Original: "où $v$ est la vitesse, $F_{\mathrm{prop}}$ la force propulsive moyenne (bras + jambes), $F_{\mathrm{traînée}}$ la traînée de forme et de frottement, et $F_{\mathrm{ondes}}$ la traînée de vague (dépendant notamment de la profondeur $h$)."
+where $v$ is the velocity, $F_{\mathrm{prop}}$ the average propulsive force (arms + legs), $F_{\mathrm{traînée}}$ the form and friction drag, and $F_{\mathrm{ondes}}$ the wave drag (depending notably on depth $h$).
 
 La loi classique de traînée quadratique s'écrit
 \begin{equation}
  F_{\mathrm{traînée}}(v) = \tfrac{1}{2}\,\rho\,C_D\,A\,v^2,
  \end{equation}
-où $\rho$ est la masse volumique de l'eau, $C_D$ un coefficient de traînée (taille/forme), et $A$ une aire de référence. La puissance dissipée par la traînée vaut alors
+% <12> Original: "où $\rho$ est la masse volumique de l'eau, $C_D$ un coefficient de traînée (taille/forme), et $A$ une aire de référence."
+where $\rho$ is the density of water, $C_D$ a drag coefficient (size/shape), and $A$ a reference area. % <13> Original: "La puissance dissipée par la traînée vaut alors"
+The power dissipated by drag is then
 \begin{equation}
  P_{\mathrm{diss}}(v) = F_{\mathrm{traînée}}(v)\,v = \tfrac{1}{2}\,\rho\,C_D\,A\,v^3.
  \end{equation}
@@ -65,18 +84,22 @@ La traînée d'onde est plus marquée en surface et peut être modélisée par
 \begin{equation}
  F_{\mathrm{ondes}}(v,h) = k_\mathrm{w}(h)\,v^n, \qquad n\in[2,3],
  \end{equation}
-où $k_\mathrm{w}(h)$ décroît avec la profondeur $h$ (nager plus profond en coulée réduit $F_{\mathrm{ondes}}$ au prix d'un coût d'apnée).
+% <14> Original: "où $k_\mathrm{w}(h)$ décroît avec la profondeur $h$ (nager plus profond en coulée réduit $F_{\mathrm{ondes}}$ au prix d'un coût d'apnée)."
+where $k_\mathrm{w}(h)$ decreases with depth $h$ (swimming deeper during glides reduces $F_{\mathrm{ondes}}$ at the cost of breath-holding).
 
 \section{Efficacité propulsive et coût énergétique}
-On relie la puissance mécanique externe $P_{\mathrm{mech}}$ à la puissance métabolique $P_{\mathrm{met}}$ via un rendement global $\eta\in(0,1)$ :
+% <15> Original: "On relie la puissance mécanique externe $P_{\mathrm{mech}}$ à la puissance métabolique $P_{\mathrm{met}}$ via un rendement global $\eta\in(0,1)$ :"
+We relate the external mechanical power $P_{\mathrm{mech}}$ to the metabolic power $P_{\mathrm{met}}$ via an overall efficiency $\eta\in(0,1)$:
 \begin{equation}
  P_{\mathrm{mech}} = \eta\, P_{\mathrm{met}}.
  \end{equation}
-En régime quasi-stationnaire $v\approx\text{cste}$, on a $P_{\mathrm{mech}}\approx P_{\mathrm{diss}}$, d'où le coût énergétique instantané
+% <16> Original: "En régime quasi-stationnaire $v\approx\text{cste}$, on a $P_{\mathrm{mech}}\approx P_{\mathrm{diss}}$, d'où le coût énergétique instantané"
+In quasi-steady state $v\approx\text{const}$, we have $P_{\mathrm{mech}}\approx P_{\mathrm{diss}}$, hence the instantaneous energy cost
 \begin{equation}
  P_{\mathrm{met}}(v) \approx \frac{\tfrac{1}{2}\,\rho\,C_D\,A\,v^3}{\eta}.
  \end{equation}
-Le coût massique par unité de distance (coût de transport $\mathrm{COT}$) s'écrit
+% <17> Original: "Le coût massique par unité de distance (coût de transport $\mathrm{COT}$) s'écrit"
+The massic cost per unit distance (cost of transport $\mathrm{COT}$) is written as
 \begin{equation}
  \mathrm{COT}(v) = \frac{P_{\mathrm{met}}(v)}{m\,g\,v} \propto v^2, 
  \end{equation}
@@ -170,16 +193,16 @@ Ces ordres de grandeur justifient le rôle de la technique (réduire $C_D A$) et
 \begin{figure}[h]
  \centering
  \begin{tikzpicture}[scale=1.0]
-  % Nageur simplifié
+
   \draw[rounded corners=8pt,fill=gray!20] (0,0) rectangle (4,0.7);
   \draw (4,0.35) circle (0.25);
-  % Vitesse
+
   \draw[-{Latex[length=3mm]}] (-0.5,0.35) -- (0,0.35) node[midway,above]{\small $v$};
-  % Traînée
+
   \draw[-{Latex[length=3mm]},red] (1,0.35) -- (2.5,0.35) node[midway,above]{\small $F_{\mathrm{traînée}}$};
-  % Propulsion
+
   \draw[-{Latex[length=3mm]},blue] (1.5,1.2) -- (1.5,0.7) node[midway,right]{\small $F_{\mathrm{prop}}$};
-  % Surface
+
   \draw[blue!40] (-1,-0.2) -- (6,-0.2);
  \end{tikzpicture}
  \caption{Forces principales modélisées le long de l'axe de nage.}
@@ -210,9 +233,9 @@ Pour aller au-delà des modèles simplifiés, une approche bayésienne s'avère 
 \bigskip
 \noindent\textbf{Remarque pratique.} Ce texte est volontairement synthétique et modulaire. Chaque section peut être étendue (validation expérimentale, variantes par nage — crawl, dos, brasse, papillon —, effets des virages, drafting en eau libre, etc.).
 
-%---------------------------
-% Bibliographie minimale (indicative)
-%---------------------------
+
+
+
 \begin{thebibliography}{9}
  \bibitem{bejan}
  A. Bejan et D. Charles, \emph{Design in Nature: How the Constructal Law Governs Evolution in Biology, Physics, Technology, and Social Organization}, Doubleday, 2012.
