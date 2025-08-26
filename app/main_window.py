@@ -3,7 +3,7 @@ import os
 import time
 import ttkbootstrap as ttk
 
-from app import state, actions, config as app_config, theme as interface_theme
+from app import state, interface, config as app_config, theme as interface_theme
 from app.zoom import ZoomManager
 from app.topbar import create_top_buttons_frame
 from app.panes import create_main_paned_window, create_left_pane, create_outline, create_debug_panel, create_notebook, create_console_pane, create_pdf_preview_pane
@@ -156,7 +156,7 @@ def setup_gui():
     
     console_frame, state.console_output = create_console_pane(state.vertical_pane)
     state.console_pane = console_frame
-    actions.hide_console()
+    interface.hide_console()
 
     # Track timing for update throttling
     last_update_time = 0
@@ -228,7 +228,7 @@ def setup_gui():
             logs_console.log(f"Bound <<Modified>> and <KeyRelease> events to tab: {tab.file_path if tab.file_path else 'Untitled'}", level='TRACE')
 
     def on_tab_changed(event):
-        actions.on_tab_changed(event)
+        interface.on_tab_changed(event)
         current_tab = state.get_current_tab()
         if current_tab:
             bind_text_modified_event(current_tab)
@@ -252,14 +252,14 @@ def setup_gui():
     
     bind_global_shortcuts(state.root)
     
-    actions.load_session()
+    interface.load_session()
     # Plan initial error checking after session restoration
     # Setup Monaco optimization for initial tab
     first_tab = state.get_current_tab()
     if first_tab and first_tab.editor:
         initialize_monaco_optimization(first_tab.editor)
     state.root.after(100, apply_monaco_updates)
-    state.root.protocol("WM_DELETE_WINDOW", actions.on_close_request)
+    state.root.protocol("WM_DELETE_WINDOW", interface.on_close_request)
     
     # Setup status bar based on user configuration
     show_status_bar = app_config.get_bool(state._app_config.get("show_status_bar", "True"))

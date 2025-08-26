@@ -65,12 +65,12 @@ class ZoomManager:
             from editor.line_number_manager import force_line_number_update
             force_line_number_update(tab.line_numbers)
         
-        # Assuming perform_heavy_updates is available in actions
+        # Assuming perform_heavy_updates is available in interface
         try:
-            from app import actions
-            actions.perform_heavy_updates()
+            from app import interface
+            interface.perform_heavy_updates()
         except ImportError:
-            # If actions module is not available, skip heavy updates
+            # If interface module is not available, skip heavy updates
             pass
     
     def update_font_family(self, new_font_family):
@@ -105,7 +105,7 @@ class ZoomManager:
         
         # Update syntax highlighting for all tabs
         try:
-            from app import actions
-            actions.perform_heavy_updates()
+            from app import interface
+            interface.perform_heavy_updates()
         except ImportError:
             pass

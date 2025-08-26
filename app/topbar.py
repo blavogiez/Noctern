@@ -8,7 +8,7 @@ import ttkbootstrap as ttk
 from latex import compiler as latex_compiler
 from llm import service as llm_service
 from latex import translator as latex_translator
-from app import actions as interface, state, icons
+from app import interface, state, icons
 from utils import logs_console
 from llm import rephrase as llm_rephrase
 from editor import snippets as editor_snippets

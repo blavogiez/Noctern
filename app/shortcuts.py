@@ -4,7 +4,7 @@ This module is responsible for binding global keyboard shortcuts.
 from latex import compiler as latex_compiler
 from llm import service as llm_service
 from latex import translator as latex_translator
-from app import actions as interface, state
+from app import interface, state
 from llm import rephrase as llm_rephrase
 from utils import logs_console
 from editor import snippets as editor_snippets

@@ -3,7 +3,7 @@
 import platform
 import ctypes
 
-from app import main_window, state, actions
+from app import main_window, state, interface
 from editor import outline as editor_outline
 from latex import compiler as latex_compiler
 from latex import translator as latex_translator
@@ -34,13 +34,13 @@ def main():
     latex_compiler.initialize_compiler(
         root_window, 
         state.get_current_tab, 
-        actions.show_console, 
-        actions.hide_console,
+        interface.show_console, 
+        interface.hide_console,
         pdf_monitor_setting=state.get_app_config().get("pdf_monitor", "Default")
     )
     
     # Schedule initial heavy updates for syntax highlighting
-    root_window.after(100, actions.perform_heavy_updates)
+    root_window.after(100, interface.perform_heavy_updates)
     
     # Defer snippet loading to improve startup performance
     root_window.after(500, snippet_manager.initialize_snippets) 
@@ -58,13 +58,13 @@ def main():
     latex_translator.initialize_translator(
         root_ref=root_window,
         theme_getter=state.get_theme_setting,
-        status_message_func=actions.show_temporary_status_message,
+        status_message_func=interface.show_temporary_status_message,
         active_editor_getter=lambda: state.get_current_tab().editor if state.get_current_tab() else None,
         active_filepath_getter=lambda: state.get_current_tab().file_path if state.get_current_tab() else None
     )
 
     # Schedule syntax highlighting updates
-    root_window.after(100, actions.perform_heavy_updates)
+    root_window.after(100, interface.perform_heavy_updates)
     
     # Register clean exit handler
     from app.exit_handler import exit_application

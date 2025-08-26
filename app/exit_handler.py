@@ -31,7 +31,7 @@ def save_all_dirty_tabs():
     Returns:
         bool: True if all saves succeeded, False otherwise
     """
-    from app.actions import save_file
+    from app.interface import save_file
     
     tabs_copy = dict(state.tabs)
     for tab_id, tab in tabs_copy.items():
@@ -49,7 +49,7 @@ def save_application_state():
     """Save application configuration and session."""
     from app import config as app_config
     from llm import state as llm_state
-    from app.actions import save_session
+    from app.interface import save_session
     
     # Save window state and preferences
     app_config_data = state.get_app_config()
