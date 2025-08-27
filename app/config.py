@@ -17,7 +17,7 @@ DEFAULT_VALUES = {
     "editor_font_family": "Consolas",
     "treeview_font_family": "Segoe UI",
     "treeview_font_size": "10",
-    "treeview_row_height": "30",
+    "treeview_row_height": "45",
     "model_completion": "default",
     "model_generation": "default",
     "model_rephrase": "default",
