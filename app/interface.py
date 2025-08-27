@@ -87,8 +87,8 @@ def open_global_prompts_editor(event=None):
 def style_selected_text(event=None):
     """Apply automatic styling to selected text via LLM service."""
     logs_console.log("Initiating Smart Styling action.", level='ACTION')
-    def panel_callback(editor, selected_text, apply_callback):
-        panels.show_style_intensity_panel(editor, selected_text, apply_callback)
+    def panel_callback(last_intensity, on_confirm_callback, on_cancel_callback):
+        panels.show_style_intensity_panel(last_intensity, on_confirm_callback, on_cancel_callback)
     
     llm_autostyle.prepare_autostyle(panel_callback)
 
