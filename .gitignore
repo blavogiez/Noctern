@@ -32,7 +32,6 @@ ENV/
 *.jpeg
 *.gif
 pip-log.txt
-debug_*.py
 test_*.py
 *_test.py
 
