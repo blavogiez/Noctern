@@ -10,8 +10,8 @@ class LineNumbers(tk.Canvas):
         super().__init__(master, **kwargs)
         self.editor = editor_widget
         self.font = font
-        self.text_color = "#6a737d"
-        self.bg_color = "#f0f0f0"
+        self.text_color = "#505050"  # Darker default for better contrast
+        self.bg_color = "#f8f8f8"   # Slightly lighter background
         self.config(width=40, bg=self.bg_color, highlightthickness=0, bd=0)
         
         # Performance optimization caches

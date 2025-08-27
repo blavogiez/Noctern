@@ -41,7 +41,12 @@ def create_top_buttons_frame(root):
         icon = icons.get_icon(icon_name, size=16) if icon_name else None
         
         original_style = bootstyle
-        hover_style = bootstyle.replace("-outline", "") if "outline" in bootstyle else bootstyle
+        # Enhanced hover effect - removes outline and adds subtle emphasis
+        if "outline" in bootstyle:
+            hover_style = bootstyle.replace("-outline", "")
+        else:
+            # For solid buttons, lighten on hover
+            hover_style = f"{bootstyle.split('-')[0]}-outline" if "-" in bootstyle else "secondary"
 
         button = ttk.Button(
             top_frame, 
@@ -50,19 +55,27 @@ def create_top_buttons_frame(root):
             bootstyle=original_style,
             image=icon,
             compound="left",
-            padding=(10, 6)
+            padding=(12, 8)
         )
         if icon:
             button.image = icon # Keep a reference!
             
-        button.bind("<Enter>", lambda e, w=button, hs=hover_style: (
-            move_widget(w, Y_HOVER),
-            w.config(bootstyle=hs)
-        ))
-        button.bind("<Leave>", lambda e, w=button, os=original_style: (
-            move_widget(w, Y_POS),
-            w.config(bootstyle=os)
-        ))
+        # Enhanced animations with smoother transitions
+        def on_enter(e):
+            move_widget(button, Y_HOVER)
+            button.config(bootstyle=hover_style)
+            
+        def on_leave(e):
+            move_widget(button, Y_POS)  
+            button.config(bootstyle=original_style)
+            
+        button.bind("<Enter>", on_enter)
+        button.bind("<Leave>", on_leave)
+        
+        # Add subtle focus styling
+        button.bind("<FocusIn>", lambda e: button.config(bootstyle=hover_style))
+        button.bind("<FocusOut>", lambda e: button.config(bootstyle=original_style))
+        
         buttons.append(button)
         return button
 
@@ -116,7 +129,11 @@ def create_top_buttons_frame(root):
         icon = icons.get_icon(icon_name, size=16) if icon_name else None
         
         original_style = bootstyle
-        hover_style = bootstyle.replace("-outline", "") if "outline" in bootstyle else bootstyle
+        # Enhanced hover effect matching buttons
+        if "outline" in bootstyle:
+            hover_style = bootstyle.replace("-outline", "")
+        else:
+            hover_style = f"{bootstyle.split('-')[0]}-outline" if "-" in bootstyle else "secondary"
 
         menubutton = ttk.Menubutton(
             top_frame, 
@@ -124,19 +141,27 @@ def create_top_buttons_frame(root):
             bootstyle=original_style,
             image=icon,
             compound="left",
-            padding=(10, 6)
+            padding=(12, 8)
         )
         if icon:
             menubutton.image = icon # Keep a reference!
         
-        menubutton.bind("<Enter>", lambda e, w=menubutton, hs=hover_style: (
-            move_widget(w, Y_HOVER),
-            w.config(bootstyle=hs)
-        ))
-        menubutton.bind("<Leave>", lambda e, w=menubutton, os=original_style: (
-            move_widget(w, Y_POS),
-            w.config(bootstyle=os)
-        ))
+        # Enhanced animations matching buttons
+        def on_enter(e):
+            move_widget(menubutton, Y_HOVER)
+            menubutton.config(bootstyle=hover_style)
+            
+        def on_leave(e):
+            move_widget(menubutton, Y_POS)
+            menubutton.config(bootstyle=original_style)
+            
+        menubutton.bind("<Enter>", on_enter)
+        menubutton.bind("<Leave>", on_leave)
+        
+        # Add focus styling for keyboard navigation
+        menubutton.bind("<FocusIn>", lambda e: menubutton.config(bootstyle=hover_style))
+        menubutton.bind("<FocusOut>", lambda e: menubutton.config(bootstyle=original_style))
+        
         return menubutton
 
     tools_menubutton = create_animated_menubutton("Tools", "secondary-outline", "tool.svg")
@@ -170,19 +195,37 @@ def create_top_buttons_frame(root):
     def set_theme(theme_name):
         interface.apply_theme(theme_name)
 
+    # Original theme
     theme_menu.add_command(label="Original", command=lambda: set_theme("original"))
     theme_menu.add_separator()
-    theme_menu.add_command(label="Light (Litera)", command=lambda: set_theme("litera"))
-    theme_menu.add_command(label="Dark (Darkly)", command=lambda: set_theme("darkly"))
-    theme_menu.add_command(label="Vapor", command=lambda: set_theme("vapor"))
-    theme_menu.add_command(label="Flatly", command=lambda: set_theme("flatly"))
-    theme_menu.add_command(label="Cyborg", command=lambda: set_theme("cyborg"))
-    theme_menu.add_command(label="Journal", command=lambda: set_theme("journal"))
+    
+    # Light themes
+    light_themes = [
+        ("Cosmo", "cosmo"), ("Flatly", "flatly"), ("Litera", "litera"), 
+        ("Minty", "minty"), ("Lumen", "lumen"), ("Sandstone", "sandstone"),
+        ("Yeti", "yeti"), ("Pulse", "pulse"), ("United", "united"),
+        ("Morph", "morph"), ("Journal", "journal"), ("Simplex", "simplex"), 
+        ("Cerculean", "cerculean")
+    ]
+    
+    for label, theme in light_themes:
+        theme_menu.add_command(label=label, command=lambda t=theme: set_theme(t))
+    
+    theme_menu.add_separator()
+    
+    # Dark themes  
+    dark_themes = [
+        ("Darkly", "darkly"), ("Superhero", "superhero"), ("Solar", "solar"),
+        ("Cyborg", "cyborg"), ("Vapor", "vapor")
+    ]
+    
+    for label, theme in dark_themes:
+        theme_menu.add_command(label=label, command=lambda t=theme: set_theme(t))
     
     settings_menu.add_separator()
-    settings_menu.add_command(label="Set LLM Keywords...", command=lambda: [_log_action("Settings: Set LLM Keywords"), llm_service.open_set_keywords_panel()])
-    settings_menu.add_command(label="Edit LLM Prompts (Ctrl+Shift+E)...", command=lambda: [_log_action("Settings: Edit LLM Prompts"), llm_service.open_edit_prompts_panel()])
-    settings_menu.add_command(label="Edit Snippets...", command=lambda: [_log_action("Settings: Edit Snippets"), editor_snippets.open_snippet_editor(root, state.get_theme_settings())])
+    settings_menu.add_command(label="Edit LLM Keywords (per file)", command=lambda: [_log_action("Settings: Set LLM Keywords"), llm_service.open_set_keywords_panel()])
+    settings_menu.add_command(label="Edit LLM Prompts (per file)", command=lambda: [_log_action("Settings: Edit LLM Prompts"), llm_service.open_edit_prompts_panel()])
+    settings_menu.add_command(label="Edit Snippets (global)", command=lambda: [_log_action("Settings: Edit Snippets"), editor_snippets.open_snippet_editor(root, state.get_theme_settings())])
     settings_menu.add_separator()
     
     
@@ -190,8 +233,4 @@ def create_top_buttons_frame(root):
     settings_menu.add_command(label="Restart Application", command=lambda: [_log_action("Settings: Restart Application"), interface.restart_application()])
     
     # Add separator before UI visibility options
-    settings_menu.add_separator()
-    # Note: UI visibility settings are now managed through the Settings window
-    # Apply at application startup
-    
     return top_frame, settings_menu
