@@ -30,7 +30,7 @@ def create_left_pane(parent):
     Creates the left pane, containing the outline tree and the error panel.
     """
     left_pane = ttk.PanedWindow(parent, orient=ttk.VERTICAL)
-    parent.add(left_pane, weight=1)
+    parent.add(left_pane, weight=2)
     return left_pane
 
 def create_outline(parent, get_current_tab_callback, config_settings=None):

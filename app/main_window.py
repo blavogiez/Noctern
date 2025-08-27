@@ -152,7 +152,7 @@ def setup_gui():
 
     # Configure PDF preview pane based on user settings
     if show_pdf_preview and state.pdf_preview_pane:
-        state.main_pane.add(state.pdf_preview_pane.master, weight=3)  # Increased weight for larger default size
+        state.main_pane.add(state.pdf_preview_pane.master, weight=3)  # Larger weight for wider PDF preview
     
     console_frame, state.console_output = create_console_pane(state.vertical_pane)
     state.console_pane = console_frame
