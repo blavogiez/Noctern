@@ -15,6 +15,7 @@ from editor import snippets as editor_snippets
 from app import settings_window
 from utils.animations import move_widget
 from app.panels import show_metrics_panel, show_settings_panel
+from editor import search as editor_search
 
 def _log_action(action_name):
     """Helper function to log user actions triggered from the UI elements."""
@@ -104,14 +105,19 @@ def create_top_buttons_frame(root):
     
     # PDF Navigation
     create_animated_button("Go to line in PDF", lambda: [_log_action("Go to line in PDF"), interface.go_to_line_in_pdf()], "warning-outline")
+    
 
     # Place buttons dynamically
     current_x = 5
     for button in buttons:
         # Skip spacers for width calculation but still place them
-        if isinstance(button, ttk.Frame) and button.winfo_width() == 10:
+        if isinstance(button, ttk.Frame):
             button.place(x=current_x, y=Y_POS)
-            current_x += 10  # Fixed width for spacer
+            # Check if it's the large spacer or regular spacer
+            if button.winfo_reqwidth() == 20:
+                current_x += 20
+            else:
+                current_x += 10
         else:
             button.place(x=current_x, y=Y_POS)
             # Update current_x for the next button, adding width and padding

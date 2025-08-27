@@ -105,17 +105,31 @@ class IconButton(ttk.Button):
                 # Fallback to text
                 self.config(text=self.icon_name[:1].upper())
         elif icon_path and icon_path.endswith('.svg'):
-            # For SVG files, we'll use text as fallback for now
-            # In a full implementation, we would use a library like cairosvg
-            # To convert SVG to PNG first
-            icon_map = {
-                'search': '🔍',
-                'next': '▶',
-                'previous': '◀',
-                'close': '✕'
-            }
-            text = icon_map.get(self.icon_name, self.icon_name[:1].upper())
-            self.config(text=text)
+            # For SVG files, try to load as PNG using cairosvg if available
+            try:
+                import cairosvg
+                from PIL import Image, ImageTk
+                import io
+                
+                # Convert SVG to PNG in memory
+                png_data = cairosvg.svg2png(url=icon_path, output_width=16, output_height=16)
+                img = Image.open(io.BytesIO(png_data))
+                self.icon_photo = ImageTk.PhotoImage(img)
+                self.config(image=self.icon_photo)
+            except (ImportError, Exception):
+                # Fallback to text icons if cairosvg not available
+                icon_map = {
+                    'search': '🔍',
+                    'chevron-up': '⌄', 
+                    'chevron-down': '⌄',
+                    'up': '⌄',
+                    'down': '⌄',
+                    'next': '▶', 
+                    'previous': '◀',
+                    'close': '×'
+                }
+                text = icon_map.get(self.icon_name, self.icon_name[:1].upper())
+                self.config(text=text)
         elif icon_path:
             # For other formats, just show the first letter as fallback
             self.config(text=self.icon_name[:1].upper())

@@ -1,10 +1,10 @@
 """
 Implement search functionality for AutomaTeX editor.
-Inspired by VSCode search feature with modern, clean design.
+Modern, integrated search bar with clean design.
 """
 
 import tkinter as tk
-from tkinter import ttk
+import ttkbootstrap as ttk
 import re
 from typing import Optional, List, Tuple
 from app import state
@@ -81,34 +81,29 @@ class SearchEngine:
         return 0
     
     def next_match(self) -> Optional[Tuple[str, int, int]]:
-        """Move to the next match and return it."""
-        # Print debug info
-        print(f"next_match called: matches={len(self.matches)}, current_index={self.current_match_index}")
-        
+        """Move to the next match and return it (with cycling)."""
         if not self.matches:
-            print("No matches, returning None")
             return None
             
-        # If we're at the last match, don't go further
+        # If we're at the last match, cycle to first
         if self.current_match_index >= len(self.matches) - 1:
-            print("At last match, returning None")
-            return None
+            self.current_match_index = 0
+        else:
+            self.current_match_index += 1
             
-        self.current_match_index += 1
-        result = self.get_current_match()
-        print(f"Moving to index {self.current_match_index}, result={result}")
-        return result
+        return self.get_current_match()
     
     def previous_match(self) -> Optional[Tuple[str, int, int]]:
-        """Move to the previous match and return it."""
+        """Move to the previous match and return it (with cycling)."""
         if not self.matches:
             return None
             
-        # If we're at the first match, don't go further
+        # If we're at the first match, cycle to last
         if self.current_match_index <= 0:
-            return None
+            self.current_match_index = len(self.matches) - 1
+        else:
+            self.current_match_index -= 1
             
-        self.current_match_index -= 1
         return self.get_current_match()
     
     def reset(self):
@@ -118,120 +113,104 @@ class SearchEngine:
 
 
 class SearchBar:
-    """A modern search bar widget that appears at the top of the main window."""
+    """A modern search bar widget positioned over the editor."""
     
     def __init__(self, parent: tk.Widget):
         self.parent = parent
         self.search_engine = SearchEngine()
         self.is_visible = False
+        self.current_tab = None
         
-        # Create the search frame with a modern style
-        self.frame = ttk.Frame(parent, padding=(10, 8))
+        # Create the search frame (initially without parent)
+        self.frame = None
         
-        # Style configuration
-        self._setup_styles()
-        
-        # Create UI elements
-        self._create_widgets()
-        
-        # Bind events
-        self._bind_events()
-        
-        # Initially hide the search bar
-        self.frame.place_forget()
-        
-    def _setup_styles(self):
-        """Setup custom styles for the search bar."""
-        style = ttk.Style()
-        
-        # Configure frame style
-        style.configure("SearchBar.TFrame",
-                       background=state.get_theme_setting("bg", "#ffffff"))
-        
-        # Configure entry style
-        style.configure("Search.TEntry", 
-                       fieldbackground=state.get_theme_setting("bg", "#ffffff"),
-                       foreground=state.get_theme_setting("fg", "#000000"),
-                       borderwidth=1,
-                       relief="solid")
-        
-        # Configure button style
-        style.configure("Search.TButton",
-                       background=state.get_theme_setting("button_bg", "#e0e0e0"),
-                       foreground=state.get_theme_setting("button_fg", "#000000"),
-                       borderwidth=0,
-                       padding=(2, 2))
-        
-        # Configure label style
-        style.configure("Search.TLabel",
-                       background=state.get_theme_setting("bg", "#ffffff"),
-                       foreground=state.get_theme_setting("fg", "#666666"))
-        
-        # Apply frame style
-        self.frame.configure(style="SearchBar.TFrame")
         
     def _create_widgets(self):
-        """Create all widgets for the search bar."""
-        # Search icon label
-        self.search_icon = ttk.Label(self.frame, text="🔍", 
-                                    style="Search.TLabel")
+        """Create all widgets for the search bar exactly like VSCode."""
+        # Compact frame adapted to theme
+        self.frame.configure(
+            bootstyle="secondary",
+            padding=2,
+            relief="solid",
+            borderwidth=1
+        )
         
-        # Search entry with search icon
-        self.search_entry = ttk.Entry(self.frame, width=30, style="Search.TEntry")
+        # Create search container with icon
+        self.search_container = ttk.Frame(self.frame, bootstyle="secondary")
         
-        # Previous match button with icon
+        # Search icon inside entry
+        self.search_icon = IconButton(
+            self.search_container,
+            "search",
+            bootstyle="secondary-link",
+            command=lambda: self.search_entry.focus()
+        )
+        
+        # Search entry with compact styling
+        self.search_entry = ttk.Entry(
+            self.search_container,
+            width=16,
+            bootstyle="secondary",
+            font=("Segoe UI", 9)
+        )
+        
+        # Previous match button (up arrow)
         self.prev_button = IconButton(
-            self.frame, 
-            "previous",
-            width=3,
-            style="Search.TButton",
+            self.frame,
+            "up", 
+            bootstyle="secondary-outline",
             command=self._previous_match
         )
         
-        # Next match button with icon
+        # Next match button (down arrow) 
         self.next_button = IconButton(
-            self.frame, 
-            "next",
-            width=3,
-            style="Search.TButton",
+            self.frame,
+            "down",
+            bootstyle="secondary-outline", 
             command=self._next_match
         )
         
-        # Match counter label
+        # Match counter with compact styling
         self.counter_label = ttk.Label(
-            self.frame, 
-            text="0 / 0",
-            style="Search.TLabel"
+            self.frame,
+            text="No results",
+            bootstyle="secondary",
+            font=("Segoe UI", 8),
+            width=7,
+            anchor="center"
         )
         
-        # Close button with icon
-        self.close_button = IconButton(
-            self.frame, 
-            "close",
-            width=3,
-            style="Search.TButton",
-            command=self.hide
-        )
-        
-        # Case sensitive checkbox
+        # Case sensitive toggle button
         self.case_sensitive_var = tk.BooleanVar()
         self.case_sensitive_check = ttk.Checkbutton(
             self.frame,
             text="Aa",
             variable=self.case_sensitive_var,
+            bootstyle="secondary-toolbutton",
             command=self._on_search_change
         )
         
-        # Layout with better spacing
-        self.search_icon.grid(row=0, column=0, padx=(0, 5), sticky="w")
-        self.search_entry.grid(row=0, column=1, padx=(0, 10), sticky="ew")
-        self.prev_button.grid(row=0, column=2, padx=(0, 2))
-        self.next_button.grid(row=0, column=3, padx=(0, 10))
-        self.counter_label.grid(row=0, column=4, padx=(0, 10))
-        self.case_sensitive_check.grid(row=0, column=5, padx=(0, 5))
-        self.close_button.grid(row=0, column=6)
+        # Close button
+        self.close_button = IconButton(
+            self.frame,
+            "close",
+            bootstyle="secondary-outline",
+            command=self.hide
+        )
         
-        self.frame.columnconfigure(1, weight=1)
+        
+        # Compact layout: [🔍search] [↑] [↓] [count] [Aa] [×]
+        self.search_icon.pack(side="left", padx=(2, 0))
+        self.search_entry.pack(side="left", fill="x", expand=True, padx=(0, 2))
+        
+        self.search_container.grid(row=0, column=0, sticky="ew", padx=(0, 1))
+        self.prev_button.grid(row=0, column=1, padx=0)
+        self.next_button.grid(row=0, column=2, padx=(0, 2))
+        self.counter_label.grid(row=0, column=3, padx=(0, 2))
+        self.case_sensitive_check.grid(row=0, column=4, padx=(0, 2))
+        self.close_button.grid(row=0, column=5)
+        
+        self.frame.columnconfigure(0, weight=1)
         
     def _bind_events(self):
         """Bind events to widgets."""
@@ -240,25 +219,7 @@ class SearchBar:
         self.search_entry.bind("<Return>", lambda e: (self._next_match(), "break"))
         self.search_entry.bind("<Shift-Return>", lambda e: (self._previous_match(), "break"))
         
-        # Bind focus events for visual feedback
-        self.search_entry.bind("<FocusIn>", self._on_focus_in)
-        self.search_entry.bind("<FocusOut>", self._on_focus_out)
         
-    def _on_focus_in(self, event=None):
-        """Handle focus in event."""
-        style = ttk.Style()
-        style.configure("Search.TEntry", 
-                       fieldbackground=state.get_theme_setting("bg", "#ffffff"),
-                       foreground=state.get_theme_setting("fg", "#000000"),
-                       bordercolor=state.get_theme_setting("accent", "#0078d4"))
-        
-    def _on_focus_out(self, event=None):
-        """Handle focus out event."""
-        style = ttk.Style()
-        style.configure("Search.TEntry", 
-                       fieldbackground=state.get_theme_setting("bg", "#ffffff"),
-                       foreground=state.get_theme_setting("fg", "#000000"),
-                       bordercolor="#cccccc")
         
     def _on_search_change(self, event=None):
         """Handle search term changes."""
@@ -284,8 +245,9 @@ class SearchBar:
             case_sensitive
         )
         
-        # Update counter
-        self._update_counter()
+        # Update counter if frame exists
+        if self.frame:
+            self._update_counter()
         
         # Highlight matches
         if matches:
@@ -303,18 +265,18 @@ class SearchBar:
             end_pos = f"{line}.{end_col}"
             editor.tag_add("search_match", start_pos, end_pos)
             
-        # Configure the highlight tag
+        # Configure the highlight tags with VSCode colors
         editor.tag_configure(
             "search_match",
-            background=state.get_theme_setting("search_match_bg", "#ffff00"),
-            foreground=state.get_theme_setting("search_match_fg", "#000000")
+            background="#613315",  # VSCode match background (brownish)
+            foreground="#ffffff"   # White text for contrast
         )
         
-        # Highlight current match differently
+        # Highlight current match with VSCode orange
         editor.tag_configure(
-            "current_search_match",
-            background=state.get_theme_setting("current_search_match_bg", "#ff9900"),
-            foreground=state.get_theme_setting("current_search_match_fg", "#ffffff")
+            "current_search_match", 
+            background="#ff6600",  # VSCode current match orange
+            foreground="#000000"   # Black text on orange
         )
         
     def _clear_highlights(self, editor: tk.Text):
@@ -323,10 +285,18 @@ class SearchBar:
         editor.tag_remove("current_search_match", "1.0", "end")
         
     def _update_counter(self):
-        """Update the match counter label."""
+        """Update the match counter label VSCode-style."""
+        if not self.frame or not hasattr(self, 'counter_label'):
+            return
         total = self.search_engine.get_total_matches()
         current = self.search_engine.get_current_match_number()
-        self.counter_label.config(text=f"{current} / {total}")
+        
+        if total == 0:
+            self.counter_label.config(text="No results")
+        elif current > 0:
+            self.counter_label.config(text=f"{current} of {total}")
+        else:
+            self.counter_label.config(text=f"{total} results")
         
     def _go_to_current_match(self):
         """Scroll to and highlight the current match."""
@@ -349,168 +319,122 @@ class SearchBar:
         end_pos = f"{line}.{end_col}"
         current_tab.editor.tag_add("current_search_match", start_pos, end_pos)
         
-        # Scroll to the match
+        # Scroll to the match and select it entirely (VSCode behavior)
         current_tab.editor.see(pos)
-        current_tab.editor.mark_set("insert", pos)
-        # Ne pas donner le focus à l'éditeur pour garder le focus sur la barre de recherche
+        current_tab.editor.mark_set("insert", start_pos)
+        current_tab.editor.tag_remove("sel", "1.0", "end")
+        current_tab.editor.tag_add("sel", start_pos, end_pos)
+        current_tab.editor.mark_set("sel.first", start_pos)
+        current_tab.editor.mark_set("sel.last", end_pos)
         
-        # Simple animation for the current match
-        self._animate_match_highlight(current_tab.editor, start_pos, end_pos)
-        
-        # Update counter
-        self._update_counter()
+        # Update counter if frame exists
+        if self.frame:
+            self._update_counter()
         
         # Maintenir le focus sur la barre de recherche
-        self.search_entry.focus()
+        if self.frame and hasattr(self, 'search_entry'):
+            self.search_entry.focus()
         
-    def _animate_match_highlight(self, editor, start_pos, end_pos):
-        """Simple animation for highlighting the current match."""
-        # This is a placeholder for a simple animation
-        # We could implement a brief highlight effect here if desired
-        pass
         
     def _next_match(self):
-        """Navigate to the next match."""
-        print("_next_match called")
+        """Navigate to the next match (with cycling)."""
+        if not self.search_engine.matches:
+            return
+            
         match = self.search_engine.next_match()
         if match:
-            print("Got match, going to current match")
             self._go_to_current_match()
-        else:
-            print("No match, flashing counter")
-            # No more matches or no matches at all
-            self._flash_counter()
             
     def _previous_match(self):
-        """Navigate to the previous match."""
+        """Navigate to the previous match (with cycling)."""
+        if not self.search_engine.matches:
+            return
+            
         match = self.search_engine.previous_match()
         if match:
             self._go_to_current_match()
-        else:
-            # No more matches or no matches at all
-            self._flash_counter()
             
     def _flash_counter(self):
         """Provide visual feedback by flashing the counter label."""
+        if not self.frame or not hasattr(self, 'counter_label'):
+            return
         # Store original color
         original_fg = self.counter_label.cget("foreground")
         
         # Flash to red and back
         self.counter_label.config(foreground="red")
-        self.counter_label.after(100, lambda: self.counter_label.config(foreground=original_fg))
+        self.counter_label.after(100, lambda: self.counter_label.config(foreground=original_fg) if hasattr(self, 'counter_label') else None)
             
     def show(self):
-        """Show the search bar with a smooth animation."""
-        if self.is_visible:
+        """Show the search bar positioned over the active editor."""
+        # Get current active tab/editor
+        current_tab = state.get_current_tab()
+        if not current_tab or not current_tab.editor:
+            return
+            
+        # If already visible in the same tab, just focus
+        if self.is_visible and self.current_tab == current_tab:
             self.search_entry.focus()
             return
             
-        # Position the search bar at the top of the parent
-        self.frame.place(relx=0.5, rely=0.02, anchor="n", relwidth=0.5)
+        # Hide if visible in another tab
+        if self.is_visible:
+            self.hide()
+            
+        # Create frame in the current editor tab
+        self.current_tab = current_tab
+        self.frame = ttk.Frame(current_tab)
+        self._create_widgets()
+        self._bind_events()
         
-        # Add a subtle fade-in effect
-        self.frame.winfo_toplevel().after(10, lambda: self.search_entry.focus())
+        # Position in top-right corner of the editor
+        self.frame.place(relx=1.0, rely=0.0, anchor="ne", x=-15, y=10)
+            
         self.is_visible = True
-        
-        # Simple slide-down animation
-        self._animate_show()
+        self.search_entry.focus()
         
         # Pre-fill with selected text if any
-        current_tab = state.get_current_tab()
-        if current_tab and current_tab.editor:
-            try:
-                selected_text = current_tab.editor.selection_get()
-                if selected_text:
-                    self.search_entry.delete(0, "end")
-                    self.search_entry.insert(0, selected_text)
-                    self._on_search_change()
-            except tk.TclError:
-                # No text selected
-                pass
+        try:
+            selected_text = current_tab.editor.selection_get()
+            if selected_text:
+                self.search_entry.delete(0, "end")
+                self.search_entry.insert(0, selected_text)
+                self._on_search_change()
+        except tk.TclError:
+            pass
                 
-    def _animate_show(self):
-        """Simple slide-down animation for showing the search bar."""
-        # We'll implement a simple animation by moving the frame down
-        start_y = -self.frame.winfo_reqheight()
-        end_y = 0.02 * self.parent.winfo_height()
-        steps = 10
-        duration = 100  # ms
-        
-        step_delay = duration // steps
-        y_step = (end_y - start_y) // steps
-        
-        def animate_step(step):
-            if step <= steps:
-                y_pos = start_y + (y_step * step)
-                relative_y = y_pos / self.parent.winfo_height()
-                self.frame.place(relx=0.5, rely=relative_y, anchor="n", relwidth=0.5)
-                self.frame.after(step_delay, lambda: animate_step(step + 1))
-            else:
-                # Final position
-                self.frame.place(relx=0.5, rely=0.02, anchor="n", relwidth=0.5)
-                
-        # Start animation
-        self.frame.place(relx=0.5, rely=start_y/self.parent.winfo_height(), anchor="n", relwidth=0.5)
-        animate_step(1)
                 
     def hide(self):
         """Hide the search bar and clear highlights."""
-        # Simple slide-up animation
-        self._animate_hide()
-        # Perform the actual hide after a short delay to allow animation to complete
-        self.frame.after(100, self._perform_hide)
+        if not self.is_visible or not self.frame:
+            return
             
-    def _perform_hide(self):
-        """Actually hide the search bar."""
         self.frame.place_forget()
+        self.frame.destroy()
+        self.frame = None
         self.is_visible = False
         
         # Clear highlights
-        current_tab = state.get_current_tab()
-        if current_tab and current_tab.editor:
-            self._clear_highlights(current_tab.editor)
+        if self.current_tab and self.current_tab.editor:
+            self._clear_highlights(self.current_tab.editor)
             
         # Reset search engine
         self.search_engine.reset()
         
-        # Clear entry
-        self.search_entry.delete(0, "end")
-        self.counter_label.config(text="0 / 0")
-        
-        # Focus back to editor
-        if current_tab and current_tab.editor:
-            current_tab.editor.focus()
+        # Focus back to editor and maintain selection if exists
+        if self.current_tab and self.current_tab.editor:
+            self.current_tab.editor.focus()
+            # VSCode behavior: keep the current match selected when closing search
             
-    def _animate_hide(self):
-        """Simple slide-up animation for hiding the search bar."""
-        # We'll implement a simple animation by moving the frame up
-        start_y = 0.02 * self.parent.winfo_height()
-        end_y = -self.frame.winfo_reqheight()
-        steps = 10
-        duration = 100  # ms
-        
-        step_delay = duration // steps
-        y_step = (end_y - start_y) // steps
-        
-        def animate_step(step):
-            if step <= steps:
-                y_pos = start_y + (y_step * step)
-                relative_y = y_pos / self.parent.winfo_height()
-                self.frame.place(relx=0.5, rely=relative_y, anchor="n", relwidth=0.5)
-                self.frame.after(step_delay, lambda: animate_step(step + 1))
-            else:
-                # Final position (hidden)
-                self.frame.place_forget()
-                
-        # Start animation
-        animate_step(1)
+        self.current_tab = None
+            
 
 
 # Global search bar instance
 _search_bar: Optional[SearchBar] = None
 
 
-def initialize_search_bar(root: tk.Tk):
+def initialize_search_bar(root: tk.Widget):
     """Initialize the global search bar instance."""
     global _search_bar
     if _search_bar is None:
