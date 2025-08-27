@@ -314,6 +314,15 @@ def apply_theme(theme_name, root_window, main_paned_window, open_tabs_dict, perf
                          ("active", theme_settings["accent_color"])], 
               foreground=[("selected", theme_settings["notebook_active_tab_fg"])],
               bordercolor=[("selected", theme_settings["accent_color"])])
+    
+    # Update notebook fonts and close button color after theme change
+    from app import state
+    if hasattr(state, 'notebook') and state.notebook:
+        if hasattr(state.notebook, 'update_fonts'):
+            state.notebook.update_fonts()
+        if hasattr(state.notebook, 'update_close_button_color'):
+            # Use foreground color for close button to match theme
+            state.notebook.update_close_button_color(theme_settings["fg_color"])
 
     # --- Status Bar ---
     if status_bar_frame and status_label and gpu_status_label:

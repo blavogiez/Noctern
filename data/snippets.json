@@ -11,5 +11,6 @@
     "section": "\\section{\u27e8Section Title\u27e9}",
     "subsection": "\\subsection{\u27e8Subsection Title\u27e9}",
     "table2x2": "\\begin{table}[h!]\n    \\centering\n    \\begin{tabular}{|c|c|}\n        \\hline\n        \u27e8col1\u27e9 & \u27e8col2\u27e9 \\\\\n        \\hline\n        \u27e8cell1\u27e9 & \u27e8cell2\u27e9 \\\\\n        \\hline\n    \\end{tabular}\n    \\caption{\u27e8Caption\u27e9}\n    \\label{tab:\u27e8my_label\u27e9}\n\\end{table}",
-    "table3x3": "\\begin{table}[h!]\n    \\centering\n    \\begin{tabular}{|c|c|c|}\n        \\hline\n        \u27e8col1\u27e9 & \u27e8col2\u27e9 & \u27e8col3\u27e9 \\\\\n        \\hline\n        \u27e8r1c1\u27e9 & \u27e8r1c2\u27e9 & \u27e8r1c3\u27e9 \\\\\n        \u27e8r2c1\u27e9 & \u27e8r2c2\u27e9 & \u27e8r2c3\u27e9 \\\\\n        \\hline\n    \\end{tabular}\n    \\caption{\u27e8Caption\u27e9}\n    \\label{tab:\u27e8my_label\u27e9}\n\\end{table}"
+    "table3x3": "\\begin{table}[h!]\n    \\centering\n    \\begin{tabular}{|c|c|c|}\n        \\hline\n        \u27e8col1\u27e9 & \u27e8col2\u27e9 & \u27e8col3\u27e9 \\\\\n        \\hline\n        \u27e8r1c1\u27e9 & \u27e8r1c2\u27e9 & \u27e8r1c3\u27e9 \\\\\n        \u27e8r2c1\u27e9 & \u27e8r2c2\u27e9 & \u27e8r2c3\u27e9 \\\\\n        \\hline\n    \\end{tabular}\n    \\caption{\u27e8Caption\u27e9}\n    \\label{tab:\u27e8my_label\u27e9}\n\\end{table}",
+    "tt": "\\toto{}"
 }
