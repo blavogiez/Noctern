@@ -177,7 +177,7 @@ def create_top_buttons_frame(root):
     # --- Populate Menus ---
     tools_menu.add_command(label="Smart Style (Ctrl+Shift+S)...", command=lambda: [_log_action("Tools: Smart Style"), interface.style_selected_text()])
     tools_menu.add_separator()
-    tools_menu.add_command(label="Rephrase Selected Text (Ctrl+R)", command=lambda: [_log_action("Tools: Rephrase Text"), llm_rephrase.open_rephrase_panel()])
+    tools_menu.add_command(label="Rephrase Selected Text (Ctrl+R)", command=lambda: [_log_action("Tools: Rephrase Text"), interface.open_rephrase_panel()])
     tools_menu.add_command(label="Proofread Document (Ctrl+Shift+P)", command=lambda: [_log_action("Tools: Proofread Document"), llm_service.open_proofreading_panel()])
     tools_menu.add_command(label="Paste Image from Clipboard (Ctrl+Shift+V)", command=lambda: [_log_action("Tools: Paste Image"), interface.paste_image()])
     tools_menu.add_command(label="Insert Table (Ctrl+Shift+B)", command=lambda: [_log_action("Tools: Insert Table"), interface.insert_table()])

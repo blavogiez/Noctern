@@ -115,7 +115,3 @@ def _request_rephrase_for_text(editor, original_text, start_index, end_index, in
     )
 
 
-# Backward compatibility wrapper
-def open_rephrase_panel(initial_text=None):
-    """Legacy function name for backward compatibility."""
-    prepare_rephrase(initial_text)

@@ -156,14 +156,14 @@ class InteractiveSession:
 
     def rephrase(self):
         if llm_state._is_generating: return
-        from . import rephrase as llm_rephrase
         if not self.full_response_text.strip(): return
         self.destroy(delete_text=False)
         new_start_index = self.block_start_index
         new_end_index = self.editor.index(f"{new_start_index} + {len(self.full_response_text)} chars")
         self.editor.tag_add(tk.SEL, new_start_index, new_end_index)
         self.editor.focus_set()
-        llm_rephrase.open_rephrase_panel()
+        from app import interface
+        interface.open_rephrase_panel()
 
     def _post_process_completion(self):
         cleaned_text = llm_utils.remove_prefix_overlap_from_completion(self.completion_phrase, self.full_response_text)
