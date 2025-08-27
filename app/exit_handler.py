@@ -68,6 +68,7 @@ def save_application_state():
     app_config_data['model_rephrase'] = llm_state.model_rephrase
     app_config_data['model_debug'] = llm_state.model_debug
     app_config_data['model_style'] = llm_state.model_style
+    app_config_data['model_proofreading'] = llm_state.model_proofreading
     
     app_config.save_config(app_config_data)
     save_session()

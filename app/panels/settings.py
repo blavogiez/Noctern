@@ -268,23 +268,22 @@ class SettingsPanel(BasePanel):
         """Save current settings to config."""
         try:
             # Collect values from all UI components
-            updated_config = {
+            updates = {
                 "app_monitor": self.app_monitor_var.get(),
                 "pdf_monitor": self.pdf_monitor_var.get(),
                 "window_state": self.window_state_var.get(),
                 "editor_font_family": self.editor_font_var.get(),
-                "show_status_bar": str(self.show_status_bar_var.get()),
-                "show_pdf_preview": str(self.show_pdf_preview_var.get()),
+                "show_status_bar": self.show_status_bar_var.get(),
+                "show_pdf_preview": self.show_pdf_preview_var.get(),
                 "gemini_api_key": self.gemini_api_key_var.get(),
             }
             
             # Add model selections
             for key, var in self.model_vars.items():
-                updated_config[key] = var.get()
+                updates[key] = var.get()
             
-            # Merge with existing config and save
-            self.current_config.update(updated_config)
-            app_config.save_config(self.current_config)
+            # Use centralized update function
+            self.current_config = app_config.update_and_save_config(updates)
             
             logs_console.log("Settings saved successfully", level='INFO')
             messagebox.showinfo("Settings Saved", "Your settings have been saved successfully.", parent=self.panel_frame)
