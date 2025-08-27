@@ -15,7 +15,6 @@ from .prompts import PromptsPanel
 from .snippets import SnippetsPanel
 from .metrics import MetricsPanel
 from .table_insertion import TableInsertionPanel
-from .debug import DebugPanel
 from .image_details import ImageDetailsPanel
 from .global_prompts import GlobalPromptsPanel
 from .style_intensity import StyleIntensityPanel
@@ -282,27 +281,6 @@ def show_table_insertion_panel(insert_callback):
     state.panel_manager.show_panel(panel)
 
 
-def show_debug_panel(diff_content, log_content, active_editor_getter):
-    """
-    Show the debug panel in the left sidebar.
-    
-    Args:
-        diff_content: The diff content to display
-        log_content: The LaTeX log content
-        active_editor_getter: Function to get the active editor
-    """
-    if not state.panel_manager:
-        return
-        
-    panel = DebugPanel(
-        parent_container=None,  # Will be set by panel manager
-        theme_getter=state.get_theme_setting,
-        diff_content=diff_content,
-        log_content=log_content,
-        active_editor_getter=active_editor_getter
-    )
-    
-    state.panel_manager.show_panel(panel)
 
 
 def show_settings_panel():

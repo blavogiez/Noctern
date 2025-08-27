@@ -21,7 +21,6 @@ from .helpers import (
     show_snippets_panel,
     show_metrics_panel,
     show_table_insertion_panel,
-    show_debug_panel,
     show_settings_panel
 )
 
@@ -40,6 +39,5 @@ __all__ = [
     'show_snippets_panel',
     'show_metrics_panel',
     'show_table_insertion_panel',
-    'show_debug_panel',
     'show_settings_panel'
 ]

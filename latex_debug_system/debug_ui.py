@@ -16,81 +16,112 @@ class UltraFineTreeview(ttk.Treeview):
     def __init__(self, parent, **kwargs):
         """Initialize ultra-fine treeview with performance-optimized theme monitoring."""
         super().__init__(parent, **kwargs)
-        self._apply_fine_styling()
+        self._apply_theme_colors()
         self._setup_theme_monitoring()
     
-    def _apply_fine_styling(self):
-        """Apply aggressive fine styling that overrides all themes."""
-        widget_style = f"UltraFine{id(self)}.Treeview"
+    def _apply_theme_colors(self):
+        """Apply theme colors to debug treeview."""
+        widget_style = f"Debug{id(self)}.Treeview"
         style = ttk.Style()
         
-        # Force ultra-fine appearance with unified font
+        # Get colors from theme system to preserve exact debug look
+        from app import state
+        colors = {
+            'bg': state.get_theme_setting('debug_bg', '#ffffff'),
+            'fg': state.get_theme_setting('debug_fg', '#333333'),
+            'heading_bg': state.get_theme_setting('debug_heading_bg', '#f5f5f5'),
+            'heading_fg': state.get_theme_setting('debug_heading_fg', '#666666')
+        }
+        
         style.configure(widget_style,
-                       rowheight=32,
+                       rowheight=28,
                        font=('Segoe UI', 9),
-                       background='white',
-                       foreground='#333333',
-                       fieldbackground='white',
+                       background=colors['bg'],
+                       foreground=colors['fg'],
+                       fieldbackground=colors['bg'],
                        borderwidth=0,
                        relief='flat',
                        focuscolor='none')
         
         style.configure(widget_style + ".Heading",
                        font=('Segoe UI', 9),
-                       background='#f5f5f5',
-                       foreground='#666666',
+                       background=colors['heading_bg'],
+                       foreground=colors['heading_fg'],
                        borderwidth=0,
                        relief='flat',
                        anchor='w')
+        
+        # Force override global Treeview.Heading to prevent bold
+        style.map(widget_style + ".Heading", font=[("", ('Segoe UI', 9))])
         
         self.configure(style=widget_style)
         self._widget_style = widget_style
     
     def _setup_theme_monitoring(self):
-        """Monitor theme changes with event-based approach."""
-        # Primary: event-based monitoring
+        """Setup theme monitoring without polling."""
+        # Only event-based, no polling
         self.bind_all('<<ThemeChanged>>', self._on_theme_change)
         
-        # Also listen for style changes on parent windows
+        # Listen for style changes on parent windows
         parent = self.winfo_toplevel()
         if parent:
             parent.bind('<<StyleChanged>>', self._on_theme_change, add='+')
             
-        # Fallback: very infrequent check (only as safety net)
-        self._last_theme = ttk.Style().theme_use()
-        self._setup_fallback_check()
-            
     def _on_theme_change(self, event=None):
-        """Handle theme change events efficiently."""
+        """Handle theme change events."""
         try:
-            self._apply_fine_styling()
-            self._last_theme = ttk.Style().theme_use()
+            self._apply_theme_colors()
         except:
             pass
             
-    def _setup_fallback_check(self):
-        """Ultra-light fallback check only as safety net."""
-        def light_check():
-            try:
-                current_theme = ttk.Style().theme_use()
-                if current_theme != self._last_theme:
-                    self._on_theme_change()
-                    
-                if self.winfo_exists():
-                    # Much less frequent - only safety net
-                    self.after(5000, light_check)  # 5 seconds instead of 500ms
-            except:
-                pass
-                
-        # Start fallback after initial setup
-        self.after(5000, light_check)
+    
+    def _get_debug_colors(self, theme_name):
+        """Get debug-specific colors for theme."""
+        debug_colors = {
+            'darkly': {
+                'bg': '#2d2d2d', 'fg': '#ffffff',
+                'heading_bg': '#3d3d3d', 'heading_fg': '#cccccc'
+            },
+            'superhero': {
+                'bg': '#2b3e50', 'fg': '#ffffff', 
+                'heading_bg': '#34495e', 'heading_fg': '#ecf0f1'
+            },
+            'solar': {
+                'bg': '#002b36', 'fg': '#839496',
+                'heading_bg': '#073642', 'heading_fg': '#93a1a1'
+            },
+            'cyborg': {
+                'bg': '#222222', 'fg': '#ffffff',
+                'heading_bg': '#2a2a2a', 'heading_fg': '#cccccc'
+            },
+            'vapor': {
+                'bg': '#190a26', 'fg': '#f8f8ff',
+                'heading_bg': '#2a1b3d', 'heading_fg': '#e6e6fa'
+            }
+        }
+        
+        # Light themes
+        light_default = {
+            'bg': '#ffffff', 'fg': '#333333',
+            'heading_bg': '#f5f5f5', 'heading_fg': '#666666'
+        }
+        
+        return debug_colors.get(theme_name, light_default)
+    
+    def update_theme_colors(self):
+        """Update colors for current theme."""
+        self._apply_theme_colors()
+        # Also update any existing child widgets
+        for child in self.winfo_children():
+            if hasattr(child, 'update_theme_colors'):
+                child.update_theme_colors()
 
 
 class ErrorListWidget(UltraFineTreeview):
     """Widget for displaying LaTeX errors in a list format."""
     
     def __init__(self, parent, on_error_click: Optional[Callable[[LaTeXError], None]] = None):
-        """Initialize error list widget with ultra-fine styling."""
+        """Initialize error list widget with theme colors."""
         super().__init__(parent, columns=('severity', 'line', 'message', 'error_index'), 
                         show='tree headings', height=6)
         
@@ -104,22 +135,45 @@ class ErrorListWidget(UltraFineTreeview):
         self.heading('message', text='Message', anchor='w')
         self.heading('error_index', text='')  # Hidden column
         
-        self.column('#0', width=45, minwidth=35)
-        self.column('severity', width=70, minwidth=60)
-        self.column('line', width=60, minwidth=50)
-        self.column('message', width=400, minwidth=300)
+        self.column('#0', width=35, minwidth=30)
+        self.column('severity', width=60, minwidth=50)
+        self.column('line', width=45, minwidth=40)
+        self.column('message', width=500, minwidth=350, stretch=True)
         self.column('error_index', width=0, minwidth=0, stretch=False)  # Hidden
         
-        # Configure tags with fine colors for white background
-        self.tag_configure('error', foreground='#c62828', background='white')
-        self.tag_configure('warning', foreground='#ef6c00', background='white')
-        self.tag_configure('info', foreground='#1565c0', background='white')
+        # Configure tags with theme colors
+        self._update_tag_colors()
         
         # Bind events
         self.bind('<Double-1>', self._on_item_double_click)
         self.bind('<Return>', self._on_item_activate)
         
         logs_console.log("Error list widget initialized", level='DEBUG')
+    
+    def update_theme_colors(self):
+        """Update colors for current theme."""
+        super().update_theme_colors()
+        self._update_tag_colors()
+    
+    def _update_tag_colors(self):
+        """Update tag colors for current theme."""
+        from app import state
+        bg_color = state.get_theme_setting('debug_bg', '#ffffff')
+        theme_name = state.current_theme if hasattr(state, 'current_theme') else 'litera'
+        
+        # Dark themes
+        if theme_name in ['darkly', 'superhero', 'solar', 'cyborg', 'vapor']:
+            error_color = '#ff6b6b'
+            warning_color = '#ffa726' 
+            info_color = '#64b5f6'
+        else:
+            error_color = '#c62828'
+            warning_color = '#ef6c00'
+            info_color = '#1565c0'
+            
+        self.tag_configure('error', foreground=error_color, background=bg_color)
+        self.tag_configure('warning', foreground=warning_color, background=bg_color)
+        self.tag_configure('info', foreground=info_color, background=bg_color)
     
     def display_errors(self, errors: List[LaTeXError]):
         """Display errors in the list."""
@@ -141,6 +195,9 @@ class ErrorListWidget(UltraFineTreeview):
                        text=icon,
                        values=(error.severity, line_display, error.message, str(i)),
                        tags=(error.severity.lower(),))
+        
+        # Update colors after adding items
+        self._update_tag_colors()
     
     def clear_errors(self):
         """Clear all errors from display."""

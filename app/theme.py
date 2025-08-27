@@ -39,6 +39,9 @@ def get_theme_colors(style, theme_name):
     # Theme-specific syntax highlighting
     syntax_colors = _get_syntax_colors(theme_name, is_dark, colors)
     
+    # Debug center colors
+    debug_colors = _get_debug_colors(theme_name, is_dark, colors)
+    
     return {
         "root_bg": base_bg, "fg_color": base_fg,
         "sel_bg": colors.primary, "sel_fg": colors.light,
@@ -53,7 +56,9 @@ def get_theme_colors(style, theme_name):
         "button_bg": colors.primary, "button_fg": colors.light, "button_hover_bg": _adjust_brightness(colors.primary, 0.1),
         "treeview_bg": base_bg, "treeview_fg": base_fg, "treeview_heading_bg": colors.secondary,
         "notebook_bg": base_bg, "notebook_tab_bg": secondary_bg, "notebook_active_tab_bg": colors.primary, "notebook_active_tab_fg": colors.light,
-        "placeholder_color": colors.danger, "accent_color": colors.success, "border_color": colors.secondary
+        "placeholder_color": colors.danger, "accent_color": colors.success, "border_color": colors.secondary,
+        "debug_bg": debug_colors["bg"], "debug_fg": debug_colors["fg"],
+        "debug_heading_bg": debug_colors["heading_bg"], "debug_heading_fg": debug_colors["heading_fg"]
     }
 
 def _is_dark_theme(style, colors):
@@ -128,6 +133,39 @@ def _get_syntax_colors(theme_name, is_dark, colors):
             "brace": colors.danger if hasattr(colors, 'danger') else "#FF1493"
         }
 
+def _get_debug_colors(theme_name, is_dark, colors):
+    """Get debug-specific colors that preserve exact debug_ui look."""
+    debug_colors = {
+        'darkly': {
+            'bg': '#2d2d2d', 'fg': '#ffffff',
+            'heading_bg': '#3d3d3d', 'heading_fg': '#cccccc'
+        },
+        'superhero': {
+            'bg': '#2b3e50', 'fg': '#ffffff', 
+            'heading_bg': '#34495e', 'heading_fg': '#ecf0f1'
+        },
+        'solar': {
+            'bg': '#002b36', 'fg': '#839496',
+            'heading_bg': '#073642', 'heading_fg': '#93a1a1'
+        },
+        'cyborg': {
+            'bg': '#222222', 'fg': '#ffffff',
+            'heading_bg': '#2a2a2a', 'heading_fg': '#cccccc'
+        },
+        'vapor': {
+            'bg': '#190a26', 'fg': '#f8f8ff',
+            'heading_bg': '#2a1b3d', 'heading_fg': '#e6e6fa'
+        }
+    }
+    
+    # Light themes default
+    light_default = {
+        'bg': '#ffffff', 'fg': '#333333',
+        'heading_bg': '#f5f5f5', 'heading_fg': '#666666'
+    }
+    
+    return debug_colors.get(theme_name, light_default)
+
 def apply_theme(theme_name, root_window, main_paned_window, open_tabs_dict, perform_heavy_updates_callback, console_widget, status_bar_frame=None, status_label=None, gpu_status_label=None, config_settings=None):
     style = root_window.style
     
@@ -135,6 +173,13 @@ def apply_theme(theme_name, root_window, main_paned_window, open_tabs_dict, perf
     style.theme_use(base_theme)
     
     theme_settings = get_theme_colors(style, theme_name)
+    
+    # Update state immediately before widget updates
+    try:
+        from app import state
+        state._theme_settings = theme_settings
+    except:
+        pass
     
     # Get colors and theme type for enhanced styling
     colors = style.colors
@@ -238,7 +283,7 @@ def apply_theme(theme_name, root_window, main_paned_window, open_tabs_dict, perf
     style.configure("Treeview.Heading", 
                     background=theme_settings["treeview_heading_bg"], 
                     foreground=theme_settings["fg_color"],
-                    font=("Segoe UI", 9, "bold"),
+                    font=("Segoe UI", 9),
                     relief="flat",
                     borderwidth=1)
 
@@ -307,6 +352,19 @@ def apply_theme(theme_name, root_window, main_paned_window, open_tabs_dict, perf
         if tab.line_numbers:
             tab.line_numbers.update_theme(text_color=theme_settings["ln_text_color"], bg_color=theme_settings["ln_bg_color"])
 
+    # --- Debug Center Theme Update ---
+    def update_all_widgets(widget):
+        if hasattr(widget, 'update_theme_colors'):
+            widget.update_theme_colors()
+        for child in widget.winfo_children():
+            update_all_widgets(child)
+    
+    try:
+        update_all_widgets(root_window)
+        root_window.event_generate('<<ThemeChanged>>')
+    except:
+        pass
+    
     perform_heavy_updates_callback()
     root_window.update_idletasks()
     

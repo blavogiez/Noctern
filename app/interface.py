@@ -94,10 +94,17 @@ def style_selected_text(event=None):
 
 def analyze_compilation_diff(event=None):
     """Analyze LaTeX compilation differences with LLM integration."""
-    def panel_callback(diff_info):
-        panels.show_debug_panel(diff_info)
+    def debug_callback(diff_content, log_content, file_path, current_content):
+        from app import state
+        if state.debug_coordinator:
+            state.debug_coordinator.handle_compilation_result(
+                success=False,
+                log_content=log_content,
+                file_path=file_path,
+                current_content=current_content
+            )
     
-    llm_latex_debug.prepare_compilation_analysis(panel_callback)
+    llm_latex_debug.prepare_compilation_analysis(debug_callback)
 
 def perform_heavy_updates():
     """Execute heavy updates using optimized performance system."""
