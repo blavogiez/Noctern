@@ -88,13 +88,13 @@ def _fetch_ollama_models():
         logs_console.log(f"Failed to get Ollama models: {e}", level='WARNING')
         return []
 
-def get_available_models():
+def get_available_models(force_refresh=False):
     """Get available models from Ollama and Gemini."""
     global _model_cache, _last_model_check
     current_time = time.time()
     
-    # Use cached models if still valid
-    if _model_cache and (current_time - _last_model_check) < MODEL_CACHE_TTL:
+    # Use cached models if still valid and not forcing refresh
+    if not force_refresh and _model_cache and (current_time - _last_model_check) < MODEL_CACHE_TTL:
         return _model_cache.copy()
     
     model_names = []

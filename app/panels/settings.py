@@ -222,7 +222,7 @@ class SettingsPanel(BasePanel):
     def _identify_screens(self):
         """Display screen identification."""
         from app import state
-        screen.show_screen_numbers(state.main_window)
+        screen.show_screen_numbers(state.root)
 
     def _refresh_models(self):
         """Refresh the available models list."""
