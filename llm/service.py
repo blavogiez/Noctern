@@ -8,6 +8,7 @@ from llm import prompts as llm_prompts
 from llm import history as llm_history
 from llm import autostyle as llm_autostyle
 from llm import proofreading
+from app import interface
 
 def start_autostyle_process(event=None):
     """Initiates the 'autostyle' process on the selected text in the active editor."""
@@ -59,3 +60,11 @@ def request_llm_to_complete_text(event=None):
         event (tk.Event, optional): The Tkinter event object, if called from a binding. Defaults to None.
     """
     llm_completion.request_llm_to_complete_text()
+
+def open_edit_prompts_panel(event=None):
+    """Wrapper to open edit prompts panel via interface."""
+    interface.open_edit_prompts_panel(event)
+
+def open_set_keywords_panel(event=None):
+    """Wrapper to open set keywords panel via interface."""
+    interface.open_set_keywords_panel(event)

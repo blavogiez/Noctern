@@ -58,10 +58,10 @@ def open_proofreading_panel(event=None):
 
 def open_rephrase_panel(event=None):
     """Open rephrase panel with LLM integration."""
-    def panel_callback(editor, selected_text):
-        panels.show_rephrase_panel(editor, selected_text)
+    def panel_callback(original_text, on_rephrase_callback, on_cancel_callback):
+        panels.show_rephrase_panel(original_text, on_rephrase_callback, on_cancel_callback)
     
-    llm_rephrase.prepare_rephrase(panel_callback)
+    llm_rephrase.prepare_rephrase(panel_callback=panel_callback)
 
 def open_set_keywords_panel(event=None):
     """Open keywords panel with LLM integration."""
