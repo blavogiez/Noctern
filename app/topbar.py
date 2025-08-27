@@ -8,7 +8,7 @@ import ttkbootstrap as ttk
 from latex import compiler as latex_compiler
 from llm import service as llm_service
 from latex import translator as latex_translator
-from app import interface, state, icons
+from app import interface, state
 from utils import logs_console
 from llm import rephrase as llm_rephrase
 from editor import snippets as editor_snippets
@@ -25,8 +25,8 @@ def create_top_buttons_frame(root):
     Creates and populates the top bar frame with buttons and menus for application control.
     This version uses .place() for layout to allow for hover animations.
     """
-    top_frame = ttk.Frame(root, height=55, relief="flat", borderwidth=1)
-    top_frame.pack(fill="x", padx=8, pady=(8,0))
+    top_frame = ttk.Frame(root, height=65)
+    top_frame.pack(fill="x", padx=0, pady=0)
 
     # --- Animation Constants ---
     Y_POS = 5
@@ -37,9 +37,7 @@ def create_top_buttons_frame(root):
     buttons = []
     
     # Helper to create, place, and bind a button
-    def create_animated_button(text, command, bootstyle, icon_name=None):
-        icon = icons.get_icon(icon_name, size=16) if icon_name else None
-        
+    def create_animated_button(text, command, bootstyle):
         original_style = bootstyle
         # Enhanced hover effect - removes outline and adds subtle emphasis
         if "outline" in bootstyle:
@@ -53,12 +51,8 @@ def create_top_buttons_frame(root):
             text=text, 
             command=command, 
             bootstyle=original_style,
-            image=icon,
-            compound="left",
             padding=(12, 8)
         )
-        if icon:
-            button.image = icon # Keep a reference!
             
         # Enhanced animations with smoother transitions
         def on_enter(e):
@@ -80,8 +74,8 @@ def create_top_buttons_frame(root):
         return button
 
     # File Operations
-    create_animated_button("Open", lambda: [_log_action("Open File"), interface.open_file()], "primary-outline", "folder.svg")
-    create_animated_button("Save", lambda: [_log_action("Save File"), interface.save_file()], "primary-outline", "save.svg")
+    create_animated_button("Open", lambda: [_log_action("Open File"), interface.open_file()], "primary-outline")
+    create_animated_button("Save", lambda: [_log_action("Save File"), interface.save_file()], "primary-outline")
     create_animated_button("Save As", lambda: [_log_action("Save File As"), interface.save_file_as()], "primary-outline")
     
     # Add some spacing between groups
@@ -90,9 +84,9 @@ def create_top_buttons_frame(root):
     buttons.append(spacer1)
     
     # LaTeX Processing
-    create_animated_button("Compile", lambda: [_log_action("Compile LaTeX"), latex_compiler.compile_latex()], "info-outline", "tool.svg")
-    create_animated_button("View PDF", lambda: [_log_action("View PDF"), latex_compiler.view_pdf_external()], "info-outline", "file-text.svg")
-    create_animated_button("Translate", lambda: [_log_action("Translate Text"), latex_translator.open_translate_panel()], "info-outline", "globe.svg")
+    create_animated_button("Compile", lambda: [_log_action("Compile LaTeX"), latex_compiler.compile_latex()], "info-outline")
+    create_animated_button("View PDF", lambda: [_log_action("View PDF"), latex_compiler.view_pdf_external()], "info-outline")
+    create_animated_button("Translate", lambda: [_log_action("Translate Text"), latex_translator.open_translate_panel()], "info-outline")
 
     # Add some spacing between groups
     spacer2 = ttk.Frame(top_frame, width=10)
@@ -100,8 +94,8 @@ def create_top_buttons_frame(root):
     buttons.append(spacer2)
     
     # LLM Interaction
-    create_animated_button("Complete", lambda: [_log_action("LLM Complete Text"), llm_service.request_llm_to_complete_text()], "success-outline", "complete.svg")
-    create_animated_button("Generate", lambda: [_log_action("LLM Generate Text"), llm_service.open_generate_text_panel()], "success-outline", "generate.svg")
+    create_animated_button("Complete", lambda: [_log_action("LLM Complete Text"), llm_service.request_llm_to_complete_text()], "success-outline")
+    create_animated_button("Generate", lambda: [_log_action("LLM Generate Text"), llm_service.open_generate_text_panel()], "success-outline")
     
     # Add some spacing between groups
     spacer3 = ttk.Frame(top_frame, width=10)
@@ -109,7 +103,7 @@ def create_top_buttons_frame(root):
     buttons.append(spacer3)
     
     # PDF Navigation
-    create_animated_button("Go to line in PDF", lambda: [_log_action("Go to line in PDF"), interface.go_to_line_in_pdf()], "warning-outline", "file-text.svg")
+    create_animated_button("Go to line in PDF", lambda: [_log_action("Go to line in PDF"), interface.go_to_line_in_pdf()], "warning-outline")
 
     # Place buttons dynamically
     current_x = 5
@@ -125,9 +119,7 @@ def create_top_buttons_frame(root):
             current_x += button.winfo_width() + BUTTON_PADDING
 
     # --- Menus (placed on the right) ---
-    def create_animated_menubutton(text, bootstyle, icon_name=None):
-        icon = icons.get_icon(icon_name, size=16) if icon_name else None
-        
+    def create_animated_menubutton(text, bootstyle):
         original_style = bootstyle
         # Enhanced hover effect matching buttons
         if "outline" in bootstyle:
@@ -139,12 +131,8 @@ def create_top_buttons_frame(root):
             top_frame, 
             text=text, 
             bootstyle=original_style,
-            image=icon,
-            compound="left",
             padding=(12, 8)
         )
-        if icon:
-            menubutton.image = icon # Keep a reference!
         
         # Enhanced animations matching buttons
         def on_enter(e):
@@ -164,12 +152,12 @@ def create_top_buttons_frame(root):
         
         return menubutton
 
-    tools_menubutton = create_animated_menubutton("Tools", "secondary-outline", "tool.svg")
-    tools_menubutton.place(relx=1.0, x=-180, y=Y_POS, anchor="ne")
+    tools_menubutton = create_animated_menubutton("Tools", "secondary-outline")
+    tools_menubutton.place(relx=1.0, x=-160, y=Y_POS, anchor="ne")
     tools_menu = ttk.Menu(tools_menubutton, tearoff=False)
     tools_menubutton["menu"] = tools_menu
 
-    settings_menubutton = create_animated_menubutton("Settings", "secondary-outline", "settings.svg")
+    settings_menubutton = create_animated_menubutton("Settings", "secondary-outline")
     settings_menubutton.place(relx=1.0, x=-5, y=Y_POS, anchor="ne")
     settings_menu = ttk.Menu(settings_menubutton, tearoff=False)
     settings_menubutton["menu"] = settings_menu
@@ -184,9 +172,9 @@ def create_top_buttons_frame(root):
     tools_menu.add_separator()
     tools_menu.add_command(label="Clean Project Directory", command=lambda: [_log_action("Tools: Clean Project"), latex_compiler.clean_project_directory()])
     tools_menu.add_separator()
-    tools_menu.add_command(label="Usage Metrics...", command=lambda: [_log_action("Tools: Usage Metrics"), show_metrics_panel()])
+    tools_menu.add_command(label="Usage Metrics", command=lambda: [_log_action("Tools: Usage Metrics"), show_metrics_panel()])
 
-    settings_menu.add_command(label="Preferences...", command=lambda: [_log_action("Settings: Open Preferences"), show_settings_panel()])
+    settings_menu.add_command(label="Preferences", command=lambda: [_log_action("Settings: Open Preferences"), show_settings_panel()])
     settings_menu.add_separator()
     
     theme_menu = ttk.Menu(settings_menu, tearoff=False)

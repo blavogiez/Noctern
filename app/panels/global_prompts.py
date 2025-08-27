@@ -157,7 +157,7 @@ class GlobalPromptsPanel(BasePanel):
             success_msg = f"Global prompts have been saved and applied. ({saved_count} prompts saved)"
             messagebox.showinfo("Success", success_msg, parent=self.content_frame)
             logs_console.log("Global prompts saved and reloaded.", level='SUCCESS')
-            self._close_panel()
+            self.close_panel()
         except Exception as e:
             error_msg = f"Failed to reload prompts: {e}"
             logs_console.log(error_msg, level='ERROR')
