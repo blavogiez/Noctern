@@ -1,6 +1,6 @@
 """
-Implement search functionality for AutomaTeX editor.
-Modern, integrated search bar with clean design.
+Search functionality for AutomaTeX editor.
+Clean, VSCode-style search bar with replace and undo.
 """
 
 import tkinter as tk
@@ -10,6 +10,12 @@ from typing import Optional, List, Tuple
 from app import state
 from utils import logs_console
 from utils.icons import IconButton
+
+# Animation constants
+ANIMATION_FPS = 60
+ENTRY_DURATION = 120  # ms 
+EXIT_DURATION = 100   # ms
+BAR_OFFSET_X = -35    # pixels from right edge
 
 
 class SearchEngine:
@@ -214,7 +220,7 @@ class SearchBar:
             text="Aa",
             variable=self.case_sensitive_var,
             bootstyle="secondary-toolbutton",
-            command=self._on_search_change
+            command=self._update_search
         )
         
         # Replace toggle button (at left like VSCode)
@@ -277,6 +283,16 @@ class SearchBar:
             command=self._replace_all
         )
         
+        # Undo button (initially hidden)
+        self.undo_button = ttk.Button(
+            self.frame,
+            text="↶",
+            bootstyle="secondary-outline",
+            width=3,
+            command=self._undo_replace
+        )
+        self.undo_available = False
+        
         # Hide replace row initially
         self._hide_replace()
         
@@ -293,7 +309,11 @@ class SearchBar:
         # Align with search entry (skip toggle column)
         self.replace_entry.grid(row=1, column=1, sticky="ew", padx=(0, 4), pady=(2, 0))
         self.replace_current_button.grid(row=1, column=2, padx=0, pady=(2, 0))
-        self.replace_all_button.grid(row=1, column=3, padx=(0, 4), pady=(2, 0))
+        self.replace_all_button.grid(row=1, column=3, padx=(0, 2), pady=(2, 0))
+        
+        # Show undo button if available
+        if self.undo_available:
+            self.undo_button.grid(row=1, column=4, padx=(0, 4), pady=(2, 0))
         
     def _hide_replace(self):
         """Hide replace widgets."""
@@ -301,6 +321,7 @@ class SearchBar:
             self.replace_entry.grid_remove()
             self.replace_current_button.grid_remove() 
             self.replace_all_button.grid_remove()
+            self.undo_button.grid_remove()
         except AttributeError:
             pass  # Widgets not created yet
             
@@ -326,9 +347,15 @@ class SearchBar:
         start_pos = f"{line}.{start_col}"
         end_pos = f"{line}.{end_col}"
         
+        # Mark undo separator before replace
+        current_tab.editor.edit_separator()
+        
         # Replace text in editor
         current_tab.editor.delete(start_pos, end_pos)
         current_tab.editor.insert(start_pos, replacement_text)
+        
+        # Mark that undo is available
+        self._mark_undo_available()
         
         # Update search to find next match
         self._refresh_search_after_replace()
@@ -353,6 +380,9 @@ class SearchBar:
         if not matches:
             return
             
+        # Mark undo separator before replace all
+        current_tab.editor.edit_separator()
+        
         # Replace all matches from end to beginning to maintain positions
         for line, start_col, end_col in reversed(matches):
             start_pos = f"{line}.{start_col}"
@@ -362,13 +392,35 @@ class SearchBar:
             current_tab.editor.delete(start_pos, end_pos)
             current_tab.editor.insert(start_pos, replacement_text)
         
+        # Mark that undo is available
+        self._mark_undo_available()
+        
         # Refresh search to show no matches
         self._refresh_search_after_replace()
+        
+    def _undo_replace(self):
+        """Undo the last replace operation."""
+        current_tab = state.get_current_tab()
+        if not current_tab or not current_tab.editor:
+            return
+            
+        try:
+            current_tab.editor.edit_undo()
+            # Refresh search after undo
+            self._update_search()
+        except tk.TclError:
+            pass  # Nothing to undo
+    
+    def _mark_undo_available(self):
+        """Mark that undo is available and update UI."""
+        self.undo_available = True
+        if self.show_replace and hasattr(self, 'undo_button'):
+            self.undo_button.grid(row=1, column=4, padx=(0, 4), pady=(2, 0))
         
     def _refresh_search_after_replace(self):
         """Refresh search results after replacement."""
         # Re-run search to update matches
-        self._on_search_change()
+        self._update_search()
         
         # Move to next match if available
         if self.search_engine.matches:
@@ -378,10 +430,10 @@ class SearchBar:
         
     def _bind_events(self):
         """Bind events to widgets."""
-        # Use StringVar trace instead of KeyRelease to only trigger on actual text changes
-        self.search_var = tk.StringVar()
-        self.search_entry.config(textvariable=self.search_var)
-        self.search_var.trace('w', lambda *args: self._on_search_change())
+        # Use StringVar to track text changes only
+        self.search_text_var = tk.StringVar()
+        self.search_entry.config(textvariable=self.search_text_var)
+        self.search_text_var.trace('w', lambda *args: self._update_search())
         
         self.search_entry.bind("<Escape>", lambda e: self.hide())
         self.search_entry.bind("<Return>", lambda e: (self._next_match(), "break"))
@@ -394,9 +446,9 @@ class SearchBar:
             self.replace_entry.bind("<Escape>", lambda e: self.hide())
         
         
-    def _on_search_change(self):
-        """Handle search term changes."""
-        search_term = self.search_var.get()
+    def _update_search(self):
+        """Update search results when text changes."""
+        search_term = self.search_text_var.get()
         case_sensitive = self.case_sensitive_var.get()
         
         current_tab = state.get_current_tab()
@@ -555,8 +607,8 @@ class SearchBar:
         self._create_widgets()
         self._bind_events()
         
-        # Start animation from top of editor
-        self._animate_slide_down()
+        # Start entry animation
+        self._animate_entry()
             
         self.is_visible = True
         self.search_entry.focus()
@@ -565,7 +617,7 @@ class SearchBar:
         try:
             selected_text = current_tab.editor.selection_get()
             if selected_text:
-                self.search_var.set(selected_text)
+                self.search_text_var.set(selected_text)
         except tk.TclError:
             pass
                 
@@ -575,8 +627,8 @@ class SearchBar:
         if not self.is_visible or not self.frame:
             return
             
-        # Start slide-up animation
-        self._animate_slide_up()
+        # Start exit animation
+        self._animate_exit()
         
     def _finish_hide(self):
         """Complete the hiding process after animation."""
@@ -601,64 +653,31 @@ class SearchBar:
             
         self.current_tab = None
         
-    def _animate_slide_down(self):
-        """Animate search bar sliding down from top of editor."""
-        # Final position (moved more to the left to avoid scrollbar)
-        final_x = -35
-        final_y = 10
+    def _animate_entry(self):
+        """Animate search bar sliding down."""
+        self._animate_slide(-30, 10, ENTRY_DURATION)
         
-        # Start position (above visible area)
-        start_y = -30
+    def _animate_exit(self):
+        """Animate search bar sliding up."""
+        self._animate_slide(10, -30, EXIT_DURATION, self._finish_hide)
         
-        # Animation parameters for 60fps (16.67ms per frame)
-        fps = 60
-        duration = 200  # ms total
-        step_delay = 1000 // fps  # 16.67ms per frame
+    def _animate_slide(self, start_y, end_y, duration, callback=None):
+        """Generic slide animation."""
+        step_delay = 1000 // ANIMATION_FPS
         steps = duration // step_delay
-        y_increment = (final_y - start_y) / steps
-        
-        def animate_step(step):
-            if step <= steps:
-                current_y = start_y + (y_increment * step)
-                self.frame.place(relx=1.0, rely=0.0, anchor="ne", x=final_x, y=int(current_y))
-                
-                if step < steps:
-                    self.frame.after(step_delay, lambda: animate_step(step + 1))
-                else:
-                    # Final position
-                    self.frame.place(relx=1.0, rely=0.0, anchor="ne", x=final_x, y=final_y)
-            
-        # Start animation
-        animate_step(1)
-        
-    def _animate_slide_up(self):
-        """Animate search bar sliding up and disappearing."""
-        # Current position
-        current_x = -35
-        current_y = 10
-        
-        # End position (above visible area)
-        end_y = -30
-        
-        # Animation parameters for 60fps (16.67ms per frame)
-        fps = 60
-        duration = 150  # ms total
-        step_delay = 1000 // fps  # 16.67ms per frame
-        steps = duration // step_delay
-        y_increment = (end_y - current_y) / steps
+        y_increment = (end_y - start_y) / steps
         
         def animate_step(step):
             if step <= steps and self.frame:
-                new_y = current_y + (y_increment * step)
-                self.frame.place(relx=1.0, rely=0.0, anchor="ne", x=current_x, y=int(new_y))
+                current_y = start_y + (y_increment * step)
+                self.frame.place(relx=1.0, rely=0.0, anchor="ne", x=BAR_OFFSET_X, y=int(current_y))
                 
                 if step < steps:
                     self.frame.after(step_delay, lambda: animate_step(step + 1))
                 else:
-                    # Animation complete, finish hiding
-                    self._finish_hide()
+                    if callback:
+                        callback()
             
-        # Start animation
         animate_step(1)
             
 
