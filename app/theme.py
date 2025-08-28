@@ -374,8 +374,17 @@ def apply_theme(theme_name, root_window, main_paned_window, open_tabs_dict, perf
         
         # Refresh PDF preview with new theme if available
         from app import state
-        if state.pdf_preview_interface and hasattr(state.pdf_preview_interface, 'viewer'):
-            state.pdf_preview_interface.viewer.refresh_theme()
+        from utils import logs_console
+        
+        if (state.pdf_preview_interface and 
+            hasattr(state.pdf_preview_interface, 'preview_manager') and 
+            state.pdf_preview_interface.preview_manager and
+            state.pdf_preview_interface.preview_manager.viewer):
+            logs_console.log(f"Theme: Scheduling PDF refresh for theme {theme_name}", level='INFO')
+            # Schedule PDF refresh after theme application
+            root_window.after(50, state.pdf_preview_interface.preview_manager.viewer.refresh_theme)
+        else:
+            logs_console.log("Theme: No PDF viewer available for refresh", level='DEBUG')
     except:
         pass
     

@@ -627,12 +627,23 @@ class PDFPreviewViewer:
             
     def refresh_theme(self):
         """Refresh the PDF display when theme changes."""
+        logs_console.log("PDF Viewer: Theme refresh requested", level='INFO')
+        
+        if not self.pdf_path or not self.page_layouts:
+            logs_console.log("PDF Viewer: No PDF loaded, skipping theme refresh", level='DEBUG')
+            return
+            
         # Clear theme-specific caches and force re-rendering
         self._clear_theme_caches()
+        logs_console.log("PDF Viewer: Cleared theme caches", level='DEBUG')
+        
         # Update the current dark mode state
+        old_dark_mode = self.current_dark_mode_state
         self.current_dark_mode_state = is_dark_mode_inversion_needed()
-        # Re-render visible pages with new theme
-        self._update_visible_pages()
+        logs_console.log(f"PDF Viewer: Dark mode changed from {old_dark_mode} to {self.current_dark_mode_state}", level='INFO')
+        
+        # Re-render visible pages with new theme immediately
+        self.canvas.after_idle(self._update_visible_pages)
     
     def _update_status_label(self):
         """Update the status label with compilation information."""
