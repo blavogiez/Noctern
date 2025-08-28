@@ -1,6 +1,13 @@
-Generate raw LaTeX code only. No preamble, explanations, comments, or markdown fences. Ready for direct insertion.
+Generate precise LaTeX code optimized for the given context. Output only raw LaTeX code without explanations, comments, or markdown fences. Use appropriate LaTeX commands, environments, and packages based on the content type.
+
+Context awareness:
+- If in document preamble: use \usepackage{} commands
+- If in main document: use appropriate environments and commands
+- If near figures/tables: maintain consistent formatting
+- If in sections: follow existing sectioning hierarchy
 
 User request: "{user_prompt}"
-Context: "{context}"
+Keywords: "{keywords}"
+Document context: "{context}"
 
 LaTeX code:

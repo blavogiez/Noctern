@@ -40,6 +40,10 @@
 \begin{abstract}
 MMathematical modeling, integrating hydrodynamics, biomechanics, rhythm control, signal processing, and statistics, is crucial for optimizing movement in performance swimming. This document presents simple yet useful models for analysis and training!
 
+\begin{equation*}
+\int_{0}^{\infty} x^2 e^{-x} \, dx = 2
+\end{equation*}
+
 \begin{enumerate}
     \item The integration of mathematical modeling, encompassing hydrodynamics, biomechanics, rhythm control, signal processing, and statistics, is essential for the optimization of movement in competitive swimming. This paper introduces elementary yet valuable models that facilitate analysis and training methodologies!
     
@@ -109,6 +113,8 @@ Formellement, on pose un problème de contrôle optimal :
  &v(0)=0,\; x(0)=0,\; x(T)=L,\; v(t)\ge 0.
  \end{align}
 Des solutions typiques prédisent un départ fort, une phase quasi-constante, puis une légère décroissance lorsque $W'$ s'épuise (\emph{positive split} modéré).
+
+$W'(T)=W'(0)-\int_0^T P_\mathrm{ana}(t)\,\dd t\ge 0$
 
 \section{Analyse dimensionnelle et mise à l'échelle}
 En notant $U$ une vitesse de référence, on définit un nombre de Froude $\mathrm{Fr}=\frac{U}{\sqrt{g\ell}}$ (longueur caractéristique $\ell$) et un nombre de Reynolds $\mathrm{Re}=\frac{\rho U \ell}{\mu}$. À l'échelle du nageur en piscine, $\mathrm{Re}\gg 1$ et l'inertie domine les effets visqueux locaux, justifiant l'usage de la traînée quadratique.

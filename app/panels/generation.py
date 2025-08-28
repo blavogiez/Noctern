@@ -35,6 +35,7 @@ class GenerationPanel(BasePanel):
         self.lines_before_entry: Optional[tk.Entry] = None
         self.lines_after_entry: Optional[tk.Entry] = None
         self.latex_mode_var: Optional[tk.BooleanVar] = None
+        self.math_mode_var: Optional[tk.BooleanVar] = None
         self.generate_button: Optional[tk.Button] = None
         
     def get_panel_title(self) -> str:
@@ -173,10 +174,20 @@ class GenerationPanel(BasePanel):
         self.latex_mode_var = tk.BooleanVar()
         latex_checkbox = ttk.Checkbutton(
             options_section,
-            text="LaTeX oriented generation (uses code model)",
-            variable=self.latex_mode_var
+            text="LaTeX oriented generation",
+            variable=self.latex_mode_var,
+            command=self._on_latex_mode_changed
         )
         latex_checkbox.pack(anchor="w")
+        
+        self.math_mode_var = tk.BooleanVar()
+        math_checkbox = ttk.Checkbutton(
+            options_section,
+            text="Math mode (mathematical LaTeX)",
+            variable=self.math_mode_var,
+            command=self._on_math_mode_changed
+        )
+        math_checkbox.pack(anchor="w", pady=(StandardComponents.PADDING//2, 0))
         
         # Generate button
         generate_buttons = [(
@@ -258,8 +269,9 @@ class GenerationPanel(BasePanel):
             return
         
         latex_mode = self.latex_mode_var.get()
+        math_mode = self.math_mode_var.get()
         
-        logs_console.log(f"Generate request: '{prompt_text[:50]}...', LaTeX mode: {latex_mode}", level='ACTION')
+        logs_console.log(f"Generate request: '{prompt_text[:50]}...', LaTeX: {latex_mode}, Math: {math_mode}", level='ACTION')
         
         # Add to history
         if self.on_history_add_callback:
@@ -267,7 +279,7 @@ class GenerationPanel(BasePanel):
         
         # Call generation callback
         if self.on_generate_callback:
-            self.on_generate_callback(prompt_text, lines_before, lines_after, latex_mode)
+            self.on_generate_callback(prompt_text, lines_before, lines_after, latex_mode, math_mode)
         
         # Close panel after generating
         self._handle_close()
@@ -276,3 +288,13 @@ class GenerationPanel(BasePanel):
         """Focus the main interactive widget."""
         if self.prompt_text_widget:
             self.prompt_text_widget.focus_set()
+    
+    def _on_latex_mode_changed(self):
+        """Handle LaTeX mode checkbox change - ensure mutual exclusion."""
+        if self.latex_mode_var.get() and self.math_mode_var.get():
+            self.math_mode_var.set(False)
+    
+    def _on_math_mode_changed(self):
+        """Handle Math mode checkbox change - ensure mutual exclusion."""
+        if self.math_mode_var.get() and self.latex_mode_var.get():
+            self.latex_mode_var.set(False)

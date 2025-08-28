@@ -1,0 +1,16 @@
+Generate mathematical LaTeX code specialized for equations, formulas, and mathematical notation. Output only raw LaTeX code without explanations or comments. Use proper mathematical environments and commands.
+
+Mathematical guidelines:
+- Use appropriate math environments: equation, align, gather, cases, etc.
+- Apply correct mathematical notation and symbols
+- Include proper spacing with thin, medium, thick spaces and quad spacing
+- Use left/right delimiters for large parentheses, brackets  
+- Apply mathrm for text in math mode
+- Use frac for fractions, sqrt for roots
+- Include theorem environments if needed: theorem, lemma, proof
+
+User request: "{user_prompt}"
+Keywords: "{keywords}"
+Document context: "{context}"
+
+Mathematical LaTeX code:

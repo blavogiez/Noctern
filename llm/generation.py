@@ -31,18 +31,24 @@ def prepare_text_generation(initial_prompt_text=None, panel_callback=None):
         messagebox.showerror("LLM Error", "No active editor found.")
         return
 
-    def _on_generate_request(user_prompt, lines_before, lines_after, is_latex_mode):
+    def _on_generate_request(user_prompt, lines_before, lines_after, is_latex_mode, is_math_mode=False):
         """
         Callback executed when user confirms generation request from panel.
         Prepare prompt and call streaming service.
         """
-        # Determine prompt template and model
-        if is_latex_mode:
+        # Determine prompt template and model - math mode takes precedence over latex mode
+        if is_math_mode:
+            prompt_template = llm_state._global_default_prompts.get("generation_math")
+            model_name = llm_state.model_generation
+            logs_console.log(f"Using math mode template: {prompt_template is not None}", level='DEBUG')
+        elif is_latex_mode:
             prompt_template = llm_state._global_default_prompts.get("generation_latex")
             model_name = llm_state.model_generation
+            logs_console.log(f"Using LaTeX mode template: {prompt_template is not None}", level='DEBUG')
         else:
             prompt_template = llm_state._generation_prompt_template or llm_state._global_default_prompts.get("generation", "")
             model_name = llm_state.model_generation
+            logs_console.log(f"Using regular template: {prompt_template is not None}", level='DEBUG')
 
         # 2. Prepare context and full prompt
         llm_state._last_llm_action_type = "generation"
@@ -57,11 +63,16 @@ def prepare_text_generation(initial_prompt_text=None, panel_callback=None):
         active_file_path = llm_state._active_filepath_getter_func()
         keywords_str = ", ".join(keyword_history.get_keywords_for_file(active_file_path))
 
-        full_prompt = prompt_template.format(
-            user_prompt=user_prompt,
-            keywords=keywords_str,
-            context=editor_context
-        )
+        try:
+            full_prompt = prompt_template.format(
+                user_prompt=user_prompt,
+                keywords=keywords_str,
+                context=editor_context
+            )
+        except (KeyError, IndexError, ValueError) as e:
+            logs_console.log(f"Prompt formatting error: {e}, template: '{prompt_template[:100]}...'", level='ERROR')
+            messagebox.showerror("LLM Error", f"Prompt template formatting failed: {e}")
+            return
         logs_console.log(f"LLM Generation Request - Prompt (first 200 chars): '{full_prompt[:200]}...'", level='INFO')
         
         # 3. Start interactive session and define callbacks
