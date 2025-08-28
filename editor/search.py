@@ -378,7 +378,11 @@ class SearchBar:
         
     def _bind_events(self):
         """Bind events to widgets."""
-        self.search_entry.bind("<KeyRelease>", self._on_search_change)
+        # Use StringVar trace instead of KeyRelease to only trigger on actual text changes
+        self.search_var = tk.StringVar()
+        self.search_entry.config(textvariable=self.search_var)
+        self.search_var.trace('w', lambda *args: self._on_search_change())
+        
         self.search_entry.bind("<Escape>", lambda e: self.hide())
         self.search_entry.bind("<Return>", lambda e: (self._next_match(), "break"))
         self.search_entry.bind("<Shift-Return>", lambda e: (self._previous_match(), "break"))
@@ -390,13 +394,9 @@ class SearchBar:
             self.replace_entry.bind("<Escape>", lambda e: self.hide())
         
         
-    def _on_search_change(self, event=None):
+    def _on_search_change(self):
         """Handle search term changes."""
-        # Ignore Enter and Shift key releases to avoid resetting the search
-        if event and event.keysym in ("Return", "Shift_L", "Shift_R"):
-            return
-
-        search_term = self.search_entry.get()
+        search_term = self.search_var.get()
         case_sensitive = self.case_sensitive_var.get()
         
         current_tab = state.get_current_tab()
@@ -565,16 +565,22 @@ class SearchBar:
         try:
             selected_text = current_tab.editor.selection_get()
             if selected_text:
-                self.search_entry.delete(0, "end")
-                self.search_entry.insert(0, selected_text)
-                self._on_search_change()
+                self.search_var.set(selected_text)
         except tk.TclError:
             pass
                 
                 
     def hide(self):
-        """Hide the search bar and clear highlights."""
+        """Hide the search bar with slide-up animation."""
         if not self.is_visible or not self.frame:
+            return
+            
+        # Start slide-up animation
+        self._animate_slide_up()
+        
+    def _finish_hide(self):
+        """Complete the hiding process after animation."""
+        if not self.frame:
             return
             
         self.frame.place_forget()
@@ -592,23 +598,23 @@ class SearchBar:
         # Focus back to editor and maintain selection if exists
         if self.current_tab and self.current_tab.editor:
             self.current_tab.editor.focus()
-            # VSCode behavior: keep the current match selected when closing search
             
         self.current_tab = None
         
     def _animate_slide_down(self):
         """Animate search bar sliding down from top of editor."""
-        # Final position
-        final_x = -15
+        # Final position (moved more to the left to avoid scrollbar)
+        final_x = -35
         final_y = 10
         
         # Start position (above visible area)
         start_y = -30
         
-        # Animation parameters
-        steps = 8
-        duration = 150  # ms total
-        step_delay = duration // steps
+        # Animation parameters for 60fps (16.67ms per frame)
+        fps = 60
+        duration = 200  # ms total
+        step_delay = 1000 // fps  # 16.67ms per frame
+        steps = duration // step_delay
         y_increment = (final_y - start_y) / steps
         
         def animate_step(step):
@@ -621,6 +627,36 @@ class SearchBar:
                 else:
                     # Final position
                     self.frame.place(relx=1.0, rely=0.0, anchor="ne", x=final_x, y=final_y)
+            
+        # Start animation
+        animate_step(1)
+        
+    def _animate_slide_up(self):
+        """Animate search bar sliding up and disappearing."""
+        # Current position
+        current_x = -35
+        current_y = 10
+        
+        # End position (above visible area)
+        end_y = -30
+        
+        # Animation parameters for 60fps (16.67ms per frame)
+        fps = 60
+        duration = 150  # ms total
+        step_delay = 1000 // fps  # 16.67ms per frame
+        steps = duration // step_delay
+        y_increment = (end_y - current_y) / steps
+        
+        def animate_step(step):
+            if step <= steps and self.frame:
+                new_y = current_y + (y_increment * step)
+                self.frame.place(relx=1.0, rely=0.0, anchor="ne", x=current_x, y=int(new_y))
+                
+                if step < steps:
+                    self.frame.after(step_delay, lambda: animate_step(step + 1))
+                else:
+                    # Animation complete, finish hiding
+                    self._finish_hide()
             
         # Start animation
         animate_step(1)
