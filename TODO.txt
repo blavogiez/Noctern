@@ -1,0 +1,1 @@
+- fix interactive rare bug : "I like tthis document very much"

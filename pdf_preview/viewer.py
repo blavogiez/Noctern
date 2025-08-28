@@ -23,6 +23,8 @@ from pdf_preview.navigator import PDFTextNavigator
 from pdf_preview.sync import PDFSyncManager
 # Import circular magnifier component
 from pdf_preview.magnifier import CircularMagnifier
+# Import image processor for dark mode support
+from pdf_preview.image_processor import apply_dark_mode_processing, is_dark_mode_inversion_needed
 
 
 class PDFPreviewViewer:
@@ -40,7 +42,9 @@ class PDFPreviewViewer:
         
         # Caching and performance
         self.page_cache = {}  # LRU cache for rendered pages
+        self.dark_mode_cache = {}  # Separate cache for dark mode processed pages
         self.page_layouts = {}  # Layout information for each page
+        self.current_dark_mode_state = False  # Track current dark mode state
         self.total_height = 0
         self.render_thread = None
         self.pdf_doc = None  # Store PDF document reference
@@ -184,6 +188,7 @@ class PDFPreviewViewer:
     def _clear_caches(self):
         """Clear all page caches."""
         self.page_cache.clear()
+        self.dark_mode_cache.clear()
         self.page_layouts.clear()
         self.cache_order.clear()
         self.visible_pages.clear()
@@ -338,44 +343,76 @@ class PDFPreviewViewer:
                 from PIL import Image
                 import io
                 img = Image.open(io.BytesIO(img_data))
-                return img
+                
+                # Apply dark mode processing if needed
+                processed_img = apply_dark_mode_processing(img)
+                return processed_img
             else:  # Fallback to pdf2image
                 from pdf2image import convert_from_path
                 images = convert_from_path(self.pdf_path, dpi=self.RENDER_DPI, first_page=page_num, last_page=page_num)
                 if images:
-                    return images[0]
+                    # Apply dark mode processing if needed
+                    processed_img = apply_dark_mode_processing(images[0])
+                    return processed_img
         except Exception as e:
             logs_console.log(f"Error rendering page {page_num}: {e}", level='ERROR')
         return None
         
     def _get_cached_page(self, page_num):
         """Get a page from cache or render it if not cached."""
-        # Check if page is in cache
-        if page_num in self.page_cache:
-            # Move to end of LRU list
-            self.cache_order.remove(page_num)
-            self.cache_order.append(page_num)
-            return self.page_cache[page_num]
+        # Check if dark mode state has changed
+        current_is_dark = is_dark_mode_inversion_needed()
+        if current_is_dark != self.current_dark_mode_state:
+            self._clear_theme_caches()
+            self.current_dark_mode_state = current_is_dark
             
-        # Render the page
+        # Use appropriate cache based on current theme
+        active_cache = self.dark_mode_cache if current_is_dark else self.page_cache
+        
+        # Check if page is in active cache
+        if page_num in active_cache:
+            # Move to end of LRU list
+            if page_num in self.cache_order:
+                self.cache_order.remove(page_num)
+            self.cache_order.append(page_num)
+            return active_cache[page_num]
+            
+        # Render the page (with theme-appropriate processing)
         img = self._render_page(page_num)
         if not img:
             return None
             
-        # Add to cache
+        # Add to appropriate cache
         self._add_to_cache(page_num, img)
         return img
         
     def _add_to_cache(self, page_num, img):
-        """Add a page to the cache, evicting oldest if necessary."""
-        # Remove oldest pages if cache is full
-        while len(self.page_cache) >= self.MAX_CACHE_SIZE:
+        """Add a page to the appropriate cache, evicting oldest if necessary."""
+        # Determine which cache to use
+        active_cache = self.dark_mode_cache if self.current_dark_mode_state else self.page_cache
+        
+        # Remove oldest pages if combined cache is full
+        total_cached = len(self.page_cache) + len(self.dark_mode_cache)
+        while total_cached >= self.MAX_CACHE_SIZE and self.cache_order:
             oldest_page = self.cache_order.pop(0)
-            del self.page_cache[oldest_page]
+            # Remove from both caches if present
+            if oldest_page in self.page_cache:
+                del self.page_cache[oldest_page]
+            if oldest_page in self.dark_mode_cache:
+                del self.dark_mode_cache[oldest_page]
+            total_cached = len(self.page_cache) + len(self.dark_mode_cache)
             
-        # Add new page
-        self.page_cache[page_num] = img
+        # Add new page to appropriate cache
+        active_cache[page_num] = img
         self.cache_order.append(page_num)
+        
+    def _clear_theme_caches(self):
+        """Clear caches when theme changes to force re-rendering with new theme."""
+        self.page_cache.clear()
+        self.dark_mode_cache.clear()
+        self.cache_order.clear()
+        # Force re-rendering of visible pages
+        self.visible_pages.clear()
         
     def _update_visible_pages(self):
         """Update the set of visible pages and render them."""
@@ -512,8 +549,8 @@ class PDFPreviewViewer:
         self.canvas.configure(scrollregion=(0, 0, max_width + 20, self.total_height))
         
         # Clear cache of scaled images (they need to be re-rendered at new zoom)
-        for page_num in list(self.page_cache.keys()):
-            del self.page_cache[page_num]
+        self.page_cache.clear()
+        self.dark_mode_cache.clear()
         self.cache_order.clear()
         self.visible_pages.clear()
         
@@ -587,6 +624,15 @@ class PDFPreviewViewer:
         """Refresh the PDF display."""
         if self.pdf_path:
             self.load_pdf(self.pdf_path)
+            
+    def refresh_theme(self):
+        """Refresh the PDF display when theme changes."""
+        # Clear theme-specific caches and force re-rendering
+        self._clear_theme_caches()
+        # Update the current dark mode state
+        self.current_dark_mode_state = is_dark_mode_inversion_needed()
+        # Re-render visible pages with new theme
+        self._update_visible_pages()
     
     def _update_status_label(self):
         """Update the status label with compilation information."""

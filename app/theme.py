@@ -371,6 +371,11 @@ def apply_theme(theme_name, root_window, main_paned_window, open_tabs_dict, perf
     try:
         update_all_widgets(root_window)
         root_window.event_generate('<<ThemeChanged>>')
+        
+        # Refresh PDF preview with new theme if available
+        from app import state
+        if state.pdf_preview_interface and hasattr(state.pdf_preview_interface, 'viewer'):
+            state.pdf_preview_interface.viewer.refresh_theme()
     except:
         pass
     
