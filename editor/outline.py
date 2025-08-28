@@ -4,6 +4,7 @@ import time
 import hashlib
 from utils import logs_console
 from app.config import get_treeview_font_settings
+from editor.highlight_manager import show_navigation_highlight
 
 class Outline:
     """
@@ -114,14 +115,18 @@ class Outline:
                 editor.yview(f"{line_number}.0")
                 editor.mark_set("insert", f"{line_number}.0")
                 editor.focus()
+                # Add navigation highlight
+                show_navigation_highlight(editor, line_number)
             else:
                 # Fallback to original behavior if dynamic search fails
                 values = self.tree.item(item_id, "values")
                 if values:
-                    fallback_line = values[0]
+                    fallback_line = int(values[0])
                     editor.yview(f"{fallback_line}.0")
                     editor.mark_set("insert", f"{fallback_line}.0")
                     editor.focus()
+                    # Add navigation highlight
+                    show_navigation_highlight(editor, fallback_line)
                     
         except tk.TclError:
             # Widget might be destroyed

@@ -112,9 +112,23 @@ def setup_gui():
         if not current_tab or not hasattr(current_tab, 'editor'): return
         editor = current_tab.editor
         try:
-            editor.yview(f"{line_number}.0")
-            editor.mark_set("insert", f"{line_number}.0")
-            editor.focus()
+            # Handle end-of-file case (line_number == -1)
+            if line_number == -1:
+                # Navigate to last line
+                last_line = int(editor.index('end-1c').split('.')[0])
+                editor.yview(f"{last_line}.0")
+                editor.mark_set("insert", f"{last_line}.0")
+                editor.focus()
+                # Add navigation highlight for last line
+                from editor.highlight_manager import show_navigation_highlight
+                show_navigation_highlight(editor, last_line)
+            else:
+                editor.yview(f"{line_number}.0")
+                editor.mark_set("insert", f"{line_number}.0")
+                editor.focus()
+                # Add navigation highlight
+                from editor.highlight_manager import show_navigation_highlight
+                show_navigation_highlight(editor, line_number)
         except ttk.TclError as e:
             logs_console.log(f"Error navigating to line: {e}", level='ERROR')
 

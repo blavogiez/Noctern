@@ -9,27 +9,104 @@
 \usepackage{geometry} % Margins
 \usepackage{graphicx} % Images
 \usepackage{tcolorbox} % Colored boxes
+\usepackage{amsmath} % Math support
 
 \geometry{margin=2.5cm}
 
 \begin{document}
 
-% Welcome box
-\begin{tcolorbox}[colback=blue!10!white,colframe=blue!60!black,title=\Huge Welcome!,sharp corners]
+% Main welcome header
+\begin{tcolorbox}[colback=green!8!white,colframe=green!50!black,title=\Huge AutomaTeX Quick Tour,sharp corners]
 \begin{center}
-\Huge Hello and welcome to our application! \\
-\vspace{0.5cm}
-\Large We are thrilled to have you on board. \\
-Enjoy a simple, intuitive, and pleasant experience while exploring all the features we have prepared for you.
+\Large \textbf{Interactive LaTeX Editor with LLM Power} \\
+\vspace{0.3cm}
+\normalsize \textit{(Strongly advised to read - takes 2 minutes, saves hours)}
 \end{center}
 \end{tcolorbox}
 
-\vspace{1cm}
 
-\noindent
-\textbf{Tip of the day:} Don't hesitate to explore each section of the application to discover all its features and useful tips!  
+\vspace{0.8cm}
 
-\vfill
+% Live Preview Demo
+\begin{tcolorbox}[colback=blue!5!white,colframe=blue!40!black,title=\textbf{Live Preview Magic},left=5mm,right=5mm]
+\textbf{What you see is what you get:} This PDF updates \textit{instantly} in RAM as you type.
+
+\textbf{Try this now}:Change the word "Magic" above to "Power" - watch the preview refresh automatically!
+
+\textbf{Theme sync:} Switch themes (File → Settings) and notice how PDF colors adapt to your preference.
+\end{tcolorbox}
+
+\vspace{0.5cm}
+
+% LLM Features Demo
+\begin{tcolorbox}[colback=orange!8!white,colframe=orange!50!black,title=\textbf{LLM Assistant Sidebar},left=5mm,right=5mm]
+Open any LLM panel on the right sidebar and experience:
+
+• \textbf{Generation:} Create content from prompts \\
+• \textbf{Proofreading:} Instant grammar and style fixes \\
+• \textbf{Rephrase:} Alternative phrasings for clarity \\
+
+\textbf{Test it:} Select this text, open Proofreading panel, and see LLM suggestions appear instantly.P
+\end{tcolorbox}
+
+\vspace{0.5cm}
+
+% Debug System Demo
+\begin{tcolorbox}[colback=red!8!white,colframe=red!40!black,title=\textbf{Smart Error Detection},left=5mm,right=5mm]
+\textbf{Break something intentionally:} Delete the closing \verb|{| from \verb|\textbf{test}| below:
+
+\textbf{test} ← Remove the \verb|}| and watch LLM analyze the error with helpful suggestions.
+
+\textbf{Quick recovery:} Use Compare feature to restore the last working version instantly.
+\end{tcolorbox}
+
+\vspace{0.5cm}
+
+% Shortcuts Demo
+\begin{tcolorbox}[colback=purple!8!white,colframe=purple!40!black,title=\textbf{Power User Shortcuts},left=5mm,right=5mm]
+Master these time-savers:
+
+• \textbf{Ctrl+B}: Bold selected text → \textbf{bold text} \\
+• \textbf{Ctrl+I}: Italicize → \textit{italic text} \\
+• \textbf{Ctrl+Shift+M}: Math mode → $E = mc^2$ \\
+• \textbf{F5}: Instant compilation \\
+• \textbf{Ctrl+F}: Search with live highlighting
+
+\textbf{Try now:} Select any text above and press Ctrl+B to see instant LaTeX formatting.
+\end{tcolorbox}
+
+\vspace{0.5cm}
+
+% Mathematical capabilities
+\begin{tcolorbox}[colback=teal!8!white,colframe=teal!40!black,title=\textbf{Math Mode Excellence},left=5mm,right=5mm]
+Enhanced math support with LLM assistance:
+
+Inline: $\int_0^\infty e^{-x^2} dx = \frac{\sqrt{\pi}}{2}$
+
+Display mode:
+\begin{equation}
+\sum_{n=1}^{\infty} \frac{1}{n^2} = \frac{\pi^2}{6}
+\end{equation}
+
+\textbf{LLM math help:} Use Generation panel with "math mode" for complex equations and proofs.
+\end{tcolorbox}
+
+\vspace{0.8cm}
+
+% Call to action
+\begin{center}
+\begin{tcolorbox}[colback=yellow!10!white,colframe=orange!60!black,title=\textbf{Ready to Explore?},width=0.8\textwidth]
+\centering
+\textbf{You're 30 seconds away from mastering AutomaTeX}
+
+1. Try one interactive demo above \\
+2. Open an LLM sidebar panel \\
+3. Create your first document
+
+\vspace{0.3cm}
+\textit{The most productive LaTeX session of your life starts now.}
+\end{tcolorbox}
+\end{center}
 
 \end{document}
 
