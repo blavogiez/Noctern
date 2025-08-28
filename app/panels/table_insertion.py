@@ -165,7 +165,7 @@ class TableGenerator:
         logs_console.log(f"Generating {rows}×{cols} table", level='INFO')
         
         # Build column spec
-        col_spec = '|' + alignment + '|' * cols
+        col_spec = '|' + '|'.join([alignment] * cols) + '|'
         lines = []
         
         # Table environment if caption or label
@@ -177,14 +177,14 @@ class TableGenerator:
         lines.append(f"    \\begin{{tabular}}{{{col_spec}}}")
         lines.append("        \\hline")
         
-        # Generate rows with smart placeholders
+        # Generate rows with navigable placeholders
         for row in range(rows):
             if row == 0 and has_header:
-                cells = [f"Header {i+1}" for i in range(cols)]
+                cells = [f"⟨Header {i+1}⟩" for i in range(cols)]
                 row_text = " & ".join([f"\\textbf{{{cell}}}" for cell in cells]) + " \\\\"
             else:
                 data_row = row if not has_header else row
-                cells = [f"Data {data_row+1}.{i+1}" for i in range(cols)]
+                cells = [f"⟨Data {data_row+1}.{i+1}⟩" for i in range(cols)]
                 row_text = " & ".join(cells) + " \\\\"
             
             lines.append(f"        {row_text}")
@@ -195,13 +195,20 @@ class TableGenerator:
         
         lines.append("    \\end{tabular}")
         
-        # Caption and label
-        if caption:
-            lines.append(f"    \\caption{{{caption}}}")
-        if label:
-            lines.append(f"    \\label{{tab:{label}}}")
+        # Caption and label with placeholders when empty
+        has_table_env = caption or label
+        if has_table_env:
+            if caption:
+                lines.append(f"    \\caption{{{caption}}}")
+            else:
+                lines.append(f"    \\caption{{⟨Caption⟩}}")
+                
+            if label:
+                lines.append(f"    \\label{{tab:{label}}}")
+            else:
+                lines.append(f"    \\label{{tab:⟨label⟩}}")
         
-        if caption or label:
+        if has_table_env:
             lines.append("\\end{table}")
         
         return "\n".join(lines)
