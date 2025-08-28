@@ -27,6 +27,10 @@ class InteractiveSession:
         self.completion_phrase = kwargs.get('completion_phrase', "")
         self.on_discard_callback = kwargs.get('on_discard_callback')
         
+        # Create unique session tag for styling
+        self.session_tag = f"llm_session_{self.session_id}"
+        self._configure_session_styling()
+        
         self.hidden_tag = None
         if self.is_styling:
             selection_indices = kwargs.get('selection_indices')
@@ -42,6 +46,36 @@ class InteractiveSession:
         self.text_end_index = self.text_start_index
         
         self._bind_keyboard_shortcuts()
+
+    def _configure_session_styling(self):
+        """Configure unique styling for this session."""
+        from app import state as main_window
+        
+        # Get current editor font and make italic version
+        try:
+            current_font = self.editor.cget("font")
+            if hasattr(current_font, 'copy'):
+                italic_font = current_font.copy()
+            else:
+                # Fallback for string font specification
+                from tkinter.font import Font
+                italic_font = Font(font=current_font)
+                italic_font = italic_font.copy()
+            italic_font.configure(slant="italic")
+        except:
+            # Ultimate fallback
+            from tkinter.font import Font
+            italic_font = Font(family="Segoe UI", size=10, slant="italic")
+        
+        # Get theme colors
+        bg_color = main_window.get_theme_setting("llm_generated_bg", "#F0FFF0")
+        fg_color = main_window.get_theme_setting("llm_generated_fg", "#000000")
+        
+        # Configure the unique session tag
+        self.editor.tag_configure(self.session_tag, 
+                                background=bg_color, 
+                                foreground=fg_color, 
+                                font=italic_font)
 
     def _create_ui_elements(self):
         bg_color = main_window.get_theme_setting("llm_generated_bg", "#2D2D2D")
@@ -78,12 +112,11 @@ class InteractiveSession:
 
     def handle_chunk(self, chunk):
         if self.is_discarded: return
-        # For styling operations, we don't want to apply the llm_generated_text tag
-        # Avoid interference with final styling
-        tag = "llm_generated_text" if not self.is_styling else ""
-        if tag:
-            self.editor.insert(self.text_end_index, chunk, tag)
+        # Apply session-specific styling for visual feedback during generation
+        if not self.is_styling:
+            self.editor.insert(self.text_end_index, chunk, self.session_tag)
         else:
+            # For styling operations, no visual tag during generation
             self.editor.insert(self.text_end_index, chunk)
         self.text_end_index = self.editor.index(f"{self.text_end_index} + {len(chunk)} chars")
         self.full_response_text += chunk
@@ -91,14 +124,15 @@ class InteractiveSession:
     def handle_success(self, final_cleaned_text):
         if self.is_discarded: return
         self.editor.delete(self.text_start_index, self.text_end_index)
-        # For styling operations, we don't want to apply the llm_generated_text tag
-        # Avoid interference with final styling
-        tag = "llm_generated_text" if not self.is_styling else ""
-        if tag:
-            self.editor.insert(self.text_start_index, final_cleaned_text, tag)
+        # Apply session-specific styling for final text
+        if not self.is_styling:
+            self.editor.insert(self.text_start_index, final_cleaned_text, self.session_tag)
         else:
+            # For styling operations, no visual tag for final text
             self.editor.insert(self.text_start_index, final_cleaned_text)
         self.text_end_index = self.editor.index(f"{self.text_start_index} + {len(final_cleaned_text)} chars")
+        # Store the final normalized text (not accumulated chunks)
+        self.final_normalized_text = final_cleaned_text
         self.full_response_text = final_cleaned_text
         if self.is_completion: self._post_process_completion()
         if self.is_rephrase: self.editor.tag_add(tk.SEL, self.text_start_index, self.text_end_index)
@@ -120,21 +154,17 @@ class InteractiveSession:
             progress_bar.pack_forget()
 
         if self.is_styling:
-            # --- FIX 2: Correct order of operations ---
-            # 1. Get insertion position
+            # For styling: replace hidden text with final normalized result
             insert_pos = self.editor.index(f"{self.hidden_tag}.first")
-            # 2. Delete original text
             self.editor.delete(f"{self.hidden_tag}.first", f"{self.hidden_tag}.last")
             self.editor.tag_delete(self.hidden_tag)
-            # 3. Insert the final text at the correct position BEFORE destroying UI
-            self.editor.insert(insert_pos, self.full_response_text)
-            # 4. Remove any styling tags that might have been applied to the inserted text
-            self.editor.tag_remove("llm_generated_text", insert_pos, f"{insert_pos} + {len(self.full_response_text)} chars")
-            # 5. Now, destroy the temporary UI elements
-            self.destroy(delete_text=True)
+            # Use final normalized text, ensuring consistency with what was displayed
+            final_text = getattr(self, 'final_normalized_text', self.full_response_text)
+            self.editor.insert(insert_pos, final_text)
+            self.destroy(delete_text=False)
         else:
-            # Default behavior for completion/generation
-            self.editor.tag_remove("llm_generated_text", self.text_start_index, self.text_end_index)
+            # Default behavior: remove session styling and clean up
+            self.editor.tag_delete(self.session_tag)
             self.destroy(delete_text=False)
             
         self.editor.focus_set()
@@ -150,6 +180,11 @@ class InteractiveSession:
             progress_bar.stop()
             progress_bar.pack_forget()
         if self.is_styling and self.hidden_tag: self.editor.tag_delete(self.hidden_tag)
+        # Clean up session tag
+        try:
+            self.editor.tag_delete(self.session_tag)
+        except tk.TclError:
+            pass
         self.destroy(delete_text=True)
         if self.on_discard_callback: self.on_discard_callback()
         self.editor.focus_set()
@@ -168,7 +203,10 @@ class InteractiveSession:
     def _post_process_completion(self):
         cleaned_text = llm_utils.remove_prefix_overlap_from_completion(self.completion_phrase, self.full_response_text)
         self.editor.delete(self.text_start_index, self.text_end_index)
-        self.editor.insert(self.text_start_index, cleaned_text, "llm_generated_text")
+        if not self.is_styling:
+            self.editor.insert(self.text_start_index, cleaned_text, self.session_tag)
+        else:
+            self.editor.insert(self.text_start_index, cleaned_text)
         self.text_end_index = self.editor.index(f"{self.text_start_index} + {len(cleaned_text)} chars")
 
     def destroy(self, delete_text):

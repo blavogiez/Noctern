@@ -83,13 +83,13 @@ def prepare_text_generation(initial_prompt_text=None, panel_callback=None):
 
         def on_chunk(chunk):
             nonlocal accumulated_text
-            cleaned_chunk = llm_utils.clean_llm_output(chunk)
+            cleaned_chunk = llm_utils.normalize_text_content(chunk)
             accumulated_text += cleaned_chunk
             session_callbacks['on_chunk'](cleaned_chunk)
 
         def on_success(final_text):
-            # Streaming service already handles deepseek stripping
-            final_cleaned_text = llm_utils.clean_full_llm_response(final_text)
+            # Prepare final response ensuring consistency with displayed chunks
+            final_cleaned_text = llm_utils.prepare_final_response(accumulated_text, final_text)
             session_callbacks['on_success'](final_cleaned_text)
             _update_history_response_and_save(user_prompt, final_cleaned_text)
 
