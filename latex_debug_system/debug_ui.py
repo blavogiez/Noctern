@@ -557,9 +557,9 @@ class TabbedDebugUI(ttk.Frame, DebugUI):
             header_frame,
             text="Compare",
             command=self._compare_versions,
-            width=7
+            width=9
         )
-        self.compare_btn.pack(side='right', padx=(5, 0))
+        self.compare_btn.pack(side='right', padx=(8, 2))
         
         # Ultra-fine notebook with minimal padding
         self.notebook = ttk.Notebook(self)
