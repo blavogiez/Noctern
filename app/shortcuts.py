@@ -13,8 +13,6 @@ import tkinter as tk
 
 def bind_global_shortcuts(root):
     """Binds all global keyboard shortcuts for the application."""
-    logs_console.log("Binding global shortcuts.", level='INFO')
-    
     # Initialize the search bar
     editor_search.initialize_search_bar(root)
     
@@ -44,7 +42,6 @@ def bind_global_shortcuts(root):
         Wrapper to log shortcut execution and prevent conflicts by checking focus.
         """
         def wrapper(event=None):
-            logs_console.log(f"Global Shortcut: {name}", level='ACTION')
             if pass_event:
                 func(event)
             else:
@@ -61,6 +58,11 @@ def bind_global_shortcuts(root):
             editor_search.hide_search_bar()
         else:
             editor_search.show_search_bar()
+    
+    def close_search_if_open():
+        """Close search bar if it's open, otherwise do nothing."""
+        if editor_search._search_bar and editor_search._search_bar.is_visible:
+            editor_search.hide_search_bar()
 
     simple_shortcuts = {
         "<Control-n>": (interface.create_new_tab, "New File"),
@@ -95,5 +97,7 @@ def bind_global_shortcuts(root):
     # Zoom shortcuts are safe to be global without the wrapper
     root.bind_all("<Control-equal>", interface.zoom_in)
     root.bind_all("<Control-minus>", interface.zoom_out)
+    
+    # Global ESC key to close search bar
+    root.bind_all("<Escape>", lambda event: close_search_if_open())
 
-    logs_console.log("Global shortcuts have been bound.", level='INFO')

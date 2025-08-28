@@ -18,6 +18,7 @@ class SearchEngine:
     def __init__(self):
         self.matches: List[Tuple[str, int, int]] = []  # Store (line, start_pos, end_pos)
         self.current_match_index = -1
+        self.editor_widget = None
         
     def search(self, text_widget: tk.Text, search_term: str, case_sensitive: bool = True) -> List[Tuple[str, int, int]]:
         """
@@ -33,6 +34,7 @@ class SearchEngine:
         """
         self.matches = []
         self.current_match_index = -1
+        self.editor_widget = text_widget
         
         if not search_term:
             return self.matches
@@ -58,11 +60,50 @@ class SearchEngine:
                 end_col = end_pos - end_line_start
                 
                 self.matches.append((str(start_line), start_col, end_col))
+            
+            # Find closest match to current cursor position
+            if self.matches:
+                self._find_closest_match()
                 
         except re.error as e:
-            logs_console.log(f"Regex error in search: {e}", level='ERROR')
+            logs_console.log(f"Search pattern error: {e}", level='WARNING')
             
         return self.matches
+    
+    def _find_closest_match(self):
+        """Find the closest match to current cursor position (looking down first)."""
+        if not self.editor_widget or not self.matches:
+            return
+            
+        try:
+            # Get current cursor position
+            cursor_pos = self.editor_widget.index(tk.INSERT)
+            cursor_line, cursor_col = map(int, cursor_pos.split('.'))
+            
+            # Find first match at or after cursor position
+            closest_index = -1
+            
+            for i, (line, start_col, end_col) in enumerate(self.matches):
+                match_line = int(line)
+                
+                # Match is after current line
+                if match_line > cursor_line:
+                    closest_index = i
+                    break
+                # Match is on current line and at or after cursor column
+                elif match_line == cursor_line and start_col >= cursor_col:
+                    closest_index = i
+                    break
+            
+            # If no match found after cursor, use first match (wrap around)
+            if closest_index == -1:
+                closest_index = 0
+                
+            self.current_match_index = closest_index
+            
+        except (tk.TclError, ValueError):
+            # Fallback to first match if cursor position can't be determined
+            self.current_match_index = 0
     
     def get_current_match(self) -> Optional[Tuple[str, int, int]]:
         """Get the current match based on the current index."""
@@ -127,30 +168,17 @@ class SearchBar:
         
     def _create_widgets(self):
         """Create all widgets for the search bar exactly like VSCode."""
-        # Compact frame adapted to theme
+        # Clean frame adapted to theme
         self.frame.configure(
-            bootstyle="secondary",
-            padding=2,
+            padding=3,
             relief="solid",
             borderwidth=1
         )
         
-        # Create search container with icon
-        self.search_container = ttk.Frame(self.frame, bootstyle="secondary")
-        
-        # Search icon inside entry
-        self.search_icon = IconButton(
-            self.search_container,
-            "search",
-            bootstyle="secondary-link",
-            command=lambda: self.search_entry.focus()
-        )
-        
-        # Search entry with compact styling
+        # Search entry with clean styling
         self.search_entry = ttk.Entry(
-            self.search_container,
-            width=16,
-            bootstyle="secondary",
+            self.frame,
+            width=18,
             font=("Segoe UI", 9)
         )
         
@@ -170,13 +198,12 @@ class SearchBar:
             command=self._next_match
         )
         
-        # Match counter with compact styling
+        # Match counter with minimal styling
         self.counter_label = ttk.Label(
             self.frame,
-            text="No results",
-            bootstyle="secondary",
+            text="",
             font=("Segoe UI", 8),
-            width=7,
+            width=5,
             anchor="center"
         )
         
@@ -190,6 +217,15 @@ class SearchBar:
             command=self._on_search_change
         )
         
+        # Replace toggle button (at left like VSCode)
+        self.show_replace = False
+        self.replace_toggle = IconButton(
+            self.frame,
+            "expand",
+            bootstyle="secondary-toolbutton",
+            command=self._toggle_replace
+        )
+        
         # Close button
         self.close_button = IconButton(
             self.frame,
@@ -198,19 +234,147 @@ class SearchBar:
             command=self.hide
         )
         
+        # VSCode layout: [⌄] [search] [↑] [↓] [1/5] [Aa] [×]
+        self.replace_toggle.grid(row=0, column=0, padx=(0, 2))
+        self.search_entry.grid(row=0, column=1, sticky="ew", padx=(0, 4))
+        self.prev_button.grid(row=0, column=2, padx=0)
+        self.next_button.grid(row=0, column=3, padx=(0, 4))
+        self.counter_label.grid(row=0, column=4, padx=(0, 4))
+        self.case_sensitive_check.grid(row=0, column=5, padx=(0, 4))
+        self.close_button.grid(row=0, column=6)
         
-        # Compact layout: [🔍search] [↑] [↓] [count] [Aa] [×]
-        self.search_icon.pack(side="left", padx=(2, 0))
-        self.search_entry.pack(side="left", fill="x", expand=True, padx=(0, 2))
+        self.frame.columnconfigure(1, weight=1)
         
-        self.search_container.grid(row=0, column=0, sticky="ew", padx=(0, 1))
-        self.prev_button.grid(row=0, column=1, padx=0)
-        self.next_button.grid(row=0, column=2, padx=(0, 2))
-        self.counter_label.grid(row=0, column=3, padx=(0, 2))
-        self.case_sensitive_check.grid(row=0, column=4, padx=(0, 2))
-        self.close_button.grid(row=0, column=5)
+        # Replace row (initially hidden)
+        self._create_replace_widgets()
         
-        self.frame.columnconfigure(0, weight=1)
+        # Bind events after all widgets are created
+        self._bind_replace_events()
+        
+    def _create_replace_widgets(self):
+        """Create replace widgets (VSCode style)."""
+        # Replace entry
+        self.replace_entry = ttk.Entry(
+            self.frame,
+            width=18,
+            font=("Segoe UI", 9)
+        )
+        
+        # Replace current button
+        self.replace_current_button = IconButton(
+            self.frame,
+            "replace",
+            bootstyle="secondary-outline",
+            command=self._replace_current
+        )
+        
+        # Replace all button  
+        self.replace_all_button = ttk.Button(
+            self.frame,
+            text="All",
+            bootstyle="secondary-outline",
+            width=3,
+            command=self._replace_all
+        )
+        
+        # Hide replace row initially
+        self._hide_replace()
+        
+    def _toggle_replace(self):
+        """Toggle replace section visibility."""
+        self.show_replace = not self.show_replace
+        if self.show_replace:
+            self._show_replace()
+        else:
+            self._hide_replace()
+    
+    def _show_replace(self):
+        """Show replace widgets in row 1."""
+        # Align with search entry (skip toggle column)
+        self.replace_entry.grid(row=1, column=1, sticky="ew", padx=(0, 4), pady=(2, 0))
+        self.replace_current_button.grid(row=1, column=2, padx=0, pady=(2, 0))
+        self.replace_all_button.grid(row=1, column=3, padx=(0, 4), pady=(2, 0))
+        
+    def _hide_replace(self):
+        """Hide replace widgets."""
+        try:
+            self.replace_entry.grid_remove()
+            self.replace_current_button.grid_remove() 
+            self.replace_all_button.grid_remove()
+        except AttributeError:
+            pass  # Widgets not created yet
+            
+    def _replace_current(self):
+        """Replace current match with replacement text."""
+        if not hasattr(self, 'replace_entry'):
+            return
+            
+        current_tab = state.get_current_tab()
+        if not current_tab or not current_tab.editor:
+            return
+            
+        # Get current match
+        current_match = self.search_engine.get_current_match()
+        if not current_match:
+            return
+            
+        # Get replacement text
+        replacement_text = self.replace_entry.get()
+        
+        # Replace current match
+        line, start_col, end_col = current_match
+        start_pos = f"{line}.{start_col}"
+        end_pos = f"{line}.{end_col}"
+        
+        # Replace text in editor
+        current_tab.editor.delete(start_pos, end_pos)
+        current_tab.editor.insert(start_pos, replacement_text)
+        
+        # Update search to find next match
+        self._refresh_search_after_replace()
+        
+    def _replace_all(self):
+        """Replace all matches with replacement text."""
+        if not hasattr(self, 'replace_entry'):
+            return
+            
+        current_tab = state.get_current_tab()
+        if not current_tab or not current_tab.editor:
+            return
+            
+        search_term = self.search_entry.get()
+        replacement_text = self.replace_entry.get()
+        
+        if not search_term:
+            return
+            
+        # Get all matches
+        matches = self.search_engine.matches
+        if not matches:
+            return
+            
+        # Replace all matches from end to beginning to maintain positions
+        for line, start_col, end_col in reversed(matches):
+            start_pos = f"{line}.{start_col}"
+            end_pos = f"{line}.{end_col}"
+            
+            # Replace text in editor
+            current_tab.editor.delete(start_pos, end_pos)
+            current_tab.editor.insert(start_pos, replacement_text)
+        
+        # Refresh search to show no matches
+        self._refresh_search_after_replace()
+        
+    def _refresh_search_after_replace(self):
+        """Refresh search results after replacement."""
+        # Re-run search to update matches
+        self._on_search_change()
+        
+        # Move to next match if available
+        if self.search_engine.matches:
+            if self.search_engine.current_match_index >= len(self.search_engine.matches):
+                self.search_engine.current_match_index = 0
+            self._go_to_current_match()
         
     def _bind_events(self):
         """Bind events to widgets."""
@@ -219,6 +383,11 @@ class SearchBar:
         self.search_entry.bind("<Return>", lambda e: (self._next_match(), "break"))
         self.search_entry.bind("<Shift-Return>", lambda e: (self._previous_match(), "break"))
         
+    def _bind_replace_events(self):
+        """Bind events to replace widgets."""
+        if hasattr(self, 'replace_entry'):
+            self.replace_entry.bind("<Return>", lambda e: (self._replace_current(), "break"))
+            self.replace_entry.bind("<Escape>", lambda e: self.hide())
         
         
     def _on_search_change(self, event=None):
@@ -227,7 +396,6 @@ class SearchBar:
         if event and event.keysym in ("Return", "Shift_L", "Shift_R"):
             return
 
-        print("_on_search_change called")
         search_term = self.search_entry.get()
         case_sensitive = self.case_sensitive_var.get()
         
@@ -252,8 +420,8 @@ class SearchBar:
         # Highlight matches
         if matches:
             self._highlight_matches(current_tab.editor, matches)
-            # Set index to -1 to indicate we're at the start but haven't navigated yet
-            self.search_engine.current_match_index = -1
+            # Go to the closest match immediately
+            self._go_to_current_match()
         else:
             # No matches found
             self.search_engine.current_match_index = -1
@@ -265,18 +433,18 @@ class SearchBar:
             end_pos = f"{line}.{end_col}"
             editor.tag_add("search_match", start_pos, end_pos)
             
-        # Configure the highlight tags with VSCode colors
+        # Configure the highlight tags with theme-adapted colors
         editor.tag_configure(
             "search_match",
-            background="#613315",  # VSCode match background (brownish)
-            foreground="#ffffff"   # White text for contrast
+            background=state.get_theme_setting("search_match_bg", "#4a4a00"),
+            foreground=state.get_theme_setting("search_match_fg", "#ffffff")
         )
         
-        # Highlight current match with VSCode orange
+        # Highlight current match with theme orange
         editor.tag_configure(
             "current_search_match", 
-            background="#ff6600",  # VSCode current match orange
-            foreground="#000000"   # Black text on orange
+            background=state.get_theme_setting("current_search_match_bg", "#ff6600"),
+            foreground=state.get_theme_setting("current_search_match_fg", "#000000")
         )
         
     def _clear_highlights(self, editor: tk.Text):
@@ -285,18 +453,18 @@ class SearchBar:
         editor.tag_remove("current_search_match", "1.0", "end")
         
     def _update_counter(self):
-        """Update the match counter label VSCode-style."""
+        """Update the match counter label with short text."""
         if not self.frame or not hasattr(self, 'counter_label'):
             return
         total = self.search_engine.get_total_matches()
         current = self.search_engine.get_current_match_number()
         
         if total == 0:
-            self.counter_label.config(text="No results")
+            self.counter_label.config(text="")
         elif current > 0:
-            self.counter_label.config(text=f"{current} of {total}")
+            self.counter_label.config(text=f"{current}/{total}")
         else:
-            self.counter_label.config(text=f"{total} results")
+            self.counter_label.config(text=f"{total}")
         
     def _go_to_current_match(self):
         """Scroll to and highlight the current match."""
@@ -387,8 +555,8 @@ class SearchBar:
         self._create_widgets()
         self._bind_events()
         
-        # Position in top-right corner of the editor
-        self.frame.place(relx=1.0, rely=0.0, anchor="ne", x=-15, y=10)
+        # Start animation from top of editor
+        self._animate_slide_down()
             
         self.is_visible = True
         self.search_entry.focus()
@@ -427,6 +595,35 @@ class SearchBar:
             # VSCode behavior: keep the current match selected when closing search
             
         self.current_tab = None
+        
+    def _animate_slide_down(self):
+        """Animate search bar sliding down from top of editor."""
+        # Final position
+        final_x = -15
+        final_y = 10
+        
+        # Start position (above visible area)
+        start_y = -30
+        
+        # Animation parameters
+        steps = 8
+        duration = 150  # ms total
+        step_delay = duration // steps
+        y_increment = (final_y - start_y) / steps
+        
+        def animate_step(step):
+            if step <= steps:
+                current_y = start_y + (y_increment * step)
+                self.frame.place(relx=1.0, rely=0.0, anchor="ne", x=final_x, y=int(current_y))
+                
+                if step < steps:
+                    self.frame.after(step_delay, lambda: animate_step(step + 1))
+                else:
+                    # Final position
+                    self.frame.place(relx=1.0, rely=0.0, anchor="ne", x=final_x, y=final_y)
+            
+        # Start animation
+        animate_step(1)
             
 
 

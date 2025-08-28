@@ -122,11 +122,13 @@ class IconButton(ttk.Button):
                     'search': '🔍',
                     'chevron-up': '⌄', 
                     'chevron-down': '⌄',
-                    'up': '⌄',
-                    'down': '⌄',
+                    'up': '↑',
+                    'down': '↓',
                     'next': '▶', 
                     'previous': '◀',
-                    'close': '×'
+                    'close': '×',
+                    'replace': '⇄',
+                    'expand': '⌄'
                 }
                 text = icon_map.get(self.icon_name, self.icon_name[:1].upper())
                 self.config(text=text)
