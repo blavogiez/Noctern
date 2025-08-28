@@ -39,10 +39,14 @@ class PlaceholderManager:
         
     def navigate_next(self):
         """Find and navigate to the closest ⟨placeholder⟩ from current cursor position."""
-        return self.navigate_to_closest_placeholder()
+        return self.navigate_to_closest_placeholder(forward=True)
     
-    def navigate_to_closest_placeholder(self):
-        """Navigate to the closest placeholder TO THE RIGHT (forward) of current cursor position."""
+    def navigate_previous(self):
+        """Find and navigate to the closest ⟨placeholder⟩ backward from current cursor position."""
+        return self.navigate_to_closest_placeholder(forward=False)
+    
+    def navigate_to_closest_placeholder(self, forward=True):
+        """Navigate to the closest placeholder from current cursor position."""
         # Get current cursor position
         try:
             current_pos = self.text_widget.index(tk.INSERT)
@@ -60,7 +64,7 @@ class PlaceholderManager:
         # Convert current position to character index for distance calculation
         current_char_idx = self._pos_to_char_index(current_pos)
         
-        # Find closest placeholder TO THE RIGHT (after current position)
+        # Find closest placeholder in the desired direction
         closest_match = None
         min_distance = float('inf')
         
@@ -71,30 +75,41 @@ class PlaceholderManager:
             if self._is_currently_selected(match_start_idx, match.end()):
                 continue
             
-            # Only consider placeholders AFTER current position (to the right)
-            if match_start_idx <= current_char_idx:
-                continue
-            
-            # Calculate forward distance
-            distance = match_start_idx - current_char_idx
+            if forward:
+                # Forward navigation: only consider placeholders AFTER current position
+                if match_start_idx <= current_char_idx:
+                    continue
+                distance = match_start_idx - current_char_idx
+            else:
+                # Backward navigation: only consider placeholders BEFORE current position
+                if match_start_idx >= current_char_idx:
+                    continue
+                distance = current_char_idx - match_start_idx
             
             if distance < min_distance:
                 min_distance = distance
                 closest_match = match
         
-        # If no forward placeholder found, wrap to first placeholder
+        # If no placeholder found in desired direction, wrap around
         if closest_match is None:
-            # Find the first unselected placeholder from beginning
-            for match in all_matches:
-                if not self._is_currently_selected(match.start(), match.end()):
-                    closest_match = match
-                    break
+            if forward:
+                # Wrap to first placeholder
+                for match in all_matches:
+                    if not self._is_currently_selected(match.start(), match.end()):
+                        closest_match = match
+                        break
+            else:
+                # Wrap to last placeholder
+                for match in reversed(all_matches):
+                    if not self._is_currently_selected(match.start(), match.end()):
+                        closest_match = match
+                        break
             
-            # If still nothing, just take the first one
+            # If still nothing, just take the appropriate one
             if closest_match is None:
-                closest_match = all_matches[0]
+                closest_match = all_matches[0] if forward else all_matches[-1]
         
-        # Navigate to the closest forward placeholder
+        # Navigate to the closest placeholder
         return self._navigate_to_match(closest_match)
     
     def _pos_to_char_index(self, pos):

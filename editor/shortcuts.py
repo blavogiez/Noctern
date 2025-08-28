@@ -104,12 +104,7 @@ def move_line_down(event):
     return "break"
 
 def handle_tab(event):
-    # First, try to handle placeholder navigation
-    result = handle_placeholder_navigation(event)
-    if result == "break":
-        return result
-        
-    # If no placeholder navigation occurred, handle normal tab behavior
+    """Handle normal tab indentation without placeholder navigation."""
     editor = event.widget
     start_line, end_line = _get_line_range(editor)
     if editor.tag_ranges("sel"):
@@ -151,6 +146,30 @@ def on_double_click(event):
             return "break"
     return None
 
+def handle_placeholder_next(event):
+    """Handle F3 navigation to next placeholder."""
+    result = handle_placeholder_navigation(event)
+    return result
+
+def handle_placeholder_prev(event):
+    """Handle Shift+F3 navigation to previous placeholder."""
+    if not isinstance(event.widget, tk.Text):
+        return
+        
+    text_widget = event.widget
+    
+    # Create manager if it doesn't exist
+    if not hasattr(text_widget, 'placeholder_manager'):
+        text_widget.placeholder_manager = PlaceholderManager(text_widget)
+        
+    manager = text_widget.placeholder_manager
+    
+    # Only navigate if there are placeholders
+    if manager.has_placeholders() and manager.navigate_previous():
+        return "break"
+        
+    return None
+
 # --- Setup Function ---
 
 def setup_editor_shortcuts(editor):
@@ -166,6 +185,8 @@ def setup_editor_shortcuts(editor):
         "<Alt-Down>": move_line_down,
         "<Tab>": handle_tab,
         "<Shift-Tab>": handle_shift_tab,
+        "<F3>": handle_placeholder_next,
+        "<Shift-F3>": handle_placeholder_prev,
         "<Double-Button-1>": on_double_click,
     }
     for key, func in shortcuts.items():

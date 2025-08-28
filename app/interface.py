@@ -179,7 +179,7 @@ def insert_table(event=None):
             # Update syntax highlighting
             schedule_heavy_updates()
             
-            show_temporary_status_message("✅ Table inserted - use Tab to navigate placeholders")
+            show_temporary_status_message("✅ Table inserted - use F3 to navigate placeholders")
             logs_console.log("Table with placeholders inserted successfully.", level='SUCCESS')
             
         except Exception as e:

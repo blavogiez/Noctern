@@ -4,3 +4,4 @@
 - bouton reapply syntax
 - change key snippets
 - améliorer magnifier
+- couleur plus adaptée dans les panels pour dark theme (noir sur violet non?)
