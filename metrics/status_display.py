@@ -14,7 +14,6 @@ class MetricsStatusDisplay:
         self.root = root
         self.tracker = None
         self.session_label = None
-        self.metrics_button = None
         self.update_timer_id = None
         
         self._create_widgets()
@@ -30,48 +29,18 @@ class MetricsStatusDisplay:
         self.session_label = ttk.Label(
             metrics_frame, 
             text="Session: 0s", 
-            font=("", 8)
+            font=("Segoe UI", 9)
         )
         self.session_label.pack(side="left")
         
-        # Metrics button (small)
-        self.metrics_button = ttk.Button(
-            metrics_frame,
-            text="📊",
-            width=3,
-            command=self._show_metrics_dialog
-        )
-        self.metrics_button.pack(side="left", padx=(5, 0))
-        
-        # Add tooltip to button
-        self._create_tooltip(self.metrics_button, "View file productivity metrics")
     
-    def _create_tooltip(self, widget, text):
-        """Create simple tooltip for widget."""
-        def on_enter(event):
-            tooltip = tk.Toplevel()
-            tooltip.wm_overrideredirect(True)
-            tooltip.wm_geometry(f"+{event.x_root + 10}+{event.y_root + 10}")
-            label = ttk.Label(tooltip, text=text, background="lightyellow", font=("", 8))
-            label.pack()
-            widget.tooltip = tooltip
-        
-        def on_leave(event):
-            if hasattr(widget, 'tooltip'):
-                widget.tooltip.destroy()
-                del widget.tooltip
-        
-        widget.bind("<Enter>", on_enter)
-        widget.bind("<Leave>", on_leave)
     
     def set_current_file(self, file_path):
         """Set current file being tracked."""
         if file_path:
             self.tracker = SessionTracker(file_path)
-            self.metrics_button.config(state="normal")
         else:
             self.tracker = None
-            self.metrics_button.config(state="disabled")
         
         # Reset display
         self._update_display()
@@ -106,14 +75,6 @@ class MetricsStatusDisplay:
         # Update every 5 seconds
         self.update_timer_id = self.root.after(5000, self._start_update_loop)
     
-    def _show_metrics_dialog(self):
-        """Show metrics visualization dialog."""
-        if self.tracker and self.tracker.file_path:
-            # Save current session before showing dialog
-            self.save_current_session()
-            # Import dynamically to avoid circular imports
-            from app.panels import show_metrics_panel
-            show_metrics_panel()
     
     def destroy(self):
         """Clean up metrics display."""
