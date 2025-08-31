@@ -19,10 +19,10 @@ except ImportError:
     HAS_FITZ = False
 
 # Import navigation components
-from pdf_preview.text_locator import PDFTextLocator
-from pdf_preview.sync_manager import PDFSyncManager
+from pdf_preview.text_locator import PDFPreviewTextLocator
+from pdf_preview.sync_manager import PDFPreviewSyncManager
 # Import circular magnifier component
-from pdf_preview.magnifier import CircularMagnifier
+from pdf_preview.magnifier import PDFPreviewMagnifier
 # Import image processor for dark mode support
 from pdf_preview.image_processor import apply_dark_mode_processing, is_dark_mode_inversion_needed
 
@@ -60,7 +60,7 @@ class PDFPreviewViewer:
         self.status_update_job = None
         
         # Text navigator component
-        self.text_locator = PDFTextLocator(self)
+        self.text_locator = PDFPreviewTextLocator(self)
         
         # Sync manager for text search (share instance with interface to avoid duplication)
         self.sync_manager = None  # Will be set by interface when needed
@@ -128,7 +128,7 @@ class PDFPreviewViewer:
         self.zoom_in_button.pack(side="left", padx=(2, 10))
         
         # Magnifier button
-        self.magnifier_button = ttk.Button(toolbar, text="🔍 Magnifier", command=self.toggle_magnifier)
+        self.magnifier_button = ttk.Button(toolbar, text="Magnifier", command=self.toggle_magnifier)
         self.magnifier_button.pack(side="left", padx=(0, 10))
         
         # Refresh button
@@ -187,11 +187,9 @@ class PDFPreviewViewer:
     
     def _clear_caches(self):
         """Clear all page caches."""
-        self.page_cache.clear()
-        self.dark_mode_cache.clear()
-        self.page_layouts.clear()
+        for cache in [self.page_cache, self.dark_mode_cache, self.page_layouts, self.visible_pages]:
+            cache.clear()
         self.cache_order.clear()
-        self.visible_pages.clear()
         if self.pdf_doc:
             self.pdf_doc = None
     
@@ -631,20 +629,16 @@ class PDFPreviewViewer:
             
     def refresh_theme(self):
         """Refresh the PDF display when theme changes."""
-        logs_console.log("PDF Viewer: Theme refresh requested", level='INFO')
         
         if not self.pdf_path or not self.page_layouts:
-            logs_console.log("PDF Viewer: No PDF loaded, skipping theme refresh", level='DEBUG')
             return
             
         # Clear theme-specific caches and force re-rendering
         self._clear_theme_caches()
-        logs_console.log("PDF Viewer: Cleared theme caches", level='DEBUG')
         
         # Update the current dark mode state
         old_dark_mode = self.current_dark_mode_state
         self.current_dark_mode_state = is_dark_mode_inversion_needed()
-        logs_console.log(f"PDF Viewer: Dark mode changed from {old_dark_mode} to {self.current_dark_mode_state}", level='INFO')
         
         # Re-render visible pages with new theme immediately
         self.canvas.after_idle(self._update_visible_pages)
@@ -717,7 +711,7 @@ class PDFPreviewViewer:
             return
             
         # Create new circular magnifier
-        self.magnifier = CircularMagnifier(self.parent, self)
+        self.magnifier = PDFPreviewMagnifier(self.parent, self)
         
         # Bind mouse motion to update magnifier
         self.canvas.bind("<Motion>", self._update_magnifier)
@@ -787,4 +781,3 @@ class PDFPreviewViewer:
                 self.visible_pages.add(adjacent_page)
                 self._render_visible_page(adjacent_page)
         
-        logs_console.log(f"Force rendered page {page_num} and adjacent pages for navigation", level='DEBUG')

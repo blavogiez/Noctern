@@ -7,7 +7,7 @@ from typing import Tuple, Optional
 from utils import logs_console
 
 
-class CoordinateConverter:
+class PDFPreviewCoordinateConverter:
     """
     Converts between different coordinate systems:
     - SyncTeX coordinates (scaled points, origin bottom-left)
@@ -23,7 +23,6 @@ class CoordinateConverter:
         # Standard PDF DPI for coordinate calculations
         self.PDF_DPI = 72.0
         
-        logs_console.log("Coordinate Converter initialized", level='DEBUG')
     
     def synctex_to_pdf_points(self, synctex_x: float, synctex_y: float) -> Tuple[float, float]:
         """
@@ -39,7 +38,6 @@ class CoordinateConverter:
         pdf_x = synctex_x * self.SYNCTEX_UNIT_TO_POINTS
         pdf_y = synctex_y * self.SYNCTEX_UNIT_TO_POINTS
         
-        logs_console.log(f"SyncTeX ({synctex_x:.0f}, {synctex_y:.0f}) -> PDF points ({pdf_x:.2f}, {pdf_y:.2f})", level='DEBUG')
         return pdf_x, pdf_y
     
     def pdf_to_viewer_coordinates(self, pdf_x: float, pdf_y: float, 
@@ -71,9 +69,6 @@ class CoordinateConverter:
         # Flip Y coordinate (PDF origin bottom-left, viewer origin top-left)
         viewer_y = int((page_height - pdf_y) * scale_y) + viewer_y_offset
         
-        logs_console.log(f"PDF ({pdf_x:.2f}, {pdf_y:.2f}) -> Viewer ({viewer_x}, {viewer_y})", level='DEBUG')
-        logs_console.log(f"  Page size: {page_width:.1f}x{page_height:.1f} pt, Viewer: {viewer_width}x{viewer_height} px", level='DEBUG')
-        logs_console.log(f"  Scale: {scale_x:.3f}x, {scale_y:.3f}y, Y offset: {viewer_y_offset}", level='DEBUG')
         
         return viewer_x, viewer_y
     
@@ -117,7 +112,6 @@ class CoordinateConverter:
             float: Scroll position (0.0 to 1.0)
         """
         scroll_pos = max(0.0, min(1.0, viewer_y / total_height))
-        logs_console.log(f"Scroll calculation: viewer_y {viewer_y} / total {total_height} = {scroll_pos:.3f}", level='DEBUG')
         return scroll_pos
     
     def get_text_bounds_from_chars(self, chars: list, start_idx: int, length: int,
@@ -172,7 +166,6 @@ class CoordinateConverter:
         width = bottom_right[0] - top_left[0]
         height = bottom_right[1] - top_left[1]
         
-        logs_console.log(f"Text bounds: PDF ({min_x:.1f},{min_y:.1f},{max_x:.1f},{max_y:.1f}) -> Viewer ({x},{y},{width},{height})", level='DEBUG')
         
         return (x, y, width, height)
     
@@ -201,6 +194,5 @@ class CoordinateConverter:
         # Convert to viewer coordinates (remember Y flip)
         estimated_y = int((1.0 - line_fraction) * viewer_height) + viewer_y_offset
         
-        logs_console.log(f"Line estimation: {line_number}/{total_lines} -> Y {estimated_y}", level='DEBUG')
         
         return estimated_y

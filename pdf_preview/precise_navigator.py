@@ -32,7 +32,7 @@ class NavigationResult:
         return f"NavigationResult(success={self.success}, page={self.page}, pos=({self.x:.1f}, {self.y:.1f}), confidence={self.confidence:.2f}, method='{self.method}')"
 
 
-class PreciseNavigator:
+class PDFPreviewNavigator:
     """
     High-precision PDF navigation system with SyncTeX integration and intelligent fallbacks.
     Handles exact line-to-coordinate mapping with performance optimization.
@@ -137,12 +137,12 @@ class PreciseNavigator:
         cached_result = self._get_cached_navigation(line_number, source_text, context_before, context_after)
         if cached_result:
             self.cache_hit_count += 1
-            logs_console.log(f"✅ Cache hit for line {line_number} - returning cached result", level='INFO')
+            logs_console.log(f"Cache hit for line {line_number} - returning cached result", level='INFO')
             logs_console.log(f"  Cached result: page {cached_result.page}, confidence {cached_result.confidence:.2f}", level='DEBUG')
             return cached_result
         
         # Get coordinates using line mapper
-        logs_console.log(f"🔍 Attempting coordinate mapping for line {line_number}", level='INFO')
+        logs_console.log(f"Attempting coordinate mapping for line {line_number}", level='INFO')
         coordinates = self.line_mapper.get_coordinates_for_line(
             line_number, source_text, context_before, context_after
         )
@@ -158,10 +158,10 @@ class PreciseNavigator:
                 details=f"Mapped to page {coordinates.page} using {coordinates.source}"
             )
             
-            logs_console.log(f"✅ Navigation successful for line {line_number}", level='INFO')
-            logs_console.log(f"  Method: {coordinates.source}", level='INFO')
-            logs_console.log(f"  Target: page {coordinates.page}, coords ({coordinates.x:.1f}, {coordinates.y:.1f})", level='INFO')
-            logs_console.log(f"  Confidence: {coordinates.confidence:.2f}", level='INFO')
+            logs_console.log(f"Navigation successful for line {line_number}", level='INFO')
+            logs_console.log(f"Method: {coordinates.source}", level='INFO')
+            logs_console.log(f"Target: page {coordinates.page}, coords ({coordinates.x:.1f}, {coordinates.y:.1f})", level='INFO')
+            logs_console.log(f"Confidence: {coordinates.confidence:.2f}", level='INFO')
             
             # Track SyncTeX success
             if coordinates.source == 'synctex':
@@ -177,8 +177,8 @@ class PreciseNavigator:
                 details=f"Could not map line {line_number} to PDF coordinates"
             )
             
-            logs_console.log(f"❌ Navigation failed for line {line_number}", level='WARNING')
-            logs_console.log(f"  Reason: No coordinate mapping found", level='WARNING')
+            logs_console.log(f"Navigation failed for line {line_number}", level='WARNING')
+            logs_console.log(f"Reason: No coordinate mapping found", level='WARNING')
             
             # Log diagnostic information
             mapping_info = self.line_mapper.get_mapping_info()

@@ -3,7 +3,7 @@
 - bouton reapply syntax
 - améliorer magnifier
 - couleur plus adaptée dans les panels pour dark theme (noir sur violet non?)
-- tables modernes + selection du package (amélioration ctrl^b)
+- tables modernes + selection du package (amélioration ctrl^b) + previsu latex (ou WYSIWIM)
 
 pour l'insertion de table, je veux l'améliorer : une liste permettra de choisir le package de table choisi, puis les options par rapport à ce package (bordure si ça le permet etc). Fais 4 packages différents et renseigne toi (WebSearch) pour proposer les meilleurs options dessus
 

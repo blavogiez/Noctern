@@ -10,7 +10,7 @@ import math
 import platform
 
 
-class CircularMagnifier:
+class PDFPreviewMagnifier:
     """
     A circular magnifier tool for PDF preview.
     """

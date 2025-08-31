@@ -37,7 +37,6 @@ class PDFPreviewManager:
         self.status_update_job = None
         self.auto_refresh_enabled = True
         
-        logs_console.log("PDF Preview Manager initialized", level='INFO')
         self._update_status_label()
 
     def get_viewer(self):
@@ -190,7 +189,6 @@ class PDFPreviewManager:
         
         self._save_successful_version(latex_content)
         self._notify_debug_system(True, log_content, latex_content)
-        logs_console.log(f"PDF preview updated from memory{' with SyncTeX' if synctex_path else ''}", level='INFO')
 
     def _on_compilation_failure(self, log_content="", latex_content=""):
         """Handle compilation failure"""
@@ -201,7 +199,6 @@ class PDFPreviewManager:
         self._stop_status_updates()
         
         self._notify_debug_system(False, log_content, latex_content)
-        logs_console.log("PDF compilation from memory failed", level='WARNING')
 
     def _save_successful_version(self, latex_content):
         """Cache successful compilation for diff system"""
@@ -239,49 +236,16 @@ class PDFPreviewManager:
         except Exception as e:
             logs_console.log(f"Debug system notification error: {e}", level='WARNING')
     
-    def _compilation_finished(self, success, source_directory, file_name):
-        self.is_compiling = False
-        if success:
-            self.last_compilation_time = time.time()
-            self.compilation_status = "Compilable"
-            pdf_path = os.path.join(source_directory, file_name.replace(".tex", ".pdf"))
-            
-            # Cache successful compilation using existing cache directory in same directory as tex file
-            try:
-                tex_base_name = os.path.splitext(file_name)[0]
-                cache_directory = os.path.join(source_directory, f"{tex_base_name}.cache")
-                os.makedirs(cache_directory, exist_ok=True)
-                cached_tex_path = os.path.join(cache_directory, f"{tex_base_name}_last_successful.tex")
-                tex_file_path = os.path.join(source_directory, file_name)
-                shutil.copy2(tex_file_path, cached_tex_path)
-                logs_console.log(f"Auto-compilation: Cached successful version to {cached_tex_path}", level='INFO')
-            except Exception as e:
-                logs_console.log(f"Auto-compilation: Failed to cache successful .tex file: {e}", level='ERROR')
-            
-            if self.viewer and os.path.exists(pdf_path):
-                self.viewer.load_pdf(pdf_path)
-                # Update viewer status
-                self.viewer.set_compilation_status("Compilable", self.last_compilation_time)
-            self._start_status_updates()
-        else:
-            # En cas d'échec de compilation, on garde l'ancien PDF affiché
-            self.compilation_status = "Not compilable"
-            if self.viewer:
-                self.viewer.set_compilation_status("Not compilable", self.last_compilation_time)
-            self._stop_status_updates()
-            
-            # Send compilation errors to the debug system
-            self._handle_compilation_failure(source_directory, file_name)
-        
-        self._update_status_label()
 
     def _start_status_updates(self):
-        if self.status_update_job: self.root_window.after_cancel(self.status_update_job)
+        if self.status_update_job: 
+            self.root_window.after_cancel(self.status_update_job)
         self._update_status_label()
 
     def _stop_status_updates(self):
-        if self.status_update_job: self.root_window.after_cancel(self.status_update_job)
-        self.status_update_job = None
+        if self.status_update_job: 
+            self.root_window.after_cancel(self.status_update_job)
+            self.status_update_job = None
 
     def _update_status_label(self):
         if not self.header_label: return
@@ -345,12 +309,10 @@ class PDFPreviewManager:
                 try:
                     with open(log_file_path, 'r', encoding='utf-8', errors='ignore') as f:
                         log_content = f.read()
-                    logs_console.log(f"Auto-compilation: Read log file {log_file_path} ({len(log_content)} chars)", level='DEBUG')
                 except Exception as e:
                     logs_console.log(f"Auto-compilation: Error reading log file: {e}", level='ERROR')
                     return
             else:
-                logs_console.log(f"Auto-compilation: Log file not found: {log_file_path}", level='WARNING')
                 return
             
             # Get current file content
@@ -361,7 +323,6 @@ class PDFPreviewManager:
             try:
                 from app import state
                 if hasattr(state, 'debug_coordinator') and state.debug_coordinator:
-                    logs_console.log("Auto-compilation: Sending errors to debug system", level='INFO')
                     state.debug_coordinator.handle_compilation_result(
                         success=False,
                         log_content=log_content,
@@ -369,7 +330,7 @@ class PDFPreviewManager:
                         current_content=current_content
                     )
                 else:
-                    logs_console.log("Auto-compilation: Debug coordinator not available", level='WARNING')
+                    pass
             except Exception as e:
                 logs_console.log(f"Auto-compilation: Error sending to debug system: {e}", level='ERROR')
                 

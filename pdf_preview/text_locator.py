@@ -4,12 +4,13 @@ Handles precise text location and highlighting within PDF documents using the ne
 """
 
 import os
+import pdfplumber
 import tkinter as tk
 from utils import logs_console
-from pdf_preview.precise_navigator import PreciseNavigator
-from pdf_preview.coordinate_converter import CoordinateConverter
+from pdf_preview.precise_navigator import PDFPreviewNavigator
+from pdf_preview.coordinate_converter import PDFPreviewCoordinateConverter
 
-class PDFTextLocator:
+class PDFPreviewTextLocator:
     """
     Manages precise text location and highlighting within PDF documents.
     Uses the new PreciseNavigator system for enhanced accuracy.
@@ -23,10 +24,9 @@ class PDFTextLocator:
             pdf_viewer: The PDF viewer instance to navigate
         """
         self.pdf_viewer = pdf_viewer
-        self.navigator = PreciseNavigator()
-        self.coordinate_converter = CoordinateConverter()
+        self.navigator = PDFPreviewNavigator()
+        self.coordinate_converter = PDFPreviewCoordinateConverter()
         self.highlight_rectangles = []  # Store highlight rectangles for cleanup
-        logs_console.log("PDF Text Locator initialized", level='INFO')
     
     def clear_highlights(self):
         """
@@ -63,7 +63,6 @@ class PDFTextLocator:
                     page_width = page.width
                     page_height = page.height
                 else:
-                    logs_console.log(f"Page {page_num} not found in PDF.", level='WARNING')
                     return
         except Exception as e:
             logs_console.log(f"Error getting page dimensions: {e}", level='ERROR')
@@ -71,7 +70,6 @@ class PDFTextLocator:
 
         # Ensure dimensions are not zero to avoid division by zero
         if not page_width or not page_height:
-            logs_console.log(f"Invalid page dimensions for page {page_num}.", level='WARNING')
             return
 
         scale_x = layout['width'] / float(page_width)
@@ -117,7 +115,6 @@ class PDFTextLocator:
                 # Bring the rectangle to the front
                 self.pdf_viewer.canvas.tag_raise(rect)
                 
-                logs_console.log(f"Highlighted text on page {page_num}", level='INFO')
     
     def set_document_files(self, pdf_path: str, synctex_path: str = None, source_content: str = "") -> None:
         """
@@ -158,7 +155,6 @@ class PDFTextLocator:
             # Navigate to the precise position and center it
             self._scroll_to_position(result.page, result.x, result.y)
             
-            logs_console.log(f"Navigated to line {line_number} on page {result.page} using {result.method} (confidence: {result.confidence:.2f})", level='INFO')
             return True
         else:
             logs_console.log(f"Failed to navigate to line {line_number}: {result.details}", level='WARNING')
@@ -211,7 +207,7 @@ class PDFTextLocator:
                             # Calculate center position for the page
                             page_center_y = layout['y_offset'] + (layout['height'] // 2)
                             scroll_y = self.coordinate_converter.calculate_scroll_position(
-                                page_center_y - 200,  # Center page in view
+                                page_center_y - 150,  # Center page in view
                                 self.pdf_viewer.total_height
                             )
                             self.pdf_viewer.canvas.yview_moveto(scroll_y)
@@ -219,11 +215,9 @@ class PDFTextLocator:
                             # Ensure visible pages are updated
                             self.pdf_viewer.canvas.after_idle(self.pdf_viewer._update_visible_pages)
                             
-                            logs_console.log(f"Found and centered text using {strategy} on page {page_num}", level='INFO')
                             return True
                 
-                logs_console.log(f"Text '{text}' not found in PDF using any strategy", level='WARNING')
-                return False
+                    return False
                 
         except ImportError:
             logs_console.log("pdfplumber not installed. Cannot search text in PDF.", level='ERROR')
@@ -260,7 +254,6 @@ class PDFTextLocator:
                         # Basic match without character info
                         return (page_num + 1, None)
             except Exception as e:
-                logs_console.log(f"Error searching page {page_num + 1}: {e}", level='DEBUG')
                 continue
                 
         return None
@@ -336,11 +329,9 @@ class PDFTextLocator:
                 self.highlight_rectangles.append(rect)
                 self.pdf_viewer.canvas.tag_raise(rect)
                 
-                logs_console.log(f"✅ Text highlight created using {strategy}: bounds ({x}, {y}, {width}x{height}), confidence {confidence:.2f}", level='INFO')
             else:
                 # Fallback to old method
                 self.highlight_text(page_num, chars, start_idx, length)
-                logs_console.log(f"Used fallback highlight method for {strategy}", level='DEBUG')
                 
         except Exception as e:
             logs_console.log(f"Error creating text highlight: {e}", level='WARNING')
@@ -386,7 +377,6 @@ class PDFTextLocator:
             self.pdf_viewer.total_height
         )
         
-        logs_console.log(f"Centering page {page} in view: scroll position {scroll_y:.3f}", level='INFO')
         
         # Scroll to center the page
         self.pdf_viewer.canvas.yview_moveto(scroll_y)
@@ -439,7 +429,6 @@ class PDFTextLocator:
         highlight_y = max(layout['y_offset'], highlight_y)
         highlight_y = min(highlight_y, layout['y_offset'] + layout['height'] - height)
         
-        logs_console.log(f"Creating highlight: PDF ({x:.1f}, {y:.1f}) -> viewer ({viewer_x}, {viewer_y}) -> rect ({highlight_x}, {highlight_y}, {width}x{height})", level='INFO')
         
         rect = self.pdf_viewer.canvas.create_rectangle(
             highlight_x, highlight_y,
@@ -453,7 +442,6 @@ class PDFTextLocator:
         self.highlight_rectangles.append(rect)
         self.pdf_viewer.canvas.tag_raise(rect)
         
-        logs_console.log(f"✅ Highlight created on page {page} (confidence {confidence:.2f})", level='INFO')
     
     def _legacy_text_search(self, text: str, context_before: str, context_after: str) -> None:
         """Legacy text search fallback."""
@@ -485,10 +473,8 @@ class PDFTextLocator:
                             # Ensure visible pages are updated
                             self.pdf_viewer.canvas.after_idle(self.pdf_viewer._update_visible_pages)
                             
-                            logs_console.log(f"Found and centered text on page {page_num + 1} (legacy search)", level='INFO')
                             return
                         
-            logs_console.log(f"Text '{text}' not found in PDF", level='INFO')
         except ImportError:
             logs_console.log("pdfplumber not installed. Cannot search text in PDF.", level='ERROR')
         except Exception as e:

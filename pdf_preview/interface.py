@@ -4,7 +4,7 @@ import tkinter as tk
 import ttkbootstrap as ttk
 from pdf_preview.manager import PDFPreviewManager
 from pdf_preview.viewer import PDFPreviewViewer
-from pdf_preview.sync_manager import PDFSyncManager
+from pdf_preview.sync_manager import PDFPreviewSyncManager
 from utils import logs_console
 
 
@@ -18,7 +18,7 @@ class PDFPreviewInterface:
         
         # Setup PDF preview component instances
         self.preview_manager = PDFPreviewManager(root_window, get_current_tab_func)
-        self.sync_manager = PDFSyncManager()
+        self.sync_manager = PDFPreviewSyncManager()
         
         # Share the sync manager with the preview manager's viewer
         # This will be set when the viewer is created
@@ -28,7 +28,6 @@ class PDFPreviewInterface:
         self.preview_viewer = None
         self.toggle_button = None
         
-        logs_console.log("PDF Preview Interface initialized", level='INFO')
     
     def integrate_into_main_window(self, main_pane):
         """

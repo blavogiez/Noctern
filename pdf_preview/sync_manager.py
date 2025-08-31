@@ -7,7 +7,7 @@ import re
 from utils import logs_console
 
 
-class PDFSyncManager:
+class PDFPreviewSyncManager:
     """
     Manages synchronization between the LaTeX editor and PDF preview,
     allowing bidirectional navigation between source and output.
@@ -19,7 +19,6 @@ class PDFSyncManager:
         """
         self.sync_points = {}  # Maps editor positions to PDF positions
         self.inverse_sync_points = {}  # Maps PDF positions to editor positions
-        logs_console.log("PDF Synchronization Manager initialized", level='INFO')
     
     def create_sync_map(self, tex_content, pdf_pages):
         """
@@ -33,13 +32,8 @@ class PDFSyncManager:
         self.sync_points = {}
         self.inverse_sync_points = {}
         
-        # Parse the LaTeX content to identify sections, figures, etc.
         self._parse_latex_structure(tex_content)
         
-        # In a full implementation, this would also parse the PDF for 
-        # Parse PDF to find corresponding positions using synctex or similar tools
-        
-        logs_console.log(f"Created sync map with {len(self.sync_points)} points", level='DEBUG')
     
     def _parse_latex_structure(self, tex_content):
         """
@@ -154,12 +148,8 @@ class PDFSyncManager:
             dict: PDF position information or None
         """
         pdf_position = self.get_pdf_position(line_number)
-        if pdf_position:
-            logs_console.log(
-                f"Editor navigation to line {line_number} -> PDF page ~{pdf_position.get('pdf_page_hint', 1)}", 
-                level='DEBUG'
-            )
-        return pdf_position
+        if pdf_position :
+            return pdf_position
     
     def on_pdf_navigation(self, pdf_page):
         """
@@ -173,11 +163,7 @@ class PDFSyncManager:
         """
         editor_line = self.get_editor_position(pdf_page)
         if editor_line:
-            logs_console.log(
-                f"PDF navigation to page {pdf_page} -> Editor line ~{editor_line}", 
-                level='DEBUG'
-            )
-        return editor_line
+            return editor_line
         
     def find_text_in_pdf(self, pdf_path, text, context_before="", context_after=""):
         """
@@ -192,8 +178,6 @@ class PDFSyncManager:
         Returns:
             dict: Position information (page number, coordinates) or None
         """
-        # Remove redundant initialization log - already initialized in __init__
-            
         try:
             import pdfplumber
             
