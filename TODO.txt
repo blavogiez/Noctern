@@ -3,9 +3,12 @@
 - bouton reapply syntax
 - améliorer magnifier
 - couleur plus adaptée dans les panels pour dark theme (noir sur violet non?)
-- tables modernes + selection du package (amélioration ctrl^b) + previsu latex (ou WYSIWIM)
-
-pour l'insertion de table, je veux l'améliorer : une liste permettra de choisir le package de table choisi, puis les options par rapport à ce package (bordure si ça le permet etc). Fais 4 packages différents et renseigne toi (WebSearch) pour proposer les meilleurs options dessus
 
 -textlocator (y - 400 plutot)
 -quand je cree anchor ça doit me mettre à celle qui vient d'être créée
+- copie du documentclass en pdfpreview ram
+
+dans la pdfpreview en ram, le document class n'est pas copié, fix ça. fais intégration logique en t'appuyant sur ce qui se fait déjà et en répondant aux bons principes de dev ; nomme bien en anglais, des nommages adaptés. analyse bien, fais du code court simple production ready.
+-size window : 42.5% pdf + editor, 15% left panels
+
+--Handling packages automatically

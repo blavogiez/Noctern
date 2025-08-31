@@ -8,6 +8,7 @@ from typing import Optional, Callable
 from .base_panel import BasePanel
 from .panel_factory import PanelStyle, StandardComponents
 from utils import logs_console
+from editor.table_insertion import TableGenerator, TablePackage, PackageTableGenerator
 
 
 class InteractiveGridSelector(tk.Frame):
@@ -156,62 +157,6 @@ class InteractiveGridSelector(tk.Frame):
         return self.selected_rows, self.selected_cols
 
 
-class TableGenerator:
-    """Enhanced LaTeX table code generator."""
-    
-    @staticmethod
-    def generate(rows, cols, has_header=True, alignment='c', caption='', label=''):
-        """Generate LaTeX table with enhanced formatting."""
-        logs_console.log(f"Generating {rows}×{cols} table", level='INFO')
-        
-        # Build column spec
-        col_spec = '|' + '|'.join([alignment] * cols) + '|'
-        lines = []
-        
-        # Table environment if caption or label
-        if caption or label:
-            lines.append("\\begin{table}[htbp]")
-            lines.append("    \\centering")
-        
-        # Tabular environment
-        lines.append(f"    \\begin{{tabular}}{{{col_spec}}}")
-        lines.append("        \\hline")
-        
-        # Generate rows with navigable placeholders
-        for row in range(rows):
-            if row == 0 and has_header:
-                cells = [f"⟨Header {i+1}⟩" for i in range(cols)]
-                row_text = " & ".join([f"\\textbf{{{cell}}}" for cell in cells]) + " \\\\"
-            else:
-                data_row = row if not has_header else row
-                cells = [f"⟨Data {data_row+1}.{i+1}⟩" for i in range(cols)]
-                row_text = " & ".join(cells) + " \\\\"
-            
-            lines.append(f"        {row_text}")
-            
-            # Add hlines strategically
-            if (row == 0 and has_header) or row == rows - 1:
-                lines.append("        \\hline")
-        
-        lines.append("    \\end{tabular}")
-        
-        # Caption and label with placeholders when empty
-        has_table_env = caption or label
-        if has_table_env:
-            if caption:
-                lines.append(f"    \\caption{{{caption}}}")
-            else:
-                lines.append(f"    \\caption{{⟨Caption⟩}}")
-                
-            if label:
-                lines.append(f"    \\label{{tab:{label}}}")
-            else:
-                lines.append(f"    \\label{{tab:⟨label⟩}}")
-        
-        if has_table_env:
-            lines.append("\\end{table}")
-        
-        return "\n".join(lines)
 
 
 class TableInsertionPanel(BasePanel):
@@ -228,15 +173,15 @@ class TableInsertionPanel(BasePanel):
         
         # UI components
         self.grid_selector: Optional[InteractiveGridSelector] = None
-        self.header_var: Optional[tk.BooleanVar] = None
-        self.align_var: Optional[tk.StringVar] = None
-        self.caption_var: Optional[tk.StringVar] = None
-        self.label_var: Optional[tk.StringVar] = None
-        self.preview_text: Optional[tk.Text] = None
+        self.package_var: Optional[tk.StringVar] = None
+        self.option_widgets: dict = {}  # Dynamic option widgets
+        self.packages_info: Optional[ttk.Label] = None
         
-        # Current dimensions
+        # Current state
         self.current_rows = 2
         self.current_cols = 3
+        self.current_package = TablePackage.BASIC
+        self.current_generator: Optional[PackageTableGenerator] = None
         
     def get_panel_title(self) -> str:
         return "Insert Table"
@@ -256,8 +201,6 @@ class TableInsertionPanel(BasePanel):
         # Options and preview section (bottom)
         self._create_bottom_section(paned_window)
         
-        # Generate initial preview
-        self._update_preview()
     
     def _create_grid_selector_section(self, parent):
         """Create the grid selector section (top pane)."""
@@ -299,87 +242,83 @@ class TableInsertionPanel(BasePanel):
         main_frame = ttk.Frame(bottom_frame, padding=StandardComponents.PADDING)
         main_frame.pack(fill="both", expand=True)
         
-        # Table options section
-        self._create_options_section(main_frame)
+        # Package selection section
+        self._create_package_section(main_frame)
         
-        # Preview section
-        self._create_preview_section(main_frame)
+        # Dynamic options section
+        self._create_dynamic_options_section(main_frame)
         
         # Action buttons section
         self._create_action_section(main_frame)
     
-    def _create_options_section(self, parent):
-        """Create table formatting options."""
-        options_section = StandardComponents.create_section(parent, "Table Options")
-        options_section.pack(fill="x", pady=(0, StandardComponents.SECTION_SPACING))
+    def _create_package_section(self, parent):
+        """Create package selection section."""
+        package_section = StandardComponents.create_section(parent, "LaTeX Package")
+        package_section.pack(fill="x", pady=(0, StandardComponents.SECTION_SPACING))
         
-        # Options grid
-        options_grid = StandardComponents.create_grid_frame(options_section, columns=2, padding=StandardComponents.ELEMENT_SPACING)
+        # Package selection frame
+        selection_frame = ttk.Frame(package_section)
+        selection_frame.pack(fill="x", pady=StandardComponents.ELEMENT_SPACING)
         
-        row = 0
+        # Package dropdown
+        ttk.Label(selection_frame, text="Package:", font=StandardComponents.BODY_FONT).pack(side="left")
         
-        # Header row option
-        ttk.Label(options_grid, text="Include header row:", font=StandardComponents.BODY_FONT).grid(
-            row=row, column=0, sticky="w", pady=2
+        self.package_var = tk.StringVar(value=TablePackage.BASIC.value)
+        package_combo = ttk.Combobox(
+            selection_frame,
+            textvariable=self.package_var,
+            state="readonly",
+            width=20
         )
-        self.header_var = tk.BooleanVar(value=True)
-        header_check = ttk.Checkbutton(options_grid, variable=self.header_var, command=self._update_preview)
-        header_check.grid(row=row, column=1, sticky="w", pady=2)
-        row += 1
         
-        # Column alignment
-        ttk.Label(options_grid, text="Column alignment:", font=StandardComponents.BODY_FONT).grid(
-            row=row, column=0, sticky="w", pady=2
+        # Populate package options
+        package_options = []
+        for package in TablePackage:
+            display_name, description, _ = TableGenerator.get_package_info(package)
+            package_options.append(f"{display_name} - {description}")
+        
+        package_combo['values'] = package_options
+        package_combo.current(0)
+        package_combo.bind('<<ComboboxSelected>>', self._on_package_change)
+        package_combo.pack(side="left", padx=(10, 0), fill="x", expand=True)
+        
+        # Required packages info
+        self.packages_info = ttk.Label(
+            package_section,
+            text="Required packages will appear here",
+            font=StandardComponents.CODE_FONT,
+            foreground="#666666"
         )
-        self.align_var = tk.StringVar(value="c")
-        align_frame = ttk.Frame(options_grid)
-        align_frame.grid(row=row, column=1, sticky="w", pady=2)
+        self.packages_info.pack(anchor="w", pady=(10, 0))
         
-        alignments = [("Left", "l"), ("Center", "c"), ("Right", "r")]
-        for i, (text, value) in enumerate(alignments):
-            ttk.Radiobutton(
-                align_frame,
-                text=text,
-                variable=self.align_var,
-                value=value,
-                command=self._update_preview
-            ).pack(side="left", padx=(0, 10))
-        row += 1
-        
-        # Caption
-        ttk.Label(options_grid, text="Caption (optional):", font=StandardComponents.BODY_FONT).grid(
-            row=row, column=0, sticky="w", pady=2
-        )
-        self.caption_var = tk.StringVar()
-        caption_entry = StandardComponents.create_entry_input(options_grid, width=20)
-        caption_entry.configure(textvariable=self.caption_var)
-        caption_entry.grid(row=row, column=1, sticky="ew", pady=2)
-        caption_entry.bind("<KeyRelease>", lambda e: self._update_preview())
-        row += 1
-        
-        # Label
-        ttk.Label(options_grid, text="Label (optional):", font=StandardComponents.BODY_FONT).grid(
-            row=row, column=0, sticky="w", pady=2
-        )
-        self.label_var = tk.StringVar()
-        label_entry = StandardComponents.create_entry_input(options_grid, width=20)
-        label_entry.configure(textvariable=self.label_var)
-        label_entry.grid(row=row, column=1, sticky="ew", pady=2)
-        label_entry.bind("<KeyRelease>", lambda e: self._update_preview())
+        # Initialize current generator
+        self.current_generator = TableGenerator.get_generator(self.current_package)
+        self._update_packages_info()
     
-    def _create_preview_section(self, parent):
-        """Create live preview section."""
-        preview_section = StandardComponents.create_section(parent, "Live Preview")
-        preview_section.pack(fill="both", expand=True, pady=(0, StandardComponents.SECTION_SPACING))
+    def _create_dynamic_options_section(self, parent):
+        """Create dynamic options section that adapts to selected package."""
+        self.options_section = StandardComponents.create_section(parent, "Package Options")
+        self.options_section.pack(fill="x", pady=(0, StandardComponents.SECTION_SPACING))
         
-        # Preview text widget
-        self.preview_text = StandardComponents.create_text_input(
-            preview_section,
-            "LaTeX code will appear here...",
-            height=12
+        # Create scrollable frame for options - expanded height
+        self.options_canvas = tk.Canvas(self.options_section, height=280)
+        self.options_scrollbar = ttk.Scrollbar(self.options_section, orient="vertical", command=self.options_canvas.yview)
+        self.options_frame = ttk.Frame(self.options_canvas)
+        
+        self.options_frame.bind(
+            "<Configure>",
+            lambda e: self.options_canvas.configure(scrollregion=self.options_canvas.bbox("all"))
         )
-        self.preview_text.pack(fill="both", expand=True)
-        self.preview_text.config(state="disabled", font=StandardComponents.CODE_FONT)
+        
+        self.options_canvas.create_window((0, 0), window=self.options_frame, anchor="nw")
+        self.options_canvas.configure(yscrollcommand=self.options_scrollbar.set)
+        
+        self.options_canvas.pack(side="left", fill="both", expand=True)
+        self.options_scrollbar.pack(side="right", fill="y")
+        
+        # Create initial options
+        self._rebuild_options_ui()
+    
     
     def _create_action_section(self, parent):
         """Create action buttons."""
@@ -396,40 +335,151 @@ class TableInsertionPanel(BasePanel):
         self.current_rows = rows
         self.current_cols = cols
         logs_console.log(f"Table dimensions changed to {rows}×{cols}", level='DEBUG')
-        self._update_preview()
     
-    def _update_preview(self):
-        """Update the live preview."""
-        if not self.preview_text:
+    def _on_package_change(self, event=None):
+        """Handle package selection change."""
+        selected_index = event.widget.current()
+        packages = list(TablePackage)
+        
+        if 0 <= selected_index < len(packages):
+            self.current_package = packages[selected_index]
+            self.current_generator = TableGenerator.get_generator(self.current_package)
+            
+            logs_console.log(f"Changed to {self.current_package.value} package", level='DEBUG')
+            
+            # Update UI
+            self._rebuild_options_ui()
+            self._update_packages_info()
+    
+    def _rebuild_options_ui(self):
+        """Rebuild the options UI based on current package."""
+        # Clear existing options
+        for widget in self.options_frame.winfo_children():
+            widget.destroy()
+        self.option_widgets.clear()
+        
+        if not self.current_generator:
+            return
+        
+        # Get options for current generator
+        options = self.current_generator.get_available_options()
+        
+        # Create grid for options
+        row = 0
+        
+        for option_key, option_config in options.items():
+            option_type = option_config['type']
+            label_text = option_config['label']
+            default_value = option_config['default']
+            
+            # Label
+            ttk.Label(
+                self.options_frame,
+                text=f"{label_text}:",
+                font=StandardComponents.BODY_FONT
+            ).grid(row=row, column=0, sticky="w", pady=2, padx=(0, 10))
+            
+            # Widget based on type
+            if option_type == 'boolean':
+                var = tk.BooleanVar(value=default_value)
+                widget = ttk.Checkbutton(
+                    self.options_frame,
+                    variable=var
+                )
+                self.option_widgets[option_key] = var
+                
+            elif option_type == 'choice':
+                var = tk.StringVar(value=default_value)
+                choices = option_config['choices']
+                
+                # Use Combobox for choices
+                widget = ttk.Combobox(
+                    self.options_frame,
+                    textvariable=var,
+                    state="readonly",
+                    width=15
+                )
+                widget['values'] = [choice[0] for choice in choices]
+                # Find default index
+                for i, (_, value) in enumerate(choices):
+                    if value == default_value:
+                        widget.current(i)
+                        break
+                
+                self.option_widgets[option_key] = var
+                
+            elif option_type == 'string':
+                var = tk.StringVar(value=default_value)
+                widget = StandardComponents.create_entry_input(self.options_frame, width=20)
+                widget.configure(textvariable=var)
+                self.option_widgets[option_key] = var
+            
+            widget.grid(row=row, column=1, sticky="ew", pady=2)
+            row += 1
+        
+        # Configure grid weights
+        self.options_frame.grid_columnconfigure(1, weight=1)
+    
+    def _update_packages_info(self):
+        """Update the required packages information."""
+        if not self.packages_info or not self.current_generator:
             return
         
         try:
-            # Generate table code
-            table_code = TableGenerator.generate(
-                rows=self.current_rows,
-                cols=self.current_cols,
-                has_header=self.header_var.get() if self.header_var else True,
-                alignment=self.align_var.get() if self.align_var else 'c',
-                caption=self.caption_var.get() if self.caption_var else '',
-                label=self.label_var.get() if self.label_var else ''
-            )
+            required_packages = self.current_generator.required_packages
             
-            # Update preview
-            self.preview_text.config(state="normal")
-            self.preview_text.delete("1.0", "end")
-            self.preview_text.insert("1.0", table_code)
-            self.preview_text.config(state="disabled")
+            if not required_packages:
+                info_text = "No additional packages required (built-in LaTeX)"
+            else:
+                packages_str = ", ".join(required_packages)
+                info_text = f"Required: \\usepackage{{{packages_str}}}"
+            
+            self.packages_info.config(text=info_text)
             
         except Exception as e:
-            logs_console.log(f"Error updating preview: {e}", level='ERROR')
+            logs_console.log(f"Error updating packages info: {e}", level='ERROR')
+    
+    def _get_current_options(self) -> dict:
+        """Get current option values."""
+        if not self.current_generator:
+            return {}
+        
+        options = {}
+        available_options = self.current_generator.get_available_options()
+        
+        for option_key, option_config in available_options.items():
+            if option_key in self.option_widgets:
+                var = self.option_widgets[option_key]
+                
+                if option_config['type'] == 'choice':
+                    # Find the value for the selected choice
+                    selected_text = var.get()
+                    for choice_text, choice_value in option_config['choices']:
+                        if choice_text == selected_text:
+                            options[option_key] = choice_value
+                            break
+                    else:
+                        options[option_key] = option_config['default']
+                else:
+                    options[option_key] = var.get()
+            else:
+                options[option_key] = option_config['default']
+        
+        return options
+    
     
     def _handle_insert(self):
         """Handle table insertion."""
-        if not self.preview_text:
+        if not self.current_generator:
             return
         
-        # Get the generated table code
-        table_code = self.preview_text.get("1.0", "end-1c")
+        # Generate the table code with current options
+        options = self._get_current_options()
+        table_code = self.current_generator.generate(
+            rows=self.current_rows,
+            cols=self.current_cols,
+            options=options
+        )
         
         logs_console.log(f"Inserting {self.current_rows}×{self.current_cols} table", level='ACTION')
         

@@ -69,7 +69,7 @@ PATTERNS = {
     # Environments (before general patterns)
     'list_env': re.compile(r'\\(?:begin|end)\{(?:itemize|enumerate|description)\}', re.MULTILINE),
     'math_env': re.compile(r'\\(?:begin|end)\{(?:equation|align|gather|split|math|displaymath|eqnarray)\*?\}', re.MULTILINE),
-    'figure_env': re.compile(r'\\(?:begin|end)\{(?:figure|table|tabular|array)\*?\}', re.MULTILINE),
+    'figure_env': re.compile(r'\\(?:begin|end)\{(?:figure|table|tabular|array|longtable|tblr|matrix|pmatrix|bmatrix|vmatrix|Vmatrix|Bmatrix|cases|numcases|substack)\*?\}', re.MULTILINE),
     'environment': re.compile(r'\\(?:begin|end)\{[^}]+\}', re.MULTILINE),
     
     # Text formatting
