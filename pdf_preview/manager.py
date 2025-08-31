@@ -117,9 +117,9 @@ class PDFPreviewManager:
             f.write(latex_content)
 
     def _execute_latex_compilation(self, temp_dir):
-        """Execute pdflatex compilation in temporary directory"""
+        """Execute pdflatex compilation in temporary directory with SyncTeX support"""
         return subprocess.run(
-            ["pdflatex", "-interaction=nonstopmode", "preview.tex"], 
+            ["pdflatex", "-synctex=1", "-interaction=nonstopmode", "preview.tex"], 
             cwd=temp_dir,
             capture_output=True, 
             timeout=60, 
@@ -130,11 +130,13 @@ class PDFPreviewManager:
         """Process compilation result and handle success or failure"""
         log_content = self._read_log_file(temp_dir)
         pdf_path = os.path.join(temp_dir, "preview.pdf")
+        synctex_path = os.path.join(temp_dir, "preview.synctex.gz")
         success = result.returncode == 0 and os.path.exists(pdf_path)
         
         if success:
             persistent_pdf = self._save_preview_pdf(pdf_path)
-            self.root_window.after(0, self._on_compilation_success, persistent_pdf, log_content, latex_content)
+            persistent_synctex = self._save_synctex_file(synctex_path) if os.path.exists(synctex_path) else None
+            self.root_window.after(0, self._on_compilation_success, persistent_pdf, log_content, latex_content, persistent_synctex)
         else:
             self.root_window.after(0, self._on_compilation_failure, log_content, latex_content)
 
@@ -167,20 +169,28 @@ class PDFPreviewManager:
         shutil.copy2(pdf_path, persistent_pdf)
         return persistent_pdf
 
-    def _on_compilation_success(self, pdf_path, log_content="", latex_content=""):
+    def _save_synctex_file(self, synctex_path):
+        """Save SyncTeX file to persistent location and return path"""
+        persistent_dir = os.path.join(tempfile.gettempdir(), "automatex_preview")
+        os.makedirs(persistent_dir, exist_ok=True)
+        persistent_synctex = os.path.join(persistent_dir, "preview.synctex.gz")
+        shutil.copy2(synctex_path, persistent_synctex)
+        return persistent_synctex
+
+    def _on_compilation_success(self, pdf_path, log_content="", latex_content="", synctex_path=None):
         """Handle successful compilation"""
         self.is_compiling = False
         self.last_compilation_time = time.time()
         self.compilation_status = "Compilable"
         
         if self.viewer:
-            self.viewer.load_pdf(pdf_path)
+            self.viewer.load_pdf(pdf_path, synctex_path)
             self.viewer.set_compilation_status("Compilable", self.last_compilation_time)
         self._start_status_updates()
         
         self._save_successful_version(latex_content)
         self._notify_debug_system(True, log_content, latex_content)
-        logs_console.log("PDF preview updated from memory", level='INFO')
+        logs_console.log(f"PDF preview updated from memory{' with SyncTeX' if synctex_path else ''}", level='INFO')
 
     def _on_compilation_failure(self, log_content="", latex_content=""):
         """Handle compilation failure"""
@@ -369,6 +379,61 @@ class PDFPreviewManager:
     def set_auto_refresh(self, enabled):
         self.auto_refresh_enabled = enabled
         
+    def navigate_to_exact_line(self, line_number: int, source_text: str = "", 
+                              context_before: str = "", context_after: str = "", 
+                              source_content: str = "") -> bool:
+        """
+        Navigate to exact line number in PDF with high precision.
+        
+        Args:
+            line_number (int): Line number in LaTeX source
+            source_text (str): Text on the line for disambiguation
+            context_before (str): Context before the line
+            context_after (str): Context after the line
+            source_content (str): Full LaTeX source content
+            
+        Returns:
+            bool: True if navigation successful
+        """
+        if self.viewer and hasattr(self.viewer, 'text_locator'):
+            # Set up document files for precise navigation
+            current_pdf = getattr(self.viewer, 'pdf_path', None)
+            synctex_path = self._get_synctex_path(current_pdf) if current_pdf else None
+            
+            if current_pdf:
+                self.viewer.text_locator.set_document_files(current_pdf, synctex_path, source_content)
+                return self.viewer.text_locator.navigate_to_line(
+                    line_number, source_text, context_before, context_after
+                )
+        
+        return False
+    
+    def _get_synctex_path(self, pdf_path: str) -> str:
+        """Get SyncTeX path for a given PDF path."""
+        if not pdf_path:
+            return None
+            
+        # Try persistent SyncTeX first
+        import tempfile
+        persistent_dir = os.path.join(tempfile.gettempdir(), "automatex_preview")
+        synctex_path = os.path.join(persistent_dir, "preview.synctex.gz")
+        
+        if os.path.exists(synctex_path):
+            return synctex_path
+            
+        # Try alongside PDF
+        base_path = os.path.splitext(pdf_path)[0]
+        synctex_candidates = [
+            f"{base_path}.synctex.gz",
+            f"{base_path}.synctex"
+        ]
+        
+        for candidate in synctex_candidates:
+            if os.path.exists(candidate):
+                return candidate
+                
+        return None
+
     def go_to_text_in_pdf(self, text, context_before="", context_after=""):
         """
         Navigate to the specified text in the PDF using the viewer's text navigator.

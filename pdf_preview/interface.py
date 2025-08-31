@@ -4,7 +4,7 @@ import tkinter as tk
 import ttkbootstrap as ttk
 from pdf_preview.manager import PDFPreviewManager
 from pdf_preview.viewer import PDFPreviewViewer
-from pdf_preview.sync import PDFSyncManager
+from pdf_preview.sync_manager import PDFSyncManager
 from utils import logs_console
 
 
@@ -145,6 +145,28 @@ class PDFPreviewInterface:
         if self.preview_manager:
             self.preview_manager.set_auto_refresh(enabled)
             
+    def navigate_to_exact_line(self, line_number: int, source_text: str = "", 
+                              context_before: str = "", context_after: str = "", 
+                              source_content: str = "") -> bool:
+        """
+        Navigate to exact line number in PDF with precision.
+        
+        Args:
+            line_number (int): Line number in LaTeX source
+            source_text (str): Text on the line for disambiguation
+            context_before (str): Context before the line
+            context_after (str): Context after the line
+            source_content (str): Full LaTeX source content
+            
+        Returns:
+            bool: True if navigation successful
+        """
+        if self.preview_manager:
+            return self.preview_manager.navigate_to_exact_line(
+                line_number, source_text, context_before, context_after, source_content
+            )
+        return False
+
     def go_to_text_in_pdf(self, text, context_before="", context_after=""):
         """
         Navigate to the specified text in the PDF using the preview manager.

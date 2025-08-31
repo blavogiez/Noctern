@@ -18,9 +18,9 @@ try:
 except ImportError:
     HAS_FITZ = False
 
-# Import navigator component
-from pdf_preview.navigator import PDFTextNavigator
-from pdf_preview.sync import PDFSyncManager
+# Import navigation components
+from pdf_preview.text_locator import PDFTextLocator
+from pdf_preview.sync_manager import PDFSyncManager
 # Import circular magnifier component
 from pdf_preview.magnifier import CircularMagnifier
 # Import image processor for dark mode support
@@ -60,7 +60,7 @@ class PDFPreviewViewer:
         self.status_update_job = None
         
         # Text navigator component
-        self.text_navigator = PDFTextNavigator(self)
+        self.text_locator = PDFTextLocator(self)
         
         # Sync manager for text search (share instance with interface to avoid duplication)
         self.sync_manager = None  # Will be set by interface when needed
@@ -195,12 +195,13 @@ class PDFPreviewViewer:
         if self.pdf_doc:
             self.pdf_doc = None
     
-    def load_pdf(self, pdf_path):
+    def load_pdf(self, pdf_path, synctex_path=None):
         """
         Load a PDF file for preview.
         
         Args:
             pdf_path (str): Path to the PDF file
+            synctex_path (str): Path to SyncTeX file for precise navigation
         """
         if not os.path.exists(pdf_path):
             self._create_placeholder()
@@ -209,9 +210,12 @@ class PDFPreviewViewer:
         self.pdf_path = pdf_path
         self._clear_caches()
         
-        # Clear any text highlights
-        if hasattr(self, 'text_navigator'):
-            self.text_navigator.clear_highlights()
+        # Clear any text highlights and set up new document files
+        if hasattr(self, 'text_locator'):
+            self.text_locator.clear_highlights()
+            # Initialize with new PDF and SyncTeX files
+            if synctex_path:
+                self.text_locator.set_document_files(pdf_path, synctex_path, "")
         
         # Cancel any existing render thread
         if self.render_thread and self.render_thread.is_alive():
@@ -695,7 +699,7 @@ class PDFPreviewViewer:
             context_before (str): Text before the target text
             context_after (str): Text after the target text
         """
-        self.text_navigator.go_to_text(text, context_before, context_after)
+        self.text_locator.go_to_text(text, context_before, context_after)
         
     def toggle_magnifier(self):
         """Toggle the magnifier tool."""

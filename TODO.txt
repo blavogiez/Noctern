@@ -1,7 +1,6 @@
 - fix interactive rare bug : "I like tthis document very much"
 - select double clic entre "" ou ''
-- petit highlight de la zone pendant 2 seconde quand on goto à une section (que ce soit par le debug center ou la outline)
 - bouton reapply syntax
-- change key snippets
 - améliorer magnifier
 - couleur plus adaptée dans les panels pour dark theme (noir sur violet non?)
+- tables modernes + selection du package (amélioration ctrl^b)

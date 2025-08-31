@@ -403,56 +403,79 @@ def restart_application():
 
 def go_to_line_in_pdf(event=None):
     """
-    Navigate to the selected text in the PDF preview with context matching.
+    Navigate to the selected text in PDF preview with precise line-based positioning.
+    Uses the new PreciseNavigator system for enhanced accuracy.
     """
     current_tab = state.get_current_tab()
     if not current_tab or not current_tab.editor:
         logs_console.log("No active editor tab found.", level='WARNING')
         return
         
-    # Get selected text
+    # Get current cursor position for precise line navigation
     try:
-        selected_text = current_tab.editor.get("sel.first", "sel.last")
+        cursor_pos = current_tab.editor.index(tk.INSERT)
+        current_line = int(cursor_pos.split('.')[0])
+        
+        # Get selected text if available
+        selected_text = ""
+        try:
+            selected_text = current_tab.editor.get("sel.first", "sel.last")
+        except tk.TclError:
+            # No selection, use current line text
+            selected_text = current_tab.editor.get(f"{current_line}.0", f"{current_line}.end")
+        
         if not selected_text.strip():
-            logs_console.log("No text selected.", level='INFO')
+            logs_console.log("No text found at current position.", level='INFO')
             return
-    except tk.TclError:
-        logs_console.log("No text selected.", level='INFO')
-        return
-        
-    # Get context around selected text
-    try:
-        # Get start and end positions of selection
-        sel_start = current_tab.editor.index("sel.first")
-        sel_end = current_tab.editor.index("sel.last")
-        
-        # Get a few lines before and after the selection
-        start_line = int(sel_start.split('.')[0])
-        end_line = int(sel_end.split('.')[0])
-        
-        # Get context before (2 lines before selection)
-        context_start_line = max(1, start_line - 2)
-        context_before = ""
-        if context_start_line < start_line:
-            context_before = current_tab.editor.get(f"{context_start_line}.0", f"{start_line}.0")
-            
-        # Get context after (2 lines after selection)
-        # First, get the total number of lines
-        last_line_index = current_tab.editor.index("end-1c")
-        total_lines = int(last_line_index.split('.')[0])
-        context_end_line = min(total_lines, end_line + 2)
-        context_after = ""
-        if context_end_line > end_line:
-            context_after = current_tab.editor.get(f"{end_line}.end", f"{context_end_line}.end")
             
     except Exception as e:
-        logs_console.log(f"Error getting context: {e}", level='WARNING')
+        logs_console.log(f"Error getting cursor position: {e}", level='WARNING')
+        return
+        
+    # Get enhanced context around the target line
+    try:
+        # Get broader context for better disambiguation
+        context_start_line = max(1, current_line - 3)
+        context_end_line = min(
+            int(current_tab.editor.index("end-1c").split('.')[0]),
+            current_line + 3
+        )
+        
+        # Extract context before target line
+        context_before = ""
+        if context_start_line < current_line:
+            context_before = current_tab.editor.get(f"{context_start_line}.0", f"{current_line}.0")
+            
+        # Extract context after target line
+        context_after = ""
+        if context_end_line > current_line:
+            context_after = current_tab.editor.get(f"{current_line}.end", f"{context_end_line}.end")
+            
+        # Get full source content for SyncTeX processing
+        source_content = current_tab.editor.get("1.0", "end-1c")
+            
+    except Exception as e:
+        logs_console.log(f"Error extracting context: {e}", level='WARNING')
         context_before = ""
         context_after = ""
-        
-    # Use the PDF preview interface to navigate to the text with context
+        source_content = ""
+    
+    # Use enhanced PDF preview interface with precise navigation
     if hasattr(state, 'pdf_preview_interface') and state.pdf_preview_interface:
-        state.pdf_preview_interface.go_to_text_in_pdf(selected_text, context_before, context_after)
+        success = state.pdf_preview_interface.navigate_to_exact_line(
+            line_number=current_line,
+            source_text=selected_text.strip(),
+            context_before=context_before,
+            context_after=context_after,
+            source_content=source_content
+        )
+        
+        if success:
+            show_temporary_status_message(f"✅ Navigated to line {current_line} in PDF")
+        else:
+            # Fallback to text-based navigation
+            state.pdf_preview_interface.go_to_text_in_pdf(selected_text, context_before, context_after)
+            show_temporary_status_message(f"⚠️ Used text search for line {current_line}")
     else:
         logs_console.log("PDF preview interface not available.", level='WARNING')
 
