@@ -769,3 +769,22 @@ class PDFPreviewViewer:
         """Hide the magnifier when mouse leaves the canvas."""
         if self.magnifier:
             self.magnifier.hide()
+    
+    def force_render_page_for_navigation(self, page_num):
+        """Force immediate rendering of a specific page for navigation purposes."""
+        if page_num not in self.page_layouts or not self.pdf_path:
+            return
+            
+        # Ensure the page is in visible pages set
+        self.visible_pages.add(page_num)
+        
+        # Render the page immediately
+        self._render_visible_page(page_num)
+        
+        # Also render adjacent pages for smooth navigation
+        for adjacent_page in [page_num - 1, page_num + 1]:
+            if adjacent_page in self.page_layouts and adjacent_page not in self.visible_pages:
+                self.visible_pages.add(adjacent_page)
+                self._render_visible_page(adjacent_page)
+        
+        logs_console.log(f"Force rendered page {page_num} and adjacent pages for navigation", level='DEBUG')

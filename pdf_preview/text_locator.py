@@ -155,11 +155,8 @@ class PDFTextLocator:
         result = self.navigator.navigate_to_line(line_number, source_text, context_before, context_after)
         
         if result.success:
-            # Navigate to the precise position
+            # Navigate to the precise position and center it
             self._scroll_to_position(result.page, result.x, result.y)
-            
-            # Create precise highlight
-            self._create_precise_highlight(result.page, result.x, result.y, result.confidence)
             
             logs_console.log(f"Navigated to line {line_number} on page {result.page} using {result.method} (confidence: {result.confidence:.2f})", level='INFO')
             return True
@@ -208,15 +205,21 @@ class PDFTextLocator:
                         page_num, char_info = result
                         layout = self.pdf_viewer.page_layouts.get(page_num)
                         if layout:
-                            # Scroll to page
-                            scroll_y = layout['y_offset'] / self.pdf_viewer.total_height
+                            # Force render and center the page
+                            self.pdf_viewer.force_render_page_for_navigation(page_num)
+                            
+                            # Calculate center position for the page
+                            page_center_y = layout['y_offset'] + (layout['height'] // 2)
+                            scroll_y = self.coordinate_converter.calculate_scroll_position(
+                                page_center_y - 200,  # Center page in view
+                                self.pdf_viewer.total_height
+                            )
                             self.pdf_viewer.canvas.yview_moveto(scroll_y)
                             
-                            # Create highlight using character information
-                            if char_info:
-                                self._create_text_highlight(page_num, char_info, strategy)
+                            # Ensure visible pages are updated
+                            self.pdf_viewer.canvas.after_idle(self.pdf_viewer._update_visible_pages)
                             
-                            logs_console.log(f"Found text using {strategy} on page {page_num}", level='INFO')
+                            logs_console.log(f"Found and centered text using {strategy} on page {page_num}", level='INFO')
                             return True
                 
                 logs_console.log(f"Text '{text}' not found in PDF using any strategy", level='WARNING')
@@ -358,7 +361,7 @@ class PDFTextLocator:
             self._legacy_text_search(text, context_before, context_after)
     
     def _scroll_to_position(self, page: int, x: float, y: float) -> None:
-        """Scroll PDF viewer to specific position using precise coordinate conversion."""
+        """Scroll PDF viewer to specific position and center it with immediate rendering."""
         if page not in self.pdf_viewer.page_layouts:
             logs_console.log(f"Page {page} not in layouts", level='WARNING')
             return
@@ -371,21 +374,25 @@ class PDFTextLocator:
             logs_console.log(f"Could not get page dimensions for page {page}", level='WARNING')
             return
         
-        # Use precise coordinate converter
-        viewer_x, viewer_y = self.coordinate_converter.pdf_to_viewer_coordinates(
-            x, y, page_width, page_height,
-            layout['width'], layout['height'], layout['y_offset']
-        )
+        # Force render the target page and adjacent pages immediately
+        self.pdf_viewer.force_render_page_for_navigation(page)
         
-        # Calculate scroll position to center the target
+        # Calculate center position for the page
+        page_center_y = layout['y_offset'] + (layout['height'] // 2)
+        
+        # Calculate scroll position to center the page in view
         scroll_y = self.coordinate_converter.calculate_scroll_position(
-            viewer_y - 100,  # Offset to center target in view
+            page_center_y - 200,  # Offset to center page in view
             self.pdf_viewer.total_height
         )
         
-        logs_console.log(f"Scrolling to page {page}: PDF ({x:.1f}, {y:.1f}) -> viewer ({viewer_x}, {viewer_y}) -> scroll {scroll_y:.3f}", level='INFO')
+        logs_console.log(f"Centering page {page} in view: scroll position {scroll_y:.3f}", level='INFO')
         
+        # Scroll to center the page
         self.pdf_viewer.canvas.yview_moveto(scroll_y)
+        
+        # Trigger visible pages update to ensure all visible content is rendered
+        self.pdf_viewer.canvas.after_idle(self.pdf_viewer._update_visible_pages)
     
     def _create_precise_highlight(self, page: int, x: float, y: float, confidence: float) -> None:
         """Create precise highlight at PDF coordinates using precise coordinate conversion."""
@@ -463,13 +470,22 @@ class PDFTextLocator:
                     if page_text and text.lower() in page_text.lower():
                         if page_num + 1 in self.pdf_viewer.page_layouts:
                             layout = self.pdf_viewer.page_layouts[page_num + 1]
-                            self.pdf_viewer.canvas.yview_moveto(layout['y_offset'] / self.pdf_viewer.total_height)
                             
-                            start_idx = page_text.lower().find(text.lower())
-                            if hasattr(page, 'chars'):
-                                self.highlight_text(page_num + 1, page.chars, start_idx, len(text))
+                            # Force render and center the page
+                            self.pdf_viewer.force_render_page_for_navigation(page_num + 1)
                             
-                            logs_console.log(f"Found text on page {page_num + 1} (legacy search)", level='INFO')
+                            # Calculate center position for the page
+                            page_center_y = layout['y_offset'] + (layout['height'] // 2)
+                            scroll_y = self.coordinate_converter.calculate_scroll_position(
+                                page_center_y - 200,  # Center page in view
+                                self.pdf_viewer.total_height
+                            )
+                            self.pdf_viewer.canvas.yview_moveto(scroll_y)
+                            
+                            # Ensure visible pages are updated
+                            self.pdf_viewer.canvas.after_idle(self.pdf_viewer._update_visible_pages)
+                            
+                            logs_console.log(f"Found and centered text on page {page_num + 1} (legacy search)", level='INFO')
                             return
                         
             logs_console.log(f"Text '{text}' not found in PDF", level='INFO')
