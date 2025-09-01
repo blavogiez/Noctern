@@ -38,7 +38,7 @@ class PDFPreviewViewer:
         """
         self.parent = parent
         self.pdf_path = pdf_path
-        self.zoom_level = 0.7  # Start with a smaller zoom level for better initial view
+        self.zoom_level = 1.2  # Start with 120% zoom for better readability
         
         # Caching and performance
         self.page_cache = {}  # LRU cache for rendered pages
@@ -165,8 +165,8 @@ class PDFPreviewViewer:
         """Create a placeholder display when no PDF is loaded."""
         self.canvas.delete("all")
         self._clear_caches()
-        self.zoom_level = 1.0
-        self.zoom_label.configure(text="100%")
+        self.zoom_level = 1.2
+        self.zoom_label.configure(text="120%")
         self._disable_toolbar()
         
         width, height = 600, 800
