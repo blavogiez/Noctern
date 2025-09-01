@@ -32,12 +32,22 @@ class PDFPreviewManager:
         # Initialize compilation and status tracking
         self.last_compilation_time = None
         self.compilation_status = "Not yet compiled"
-        self.compilation_delay = 1.0
+        self.compilation_delay = self._get_compilation_delay()
         self.compilation_timer = None
         self.status_update_job = None
         self.auto_refresh_enabled = True
         
         self._update_status_label()
+
+    def _get_compilation_delay(self):
+        """Get compilation delay from settings"""
+        try:
+            from app import state
+            if hasattr(state, 'settings_manager') and state.settings_manager:
+                return float(state.settings_manager.get('compilation_delay', '0.5'))
+        except (ImportError, ValueError, AttributeError):
+            pass
+        return 0.5  # Default delay reduced to 0.5 seconds
 
     def get_viewer(self):
         """Get current PDF viewer instance."""
@@ -69,31 +79,24 @@ class PDFPreviewManager:
         
         try:
             editor_content = current_tab.editor.get("1.0", "end-1c")
-            figures_path = self._get_figures_path(current_tab.file_path) if current_tab.file_path else None
+            source_dir = os.path.dirname(current_tab.file_path) if current_tab.file_path else None
             
-            comp_thread = threading.Thread(target=self._compile_from_memory, args=(editor_content, figures_path), daemon=True)
+            comp_thread = threading.Thread(target=self._compile_from_memory, args=(editor_content, source_dir), daemon=True)
             comp_thread.start()
             
         except Exception as e:
             logs_console.log(f"Error preparing compilation: {e}", level='ERROR')
             self.is_compiling = False
 
-    def _get_figures_path(self, file_path):
-        """Get figures directory path if it exists"""
-        if not file_path:
-            return None
-        base_dir = os.path.dirname(file_path)
-        figures_dir = os.path.join(base_dir, "figures")
-        return figures_dir if os.path.exists(figures_dir) else None
 
-    def _compile_from_memory(self, latex_content, figures_path):
+    def _compile_from_memory(self, latex_content, source_dir):
         """Compile LaTeX content in temporary memory location"""
         try:
             temp_base = self._get_temp_base()
             
             with tempfile.TemporaryDirectory(dir=temp_base, prefix='automatex_') as temp_dir:
-                self._setup_compilation_files(temp_dir, latex_content, figures_path)
-                result = self._execute_latex_compilation(temp_dir)
+                self._setup_compilation_files(temp_dir, latex_content, source_dir)
+                result = self._execute_latex_compilation(temp_dir, source_dir)
                 self._process_compilation_result(temp_dir, result, latex_content)
                     
         except Exception as e:
@@ -106,19 +109,24 @@ class PDFPreviewManager:
             return '/dev/shm'
         return tempfile.gettempdir()
 
-    def _setup_compilation_files(self, temp_dir, latex_content, figures_path):
-        """Setup files required for compilation"""
-        if figures_path:
-            self._copy_figures_to_temp(figures_path, temp_dir)
-        
+    def _setup_compilation_files(self, temp_dir, latex_content, source_dir):
+        """Setup files required for compilation"""        
         tex_file = os.path.join(temp_dir, "preview.tex")
         with open(tex_file, 'w', encoding='utf-8') as f:
             f.write(latex_content)
 
-    def _execute_latex_compilation(self, temp_dir):
+    def _execute_latex_compilation(self, temp_dir, source_dir=None):
         """Execute pdflatex compilation in temporary directory with SyncTeX support"""
+        cmd = ["pdflatex", "-synctex=1", "-interaction=nonstopmode"]
+        
+        # Add source directory to search path if provided
+        if source_dir:
+            cmd.extend([f"-include-directory={source_dir}", f"-aux-directory={temp_dir}"])
+        
+        cmd.append("preview.tex")
+        
         return subprocess.run(
-            ["pdflatex", "-synctex=1", "-interaction=nonstopmode", "preview.tex"], 
+            cmd,
             cwd=temp_dir,
             capture_output=True, 
             timeout=60, 
@@ -152,13 +160,6 @@ class PDFPreviewManager:
             logs_console.log(f"Log read error: {e}", level='WARNING')
             return ""
 
-    def _copy_figures_to_temp(self, figures_path, temp_dir):
-        """Copy figures directory to temporary location"""
-        try:
-            temp_figures = os.path.join(temp_dir, "figures")
-            shutil.copytree(figures_path, temp_figures)
-        except Exception as e:
-            logs_console.log(f"Figure copy error: {e}", level='ERROR')
 
     def _save_preview_pdf(self, pdf_path):
         """Save preview PDF to persistent location and return path"""
@@ -339,6 +340,10 @@ class PDFPreviewManager:
 
     def set_auto_refresh(self, enabled):
         self.auto_refresh_enabled = enabled
+    
+    def update_compilation_delay(self):
+        """Update compilation delay from settings"""
+        self.compilation_delay = self._get_compilation_delay()
         
     def navigate_to_exact_line(self, line_number: int, source_text: str = "", 
                               context_before: str = "", context_after: str = "", 
