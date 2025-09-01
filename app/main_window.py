@@ -166,7 +166,7 @@ def setup_gui():
 
     # Configure PDF preview pane based on user settings
     if show_pdf_preview and state.pdf_preview_pane:
-        state.main_pane.add(state.pdf_preview_pane.master, weight=3)  # Larger weight for wider PDF preview
+        state.main_pane.add(state.pdf_preview_pane.master, weight=1)
     
     console_frame, state.console_output = create_console_pane(state.vertical_pane)
     state.console_pane = console_frame
@@ -267,6 +267,48 @@ def setup_gui():
     bind_global_shortcuts(state.root)
     
     interface.load_session()
+    
+    def set_window_proportions():
+        """Set precise window proportions: 15% left, 42.5% editor, 42.5% PDF"""
+        try:
+            # Force window update to get real dimensions
+            state.root.update_idletasks()
+            
+            # Get main pane width
+            main_pane_width = state.main_pane.winfo_width()
+            if main_pane_width <= 1:
+                # Retry if width not ready
+                state.root.after(100, set_window_proportions)
+                return
+                
+            # Calculate exact positions for 15%/42.5%/42.5%
+            left_pos = int(main_pane_width * 0.15)
+            editor_pos = int(main_pane_width * 0.575)  # 15% + 42.5%
+            
+            # Force sash positions using correct TTK PanedWindow syntax
+            try:
+                # Use sashpos instead of sash place for ttk PanedWindow
+                state.main_pane.tk.call(state.main_pane._w, 'sashpos', 0, left_pos)
+                if len(state.main_pane.panes()) > 2:  # PDF preview exists
+                    state.main_pane.tk.call(state.main_pane._w, 'sashpos', 1, editor_pos)
+            except Exception as sash_error:
+                logs_console.log(f"Sash positioning failed: {sash_error}", level='ERROR')
+                
+            logs_console.log(f"Window proportions set: {left_pos}px left, {editor_pos - left_pos}px editor, {main_pane_width - editor_pos}px PDF", level='INFO')
+        except Exception as e:
+            logs_console.log(f"Error setting proportions: {e}", level='ERROR')
+    
+    def maintain_proportions(event=None):
+        """Maintain proportions on window resize"""
+        if event and event.widget == state.main_pane:
+            state.root.after(50, set_window_proportions)
+    
+    # Bind resize event to maintain proportions
+    state.main_pane.bind("<Configure>", maintain_proportions)
+    
+    # Set initial proportions with proper timing
+    state.root.after(200, set_window_proportions)
+    
     # Plan initial error checking after session restoration
     # Setup Monaco optimization for initial tab
     first_tab = state.get_current_tab()

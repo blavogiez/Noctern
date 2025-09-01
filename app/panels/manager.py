@@ -122,14 +122,8 @@ class PanelManager:
         """Create the container for superimposed panels."""
         # Single container that fills the left pane - panels will superimpose here
         self.panel_container = ttk.Frame(self.left_pane)
-        self.panel_container.configure(width=420)
         self.left_pane.add(self.panel_container, weight=1)
         
-        # Configure minimum size
-        try:
-            self.left_pane.paneconfigure(self.panel_container, minsize=400)
-        except tk.TclError:
-            pass
         
     def _hide_original_widgets(self):
         """Hide outline and debug widgets."""

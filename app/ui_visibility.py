@@ -99,7 +99,7 @@ def toggle_pdf_preview():
         state.pdf_preview_parent = state.main_pane
         
         # Add to paned window
-        state.main_pane.add(state.pdf_preview_pane.master, weight=3)
+        state.main_pane.add(state.pdf_preview_pane.master, weight=1)
         
         # Update configuration
         state._app_config["show_pdf_preview"] = "True"
@@ -139,7 +139,7 @@ def toggle_pdf_preview():
             logs_console.log("PDF preview hidden and destroyed.", level='INFO')
         else:
             # Add it back to the paned window with appropriate weight
-            state.pdf_preview_parent.add(pdf_preview_master_frame, weight=3)
+            state.pdf_preview_parent.add(pdf_preview_master_frame, weight=1)
             logs_console.log("PDF preview shown.", level='INFO')
     except Exception as e:
         logs_console.log(f"Error toggling PDF preview: {e}", level='ERROR')

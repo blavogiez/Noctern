@@ -30,7 +30,7 @@ def create_left_pane(parent):
     Creates the left pane, containing the outline tree and the error panel.
     """
     left_pane = ttk.PanedWindow(parent, orient=ttk.VERTICAL)
-    parent.add(left_pane, weight=2)
+    parent.add(left_pane, weight=1)
     return left_pane
 
 def create_outline(parent, get_current_tab_callback, config_settings=None):
@@ -127,7 +127,7 @@ def create_notebook(parent):
         ClosableNotebook: The configured closable notebook widget.
     """
     notebook = ClosableNotebook(parent)
-    parent.add(notebook, weight=3) # Reduced from 4 to 3 to give more space to left pane
+    parent.add(notebook, weight=1)
     return notebook
 
 def create_console_pane(parent):
