@@ -147,7 +147,7 @@ class BasicTableGenerator(PackageTableGenerator):
         # Table environment if caption or label
         if caption or label:
             lines.append(f"\\begin{{table}}[{position}]")
-            lines.append("    \\centering")
+            lines.append("\\centering")
         
         # Build column spec
         col_spec = alignment * cols
@@ -155,11 +155,11 @@ class BasicTableGenerator(PackageTableGenerator):
             col_spec = '|' + '|'.join(list(col_spec)) + '|'
         
         # Tabular environment
-        lines.append(f"    \\begin{{tabular}}{{{col_spec}}}")
+        lines.append(f"\\begin{{tabular}}{{{col_spec}}}")
         
         # Top border
         if h_borders in ['header', 'all']:
-            lines.append("        \\hline")
+            lines.append("\\hline")
         
         # Generate rows
         for row in range(rows):
@@ -171,29 +171,29 @@ class BasicTableGenerator(PackageTableGenerator):
                 cells = [f"⟨Data {data_row+1}.{i+1}⟩" for i in range(cols)]
                 row_text = " & ".join(cells) + " \\\\"
             
-            lines.append(f"        {row_text}")
+            lines.append(f"{row_text}")
             
             # Add horizontal lines
             if h_borders == 'all' or (h_borders == 'header' and row == 0 and has_header):
-                lines.append("        \\hline")
+                lines.append("\\hline")
         
         # Bottom border
         if h_borders in ['header', 'all']:
-            lines.append("        \\hline")
+            lines.append("\\hline")
         
-        lines.append("    \\end{tabular}")
+        lines.append("\\end{tabular}")
         
         # Caption and label
         if caption or label:
             if caption:
-                lines.append(f"    \\caption{{{caption}}}")
+                lines.append(f"\\caption{{{caption}}}")
             else:
-                lines.append("    \\caption{⟨Caption⟩}")
+                lines.append("\\caption{⟨Caption⟩}")
             
             if label:
-                lines.append(f"    \\label{{tab:{label}}}")
+                lines.append(f"\\label{{tab:{label}}}")
             else:
-                lines.append("    \\label{tab:⟨label⟩}")
+                lines.append("\\label{tab:⟨label⟩}")
             
             lines.append("\\end{table}")
         

@@ -105,7 +105,11 @@ def handle_snippet_expansion(event):
             end_position = editor.index(f"{insertion_point} + {snippet_lines + 1} lines")
             
             if editor.placeholder_manager.find_placeholders(insertion_point, end_position):
-                # Navigate to the first placeholder
+                # Position cursor at insertion point and reset search position
+                editor.mark_set(tk.INSERT, insertion_point)
+                editor.placeholder_manager.current_search_pos = insertion_point
+                
+                # Navigate to the first placeholder in the inserted snippet
                 editor.placeholder_manager.navigate_to_next_placeholder()
 
         logs_console.log(f"Snippet '{keyword}' successfully expanded.", level='INFO')

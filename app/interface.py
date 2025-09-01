@@ -172,7 +172,14 @@ def insert_table(event=None):
             manager = current_tab.editor.placeholder_manager
             manager.set_snippet_context(cursor_pos, latex_code)
             
-            # Navigate to first placeholder
+            # Focus the editor to ensure proper navigation
+            current_tab.editor.focus_set()
+            
+            # Position cursor at insertion point and reset search position
+            current_tab.editor.mark_set(tk.INSERT, cursor_pos)
+            manager.current_search_pos = cursor_pos
+            
+            # Navigate to first placeholder of the inserted table
             if manager.navigate_next():
                 logs_console.log("Navigating to first table placeholder", level='INFO')
             
@@ -188,6 +195,8 @@ def insert_table(event=None):
     
     # Show integrated table panel
     show_table_insertion_panel(insert_callback)
+
+
 
 def zoom_in(_=None):
     """Increase font size of active editor tab."""

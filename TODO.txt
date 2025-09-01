@@ -5,10 +5,7 @@
 - couleur plus adaptée dans les panels pour dark theme (noir sur violet non?)
 
 -textlocator (y - 400 plutot)
--quand je cree anchor ça doit me mettre à celle qui vient d'être créée
-- copie du documentclass en pdfpreview ram
 
-dans la pdfpreview en ram, le document class n'est pas copié, fix ça. fais intégration logique en t'appuyant sur ce qui se fait déjà et en répondant aux bons principes de dev ; nomme bien en anglais, des nommages adaptés. analyse bien, fais du code court simple production ready.
 -size window : 42.5% pdf + editor, 15% left panels
 
 --Handling packages automatically
