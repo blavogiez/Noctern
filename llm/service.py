@@ -68,3 +68,6 @@ def open_edit_prompts_panel(event=None):
 def open_set_keywords_panel(event=None):
     """Wrapper to open set keywords panel via interface."""
     interface.open_set_keywords_panel(event)
+
+def open_generate_text_panel(event=None):
+    interface.open_generate_text_panel(event)
