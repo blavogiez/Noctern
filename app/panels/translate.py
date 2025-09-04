@@ -149,7 +149,7 @@ class TranslatePanel(BasePanel):
         # Device info
         device_info = StandardComponents.create_info_label(
             parent,
-            f"Translation will run on: {self.device}",
+            f"Translation will run on: {self.device} (translating last saved file content)",
             "small"
         )
         device_info.pack(anchor="w", pady=(0, StandardComponents.PADDING//2))

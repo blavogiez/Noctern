@@ -62,6 +62,10 @@ def save_application_state():
     
     app_config_data['theme'] = state.current_theme
     
+    # Preserve API keys from current config
+    current_config = app_config.load_config()
+    app_config_data['gemini_api_key'] = current_config.get('gemini_api_key', '')
+    
     # Save LLM model configuration
     app_config_data['model_completion'] = llm_state.model_completion
     app_config_data['model_generation'] = llm_state.model_generation

@@ -18,12 +18,12 @@ DEFAULT_VALUES = {
     "treeview_font_family": "Segoe UI",
     "treeview_font_size": "10",
     "treeview_row_height": "45",
-    "model_completion": "default",
-    "model_generation": "default",
-    "model_rephrase": "default",
-    "model_debug": "default",
-    "model_style": "default",
-    "model_proofreading": "default",
+    "model_completion": "gemini/gemini-2.5-flash-lite",
+    "model_generation": "gemini/gemini-2.5-flash-lite",
+    "model_rephrase": "gemini/gemini-2.5-flash-lite",
+    "model_debug": "gemini/gemini-2.5-flash-lite",
+    "model_style": "gemini/gemini-2.5-flash-lite",
+    "model_proofreading": "gemini/gemini-2.5-flash-lite",
     "gemini_api_key": "",
     "show_status_bar": "True",
     "show_pdf_preview": "True"
@@ -107,10 +107,13 @@ def _normalize_settings(settings_dict):
             except (ValueError, TypeError):
                 normalized[key] = str(DEFAULT_VALUES.get(key, min_val))
     
-    # Ensure required keys exist
+    # Ensure required keys exist (but preserve empty API keys)
     for key, default in DEFAULT_VALUES.items():
         if key not in normalized:
             normalized[key] = default
+        # Special case: don't overwrite empty API keys with defaults
+        elif key == "gemini_api_key" and normalized[key] is None:
+            normalized[key] = ""
     
     return normalized
 

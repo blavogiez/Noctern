@@ -5,7 +5,4 @@
 - couleur plus adaptée dans les panels pour dark theme (noir sur violet non?)
 
 -textlocator (y - 400 plutot)
-
--size window : 42.5% pdf + editor, 15% left panels
-
 --Handling packages automatically

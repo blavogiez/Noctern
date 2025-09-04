@@ -271,6 +271,8 @@ def open_translate_panel():
     if not source_text.strip():
         messagebox.showwarning("Translation", "The editor is empty.")
         return
+    
+    # Note: Translation uses the last saved editor content (not including unsaved changes)
 
     def on_translate_callback(selected_pair, skip_preamble):
         """Handle translation request from panel."""
