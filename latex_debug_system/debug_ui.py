@@ -664,6 +664,22 @@ class TabbedDebugUI(ttk.Frame, DebugUI):
             # Switch to analysis tab
             self.notebook.select(self.analysis_tab)
     
+    def display_analysis_message(self, message: str, is_success: bool = False):
+        """Display simple analysis status message."""
+        from latex_debug_system.core import AnalysisResult
+        
+        # Create a simple result with just the message
+        result = AnalysisResult(
+            explanation=message,
+            confidence=1.0 if is_success else 0.0
+        )
+        
+        # Display using existing analysis display
+        self.analysis_tab.present_analysis(result)
+        
+        # Switch to analysis tab to show message
+        self.notebook.select(self.analysis_tab)
+    
     def clear_display(self):
         """Clear all displays."""
         self.error_list.clear_errors()

@@ -134,19 +134,28 @@ class DebugCoordinator:
             logs_console.log("No context available for analysis", level='WARNING')
             return
         
-        logs_console.log("Starting AI analysis", level='INFO')
+        # Get diff for analysis if possible
+        has_previous, diff_content, last_content = self.diff_generator.analyze_current_vs_last_successful(
+            self.current_context.current_file_path,
+            self.current_context.current_content
+        )
+        
+        if has_previous and diff_content:
+            self.current_context.diff_content = diff_content
+            self.current_context.last_successful_content = last_content
+        
+        # Validate if analysis is needed/possible
+        if not self.current_context.has_analyzable_content():
+            reason = self.current_context.get_analysis_reason()
+            logs_console.log(f"Analysis skipped: {reason}", level='INFO')
+            self.debug_ui.display_analysis_message(reason, is_success=True)
+            return
+        
+        # Log what we're analyzing
+        analysis_reason = self.current_context.get_analysis_reason()
+        logs_console.log(f"Starting AI analysis - {analysis_reason}", level='INFO')
         
         try:
-            # Get diff for analysis if possible
-            has_previous, diff_content, last_content = self.diff_generator.analyze_current_vs_last_successful(
-                self.current_context.current_file_path,
-                self.current_context.current_content
-            )
-            
-            if has_previous and diff_content:
-                self.current_context.diff_content = diff_content
-                self.current_context.last_successful_content = last_content
-            
             # Perform analysis
             analysis_result = self.llm_analyzer.analyze_errors(self.current_context)
             self.current_analysis = analysis_result

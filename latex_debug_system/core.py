@@ -64,6 +64,26 @@ class DebugContext:
     def __post_init__(self):
         if self.errors is None:
             self.errors = []
+    
+    def has_analyzable_content(self) -> bool:
+        """Check if context has content suitable for analysis."""
+        # Must have either diff content OR compilation errors
+        has_diff = bool(self.diff_content and self.diff_content.strip())
+        has_errors = bool(self.errors and len(self.errors) > 0)
+        return has_diff or has_errors
+    
+    def get_analysis_reason(self) -> str:
+        """Get human-readable reason for analysis availability."""
+        if not self.has_analyzable_content():
+            return "No changes or errors to analyze"
+        
+        reasons = []
+        if self.diff_content and self.diff_content.strip():
+            reasons.append("code changes")
+        if self.errors:
+            reasons.append(f"{len(self.errors)} compilation error{'s' if len(self.errors) > 1 else ''}")
+        
+        return f"Analyzing: {' and '.join(reasons)}"
 
 
 class ErrorParser(ABC):
