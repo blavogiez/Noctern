@@ -190,6 +190,13 @@ class TableInsertionPanel(BasePanel):
         """Use split layout like generation panel for better space usage."""
         return PanelStyle.SPLIT
     
+    def get_critical_action_buttons(self) -> list:
+        """Get critical action buttons that must always be visible."""
+        return [
+            ("Insert Table", self._handle_insert, "primary"),
+            ("Cancel", self._handle_close, "secondary")
+        ]
+    
     def create_content(self):
         """Create the table insertion panel using split layout like generation panel."""
         # main_container is a PanedWindow for split layout
@@ -300,8 +307,8 @@ class TableInsertionPanel(BasePanel):
         self.options_section = StandardComponents.create_section(parent, "Package Options")
         self.options_section.pack(fill="x", pady=(0, StandardComponents.SECTION_SPACING))
         
-        # Create scrollable frame for options - expanded height
-        self.options_canvas = tk.Canvas(self.options_section, height=280)
+        # Create scrollable frame for options - reduced height to ensure button visibility
+        self.options_canvas = tk.Canvas(self.options_section, height=180)  # Reduced from 280 to 180
         self.options_scrollbar = ttk.Scrollbar(self.options_section, orient="vertical", command=self.options_canvas.yview)
         self.options_frame = ttk.Frame(self.options_canvas)
         
@@ -321,14 +328,9 @@ class TableInsertionPanel(BasePanel):
     
     
     def _create_action_section(self, parent):
-        """Create action buttons."""
-        # Action buttons
-        action_buttons = [
-            ("Insert Table", self._handle_insert, "primary"),
-            ("Cancel", self._handle_close, "secondary")
-        ]
-        action_row = StandardComponents.create_button_row(parent, action_buttons)
-        action_row.pack(fill="x", pady=(StandardComponents.SECTION_SPACING, 0))
+        """Action buttons are now handled by BasePanel's critical actions system."""
+        # Critical action buttons are automatically created and guaranteed to be visible
+        pass
     
     def _on_grid_selection_changed(self, rows, cols):
         """Handle grid selection change."""

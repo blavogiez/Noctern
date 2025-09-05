@@ -72,5 +72,5 @@ def open_set_keywords_panel(event=None):
 def open_generate_text_panel(event=None):
     interface.open_generate_text_panel(event)
 
-def open_proofraeding_panel(event=None):
+def open_proofreading_panel(event=None):
     interface.open_proofreading_panel(event)

@@ -60,6 +60,22 @@ class BasePanel(ABC):
         """Get the layout style for this panel."""
         pass
     
+    def get_critical_action_buttons(self) -> list:
+        """
+        Get critical action buttons that must ALWAYS be visible.
+        
+        Returns:
+            List of (text, callback, style) tuples for critical actions.
+            These buttons will be guaranteed visible at the bottom of the panel.
+            
+        Example:
+            return [
+                ("Save", self._save, "primary"),
+                ("Cancel", self._cancel, "secondary")
+            ]
+        """
+        return []
+    
     def has_unsaved_changes(self) -> bool:
         """Check if panel has unsaved changes. Override in subclass if needed."""
         return False
@@ -71,15 +87,15 @@ class BasePanel(ABC):
         Returns:
             The main panel widget
         """
-        # Main panel frame
+        # Main panel frame with 3-row layout: header / content / critical_actions
         self.panel_frame = ttk.Frame(self.parent_container)
-        self.panel_frame.grid_rowconfigure(1, weight=1)
+        self.panel_frame.grid_rowconfigure(1, weight=1)  # Content row expands
         self.panel_frame.grid_columnconfigure(0, weight=1)
         
-        # Create header with title and close button
+        # Create header with title and close button (row 0)
         self._create_header()
         
-        # Create content area using standardized layout
+        # Create content area using standardized layout (row 1 - expandable)
         self.content_frame = ttk.Frame(self.panel_frame)
         self.content_frame.grid(row=1, column=0, sticky="nsew", padx=5, pady=5)
         self.content_frame.grid_rowconfigure(0, weight=1)
@@ -91,6 +107,12 @@ class BasePanel(ABC):
         
         # Let subclass create its content
         self.create_content()
+        
+        # Create critical actions container (row 2 - always visible at bottom)
+        self._create_critical_actions()
+        
+        # Allow subclass to link button references after creation
+        self._link_critical_button_references()
         
         # Setup standard behaviors
         self._setup_standard_behaviors()
@@ -119,6 +141,47 @@ class BasePanel(ABC):
             command=self._handle_close
         )
         close_button.grid(row=0, column=1, sticky="e", padx=(StandardComponents.PADDING//2, 0))
+    
+    def _create_critical_actions(self):
+        """Create critical actions container that ensures buttons are always visible."""
+        critical_buttons = self.get_critical_action_buttons()
+        
+        if critical_buttons:
+            # Create critical actions frame (row 2 - bottom of panel)
+            critical_frame = ttk.Frame(self.panel_frame)
+            critical_frame.grid(row=2, column=0, sticky="ew", padx=5, pady=5)
+            
+            # Create the critical actions container using standardized factory
+            self.critical_actions_container = StandardComponents.create_critical_actions_container(
+                critical_frame, 
+                critical_buttons
+            )
+            
+            # Store reference to button widgets if needed by subclass
+            if self.critical_actions_container:
+                button_row_frame = None
+                for child in self.critical_actions_container.winfo_children():
+                    for grandchild in child.winfo_children():
+                        if isinstance(grandchild, ttk.Frame):
+                            button_row_frame = grandchild
+                            break
+                    if button_row_frame:
+                        break
+                
+                if button_row_frame:
+                    self.critical_action_buttons = button_row_frame.winfo_children()
+                else:
+                    self.critical_action_buttons = []
+        else:
+            self.critical_actions_container = None
+            self.critical_action_buttons = []
+    
+    def _link_critical_button_references(self):
+        """
+        Allow subclass to link button references after creation.
+        Override in subclass if needed to store specific button references.
+        """
+        pass
     
     def _handle_close(self):
         """Handle close button click with unsaved changes check."""

@@ -188,6 +188,37 @@ class StandardComponents:
             wraplength=StandardComponents.STANDARD_WIDTH - 40
         )
         return label
+    
+    @staticmethod
+    def create_critical_actions_container(parent, buttons: List[Tuple[str, Callable, str]]) -> ttk.Frame:
+        """
+        Create a critical actions container that ensures buttons are ALWAYS visible.
+        
+        This container is designed to be placed at the bottom of panels with guaranteed visibility.
+        
+        Args:
+            parent: Parent widget
+            buttons: List of (text, callback, style) tuples for critical actions
+            
+        Returns:
+            Frame containing critical action buttons with guaranteed visibility
+        """
+        if not buttons:
+            return None
+            
+        # Main container with visual separation
+        critical_container = ttk.Frame(parent, relief="solid", borderwidth=1)
+        critical_container.pack(side="bottom", fill="x", padx=2, pady=2)
+        
+        # Inner frame with padding for better visual appearance
+        inner_frame = ttk.Frame(critical_container, padding=(StandardComponents.PADDING//2, StandardComponents.PADDING//4))
+        inner_frame.pack(fill="x")
+        
+        # Create button row using existing standardized component
+        button_row = StandardComponents.create_button_row(inner_frame, buttons)
+        button_row.pack(fill="x")
+        
+        return critical_container
 
 
 class PanelLayoutManager:
@@ -230,9 +261,13 @@ class PanelLayoutManager:
     
     @staticmethod
     def create_split_layout(content_frame, orientation=tk.VERTICAL) -> ttk.PanedWindow:
-        """Create a split pane layout."""
+        """Create a split pane layout. Button visibility is ensured by repositioning in panels."""
         paned_window = ttk.PanedWindow(content_frame, orient=orientation)
         paned_window.pack(fill="both", expand=True)
+        
+        # Note: ttk.PanedWindow doesn't support minsize option like tk.PanedWindow
+        # Button visibility is handled by repositioning buttons with side="bottom" in panels
+        
         return paned_window
     
     @staticmethod

@@ -51,6 +51,15 @@ class ProofreadingPanel(BasePanel):
         """Use split layout for better space utilization like generation panel."""
         return PanelStyle.SPLIT
     
+    def get_critical_action_buttons(self) -> list:
+        """Get critical action buttons that must always be visible."""
+        return [
+            ("Approve", self._approve_current_correction, "success"),
+            ("Reject", self._reject_current_correction, "secondary"),
+            ("Apply", self._apply_current_correction, "primary"),
+            ("Apply All Approved", self._apply_all_corrections, "success")
+        ]
+    
     def create_content(self):
         """Create the proofreading panel using split layout like generation panel."""
         # main_container is a PanedWindow for split layout
@@ -274,16 +283,27 @@ class ProofreadingPanel(BasePanel):
         self.suggestion_text.pack(fill="x", pady=(0, StandardComponents.PADDING))
         self.suggestion_text.config(state="disabled")
         
-        # Context display section
+        # Context display section - positioned above the action buttons
         context_section = StandardComponents.create_section(self.navigation_frame, "Context")
         context_section.pack(fill="both", expand=True, pady=(0, StandardComponents.PADDING))
         
+        # Limit height to ensure buttons remain visible, add scrollbar if needed
+        context_frame = ttk.Frame(context_section)
+        context_frame.pack(fill="both", expand=True)
+        
         self.context_text = StandardComponents.create_text_input(
-            context_section,
+            context_frame,
             "Context will appear here...",
-            height=4
+            height=3  # Reduced from 4 to save space for buttons
         )
-        self.context_text.pack(fill="both", expand=True)
+        
+        # Add scrollbar for context if it gets too long
+        context_scrollbar = ttk.Scrollbar(context_frame, orient="vertical", command=self.context_text.yview)
+        self.context_text.configure(yscrollcommand=context_scrollbar.set)
+        
+        self.context_text.pack(side="left", fill="both", expand=True)
+        context_scrollbar.pack(side="right", fill="y")
+        
         self.context_text.config(state="disabled")
         
         # Configure text highlighting tags
@@ -291,25 +311,27 @@ class ProofreadingPanel(BasePanel):
                                        background="#ffcccc", 
                                        foreground="#990000")
         
-        # Action buttons - no emojis as per guidelines
-        action_buttons = [
-            ("Approve", self._approve_current_correction, "success"),
-            ("Reject", self._reject_current_correction, "secondary"),
-            ("Apply", self._apply_current_correction, "primary"),
-            ("Apply All Approved", self._apply_all_corrections, "success")
-        ]
-        action_row = StandardComponents.create_button_row(self.navigation_frame, action_buttons)
-        action_row.pack(fill="x")
-        
-        # Store button references
-        action_buttons_widgets = action_row.winfo_children()
-        self.approve_button = action_buttons_widgets[0]
-        self.reject_button = action_buttons_widgets[1]
-        self.apply_button = action_buttons_widgets[2]
-        self.apply_all_button = action_buttons_widgets[3]
-        
-        # Set initial state
-        self.apply_button.config(state="disabled")
+        # Critical action buttons are now handled by BasePanel automatically
+        # Initialize button references that will be populated after panel creation
+        self.approve_button = None
+        self.reject_button = None 
+        self.apply_button = None
+        self.apply_all_button = None
+    
+    def _link_critical_button_references(self):
+        """Link critical button references after creation."""
+        if hasattr(self, 'critical_action_buttons') and len(self.critical_action_buttons) >= 4:
+            # Buttons are created in order: Approve, Reject, Apply, Apply All Approved
+            # But packed right-to-left, so reverse order in the children list
+            buttons = self.critical_action_buttons
+            self.approve_button = buttons[-1]  # First defined, last in children
+            self.reject_button = buttons[-2]   # Second defined, second-to-last in children
+            self.apply_button = buttons[-3]    # Third defined, third-to-last in children
+            self.apply_all_button = buttons[-4]  # Last defined, first in children
+            
+            # Set initial state
+            if self.apply_button:
+                self.apply_button.config(state="disabled")
         
     def focus_main_widget(self):
         """Focus the main interactive widget."""
