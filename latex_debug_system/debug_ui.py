@@ -583,7 +583,7 @@ class TabbedDebugUI(ttk.Frame, DebugUI):
             self.notebook,
             on_apply_correction=self._on_apply_correction
         )
-        self.notebook.add(self.analysis_tab, text='AI Analysis')
+        self.notebook.add(self.analysis_tab, text='Analyze diff')
         
         # Quick Fixes tab
         self.quickfix_tab = QuickFixTab(

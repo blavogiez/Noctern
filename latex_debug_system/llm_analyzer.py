@@ -165,10 +165,14 @@ class LLMAnalyzer(AnalysisEngine):
         
         try:
             # Try to extract JSON
+            json_data = None
             try:
                 json_text = llm_utils.extract_json_from_llm_response(analysis_text)
                 json_data = json.loads(json_text)
-            except (ValueError, json.JSONDecodeError):
+                logs_console.log(f"Successfully extracted JSON: {json.dumps(json_data, indent=2)[:200]}...", level='DEBUG')
+            except (ValueError, json.JSONDecodeError) as e:
+                logs_console.log(f"JSON extraction failed: {e}", level='DEBUG')
+                logs_console.log(f"Raw LLM response (first 300 chars): {analysis_text[:300]}...", level='DEBUG')
                 json_data = None
             
             if json_data:
@@ -195,7 +199,7 @@ class LLMAnalyzer(AnalysisEngine):
                 corrected_code = self._extract_code_from_text(analysis_text)
                 
                 return AnalysisResult(
-                    explanation=explanation,
+                    explanation=f"{explanation}\n\n--- Raw AI Response ---\n{analysis_text}" if explanation else f"AI Analysis:\n{analysis_text}",
                     suggested_fix=corrected_code if corrected_code else None,
                     confidence=0.5 if explanation else 0.3,
                     quick_fixes=self._generate_text_based_fixes(analysis_text),
@@ -214,15 +218,15 @@ class LLMAnalyzer(AnalysisEngine):
     
     def _calculate_confidence(self, json_data: Dict[str, Any], analysis_text: str) -> float:
         """Calculate confidence score for analysis."""
-        confidence = 0.5  # Base confidence
+        confidence = 0.7  # Higher base confidence for successful JSON parsing
         
         # Increase confidence if corrected code is provided
         if json_data.get("corrected_code"):
-            confidence += 0.3
+            confidence += 0.2
         
         # Increase confidence if explanation is detailed
         explanation = json_data.get("explanation", "")
-        if len(explanation) > 100:
+        if len(explanation) > 50:
             confidence += 0.1
         
         # Increase confidence if specific fixes are mentioned

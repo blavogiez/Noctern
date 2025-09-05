@@ -1,8 +1,7 @@
 - fix interactive rare bug : "I like tthis document very much"
 - select double clic entre "" ou ''
 - bouton reapply syntax
-- améliorer magnifier
-- couleur plus adaptée dans les panels pour dark theme (noir sur violet non?)
-
 -textlocator (y - 400 plutot)
 --Handling packages automatically
+
+- proofreading parfait avec parsing et tout

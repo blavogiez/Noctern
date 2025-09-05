@@ -145,6 +145,8 @@ def extract_json_from_llm_response(text: str) -> str:
     - JSON wrapped in markdown code blocks (```json```)
     - Raw JSON objects in text
     - Mixed text with embedded JSON
+    - JSON with whitespace and newlines
+    - JSON with nested objects and arrays
     
     Args:
         text (str): Raw LLM response text
@@ -161,37 +163,83 @@ def extract_json_from_llm_response(text: str) -> str:
     if not text:
         raise ValueError("Empty text provided")
     
+    # Clean up the text - remove extra whitespace but preserve JSON structure
+    text = text.strip()
+    
+    # Helper function to validate and return JSON
+    def validate_and_return(json_text):
+        try:
+            json.loads(json_text)
+            return json_text.strip()
+        except json.JSONDecodeError:
+            return None
+    
     # Try code block JSON first (```json ... ```)
-    json_match = re.search(r'```(?:json)?\s*({.*?})\s*```', text, re.DOTALL)
-    if json_match:
-        json_text = json_match.group(1).strip()
-        try:
-            # Validate JSON by parsing it
-            json.loads(json_text)
-            return json_text
-        except json.JSONDecodeError:
-            pass
+    code_block_patterns = [
+        r'```(?:json)?\s*(\{.*?\})\s*```',  # Code block JSON object
+        r'```(?:json)?\s*(\[.*?\])\s*```',  # Code block JSON array
+    ]
     
-    # Try to find any JSON object in the text
-    json_match = re.search(r'\{[^{}]*(?:"[^"]*"[^{}]*)*\}', text, re.DOTALL)
-    if json_match:
-        json_text = json_match.group(0).strip()
-        try:
-            # Validate JSON by parsing it
-            json.loads(json_text)
-            return json_text
-        except json.JSONDecodeError:
-            pass
+    for pattern in code_block_patterns:
+        match = re.search(pattern, text, re.DOTALL)
+        if match:
+            result = validate_and_return(match.group(1))
+            if result:
+                return result
     
-    # Try more complex nested JSON pattern
-    json_match = re.search(r'\{(?:[^{}]|{[^{}]*})*\}', text, re.DOTALL)
-    if json_match:
-        json_text = json_match.group(0).strip()
-        try:
-            # Validate JSON by parsing it
-            json.loads(json_text)
-            return json_text
-        except json.JSONDecodeError:
-            pass
+    # Try to extract JSON objects more carefully
+    # Look for balanced braces starting with {
+    i = 0
+    while i < len(text):
+        if text[i] == '{':
+            # Try to extract from this position
+            brace_count = 0
+            start = i
+            in_string = False
+            escape_next = False
+            
+            for j in range(i, len(text)):
+                char = text[j]
+                
+                if escape_next:
+                    escape_next = False
+                    continue
+                    
+                if char == '\\':
+                    escape_next = True
+                    continue
+                    
+                if not in_string:
+                    if char == '"':
+                        in_string = True
+                    elif char == '{':
+                        brace_count += 1
+                    elif char == '}':
+                        brace_count -= 1
+                        if brace_count == 0:
+                            # Found complete JSON object
+                            json_candidate = text[start:j+1]
+                            result = validate_and_return(json_candidate)
+                            if result:
+                                return result
+                            break
+                else:
+                    if char == '"':
+                        in_string = False
+        i += 1
+    
+    # Last resort: try some very basic patterns
+    simple_patterns = [
+        r'(\{[^{}]*"explanation"[^{}]*"corrected_code"[^{}]*\})',  # Simple single-line JSON
+        r'(\{"explanation"[^}]*\})',  # Just explanation
+        r'(\{"corrected_code"[^}]*\})',  # Just corrected_code
+    ]
+    
+    for pattern in simple_patterns:
+        match = re.search(pattern, text, re.DOTALL)
+        if match:
+            result = validate_and_return(match.group(1))
+            if result:
+                return result
     
     raise ValueError(f"No valid JSON found in text: {text[:200]}...")

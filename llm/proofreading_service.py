@@ -332,7 +332,7 @@ def run_ai_analysis(session: ProofreadingSession, editor, full_prompt: str):
 
 
 def process_ai_response(session: ProofreadingSession, editor, response_text: str):
-    """Process AI response and create error objects."""
+    """Process AI response and create error objects with robust fallback handling."""
     try:
         logs_console.log(f"Processing AI response: {len(response_text)} chars", level='INFO')
         logs_console.log(f"Response text preview: {response_text[:200]}...", level='DEBUG')
@@ -340,57 +340,197 @@ def process_ai_response(session: ProofreadingSession, editor, response_text: str
         # Update status
         editor.after(0, update_session_status, session, "Formatting JSON...")
         
-        # Clean and parse JSON
+        # Save raw response for debugging
+        save_raw_response_for_debug(session, response_text)
+        
+        # Multiple parsing strategies
+        errors_data = None
+        parsing_method = "unknown"
+        
+        # Strategy 1: Direct JSON parsing (for structured output)
         try:
-            # For structured output, try direct parsing first (Gemini returns clean JSON)
+            errors_data = json.loads(response_text)
+            parsing_method = "direct_json"
+            logs_console.log("Successfully parsed JSON directly (structured output)", level='DEBUG')
+        except json.JSONDecodeError:
+            pass
+        
+        # Strategy 2: JSON extraction from text
+        if errors_data is None:
             try:
-                errors_data = json.loads(response_text)
-                logs_console.log("Successfully parsed JSON directly (structured output)", level='DEBUG')
-            except json.JSONDecodeError:
-                # Fallback to extraction for non-structured responses
                 logs_console.log("Direct JSON parsing failed, trying extraction", level='DEBUG')
                 cleaned_response = utils.extract_json_from_llm_response(response_text)
                 errors_data = json.loads(cleaned_response)
+                parsing_method = "extraction"
                 logs_console.log("Successfully parsed JSON after extraction", level='DEBUG')
-        except (ValueError, json.JSONDecodeError) as e:
-            logs_console.log(f"JSON processing failed: {e}", level='ERROR')
+            except (ValueError, json.JSONDecodeError):
+                pass
+        
+        # Strategy 3: Try to find multiple JSON objects and combine them
+        if errors_data is None:
+            try:
+                logs_console.log("Standard extraction failed, trying multi-JSON approach", level='DEBUG')
+                errors_data = extract_multiple_json_objects(response_text)
+                parsing_method = "multi_json"
+                logs_console.log(f"Found {len(errors_data.get('errors', []))} errors via multi-JSON", level='DEBUG')
+            except Exception:
+                pass
+        
+        # Strategy 4: Partial text parsing as last resort
+        if errors_data is None:
+            try:
+                logs_console.log("All JSON methods failed, trying partial text parsing", level='DEBUG')
+                errors_data = parse_errors_from_text(response_text)
+                parsing_method = "text_parsing"
+                logs_console.log(f"Extracted {len(errors_data.get('errors', []))} errors via text parsing", level='DEBUG')
+            except Exception:
+                pass
+        
+        if errors_data is None:
+            logs_console.log("All parsing strategies failed", level='ERROR')
             logs_console.log(f"Failed response content: {response_text[:500]}", level='ERROR')
-            editor.after(0, finish_session_with_error, session, "Could not extract valid JSON from AI response")
+            editor.after(0, finish_session_with_error, session, "Could not extract errors from AI response - see debug logs")
             return
         
-        # Validate response format
+        logs_console.log(f"Successfully parsed response using method: {parsing_method}", level='INFO')
+        
+        # Validate response format with enhanced logging
         is_valid, normalized_errors = validate_proofreading_response(errors_data)
         if not is_valid:
-            # Try fallback format
+            # Try fallback format (direct array of errors)
             if isinstance(errors_data, list):
+                logs_console.log("Trying fallback format (direct error array)", level='DEBUG')
                 is_valid, normalized_errors = validate_proofreading_response({"errors": errors_data})
             
             if not is_valid:
-                logs_console.log("Response validation failed", level='ERROR')
-                editor.after(0, finish_session_with_error, session, "Invalid AI response format")
-                return
+                logs_console.log("Response validation failed for all formats", level='ERROR')
+                logs_console.log(f"Response data structure: {type(errors_data)}", level='ERROR')
+                if isinstance(errors_data, dict):
+                    logs_console.log(f"Response keys: {list(errors_data.keys())}", level='ERROR')
+                # Don't fail entirely - try to extract what we can
+                normalized_errors = []
         
-        # Create error objects
+        # Create error objects with enhanced error handling
         editor.after(0, update_session_status, session, "Processing errors...")
-        logs_console.log(f"Creating {len(normalized_errors)} error objects", level='INFO')
+        logs_console.log(f"Creating error objects from {len(normalized_errors)} validated errors", level='INFO')
         
         session.errors = []
+        failed_errors = 0
         for i, error_data in enumerate(normalized_errors):
             try:
                 error = ProofreadingError.from_dict(error_data, session.original_text)
                 session.errors.append(error)
             except Exception as e:
+                failed_errors += 1
                 logs_console.log(f"Failed to create error {i+1}: {e}", level='WARNING')
+                logs_console.log(f"Error data: {error_data}", level='DEBUG')
         
-        # Finish processing
+        if failed_errors > 0:
+            logs_console.log(f"Failed to create {failed_errors} out of {len(normalized_errors)} errors", level='WARNING')
+        
+        # Finish processing - even with partial results
         finish_successful_analysis(session, editor)
         
-    except json.JSONDecodeError as e:
-        logs_console.log(f"JSON parsing failed: {e}", level='ERROR')
-        editor.after(0, finish_session_with_error, session, "Invalid AI response format")
     except Exception as e:
         logs_console.log(f"Response processing failed: {e}", level='ERROR')
         editor.after(0, finish_session_with_error, session, f"Failed to process response: {str(e)}")
+
+
+def save_raw_response_for_debug(session: ProofreadingSession, response_text: str):
+    """Save raw AI response for debugging purposes."""
+    try:
+        import os
+        debug_dir = os.path.join(os.getcwd(), "debug_proofreading")
+        os.makedirs(debug_dir, exist_ok=True)
+        
+        debug_file = os.path.join(debug_dir, f"raw_response_{session.session_id}.txt")
+        with open(debug_file, 'w', encoding='utf-8') as f:
+            f.write(f"Session ID: {session.session_id}\n")
+            f.write(f"Timestamp: {datetime.now().isoformat()}\n")
+            f.write(f"Text length: {len(session.original_text)} chars\n")
+            f.write(f"Response length: {len(response_text)} chars\n")
+            f.write("-" * 50 + "\n")
+            f.write("RAW AI RESPONSE:\n")
+            f.write(response_text)
+            f.write("\n" + "-" * 50 + "\n")
+            f.write("ORIGINAL TEXT:\n")
+            f.write(session.original_text)
+        
+        logs_console.log(f"Raw response saved to {debug_file}", level='DEBUG')
+    except Exception as e:
+        logs_console.log(f"Failed to save debug response: {e}", level='WARNING')
+
+
+def extract_multiple_json_objects(text: str) -> Dict[str, Any]:
+    """Try to find and combine multiple JSON objects in text."""
+    import re
+    
+    # Look for multiple JSON-like objects
+    json_pattern = r'\{[^{}]*(?:"[^"]*"[^{}]*)*\}'
+    matches = re.findall(json_pattern, text, re.DOTALL)
+    
+    all_errors = []
+    for match in matches:
+        try:
+            obj = json.loads(match)
+            if isinstance(obj, dict) and "errors" in obj:
+                all_errors.extend(obj["errors"])
+            elif isinstance(obj, dict) and any(key in obj for key in ["type", "original", "explanation"]):
+                # Single error object
+                all_errors.append(obj)
+        except json.JSONDecodeError:
+            continue
+    
+    return {"errors": all_errors}
+
+
+def parse_errors_from_text(text: str) -> Dict[str, Any]:
+    """Last resort: try to parse errors from plain text."""
+    import re
+    
+    errors = []
+    
+    # Look for structured patterns like "Error: ... Original: ... Suggestion: ..."
+    patterns = [
+        r'Error[:\s]+([^.]+)\.\s*Original[:\s]+"([^"]+)"\s*Suggestion[:\s]+"([^"]*)"',
+        r'Type[:\s]+([^,\n]+)[,\s]+Original[:\s]+"([^"]+)"\s*[,\s]*Suggestion[:\s]+"([^"]*)"',
+        r'([a-zA-Z]+)\s*error[:\s]+"([^"]+)"\s*→\s*"([^"]*)"',
+    ]
+    
+    for pattern in patterns:
+        matches = re.findall(pattern, text, re.IGNORECASE | re.DOTALL)
+        for match in matches:
+            if len(match) >= 3:
+                error_type = match[0].lower().strip()
+                original = match[1].strip()
+                suggestion = match[2].strip()
+                
+                # Map to valid types
+                if "grammar" in error_type or "grammatical" in error_type:
+                    error_type = "grammar"
+                elif "spell" in error_type:
+                    error_type = "spelling"
+                elif "punct" in error_type:
+                    error_type = "punctuation"
+                elif "style" in error_type or "styling" in error_type:
+                    error_type = "style"
+                elif "syntax" in error_type:
+                    error_type = "syntax"
+                elif "clarity" in error_type or "clear" in error_type:
+                    error_type = "clarity"
+                else:
+                    error_type = "grammar"  # Default
+                
+                if original:  # Only add if we have original text
+                    errors.append({
+                        "type": error_type,
+                        "original": original,
+                        "suggestion": suggestion,
+                        "explanation": f"Extracted from text analysis: {error_type} issue",
+                        "importance": "medium"
+                    })
+    
+    return {"errors": errors}
 
 
 def finish_successful_analysis(session: ProofreadingSession, editor):
@@ -503,3 +643,211 @@ def list_cached_sessions(filepath: Optional[str] = None) -> List[Dict[str, Any]]
         return sessions
     except:
         return []
+
+
+# Diagnostic functions for debugging
+
+def diagnose_ai_response(response_text: str) -> Dict[str, Any]:
+    """Comprehensive diagnostic analysis of AI response."""
+    diagnosis = {
+        "response_length": len(response_text),
+        "has_json": False,
+        "json_structure": None,
+        "parsing_methods": {},
+        "potential_errors": [],
+        "issues": [],
+        "recommendations": []
+    }
+    
+    # Check for JSON presence
+    if "{" in response_text and "}" in response_text:
+        diagnosis["has_json"] = True
+    
+    # Test all parsing methods
+    methods = [
+        ("direct_json", lambda: json.loads(response_text)),
+        ("extraction", lambda: json.loads(utils.extract_json_from_llm_response(response_text))),
+        ("multi_json", lambda: extract_multiple_json_objects(response_text)),
+        ("text_parsing", lambda: parse_errors_from_text(response_text))
+    ]
+    
+    for method_name, method_func in methods:
+        try:
+            result = method_func()
+            diagnosis["parsing_methods"][method_name] = {
+                "success": True,
+                "errors_found": len(result.get("errors", [])) if isinstance(result, dict) else len(result) if isinstance(result, list) else 0,
+                "structure": type(result).__name__
+            }
+            if diagnosis["json_structure"] is None and isinstance(result, dict):
+                diagnosis["json_structure"] = list(result.keys())
+        except Exception as e:
+            diagnosis["parsing_methods"][method_name] = {
+                "success": False,
+                "error": str(e)
+            }
+    
+    # Analyze potential error patterns
+    import re
+    
+    # Look for common error indicators
+    error_indicators = [
+        (r'"type":\s*"([^"]+)"', "error_types"),
+        (r'"original":\s*"([^"]+)"', "original_texts"),
+        (r'"suggestion":\s*"([^"]*)"', "suggestions"),
+        (r'"explanation":\s*"([^"]+)"', "explanations")
+    ]
+    
+    for pattern, field_name in error_indicators:
+        matches = re.findall(pattern, response_text, re.IGNORECASE)
+        if matches:
+            diagnosis[field_name] = matches[:5]  # First 5 examples
+    
+    # Identify common issues
+    if not diagnosis["has_json"]:
+        diagnosis["issues"].append("No JSON detected in response")
+        diagnosis["recommendations"].append("Check AI prompt - ensure it requests JSON format")
+    
+    if all(not method["success"] for method in diagnosis["parsing_methods"].values()):
+        diagnosis["issues"].append("All parsing methods failed")
+        diagnosis["recommendations"].append("Review raw response for formatting issues")
+    
+    # Check for mixed content
+    json_start = response_text.find("{")
+    json_end = response_text.rfind("}")
+    if json_start > 100:
+        diagnosis["issues"].append("JSON appears late in response (after text)")
+        diagnosis["recommendations"].append("AI may be providing explanations before JSON - adjust prompt")
+    
+    if json_end < len(response_text) - 100:
+        diagnosis["issues"].append("Significant text after JSON")
+        diagnosis["recommendations"].append("AI may be adding commentary after JSON - adjust prompt")
+    
+    return diagnosis
+
+
+def generate_diagnostic_report(session_id: str) -> str:
+    """Generate a diagnostic report for a session."""
+    try:
+        debug_dir = os.path.join(os.getcwd(), "debug_proofreading")
+        response_file = os.path.join(debug_dir, f"raw_response_{session_id}.txt")
+        
+        if not os.path.exists(response_file):
+            return f"No debug data found for session {session_id}"
+        
+        with open(response_file, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # Extract response text
+        response_start = content.find("RAW AI RESPONSE:\n") + len("RAW AI RESPONSE:\n")
+        response_end = content.find("\n" + "-" * 50 + "\n", response_start)
+        
+        if response_start < len("RAW AI RESPONSE:\n") or response_end == -1:
+            return f"Could not parse debug file for session {session_id}"
+        
+        response_text = content[response_start:response_end]
+        
+        # Run diagnostics
+        diagnosis = diagnose_ai_response(response_text)
+        
+        # Generate report
+        report = []
+        report.append(f"DIAGNOSTIC REPORT FOR SESSION {session_id}")
+        report.append("=" * 50)
+        report.append(f"Response length: {diagnosis['response_length']} characters")
+        report.append(f"Contains JSON: {diagnosis['has_json']}")
+        
+        if diagnosis["json_structure"]:
+            report.append(f"JSON keys: {', '.join(diagnosis['json_structure'])}")
+        
+        report.append("\nParsing Methods:")
+        for method, result in diagnosis["parsing_methods"].items():
+            status = "✓" if result["success"] else "✗"
+            if result["success"]:
+                report.append(f"  {status} {method}: {result['errors_found']} errors found")
+            else:
+                report.append(f"  {status} {method}: {result['error']}")
+        
+        if diagnosis["issues"]:
+            report.append("\nIssues Detected:")
+            for issue in diagnosis["issues"]:
+                report.append(f"  - {issue}")
+        
+        if diagnosis["recommendations"]:
+            report.append("\nRecommendations:")
+            for rec in diagnosis["recommendations"]:
+                report.append(f"  - {rec}")
+        
+        # Add sample error types if found
+        if "error_types" in diagnosis:
+            report.append(f"\nError types found: {', '.join(set(diagnosis['error_types']))}")
+        
+        return "\n".join(report)
+        
+    except Exception as e:
+        return f"Failed to generate diagnostic report: {e}"
+
+
+def run_comprehensive_diagnostics():
+    """Run diagnostics on all available debug files."""
+    try:
+        debug_dir = os.path.join(os.getcwd(), "debug_proofreading")
+        if not os.path.exists(debug_dir):
+            logs_console.log("No debug directory found", level='INFO')
+            return
+        
+        debug_files = [f for f in os.listdir(debug_dir) if f.startswith("raw_response_") and f.endswith(".txt")]
+        
+        if not debug_files:
+            logs_console.log("No debug files found", level='INFO')
+            return
+        
+        logs_console.log(f"Running diagnostics on {len(debug_files)} sessions", level='INFO')
+        
+        success_count = 0
+        failure_count = 0
+        total_errors = 0
+        
+        for debug_file in debug_files:
+            session_id = debug_file.replace("raw_response_", "").replace(".txt", "")
+            try:
+                with open(os.path.join(debug_dir, debug_file), 'r', encoding='utf-8') as f:
+                    content = f.read()
+                
+                response_start = content.find("RAW AI RESPONSE:\n") + len("RAW AI RESPONSE:\n")
+                response_end = content.find("\n" + "-" * 50 + "\n", response_start)
+                response_text = content[response_start:response_end]
+                
+                diagnosis = diagnose_ai_response(response_text)
+                
+                if any(method["success"] for method in diagnosis["parsing_methods"].values()):
+                    success_count += 1
+                    # Count errors from successful methods
+                    for method in diagnosis["parsing_methods"].values():
+                        if method["success"]:
+                            total_errors += method.get("errors_found", 0)
+                            break
+                else:
+                    failure_count += 1
+                    
+            except Exception as e:
+                logs_console.log(f"Failed to diagnose session {session_id}: {e}", level='WARNING')
+                failure_count += 1
+        
+        logs_console.log(f"Diagnostics complete: {success_count} successful, {failure_count} failed", level='INFO')
+        logs_console.log(f"Total errors recovered: {total_errors}", level='INFO')
+        
+        # Save summary report
+        summary_file = os.path.join(debug_dir, "diagnostic_summary.txt")
+        with open(summary_file, 'w', encoding='utf-8') as f:
+            f.write(f"Proofreading Diagnostic Summary\n")
+            f.write(f"Generated: {datetime.now().isoformat()}\n")
+            f.write(f"Sessions analyzed: {len(debug_files)}\n")
+            f.write(f"Successful parsing: {success_count}\n")
+            f.write(f"Failed parsing: {failure_count}\n")
+            f.write(f"Total errors recovered: {total_errors}\n")
+        
+        logs_console.log(f"Summary saved to {summary_file}", level='INFO')
+        
+    except Exception as e:
+        logs_console.log(f"Comprehensive diagnostics failed: {e}", level='ERROR')

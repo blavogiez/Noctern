@@ -48,57 +48,112 @@ def get_proofreading_schema():
 
 def validate_proofreading_response(response_data):
     """Validate response matches proofreading schema."""
+    from utils import logs_console
+    
     if not isinstance(response_data, dict):
+        logs_console.log("Response data is not a dictionary", level='DEBUG')
         return False, []
     
     # Check for forbidden fields (wrong response type)
     forbidden_fields = ["title", "authors", "journal", "volume", "issue", "pages", "doi", "abstract", "date"]
     if any(field in response_data for field in forbidden_fields):
+        logs_console.log("Found forbidden fields - likely wrong response type", level='DEBUG')
         return False, []
     
     if "errors" not in response_data:
+        logs_console.log("No 'errors' field found in response", level='DEBUG')
         return False, []
     
     errors = response_data["errors"]
     if not isinstance(errors, list):
+        logs_console.log("Errors field is not a list", level='DEBUG')
         return False, []
     
+    logs_console.log(f"Starting validation of {len(errors)} potential errors", level='INFO')
+    
     normalized_errors = []
+    rejected_errors = []
     valid_types = {"grammar", "spelling", "punctuation", "style", "clarity", "syntax", "coherence"}
     valid_importance = {"high", "medium", "low"}
     
-    for error in errors:
+    # Map similar/alternative error types to valid ones
+    type_mapping = {
+        "grammatical": "grammar",
+        "grammatical error": "grammar",
+        "misspelling": "spelling",
+        "typo": "spelling", 
+        "punctuation error": "punctuation",
+        "styling": "style",
+        "stylistic": "style",
+        "unclear": "clarity",
+        "ambiguous": "clarity",
+        "confusing": "clarity",
+        "syntax error": "syntax",
+        "word order": "syntax",
+        "coherence error": "coherence",
+        "logic": "coherence",
+        "logical": "coherence"
+    }
+    
+    for i, error in enumerate(errors):
         if not isinstance(error, dict):
+            rejected_errors.append(f"Error {i+1}: Not a dictionary")
             continue
         
-        # Check required fields
-        required_fields = ["type", "original", "explanation"]
-        if not all(field in error for field in required_fields):
+        # Check required fields - be more lenient
+        required_fields = ["type", "original"]
+        missing_fields = [field for field in required_fields if field not in error or not str(error[field]).strip()]
+        if missing_fields:
+            rejected_errors.append(f"Error {i+1}: Missing required fields: {missing_fields}")
             continue
         
-        error_type = error.get("type", "").lower()
+        original_type = error.get("type", "").lower().strip()
+        error_type = original_type
+        
+        # Try to map similar types
+        if error_type not in valid_types and error_type in type_mapping:
+            error_type = type_mapping[error_type]
+        
+        # If still not valid, try partial matching
         if error_type not in valid_types:
+            for valid_type in valid_types:
+                if valid_type in error_type or error_type in valid_type:
+                    error_type = valid_type
+                    break
+        
+        if error_type not in valid_types:
+            rejected_errors.append(f"Error {i+1}: Invalid type '{original_type}' (mapped to '{error_type}')")
             continue
         
         original = error.get("original", "").strip()
         suggestion = error.get("suggestion", "").strip()
         explanation = error.get("explanation", "").strip()
-        importance = error.get("importance", "medium").lower()
+        importance = error.get("importance", "medium").lower().strip()
         
-        # Validate fields
-        if not original or not explanation:
+        # Validate fields - be more lenient
+        if not original:
+            rejected_errors.append(f"Error {i+1}: Empty original text")
             continue
+        
+        # Allow missing explanation but warn
+        if not explanation:
+            explanation = "No explanation provided"
+            logs_console.log(f"Error {i+1}: No explanation provided, using default", level='WARNING')
         
         if importance not in valid_importance:
+            logs_console.log(f"Error {i+1}: Invalid importance '{importance}', defaulting to 'medium'", level='WARNING')
             importance = "medium"
         
-        # Allow empty suggestion for deletions (coherence errors)
-        if not suggestion and error_type != "coherence":
-            continue
+        # Be more lenient with empty suggestions
+        # Allow empty suggestions for more error types (deletion, formatting, etc.)
+        deletion_types = {"coherence", "style", "clarity", "punctuation"}
+        if not suggestion and error_type not in deletion_types:
+            # For non-deletion types, warn but don't reject entirely
+            logs_console.log(f"Error {i+1}: Empty suggestion for type '{error_type}' - keeping for review", level='WARNING')
         
-        # Skip if suggestion is identical to original
-        if original == suggestion:
-            continue
+        # Don't automatically reject identical original/suggestion - could be formatting/context errors
+        if original == suggestion and error_type not in {"punctuation", "style"}:
+            logs_console.log(f"Error {i+1}: Identical original and suggestion - keeping for review", level='WARNING')
         
         # Create normalized error
         normalized_error = {
@@ -113,5 +168,17 @@ def validate_proofreading_response(response_data):
         }
         
         normalized_errors.append(normalized_error)
+    
+    # Log filtering results
+    accepted_count = len(normalized_errors)
+    rejected_count = len(rejected_errors)
+    logs_console.log(f"Validation complete: {accepted_count} errors accepted, {rejected_count} rejected", level='INFO')
+    
+    if rejected_errors:
+        logs_console.log("Rejected errors details:", level='DEBUG')
+        for rejection in rejected_errors[:10]:  # Limit to first 10 to avoid spam
+            logs_console.log(f"  - {rejection}", level='DEBUG')
+        if len(rejected_errors) > 10:
+            logs_console.log(f"  - ... and {len(rejected_errors) - 10} more", level='DEBUG')
     
     return True, normalized_errors
