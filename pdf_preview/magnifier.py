@@ -27,9 +27,9 @@ class PDFPreviewMagnifier:
         self.viewer = viewer
         self.window = None
         self.canvas = None
-        self.size = 200  # Diameter of the circular magnifier
-        self.zoom_factor = 2.0
-        self.crop_radius = 50  # Radius of area to magnify
+        self.size = 280  # Diameter of the circular magnifier
+        self.zoom_factor = 1.6
+        self.crop_radius = 60  # Radius of area to magnify
         
         # Create the magnifier window
         self._create_window()
@@ -49,19 +49,16 @@ class PDFPreviewMagnifier:
         # Make it stay on top
         self.window.attributes("-topmost", True)
         
-        # Platform-specific transparent color
-        if platform.system() == "Windows":
-            # On Windows, we'll use a different approach for transparency
-            # Create a frame-like border instead
-            bg_color = "#f0f0f0"  # Light gray background
-        else:
-            # On other platforms, try to use transparent color
-            bg_color = "systemTransparent"
-            try:
-                self.window.attributes("-transparentcolor", "systemTransparent")
-            except tk.TclError:
-                # If transparent color is not supported, use light gray
-                bg_color = "#f0f0f0"
+        # Use a unique color for transparency
+        transparent_color = "#FF00FF"  # Magenta - will be made transparent
+        bg_color = transparent_color
+        
+        # Set transparent color for all platforms
+        try:
+            self.window.attributes("-transparentcolor", transparent_color)
+        except tk.TclError:
+            # Fallback if transparency not supported
+            bg_color = "#f0f0f0"
         
         # Create canvas with no border
         self.canvas = Canvas(
@@ -86,39 +83,49 @@ class PDFPreviewMagnifier:
         self.window.geometry(f"+{x}+{y}")
         
     def _draw_magnifier_frame(self):
-        """Draw the circular frame and glass effect."""
+        """Draw the circular frame and glass effect with transparency mask."""
         if not self.canvas:
             return
             
         # Clear previous content
         self.canvas.delete("all")
         
-        # Draw outer ring (metallic look)
-        self.canvas.create_oval(
-            5, 5, self.size-5, self.size-5,
-            outline="#a0a0a0", width=3, tags="frame"
+        # Get transparent color
+        transparent_color = self.canvas['bg']
+        
+        # Create a full transparent background first
+        self.canvas.create_rectangle(
+            0, 0, self.size, self.size,
+            fill=transparent_color, outline="", tags="background"
         )
         
-        # Draw inner ring (glass effect)
+        # Draw the visible circular area (this will show the magnified content)
+        # We create a circle that will be filled with the magnified image later
         self.canvas.create_oval(
-            15, 15, self.size-15, self.size-15,
-            outline="#d0d0ff", width=2, tags="frame"
+            20, 20, self.size-20, self.size-20,
+            outline="#a0a0a0", width=3, fill="white", tags="lens"
         )
         
-        # Draw handle
-        handle_x = self.size - 20
-        handle_y = self.size - 20
+        # Draw inner ring for glass effect
+        self.canvas.create_oval(
+            25, 25, self.size-25, self.size-25,
+            outline="#d0d0ff", width=1, fill="", tags="frame"
+        )
+        
+        # Draw handle (positioned outside the main circle but still visible)
+        handle_x = self.size - 25
+        handle_y = self.size - 25
         self.canvas.create_line(
-            handle_x, handle_y, 
-            handle_x + 15, handle_y + 15,
-            fill="#a0a0a0", width=5, tags="frame"
+            handle_x - 5, handle_y - 5, 
+            handle_x + 10, handle_y + 10,
+            fill="#a0a0a0", width=4, tags="frame"
         )
         
         # Draw grip on handle
         self.canvas.create_oval(
-            handle_x + 10, handle_y + 10,
-            handle_x + 20, handle_y + 20,
-            fill="#707070", outline="#505050", tags="frame"
+            handle_x + 5, handle_y + 5,
+            handle_x + 15, handle_y + 15,
+            fill="#707070", outline="#505050", width=2, tags="frame"
         )
         
     def _start_drag(self, event):
@@ -166,10 +173,18 @@ class PDFPreviewMagnifier:
         if not self.canvas or not image:
             return
             
-        # Clear previous content but keep the frame
+        # Clear previous magnified content but keep frame elements
         for item in self.canvas.find_all():
-            if "frame" not in self.canvas.gettags(item):
+            tags = self.canvas.gettags(item)
+            if "magnified" in tags or "lens" in tags or "background" in tags:
                 self.canvas.delete(item)
+        
+        # Redraw transparent background and lens area
+        transparent_color = self.canvas['bg']
+        self.canvas.create_rectangle(
+            0, 0, self.size, self.size,
+            fill=transparent_color, outline="", tags="background"
+        )
         
         # Calculate crop area
         img_width, img_height = image.size
@@ -189,10 +204,16 @@ class PDFPreviewMagnifier:
             Image.Resampling.LANCZOS
         )
         
-        # Create a circular mask
-        mask = Image.new('L', magnified.size, 0)
+        # Calculate the lens circle dimensions
+        lens_size = self.size - 40  # 20px margin on each side
+        
+        # Resize the magnified image to fit the lens circle
+        magnified = magnified.resize((lens_size, lens_size), Image.Resampling.LANCZOS)
+        
+        # Create a circular mask for the lens area
+        mask = Image.new('L', (lens_size, lens_size), 0)
         mask_draw = ImageDraw.Draw(mask)
-        mask_draw.ellipse((0, 0) + magnified.size, fill=255)
+        mask_draw.ellipse((0, 0, lens_size, lens_size), fill=255)
         
         # Apply the mask to make it circular
         magnified.putalpha(mask)
@@ -200,7 +221,7 @@ class PDFPreviewMagnifier:
         # Convert to PhotoImage
         photo = ImageTk.PhotoImage(magnified)
         
-        # Display in magnifier canvas (centered)
+        # Display in magnifier canvas (centered in the lens area)
         self.canvas.create_image(
             self.size // 2,
             self.size // 2,
