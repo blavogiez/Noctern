@@ -136,3 +136,62 @@ def prepare_final_response(accumulated_chunks: str, final_raw_text: str) -> str:
     # Fall back to accumulated_chunks for streaming-only scenarios
     source_text = final_raw_text if final_raw_text else accumulated_chunks
     return normalize_text_content(source_text)
+
+def extract_json_from_llm_response(text: str) -> str:
+    """
+    Extracts JSON content from LLM response text, handling various formats.
+    
+    This function handles common LLM response patterns including:
+    - JSON wrapped in markdown code blocks (```json```)
+    - Raw JSON objects in text
+    - Mixed text with embedded JSON
+    
+    Args:
+        text (str): Raw LLM response text
+        
+    Returns:
+        str: Extracted JSON string ready for json.loads()
+        
+    Raises:
+        ValueError: If no valid JSON is found in the text
+    """
+    import re
+    import json
+    
+    if not text:
+        raise ValueError("Empty text provided")
+    
+    # Try code block JSON first (```json ... ```)
+    json_match = re.search(r'```(?:json)?\s*({.*?})\s*```', text, re.DOTALL)
+    if json_match:
+        json_text = json_match.group(1).strip()
+        try:
+            # Validate JSON by parsing it
+            json.loads(json_text)
+            return json_text
+        except json.JSONDecodeError:
+            pass
+    
+    # Try to find any JSON object in the text
+    json_match = re.search(r'\{[^{}]*(?:"[^"]*"[^{}]*)*\}', text, re.DOTALL)
+    if json_match:
+        json_text = json_match.group(0).strip()
+        try:
+            # Validate JSON by parsing it
+            json.loads(json_text)
+            return json_text
+        except json.JSONDecodeError:
+            pass
+    
+    # Try more complex nested JSON pattern
+    json_match = re.search(r'\{(?:[^{}]|{[^{}]*})*\}', text, re.DOTALL)
+    if json_match:
+        json_text = json_match.group(0).strip()
+        try:
+            # Validate JSON by parsing it
+            json.loads(json_text)
+            return json_text
+        except json.JSONDecodeError:
+            pass
+    
+    raise ValueError(f"No valid JSON found in text: {text[:200]}...")

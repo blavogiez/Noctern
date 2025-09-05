@@ -335,13 +335,28 @@ def process_ai_response(session: ProofreadingSession, editor, response_text: str
     """Process AI response and create error objects."""
     try:
         logs_console.log(f"Processing AI response: {len(response_text)} chars", level='INFO')
+        logs_console.log(f"Response text preview: {response_text[:200]}...", level='DEBUG')
         
         # Update status
         editor.after(0, update_session_status, session, "Formatting JSON...")
         
         # Clean and parse JSON
-        cleaned_response = utils.clean_full_llm_response(response_text)
-        errors_data = json.loads(cleaned_response)
+        try:
+            # For structured output, try direct parsing first (Gemini returns clean JSON)
+            try:
+                errors_data = json.loads(response_text)
+                logs_console.log("Successfully parsed JSON directly (structured output)", level='DEBUG')
+            except json.JSONDecodeError:
+                # Fallback to extraction for non-structured responses
+                logs_console.log("Direct JSON parsing failed, trying extraction", level='DEBUG')
+                cleaned_response = utils.extract_json_from_llm_response(response_text)
+                errors_data = json.loads(cleaned_response)
+                logs_console.log("Successfully parsed JSON after extraction", level='DEBUG')
+        except (ValueError, json.JSONDecodeError) as e:
+            logs_console.log(f"JSON processing failed: {e}", level='ERROR')
+            logs_console.log(f"Failed response content: {response_text[:500]}", level='ERROR')
+            editor.after(0, finish_session_with_error, session, "Could not extract valid JSON from AI response")
+            return
         
         # Validate response format
         is_valid, normalized_errors = validate_proofreading_response(errors_data)

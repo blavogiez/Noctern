@@ -8,6 +8,7 @@ import re
 from typing import Optional, Dict, Any, List
 from utils import logs_console
 from latex_debug_system.core import AnalysisEngine, AnalysisResult, DebugContext, QuickFix
+from llm import state as llm_state, api_client, utils as llm_utils
 
 
 class LLMAnalyzer(AnalysisEngine):
@@ -109,7 +110,6 @@ class LLMAnalyzer(AnalysisEngine):
     def _call_llm_system(self, diff_content: str, log_content: str) -> Optional[str]:
         """Call LLM system for analysis."""
         try:
-            from llm import state as llm_state, api_client
             
             prompt_template = llm_state._global_default_prompts.get("debug_latex_diff")
             if not prompt_template:
@@ -165,7 +165,11 @@ class LLMAnalyzer(AnalysisEngine):
         
         try:
             # Try to extract JSON
-            json_data = self._extract_json_from_text(analysis_text)
+            try:
+                json_text = llm_utils.extract_json_from_llm_response(analysis_text)
+                json_data = json.loads(json_text)
+            except (ValueError, json.JSONDecodeError):
+                json_data = None
             
             if json_data:
                 explanation = json_data.get("explanation", json_data.get("analysis", "No explanation provided"))
@@ -207,25 +211,6 @@ class LLMAnalyzer(AnalysisEngine):
                 raw_analysis=analysis_text
             )
     
-    def _extract_json_from_text(self, text: str) -> Optional[Dict[str, Any]]:
-        """Extract JSON object from text response."""
-        # Try code block JSON first
-        json_match = re.search(r'```(?:json)?\\s*({.*?})\\s*```', text, re.DOTALL)
-        if json_match:
-            try:
-                return json.loads(json_match.group(1))
-            except json.JSONDecodeError:
-                pass
-        
-        # Try to find any JSON object
-        json_match = re.search(r'{[^{}]*(?:"[^"]*"[^{}]*)*}', text, re.DOTALL)
-        if json_match:
-            try:
-                return json.loads(json_match.group(0))
-            except json.JSONDecodeError:
-                pass
-        
-        return None
     
     def _calculate_confidence(self, json_data: Dict[str, Any], analysis_text: str) -> float:
         """Calculate confidence score for analysis."""
