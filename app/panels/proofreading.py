@@ -8,7 +8,7 @@ from typing import Optional, List
 from .base_panel import BasePanel
 from .panel_factory import PanelStyle, StandardComponents
 
-from llm.proofreading_service import get_proofreading_service, ProofreadingError, ProofreadingSession, load_session_from_cache, list_cached_sessions
+from llm.proofreading import get_proofreading_service, ProofreadingError, ProofreadingSession
 from llm import state
 
 

@@ -1,14 +1,33 @@
-"""Proofreading entry point - Pure business logic."""
-from tkinter import messagebox
-from llm import state
+"""
+Proofreading module - Production-ready text analysis.
+"""
 
+from .service import ProofreadingService, ProofreadingSession
+from .core import ProofreadingError
 
+# Public API
+_service = None
+
+def get_proofreading_service():
+    """Get singleton proofreading service."""
+    global _service
+    if _service is None:
+        _service = ProofreadingService()
+    return _service
+
+def analyze_text(text: str, instructions: str = ""):
+    """Simple API for text analysis."""
+    service = get_proofreading_service()
+    session = service.start_session(text, instructions)
+    service.analyze_text(session)
+    return session.errors
+
+# Backward compatibility functions
 def prepare_proofreading(panel_callback=None):
-    """Prepare proofreading - pure business logic.
+    """Prepare proofreading - backward compatibility."""
+    from tkinter import messagebox
+    from llm import state
     
-    Args:
-        panel_callback: Callback to show the UI panel
-    """
     # Check services ready
     if not callable(state._active_editor_getter_func):
         messagebox.showerror("Error", "AI service not initialized.")
@@ -32,13 +51,6 @@ def prepare_proofreading(panel_callback=None):
         except Exception as e:
             messagebox.showerror("Error", f"Failed to open proofreading interface: {str(e)}")
 
-
-# Backward compatibility wrapper
-def open_proofreading_panel():
-    """Legacy function name for backward compatibility."""
-    prepare_proofreading()
-
-
 def get_text_for_analysis(editor):
     """Get text from editor (selected or full document)."""
     try:
@@ -55,7 +67,6 @@ def get_text_for_analysis(editor):
         return filter_latex_comments(full_text)
     
     return ""
-
 
 def filter_latex_comments(text):
     """Remove LaTeX comment lines (starting with %)."""
