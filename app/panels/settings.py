@@ -22,6 +22,8 @@ class SettingsPanel(BasePanel):
         
         # Store current config
         self.current_config = app_config.load_config()
+        # Use BasePanel critical action bar at bottom
+        self._use_critical_actions = True
         
         # UI variables
         self.app_monitor_var: Optional[tk.StringVar] = None
@@ -39,6 +41,13 @@ class SettingsPanel(BasePanel):
     
     def get_layout_style(self) -> PanelStyle:
         return PanelStyle.SPLIT  # Use split layout like Text Generation panel
+
+    def get_critical_action_buttons(self) -> list:
+        """Expose critical actions at bottom so they're always visible."""
+        return [
+            ("Save Settings", self._save_settings, "primary"),
+            ("Reset to Defaults", self._reset_settings, "secondary"),
+        ]
     
     def create_content(self):
         """Create the settings panel content using split layout like Text Generation."""
@@ -203,16 +212,8 @@ class SettingsPanel(BasePanel):
         gemini_api_entry.configure(textvariable=self.gemini_api_key_var, show="*")
         gemini_api_entry.grid(row=0, column=1, sticky="ew", padx=(StandardComponents.ELEMENT_SPACING, 0), pady=2)
         
-        # Action buttons
-        action_section = ttk.Frame(main_frame)
-        action_section.pack(fill="x", pady=(StandardComponents.SECTION_SPACING, 0))
-        
-        action_buttons = [
-            ("Save Settings", self._save_settings, "primary"),
-            ("Reset to Defaults", self._reset_settings, "secondary")
-        ]
-        button_row = StandardComponents.create_button_row(action_section, action_buttons)
-        button_row.pack()
+        # Action buttons are provided via BasePanel critical action bar
+        # Skipping in-content duplicates to avoid confusion
     
     def focus_main_widget(self):
         """Focus the main interactive widget."""

@@ -230,6 +230,24 @@ class PanelLayoutManager:
         main_frame = ttk.Frame(content_frame, padding=StandardComponents.PADDING)
         main_frame.pack(fill="both", expand=True)
         return main_frame
+
+    @staticmethod
+    def create_vertical_stack_container(parent) -> ttk.Frame:
+        """Create a container that mimics PanedWindow.add by stacking children vertically.
+
+        Provides an .add(widget, weight=...) method to stay compatible with panels
+        that expect a PanedWindow, while keeping content scroll-friendly.
+        """
+        class VerticalStackContainer(ttk.Frame):
+            def add(self, widget, weight=1):
+                try:
+                    # If a raw widget was passed, ensure it is packed
+                    widget.pack(fill="x", expand=True, padx=0, pady=(0, StandardComponents.SECTION_SPACING//2))
+                except Exception:
+                    pass
+        container = VerticalStackContainer(parent)
+        container.pack(fill="both", expand=True)
+        return container
     
     @staticmethod
     def create_scrollable_layout(content_frame) -> Tuple[ttk.Frame, tk.Canvas]:
@@ -258,6 +276,65 @@ class PanelLayoutManager:
         canvas.bind("<MouseWheel>", _on_mousewheel)
         
         return scrollable_frame, canvas
+
+    @staticmethod
+    def create_sticky_scroll_layout(parent) -> Tuple[ttk.Frame, tk.Canvas, ttk.Frame]:
+        """Create a layout with a scrollable content area and a sticky footer.
+
+        Returns a tuple of (scroll_inner_frame, canvas, footer_frame).
+        The footer_frame is guaranteed to remain visible below the scroll area.
+        """
+        container = ttk.Frame(parent)
+        container.grid(row=0, column=0, sticky="nsew")
+        # Ensure container expands
+        parent.grid_rowconfigure(0, weight=1)
+        parent.grid_columnconfigure(0, weight=1)
+
+        # Create canvas + scrollbar (row 0)
+        canvas = tk.Canvas(container, highlightthickness=0)
+        vscroll = ttk.Scrollbar(container, orient="vertical", command=canvas.yview)
+        canvas.configure(yscrollcommand=vscroll.set)
+        canvas.grid(row=0, column=0, sticky="nsew")
+        vscroll.grid(row=0, column=1, sticky="ns")
+        container.grid_rowconfigure(0, weight=1)
+        container.grid_columnconfigure(0, weight=1)
+
+        # Inner scroll frame
+        scroll_inner = ttk.Frame(canvas)
+        inner_window = canvas.create_window((0, 0), window=scroll_inner, anchor="nw")
+
+        # Footer (row 1)
+        footer_frame = ttk.Frame(container)
+        footer_frame.grid(row=1, column=0, columnspan=2, sticky="ew")
+
+        # Sync scrollregion and inner width
+        def _on_inner_config(event=None):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+        scroll_inner.bind("<Configure>", _on_inner_config)
+
+        def _on_canvas_config(event):
+            try:
+                canvas.itemconfigure(inner_window, width=event.width)
+            except Exception:
+                pass
+        canvas.bind("<Configure>", _on_canvas_config)
+
+        # Basic mouse wheel support (Windows)
+        def _on_mousewheel(event):
+            delta = event.delta
+            if delta:
+                canvas.yview_scroll(int(-1 * (delta/120)), "units")
+        def _bind_wheel(_):
+            canvas.bind_all("<MouseWheel>", _on_mousewheel)
+        def _unbind_wheel(_):
+            try:
+                canvas.unbind_all("<MouseWheel>")
+            except Exception:
+                pass
+        canvas.bind("<Enter>", _bind_wheel)
+        canvas.bind("<Leave>", _unbind_wheel)
+
+        return scroll_inner, canvas, footer_frame
     
     @staticmethod
     def create_split_layout(content_frame, orientation=tk.VERTICAL) -> ttk.PanedWindow:
@@ -346,6 +423,9 @@ class PanelFactory:
             return PanelLayoutManager.create_scrollable_layout(content_frame)
         
         elif layout_style == PanelStyle.SPLIT:
+            # When inside a scroll context, a PanedWindow hides content. Stack vertically instead.
+            if kwargs.get('scroll_context'):
+                return PanelLayoutManager.create_vertical_stack_container(content_frame)
             orientation = kwargs.get('orientation', tk.VERTICAL)
             return PanelLayoutManager.create_split_layout(content_frame, orientation)
         

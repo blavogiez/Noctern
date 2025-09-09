@@ -26,6 +26,9 @@ class InteractiveGridSelector(tk.Frame):
         self.selected_rows = 2
         self.selected_cols = 3
         
+        # Track confirmed selections for visual history
+        self.confirmed_selections = set()
+        
         # Create canvas for grid - flexible size to use available space
         self.canvas = tk.Canvas(
             self,
@@ -93,11 +96,17 @@ class InteractiveGridSelector(tk.Frame):
                 x2 = x1 + cell_size
                 y2 = y1 + cell_size
                 
-                # Determine cell color - More professional colors
+                # Determine cell color with visual history
                 if row < self.selected_rows and col < self.selected_cols:
-                    color = "#0078d4"    # Professional blue for selected
+                    # Current selection - blue (highest priority)
+                    color = "#0078d4"    # Professional blue for current selection
                     outline = "#005a9e"  # Darker blue outline
+                elif (row + 1, col + 1) in self.confirmed_selections:
+                    # Previously confirmed selection - green
+                    color = "#28a745"    # Professional green for confirmed
+                    outline = "#1e7e34"  # Darker green outline
                 else:
+                    # Default unselected state
                     color = "#ffffff"    # Clean white for unselected
                     outline = "#e1e5e9"  # Light gray outline
                 
@@ -105,7 +114,7 @@ class InteractiveGridSelector(tk.Frame):
                     x1, y1, x2, y2,
                     fill=color,
                     outline=outline,
-                    width=2 if row < self.selected_rows and col < self.selected_cols else 1
+                    width=2 if (row < self.selected_rows and col < self.selected_cols) or (row + 1, col + 1) in self.confirmed_selections else 1
                 )
         
         # Store calculated values for mouse interaction
@@ -144,6 +153,9 @@ class InteractiveGridSelector(tk.Frame):
     
     def _on_click(self, event):
         """Handle grid click."""
+        # Store current selection in history
+        self.confirmed_selections.add((self.selected_rows, self.selected_cols))
+        
         if self.on_selection_change:
             self.on_selection_change(self.selected_rows, self.selected_cols)
     

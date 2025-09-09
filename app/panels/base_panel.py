@@ -100,10 +100,14 @@ class BasePanel(ABC):
         self.content_frame.grid(row=1, column=0, sticky="nsew", padx=5, pady=5)
         self.content_frame.grid_rowconfigure(0, weight=1)
         self.content_frame.grid_columnconfigure(0, weight=1)
-        
-        # Create standardized layout based on panel style
+
+        # Build sticky-scroll layout: scrollable content + sticky footer
+        from .panel_factory import PanelLayoutManager
+        scroll_inner, self._scroll_canvas, self._footer_frame = PanelLayoutManager.create_sticky_scroll_layout(self.content_frame)
+
+        # Create standardized layout based on panel style inside scroll area
         layout_style = self.get_layout_style()
-        self.main_container = PanelFactory.create_panel_structure(self.content_frame, layout_style)
+        self.main_container = PanelFactory.create_panel_structure(scroll_inner, layout_style, scroll_context=True)
         
         # Let subclass create its content
         self.create_content()
@@ -145,15 +149,10 @@ class BasePanel(ABC):
     def _create_critical_actions(self):
         """Create critical actions container that ensures buttons are always visible."""
         critical_buttons = self.get_critical_action_buttons()
-        
         if critical_buttons:
-            # Create critical actions frame (row 2 - bottom of panel)
-            critical_frame = ttk.Frame(self.panel_frame)
-            critical_frame.grid(row=2, column=0, sticky="ew", padx=5, pady=5)
-            
-            # Create the critical actions container using standardized factory
+            # Put critical actions in sticky footer (outside scroll area)
             self.critical_actions_container = StandardComponents.create_critical_actions_container(
-                critical_frame, 
+                self._footer_frame,
                 critical_buttons
             )
             
