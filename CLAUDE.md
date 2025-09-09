@@ -2,10 +2,6 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project Overview
-
-AutomaTeX is a modern AI-assisted LaTeX editor built with Python and ttkbootstrap. It provides local AI integration through Ollama for text completion, generation, and proofreading, along with an integrated PDF preview system.
-
 ## Development Commands
 
 ### Running the Application
@@ -14,118 +10,107 @@ python main.py
 ```
 
 ### Testing
-Run PDF preview tests:
 ```bash
-python pdf_preview/test.py
-python pdf_preview/test_comprehensive.py
+pytest
 ```
 
-Run specific test suites with pytest:
-```bash
-python -m pytest tests/ -v
-```
-
-### Dependencies Installation
+### Dependencies Management
 ```bash
 pip install -r requirements.txt
 ```
 
+### LaTeX Compilation Requirements
+- Ensure LaTeX distribution is installed (MiKTeX, MacTeX, or TeX Live)
+- pdflatex must be available in system PATH
+- Optional: chktex for LaTeX linting
+
 ## Architecture Overview
 
-### Core Modules
+AutomaTeX is a Python-based LaTeX editor with LLM integration, built using tkinter/ttkbootstrap for the GUI. The application follows a modular architecture with clean separation of concerns:
 
-**app/**: GUI components and application state
-- `main_window.py`: Primary window setup and configuration  
-- `state.py`: Global application state management
-- `interface.py`: CENTRAL ORCHESTRATOR - All LLM+UI coordination here
-- `theme.py`: UI theming and visual customization
-- `zoom.py`: Text scaling and zoom functionality
-- `panels/`: Integrated sidebar panels for all AI interactions (NO popup dialogs)
-- Tab operations, shortcuts, and UI visibility controls
+### Core Architecture Modules
 
-**editor/**: Text editing engine and LaTeX support
-- `syntax.py`: Differential LaTeX syntax highlighting with performance optimization
-- `syntax_highlighter.py`: Core highlighting implementation
-- `syntax_tracker.py`: Line-based change tracking for efficient updates
-- `tab.py`: Editor tab management and EditorTab class
-- `monaco_optimizer.py`: Performance optimizations for large files
-- Document outline, search, snippets, and image management
+**Application Layer (`app/`)**
+- `main_window.py` - Primary GUI setup and window management
+- `interface.py` - Central orchestrator for LLM+UI interactions and user actions
+- `state.py` - Global application state management with getter functions
+- `panels/` - Integrated sidebar panels for LLM interactions
 
-**latex/**: LaTeX compilation and processing
-- `compiler.py`: pdflatex integration and compilation management
-- `error_parser.py`: LaTeX error parsing and user-friendly messages
-- `translator.py`: Document translation services
+**Editor Layer (`editor/`)**
+- `syntax.py` - Differential syntax highlighting system optimized for performance
+- `tab.py` - Editor tab management with weak reference tracking
+- `monaco_optimizer.py` - Performance optimizations inspired by Monaco editor
 
-**llm/**: AI/LLM integration layer (PURE BUSINESS LOGIC)
-- `service.py`: Centralized LLM API facade with callback support
-- `api_client.py`: Ollama and external API communication
-- `completion.py`, `generation.py`, `proofreading.py`: Core AI features with callbacks
-- `schemas/`: Data validation and response parsing
-- NO UI IMPORTS: All panel management handled by app/interface.py
+**LaTeX Integration (`latex/`)**
+- `compiler.py` - pdflatex subprocess integration and compilation management
+- `error_parser.py` - LaTeX error log analysis and user-friendly reporting
+- `translator.py` - Document translation using HuggingFace Helsinki models
 
-**pdf_preview/**: Integrated PDF viewer
-- `manager.py`: PDF compilation and synchronization
-- `viewer.py`: PDF rendering and display
-- `interface.py`: Integration with main application
-- Live preview with auto-compilation and editor synchronization
+**LLM Integration (`llm/`)**
+- `service.py` - Centralized LLM API facade and service initialization
+- `api_client.py` - Ollama and Google Gemini API communication
+- `completion.py`, `generation.py`, `rephrase.py` - Feature-specific LLM implementations
 
-**debug_system/**: LaTeX debugging and error analysis
-- `coordinator.py`: Debug workflow coordination
-- `llm_analyzer.py`: AI-powered error analysis
-- `error_parser.py`: LaTeX error interpretation
-- `quick_fixes.py`: Automated error correction
+**PDF Preview (`pdf_preview/`)**
+- `manager.py` - PDF compilation and synchronization from RAM
+- `viewer.py` - PDF rendering and display with virtualized viewing
+- `interface.py` - Integration with main application
 
 ### Key Design Patterns
 
-**Performance Optimization**: 
-- Differential syntax highlighting tracks only changed lines
-- Large file threshold (2000+ lines) triggers optimized rendering
-- Monaco editor optimizations for responsive editing
+**Modular Initialization**: All subsystems use getter functions for late binding and modularity (see `main.py:32-65`)
 
-**AI Integration**:
-- Local-first approach using Ollama for privacy
-- Modular service architecture with integrated sidebar panels (NO popup dialogs)
-- Streaming responses for real-time feedback
-- All AI features accessed via sidebar panels (generation, proofreading, rephrase, etc.)
+**Performance Optimizations**: 
+- Differential syntax highlighting processes only changed lines
+- Monaco-style optimization with update throttling and debouncing
+- Weak reference management for tab tracking
+- Background processing for compilation and LLM operations
 
-**State Management**:
-- Centralized application state with getter functions
-- Weak references for memory-efficient editor tracking
-- Event-driven architecture for UI updates
+**LLM Architecture**: Pure business logic in `llm/` modules with callback support, UI orchestration handled exclusively in `app/interface.py`. No direct UI imports in LLM modules.
 
-## Critical Implementation Notes
+**Event-Driven Updates**: Text modification events trigger throttled updates to syntax highlighting, outline view, and PDF preview with rate limiting.
 
-**UI Guidelines**: NEVER use emojis in any UI elements, titles, labels, or text content. Keep all interface text clean and professional without emoji characters.
+## Key Integration Points
 
-**Syntax Highlighting**: Uses differential highlighting system that only processes changed lines. The `syntax_tracker.py` module maintains line state to optimize performance on large documents.
+### LLM Service Integration
+The LLM system supports both local (Ollama) and cloud (Google Gemini) models:
+- Initialize via `llm_service.initialize_llm_service()` with GUI callbacks
+- Feature modules (`completion.py`, `generation.py`, etc.) provide business logic
+- UI orchestration happens through `app/interface.py` panel callbacks
 
-**AI Service**: Clean separation between LLM logic and UI orchestration. The `llm/` module provides pure business logic with callback support, while `app/interface.py` handles all UI orchestration and panel management. LLM modules never directly call UI components - they use callbacks provided by the app layer.
+### PDF Preview System
+- Automatic PDF compilation triggered by text changes (rate-limited)
+- RAM-based PDF virtualization for performance
+- SyncTeX integration for bidirectional editor-PDF navigation
 
-**PDF Preview**: Automatically synchronizes with LaTeX compilation. Uses pdf2image for rendering and caches pages for performance.
+### Editor Performance
+- Uses differential highlighting - only processes changed text ranges
+- Monaco optimization with update suppression during rapid typing
+- Line number updates scheduled separately from syntax highlighting
 
-**Editor Tabs**: Managed through `EditorTab` class with weak reference tracking. Each tab maintains its own syntax highlighting state.
+## Configuration Management
 
-## Testing Strategy
+Settings stored in `settings.conf` using ConfigParser format. Key configuration areas:
+- Theme management with 15 available themes
+- LLM model selection and API configuration
+- PDF preview and status bar visibility
+- Window geometry and monitor selection
+- Performance optimization toggles
 
-- PDF preview module has comprehensive test suites
-- Use pytest for structured testing with `pytest.ini` configuration
-- Individual module testing through direct Python execution
+## Development Guidelines
 
-## Dependencies
+### File Organization
+- Maintain strict separation between UI (`app/`) and business logic (`llm/`, `latex/`, `editor/`)
+- Use getter functions for cross-module dependencies to enable late binding
+- Keep editor optimizations separate in `monaco_optimizer.py`
 
-Core: ttkbootstrap, Pillow, PyPDF2, pdf2image
-AI: ollama, google-generativeai
-LaTeX: Requires system pdflatex installation (MiKTeX/TeX Live)
+### Performance Considerations
+- All syntax highlighting must use differential processing
+- LLM operations should be non-blocking with progress indicators
+- PDF operations should work from RAM when possible
+- Use weak references for tab management to prevent memory leaks
 
-## Refactor Plan: LLM/App Responsibility Separation
-
-### Architecture Pattern
-- **LLM module**: Pure business logic with callback parameters
-- **App/Interface**: Central orchestrator for all LLM+UI interactions
-- **No Bridge Pattern**: Direct callback-based communication
-
-### Implementation Rules
-1. LLM modules NEVER import `app.panels`
-2. All `show_*_panel()` calls happen in `app/interface.py`
-3. LLM functions accept optional callbacks for UI integration
-4. Simple, comprehensible, production-ready code
+### Testing
+- Tests located in `tests/` directory
+- Use `pytest` for running tests
+- Test configuration in `pytest.ini`

@@ -130,12 +130,25 @@ def handle_shift_tab(event):
     return "break"
 
 def on_double_click(event):
-    """Selects the content within LaTeX command braces on double-click."""
+    """Selects the content within quotes or LaTeX command braces on double-click."""
     editor = event.widget
     index = editor.index(f"@{event.x},{event.y}")
     line, char = map(int, index.split('.'))
     line_content = editor.get(f"{line}.0", f"{line}.end")
-    # This regex is now corrected and verified.
+    
+    # First try to select content within quotes - single optimized regex
+    for match in re.finditer(r'(["\'"«])([^"\'»]*)\1|«([^»]*)»', line_content):
+        content_start = match.start(2) if match.group(2) is not None else match.start(3)
+        content_end = match.end(2) if match.group(2) is not None else match.end(3)
+        if content_start <= char < content_end:
+            start_abs = f"{line}.{content_start}"
+            end_abs = f"{line}.{content_end}"
+            editor.tag_remove("sel", "1.0", "end")
+            editor.tag_add("sel", start_abs, end_abs)
+            editor.mark_set("insert", start_abs)
+            return "break"
+    
+    # Fallback to LaTeX command braces
     for match in re.finditer(r"\\(?:[a-zA-Z]+|emph|textbf|textit)(?:\[[^\]]*\])?\{([^}]*)\}", line_content):
         if match.start(1) <= char < match.end(1):
             start_abs = f"{line}.{match.start(1)}"
