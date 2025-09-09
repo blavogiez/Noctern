@@ -101,8 +101,8 @@ class InteractiveGridSelector(tk.Frame):
                     # Current selection - blue (highest priority)
                     color = "#0078d4"    # Professional blue for current selection
                     outline = "#005a9e"  # Darker blue outline
-                elif (row + 1, col + 1) in self.confirmed_selections:
-                    # Previously confirmed selection - green
+                elif any(row < conf_rows and col < conf_cols for conf_rows, conf_cols in self.confirmed_selections):
+                    # Cell is part of a confirmed selection zone - green
                     color = "#28a745"    # Professional green for confirmed
                     outline = "#1e7e34"  # Darker green outline
                 else:
@@ -114,7 +114,7 @@ class InteractiveGridSelector(tk.Frame):
                     x1, y1, x2, y2,
                     fill=color,
                     outline=outline,
-                    width=2 if (row < self.selected_rows and col < self.selected_cols) or (row + 1, col + 1) in self.confirmed_selections else 1
+                    width=2 if (row < self.selected_rows and col < self.selected_cols) or any(row < conf_rows and col < conf_cols for conf_rows, conf_cols in self.confirmed_selections) else 1
                 )
         
         # Store calculated values for mouse interaction
@@ -152,9 +152,18 @@ class InteractiveGridSelector(tk.Frame):
             self.status_label.config(text=f"{self.selected_rows} × {self.selected_cols} table ({table_type})")
     
     def _on_click(self, event):
-        """Handle grid click."""
-        # Store current selection in history
-        self.confirmed_selections.add((self.selected_rows, self.selected_cols))
+        """Handle grid click with clean toggle logic."""
+        current_selection = (self.selected_rows, self.selected_cols)
+        
+        # Clean toggle: clear all and add current, or clear all if clicking same selection
+        if current_selection in self.confirmed_selections:
+            self.confirmed_selections.clear()  # Remove when clicking same selection
+        else:
+            self.confirmed_selections.clear()  # Clear previous selections
+            self.confirmed_selections.add(current_selection)  # Add only current selection
+        
+        # Redraw to show visual change immediately
+        self._draw_grid()
         
         if self.on_selection_change:
             self.on_selection_change(self.selected_rows, self.selected_cols)
