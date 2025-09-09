@@ -4,7 +4,11 @@ import configparser
 import os
 from utils import logs_console
 
-CONFIG_FILE = "settings.conf"
+# Use a stable absolute path for settings.conf at the project root
+# This avoids saving to different locations depending on the process CWD.
+_APP_DIR = os.path.dirname(os.path.abspath(__file__))
+_PROJECT_ROOT = os.path.normpath(os.path.join(_APP_DIR, os.pardir))
+CONFIG_FILE = os.path.join(_PROJECT_ROOT, "settings.conf")
 DEFAULT_SECTION = "Settings"
 
 # Default configuration values for file creation and missing keys
@@ -66,19 +70,33 @@ def load_config():
         return dict(DEFAULT_VALUES)
 
 def save_config(settings_dict):
-    """Save settings dictionary to configuration file with API key masking."""
-    config = configparser.ConfigParser()
-    
+    """Save settings dictionary to configuration file with API key masking.
+
+    Preserves non-Settings sections (e.g., Session) instead of overwriting the whole file.
+    """
     # Validate and normalize settings
     normalized_settings = _normalize_settings(settings_dict)
-    
-    # Create copy for secure logging without modifying original
+
+    # Prepare for logging without exposing secrets
     log_dict = dict(normalized_settings)
     if "gemini_api_key" in log_dict and log_dict["gemini_api_key"]:
-        log_dict["gemini_api_key"] = "****"  # Mask API key for security
-        
-    config[DEFAULT_SECTION] = normalized_settings
-    
+        log_dict["gemini_api_key"] = "****"
+
+    # Read existing config to preserve other sections
+    config = configparser.ConfigParser()
+    if os.path.exists(CONFIG_FILE):
+        try:
+            config.read(CONFIG_FILE)
+        except configparser.Error:
+            # Fallback to a fresh config if reading fails
+            config = configparser.ConfigParser()
+
+    # Ensure Settings section exists and update it
+    if DEFAULT_SECTION not in config:
+        config[DEFAULT_SECTION] = {}
+    for key, value in normalized_settings.items():
+        config[DEFAULT_SECTION][key] = value
+
     try:
         with open(CONFIG_FILE, "w") as configfile:
             config.write(configfile)

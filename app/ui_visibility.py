@@ -6,6 +6,7 @@ like the status bar and PDF preview pane.
 import ttkbootstrap as ttk
 from app import state
 from utils import logs_console
+from app import config as app_config
 
 
 def toggle_status_bar():
@@ -29,6 +30,9 @@ def toggle_status_bar():
         from app.status import start_gpu_status_loop
         start_gpu_status_loop(state.gpu_status_label, state.root)
         logs_console.log("Status bar created and shown.", level='INFO')
+        # Persist visibility state
+        state._app_config["show_status_bar"] = "True"
+        app_config.save_config(state._app_config)
         # Show temporary feedback to user
         from app import status_utils
         if state.status_label:
@@ -43,11 +47,17 @@ def toggle_status_bar():
         if state.status_bar_frame.winfo_viewable():
             state.status_bar_frame.pack_forget()
             logs_console.log("Status bar hidden.", level='INFO')
+            # Persist visibility state
+            state._app_config["show_status_bar"] = "False"
+            app_config.save_config(state._app_config)
             # Show temporary feedback in debug console since status bar is hidden
             logs_console.log("Status bar disabled by user", level='INFO')
         else:
             state.status_bar_frame.pack(side="bottom", fill="x")
             logs_console.log("Status bar shown.", level='INFO')
+            # Persist visibility state
+            state._app_config["show_status_bar"] = "True"
+            app_config.save_config(state._app_config)
             # Update status when showing
             from app import status_utils
             status_utils.update_status_bar_text()
