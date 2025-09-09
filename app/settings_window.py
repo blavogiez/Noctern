@@ -161,12 +161,10 @@ def open_settings_window(root):
         """Saves the API key and refreshes the model list in the UI."""
         # 1. Save the current API key to the config file so the client can see it
         # Use current_config as base to preserve any unsaved UI changes
-        temp_config = current_config.copy()
-        temp_config["gemini_api_key"] = gemini_api_key_var.get()
-        # Also preserve any model changes made in the UI
+        updates = {"gemini_api_key": gemini_api_key_var.get()}
         for key, var in model_vars.items():
-            temp_config[key] = var.get()
-        app_config.save_config(temp_config)
+            updates[key] = var.get()
+        app_config.update_and_save_config(updates)
         logs_console.log("API key and current model selections saved before refresh", level='INFO')
 
         # 2. Fetch the new, updated list of models
@@ -199,20 +197,20 @@ def open_settings_window(root):
     def save_and_close():
         # Use the current_config as base instead of reloading from file
         # This prevents losing UI changes made since dialog opened
-        updated_config = current_config.copy()
-        
-        updated_config["app_monitor"] = app_monitor_var.get()
-        updated_config["pdf_monitor"] = pdf_monitor_var.get()
-        updated_config["window_state"] = window_state_var.get()
-        updated_config["editor_font_family"] = editor_font_var.get()
-        updated_config["gemini_api_key"] = gemini_api_key_var.get()
-        updated_config["show_status_bar"] = str(show_status_bar_var.get())
-        updated_config["show_pdf_preview"] = str(show_pdf_preview_var.get())
+        updates = {
+            "app_monitor": app_monitor_var.get(),
+            "pdf_monitor": pdf_monitor_var.get(),
+            "window_state": window_state_var.get(),
+            "editor_font_family": editor_font_var.get(),
+            "gemini_api_key": gemini_api_key_var.get(),
+            "show_status_bar": str(show_status_bar_var.get()),
+            "show_pdf_preview": str(show_pdf_preview_var.get()),
+        }
         for key, var in model_vars.items():
-            updated_config[key] = var.get()
+            updates[key] = var.get()
             logs_console.log(f"Saving model {key}: {var.get()}", level='DEBUG')
-        
-        app_config.save_config(updated_config)
+
+        app_config.update_and_save_config(updates)
         logs_console.log("Settings saved successfully:", level='SUCCESS')
         
         # Log what was actually saved for debugging

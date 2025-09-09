@@ -74,8 +74,25 @@ def save_config(settings_dict):
 
     Preserves non-Settings sections (e.g., Session) instead of overwriting the whole file.
     """
+    # Merge incoming settings with existing ones to avoid resetting other values
+    existing_settings = {}
+    if os.path.exists(CONFIG_FILE):
+        try:
+            _cfg = configparser.ConfigParser()
+            _cfg.read(CONFIG_FILE)
+            if DEFAULT_SECTION in _cfg:
+                existing_settings = dict(_cfg[DEFAULT_SECTION])
+        except configparser.Error:
+            existing_settings = {}
+    else:
+        # No config yet: start from defaults
+        existing_settings = dict(DEFAULT_VALUES)
+
+    merged_settings = dict(existing_settings)
+    merged_settings.update(settings_dict)
+
     # Validate and normalize settings
-    normalized_settings = _normalize_settings(settings_dict)
+    normalized_settings = _normalize_settings(merged_settings)
 
     # Prepare for logging without exposing secrets
     log_dict = dict(normalized_settings)

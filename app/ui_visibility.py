@@ -30,9 +30,8 @@ def toggle_status_bar():
         from app.status import start_gpu_status_loop
         start_gpu_status_loop(state.gpu_status_label, state.root)
         logs_console.log("Status bar created and shown.", level='INFO')
-        # Persist visibility state
-        state._app_config["show_status_bar"] = "True"
-        app_config.save_config(state._app_config)
+        # Persist visibility state without overwriting other settings
+        app_config.update_and_save_config({"show_status_bar": "True"})
         # Show temporary feedback to user
         from app import status_utils
         if state.status_label:
@@ -47,17 +46,15 @@ def toggle_status_bar():
         if state.status_bar_frame.winfo_viewable():
             state.status_bar_frame.pack_forget()
             logs_console.log("Status bar hidden.", level='INFO')
-            # Persist visibility state
-            state._app_config["show_status_bar"] = "False"
-            app_config.save_config(state._app_config)
+            # Persist visibility state without overwriting other settings
+            app_config.update_and_save_config({"show_status_bar": "False"})
             # Show temporary feedback in debug console since status bar is hidden
             logs_console.log("Status bar disabled by user", level='INFO')
         else:
             state.status_bar_frame.pack(side="bottom", fill="x")
             logs_console.log("Status bar shown.", level='INFO')
-            # Persist visibility state
-            state._app_config["show_status_bar"] = "True"
-            app_config.save_config(state._app_config)
+            # Persist visibility state without overwriting other settings
+            app_config.update_and_save_config({"show_status_bar": "True"})
             # Update status when showing
             from app import status_utils
             status_utils.update_status_bar_text()
@@ -111,9 +108,8 @@ def toggle_pdf_preview():
         # Add to paned window
         state.main_pane.add(state.pdf_preview_pane.master, weight=1)
         
-        # Update configuration
-        state._app_config["show_pdf_preview"] = "True"
-        app_config.save_config(state._app_config)
+        # Update configuration without overwriting other settings
+        app_config.update_and_save_config({"show_pdf_preview": "True"})
         
         logs_console.log("PDF preview created and shown.", level='INFO')
         
@@ -141,10 +137,9 @@ def toggle_pdf_preview():
             state.pdf_preview_pane = None
             state.pdf_preview_parent = None
             
-            # Update configuration
+            # Update configuration without overwriting other settings
             from app import config as app_config
-            state._app_config["show_pdf_preview"] = "False"
-            app_config.save_config(state._app_config)
+            app_config.update_and_save_config({"show_pdf_preview": "False"})
             
             logs_console.log("PDF preview hidden and destroyed.", level='INFO')
         else:

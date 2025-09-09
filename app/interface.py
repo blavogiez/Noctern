@@ -504,7 +504,6 @@ def apply_theme(theme_name=None, event=None):
     state.current_theme = new_theme
     state._theme_settings = new_settings
     
-    app_config_data = state.get_app_config()
-    app_config_data['theme'] = state.current_theme
-    app_config.save_config(app_config_data)
+    # Persist only the theme to avoid clobbering other settings
+    app_config.update_and_save_config({'theme': state.current_theme})
 

@@ -51,30 +51,30 @@ def save_application_state():
     from llm import state as llm_state
     from app.interface import save_session
     
-    # Save window state and preferences
-    app_config_data = state.get_app_config()
+    # Save window state and preferences without overwriting unrelated keys
+    updates = {}
     if state.root.attributes('-fullscreen'):
-        app_config_data['window_state'] = 'Fullscreen'
+        updates['window_state'] = 'Fullscreen'
     elif state.root.state() == 'zoomed':
-        app_config_data['window_state'] = 'Maximized'
+        updates['window_state'] = 'Maximized'
     else:
-        app_config_data['window_state'] = 'Normal'
-    
-    app_config_data['theme'] = state.current_theme
-    
+        updates['window_state'] = 'Normal'
+
+    updates['theme'] = state.current_theme
+
     # Preserve API keys from current config
     current_config = app_config.load_config()
-    app_config_data['gemini_api_key'] = current_config.get('gemini_api_key', '')
-    
+    updates['gemini_api_key'] = current_config.get('gemini_api_key', '')
+
     # Save LLM model configuration
-    app_config_data['model_completion'] = llm_state.model_completion
-    app_config_data['model_generation'] = llm_state.model_generation
-    app_config_data['model_rephrase'] = llm_state.model_rephrase
-    app_config_data['model_debug'] = llm_state.model_debug
-    app_config_data['model_style'] = llm_state.model_style
-    app_config_data['model_proofreading'] = llm_state.model_proofreading
-    
-    app_config.save_config(app_config_data)
+    updates['model_completion'] = llm_state.model_completion
+    updates['model_generation'] = llm_state.model_generation
+    updates['model_rephrase'] = llm_state.model_rephrase
+    updates['model_debug'] = llm_state.model_debug
+    updates['model_style'] = llm_state.model_style
+    updates['model_proofreading'] = llm_state.model_proofreading
+
+    app_config.update_and_save_config(updates)
     save_session()
 
 
