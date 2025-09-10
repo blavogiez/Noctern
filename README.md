@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="resources/app_icon.png" alt="Noctern" width="96" height="96">
+  <img src="resources/app_icon.png" alt="Noctern" width="192" height="192">
   
   [![Python](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org/)
   [![License](https://img.shields.io/badge/license-Apache-green)](LICENSE)
