@@ -413,7 +413,7 @@ class ProofreadingPanel(BasePanel):
         if self.analyze_button and self.analyze_button.winfo_exists():
             self.analyze_button.config(state="normal", text="Retry Analysis")
             self.status_indicator.config(text="Analysis failed", foreground=self.get_theme_color("danger", "#cc0000"))
-            messagebox.showerror("Analysis Error", error_msg, parent=self.panel_frame)
+            messagebox.showerror("Proofreading Analysis Error", f"Failed to analyze document:\n{error_msg}", parent=self.panel_frame)
     
     def _go_previous(self):
         """Go to previous error."""
@@ -446,7 +446,7 @@ class ProofreadingPanel(BasePanel):
             
         current_error = self.session.get_current_error()
         if not current_error or not current_error.is_approved:
-            messagebox.showwarning("Not Approved", "Please approve this correction before applying it.", parent=self.panel_frame)
+            messagebox.showwarning("Correction Not Approved", "Please approve this correction before applying it.", parent=self.panel_frame)
             return
             
         if self.session.apply_current_correction(self.editor):
@@ -454,7 +454,7 @@ class ProofreadingPanel(BasePanel):
             # Auto-advance to next error
             self.panel_frame.after(1000, self._go_next)
         else:
-            messagebox.showwarning("Application Failed", 
+            messagebox.showwarning("Apply Correction Failed", 
                 "Could not apply the correction. The original text may have been modified.",
                 parent=self.panel_frame)
     

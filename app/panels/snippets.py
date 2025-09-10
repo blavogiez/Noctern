@@ -292,7 +292,7 @@ class SnippetsPanel(BasePanel):
         
         if not name:
             messagebox.showwarning(
-                "Missing Name",
+                "Snippet Name Required",
                 "Please enter a name for the snippet.",
                 parent=self.panel_frame
             )
@@ -300,7 +300,7 @@ class SnippetsPanel(BasePanel):
         
         if not trigger:
             messagebox.showwarning(
-                "Missing Trigger",
+                "Snippet Trigger Required",
                 "Please enter a trigger for the snippet.",
                 parent=self.panel_frame
             )
@@ -308,7 +308,7 @@ class SnippetsPanel(BasePanel):
         
         if not content:
             messagebox.showwarning(
-                "Missing Content",
+                "Snippet Content Required",
                 "Please enter content for the snippet.",
                 parent=self.panel_frame
             )
@@ -317,7 +317,7 @@ class SnippetsPanel(BasePanel):
         # Validate trigger format (no spaces, special chars)
         if not re.match(r'^[a-zA-Z_][a-zA-Z0-9_]*$', trigger):
             messagebox.showwarning(
-                "Invalid Trigger",
+                "Invalid Snippet Trigger",
                 "Trigger must be alphanumeric and start with a letter or underscore.",
                 parent=self.panel_frame
             )
@@ -328,7 +328,7 @@ class SnippetsPanel(BasePanel):
             # Dict format - simple check
             if trigger in self.snippets and not (self.is_editing and self.trigger_entry.get() == trigger):
                 messagebox.showwarning(
-                    "Duplicate Trigger",
+                    "Duplicate Snippet Trigger",
                     f"A snippet with trigger '{trigger}' already exists.",
                     parent=self.panel_frame
                 )
@@ -353,7 +353,7 @@ class SnippetsPanel(BasePanel):
             for i, snippet in enumerate(self.snippets):
                 if i != self.current_snippet_index and snippet.get("trigger") == trigger:
                     messagebox.showwarning(
-                        "Duplicate Trigger",
+                        "Duplicate Snippet Trigger",
                         f"A snippet with trigger '{trigger}' already exists.",
                         parent=self.panel_frame
                     )
@@ -436,7 +436,7 @@ class SnippetsPanel(BasePanel):
         logs_console.log(f"Saved {len(self.snippets)} snippets to file", level='SUCCESS')
         
         messagebox.showinfo(
-            "Snippets Saved",
+            "Snippets Saved Successfully",
             f"Successfully saved {len(self.snippets)} snippets.",
             parent=self.panel_frame
         )

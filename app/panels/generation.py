@@ -258,14 +258,14 @@ class GenerationPanel(BasePanel):
         prompt_text = self.prompt_text_widget.get("1.0", tk.END).strip()
         
         if not prompt_text:
-            messagebox.showwarning("Warning", "The prompt text area is empty. Please enter a prompt.", parent=self.panel_frame)
+            messagebox.showwarning("Prompt Required", "The prompt text area is empty. Please enter a prompt.", parent=self.panel_frame)
             return
             
         try:
             lines_before = int(self.lines_before_entry.get())
             lines_after = int(self.lines_after_entry.get())
         except ValueError:
-            messagebox.showerror("Input Error", "Line counts must be valid integers.", parent=self.panel_frame)
+            messagebox.showerror("Invalid Input", "Line counts must be valid integers.", parent=self.panel_frame)
             return
         
         latex_mode = self.latex_mode_var.get()

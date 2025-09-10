@@ -31,7 +31,20 @@ AutomaTeX is a modern LaTeX editor designed for researchers, students, and techn
 
 ## Demonstrations
 
-*Future demonstration videos will be avLLMlable here:*
+We will go through the example of a student.
+The app will show more complex features as time goes on.
+I prefer using funny dummy informations instead of dead serious studies, making the demo more entertaining to watch.
+
+### Preparing its cover page and inserting a table
+
+The student used the anchors available for a quick navigation
+
+### Ordering sauce via image pasting
+
+Luckily enough, the writer had an image pasted in his clipboard. He could order
+
+### Changing his mind
+
 
 <!-- Video demonstrations will be added to the readme/ folder -->
 <!-- https://github.com/user-attachments/assets/video-file-name.mp4 -->

@@ -2,6 +2,9 @@
 # AutomaTeX - Professional .gitignore
 # =============================================================================
 
+AGENTS.md
+CLAUDE.md
+CHANGELOG.md
 # Configuration and secrets
 **/.env
 **/.env.*

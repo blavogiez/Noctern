@@ -6,10 +6,23 @@ Shows both token usage and productivity metrics in tabbed interface.
 import tkinter as tk
 from tkinter import ttk
 import os
-from typing import Optional
+from typing import Optional, Dict, List, Tuple, Any
 from .base_panel import BasePanel
 from .panel_factory import PanelStyle, StandardComponents, PanelLayoutManager
 from utils import logs_console
+
+
+class TreeviewConfig:
+    """Configuration for treeview setup."""
+    
+    def __init__(self, columns: List[str], headings: List[str], 
+                 column_widths: List[int], column_alignments: List[str],
+                 min_widths: List[int] = None):
+        self.columns = columns
+        self.headings = headings  
+        self.column_widths = column_widths
+        self.column_alignments = column_alignments
+        self.min_widths = min_widths or [80] * len(columns)
 
 
 class MetricsPanel(BasePanel):
@@ -30,6 +43,23 @@ class MetricsPanel(BasePanel):
         # Productivity components
         self.productivity_tree: Optional[ttk.Treeview] = None
         self.productivity_summary_inner: Optional[tk.Frame] = None
+        
+        # Define treeview configurations
+        self._token_tree_config = TreeviewConfig(
+            columns=["date", "input", "output", "total"],
+            headings=["Date", "Input Tokens", "Output Tokens", "Total"],
+            column_widths=[120, 100, 100, 100],
+            column_alignments=[tk.W, tk.E, tk.E, tk.E],
+            min_widths=[100, 80, 80, 80]
+        )
+        
+        self._productivity_tree_config = TreeviewConfig(
+            columns=["date", "duration", "words", "productivity"],
+            headings=["Date", "Duration", "Words", "Words/Hour"],
+            column_widths=[120, 90, 90, 120],
+            column_alignments=[tk.W, tk.E, tk.E, tk.E],
+            min_widths=[100, 70, 60, 80]
+        )
         
     def get_panel_title(self) -> str:
         return "Usage Metrics"
@@ -57,11 +87,57 @@ class MetricsPanel(BasePanel):
         token_frame = ttk.Frame(parent, padding=StandardComponents.PADDING)
         parent.add(token_frame, weight=1)
         
-        # Use main frame that fills all available space
         scrollable_frame = token_frame
         
-        # Header section with main title
-        header_section = StandardComponents.create_section(scrollable_frame, "Token Usage Metrics")
+        # Create header with refresh button
+        self._create_section_header(
+            scrollable_frame, 
+            "Token Usage Metrics", 
+            self._refresh_token_metrics
+        )
+        
+        # Create treeview section
+        tree_section = self._create_treeview_section(
+            scrollable_frame,
+            "Daily Usage",
+            self._token_tree_config,
+            "total_row"
+        )
+        self.token_tree = tree_section["tree"]
+        
+        # Create summary section
+        self.token_summary_inner = self._create_summary_section(
+            scrollable_frame, 
+            "Token Summary"
+        )
+        
+    def _create_productivity_section(self, parent):
+        """Create the productivity metrics section (bottom)."""
+        productivity_frame = ttk.Frame(parent, padding=StandardComponents.PADDING)
+        parent.add(productivity_frame, weight=1)
+        
+        scrollable_frame = productivity_frame
+        
+        # Create header with file info and refresh button
+        self._create_productivity_header(scrollable_frame)
+        
+        # Create treeview section
+        tree_section = self._create_treeview_section(
+            scrollable_frame,
+            "Session History", 
+            self._productivity_tree_config
+        )
+        self.productivity_tree = tree_section["tree"]
+        
+        # Create summary section
+        self.productivity_summary_inner = self._create_summary_section(
+            scrollable_frame,
+            "Productivity Summary"
+        )
+        
+    def _create_section_header(self, parent, title: str, refresh_callback):
+        """Create a standardized section header with refresh button."""
+        header_section = StandardComponents.create_section(parent, title)
         header_section.pack(fill="x", pady=(0, StandardComponents.SECTION_SPACING))
         
         header_frame = ttk.Frame(header_section)
@@ -70,86 +146,29 @@ class MetricsPanel(BasePanel):
         refresh_button = StandardComponents.create_button_input(
             header_frame,
             "Refresh",
-            self._refresh_token_metrics,
+            refresh_callback,
             width=10
         )
         refresh_button.pack(side="right")
         
-        # Token usage treeview section
-        tree_section = StandardComponents.create_section(scrollable_frame, "Daily Usage")
-        tree_section.pack(fill="both", expand=True, pady=(0, StandardComponents.SECTION_SPACING))
-        
-        tree_frame = ttk.Frame(tree_section)
-        tree_frame.pack(fill="both", expand=True)
-        tree_frame.grid_rowconfigure(0, weight=1)
-        tree_frame.grid_columnconfigure(0, weight=1)
-        
-        # Token treeview with columns
-        self.token_tree = ttk.Treeview(
-            tree_frame,
-            columns=("date", "input", "output", "total"),
-            show="headings",
-            height=8
-        )
-        
-        # Configure columns
-        self.token_tree.heading("date", text="Date")
-        self.token_tree.heading("input", text="Input Tokens")
-        self.token_tree.heading("output", text="Output Tokens")
-        self.token_tree.heading("total", text="Total")
-        
-        # Configure columns to fill available width
-        self.token_tree.column("date", anchor=tk.W, width=120, minwidth=100)
-        self.token_tree.column("input", anchor=tk.E, width=100, minwidth=80) 
-        self.token_tree.column("output", anchor=tk.E, width=100, minwidth=80)
-        self.token_tree.column("total", anchor=tk.E, width=100, minwidth=80)
-        
-        self.token_tree.grid(row=0, column=0, sticky="nsew")
-        
-        # Scrollbar for token tree
-        token_tree_scrollbar = ttk.Scrollbar(tree_frame, orient="vertical", command=self.token_tree.yview)
-        token_tree_scrollbar.grid(row=0, column=1, sticky="ns")
-        self.token_tree.config(yscrollcommand=token_tree_scrollbar.set)
-        
-        # Configure total row style
-        self.token_tree.tag_configure("total_row", background="#e6f3ff", font=StandardComponents.BODY_FONT + ("bold",))
-        
-        # Token summary section
-        token_summary_section = StandardComponents.create_section(scrollable_frame, "Token Summary")
-        token_summary_section.pack(fill="x")
-        
-        self.token_summary_inner = ttk.Frame(token_summary_section)
-        self.token_summary_inner.pack(fill="x", padx=StandardComponents.PADDING, pady=StandardComponents.PADDING)
-        self.token_summary_inner.grid_columnconfigure(1, weight=1)
-        
-    def _create_productivity_section(self, parent):
-        """Create the productivity metrics section (bottom)."""
-        productivity_frame = ttk.Frame(parent, padding=StandardComponents.PADDING)
-        parent.add(productivity_frame, weight=1)
-        
-        # Use main frame that fills all available space
-        scrollable_frame = productivity_frame
-        
-        # Header section with main title  
-        header_section = StandardComponents.create_section(scrollable_frame, "File Productivity Metrics")
+        return header_section
+    
+    def _create_productivity_header(self, parent):
+        """Create header section for productivity metrics with file info."""
+        header_section = StandardComponents.create_section(parent, "File Productivity Metrics")
         header_section.pack(fill="x", pady=(0, StandardComponents.SECTION_SPACING))
         
         # Show current file info
-        if self.file_path:
-            filename = os.path.basename(self.file_path)
-            file_info = StandardComponents.create_info_label(
-                header_section,
-                f"Viewing metrics for: {filename}",
-                "body"
-            )
-            file_info.pack(anchor="w")
-        else:
-            file_info = StandardComponents.create_info_label(
-                header_section,
-                "No file selected for productivity metrics",
-                "body"
-            )
-            file_info.pack(anchor="w")
+        file_info_text = (f"Viewing metrics for: {os.path.basename(self.file_path)}" 
+                         if self.file_path 
+                         else "No file selected for productivity metrics")
+        
+        file_info = StandardComponents.create_info_label(
+            header_section,
+            file_info_text,
+            "body"
+        )
+        file_info.pack(anchor="w")
         
         header_frame = ttk.Frame(header_section)
         header_frame.pack(fill="x", pady=(StandardComponents.PADDING//2, 0))
@@ -162,50 +181,61 @@ class MetricsPanel(BasePanel):
         )
         refresh_button.pack(side="right")
         
-        # Productivity sessions treeview section
-        sessions_section = StandardComponents.create_section(scrollable_frame, "Session History")
-        sessions_section.pack(fill="both", expand=True, pady=(0, StandardComponents.SECTION_SPACING))
+        return header_section
+    
+    def _create_treeview_section(self, parent, section_title: str, config: TreeviewConfig, 
+                               total_row_tag: str = None) -> Dict[str, Any]:
+        """Create a standardized treeview section with scrollbar."""
+        tree_section = StandardComponents.create_section(parent, section_title)
+        tree_section.pack(fill="both", expand=True, pady=(0, StandardComponents.SECTION_SPACING))
         
-        sessions_frame = ttk.Frame(sessions_section)
-        sessions_frame.pack(fill="both", expand=True)
-        sessions_frame.grid_rowconfigure(0, weight=1)
-        sessions_frame.grid_columnconfigure(0, weight=1)
+        tree_frame = ttk.Frame(tree_section)
+        tree_frame.pack(fill="both", expand=True)
+        tree_frame.grid_rowconfigure(0, weight=1)
+        tree_frame.grid_columnconfigure(0, weight=1)
         
-        # Productivity treeview with columns
-        self.productivity_tree = ttk.Treeview(
-            sessions_frame,
-            columns=("date", "duration", "words", "productivity"),
+        # Create treeview
+        tree = ttk.Treeview(
+            tree_frame,
+            columns=tuple(config.columns),
             show="headings",
             height=8
         )
         
         # Configure columns
-        self.productivity_tree.heading("date", text="Date")
-        self.productivity_tree.heading("duration", text="Duration")
-        self.productivity_tree.heading("words", text="Words")
-        self.productivity_tree.heading("productivity", text="Words/Hour")
+        for i, (col, heading, width, anchor, minwidth) in enumerate(zip(
+            config.columns, config.headings, config.column_widths,
+            config.column_alignments, config.min_widths
+        )):
+            tree.heading(col, text=heading)
+            tree.column(col, anchor=anchor, width=width, minwidth=minwidth)
         
-        # Configure columns to fill available width
-        self.productivity_tree.column("date", anchor=tk.W, width=120, minwidth=100)
-        self.productivity_tree.column("duration", anchor=tk.E, width=90, minwidth=70)
-        self.productivity_tree.column("words", anchor=tk.E, width=90, minwidth=60)
-        self.productivity_tree.column("productivity", anchor=tk.E, width=120, minwidth=80)
+        tree.grid(row=0, column=0, sticky="nsew")
         
-        self.productivity_tree.grid(row=0, column=0, sticky="nsew")
+        # Create scrollbar
+        scrollbar = ttk.Scrollbar(tree_frame, orient="vertical", command=tree.yview)
+        scrollbar.grid(row=0, column=1, sticky="ns")
+        tree.config(yscrollcommand=scrollbar.set)
         
-        # Scrollbar for productivity tree
-        prod_tree_scrollbar = ttk.Scrollbar(sessions_frame, orient="vertical", command=self.productivity_tree.yview)
-        prod_tree_scrollbar.grid(row=0, column=1, sticky="ns")
-        self.productivity_tree.config(yscrollcommand=prod_tree_scrollbar.set)
+        # Configure special row style if specified
+        if total_row_tag:
+            tree.tag_configure(total_row_tag, 
+                              background="#e6f3ff", 
+                              font=StandardComponents.BODY_FONT + ("bold",))
         
-        # Productivity summary section
-        prod_summary_section = StandardComponents.create_section(scrollable_frame, "Productivity Summary")
-        prod_summary_section.pack(fill="x")
+        return {"tree": tree, "scrollbar": scrollbar, "section": tree_section}
+    
+    def _create_summary_section(self, parent, title: str) -> ttk.Frame:
+        """Create a standardized summary section."""
+        summary_section = StandardComponents.create_section(parent, title)
+        summary_section.pack(fill="x")
         
-        self.productivity_summary_inner = ttk.Frame(prod_summary_section)
-        self.productivity_summary_inner.pack(fill="x", padx=StandardComponents.PADDING, pady=StandardComponents.PADDING)
-        self.productivity_summary_inner.grid_columnconfigure(1, weight=1)
+        summary_inner = ttk.Frame(summary_section)
+        summary_inner.pack(fill="x", padx=StandardComponents.PADDING, pady=StandardComponents.PADDING)
+        summary_inner.grid_columnconfigure(1, weight=1)
         
+        return summary_inner
+    
     def _refresh_all_metrics(self):
         """Refresh both token and productivity metrics."""
         self._refresh_token_metrics()
@@ -218,56 +248,30 @@ class MetricsPanel(BasePanel):
             from metrics import manager
             
             # Clear existing data
-            if self.token_tree:
-                for item in self.token_tree.get_children():
-                    self.token_tree.delete(item)
+            self._clear_tree(self.token_tree)
             
-                # Load metrics data
-                metrics = manager.load_metrics()
-                total_input = 0
-                total_output = 0
-                
-                # Sort dates
-                sorted_dates = sorted(metrics.keys())
-                
-                # Add rows for each date
-                for date_str in sorted_dates:
-                    data = metrics[date_str]
-                    input_tokens = data.get("input", 0)
-                    output_tokens = data.get("output", 0)
-                    total_tokens = input_tokens + output_tokens
-                    
-                    self.token_tree.insert(
-                        "", tk.END,
-                        values=(date_str, f"{input_tokens:,}", f"{output_tokens:,}", f"{total_tokens:,}")
-                    )
-                    
-                    total_input += input_tokens
-                    total_output += output_tokens
-                
-                # Add total row
-                total_all = total_input + total_output
-                if total_all > 0:
-                    self.token_tree.insert(
-                        "", tk.END,
-                        values=("TOTAL", f"{total_input:,}", f"{total_output:,}", f"{total_all:,}"),
-                        tags=("total_row",)
-                    )
-                
-                # Update summary
-                self._update_token_summary(total_input, total_output, len(sorted_dates))
-                
-                logs_console.log(f"Refreshed token metrics: {len(sorted_dates)} days, {total_all:,} total tokens", level='INFO')
-                
+            # Load and process metrics data
+            metrics = manager.load_metrics()
+            token_data = self._process_token_metrics(metrics)
+            
+            # Populate tree with data
+            self._populate_token_tree(token_data)
+            
+            # Update summary
+            self._update_token_summary(
+                token_data["total_input"], 
+                token_data["total_output"], 
+                token_data["num_days"]
+            )
+            
+            logs_console.log(
+                f"Refreshed token metrics: {token_data['num_days']} days, {token_data['total_all']:,} total tokens", 
+                level='INFO'
+            )
+            
         except Exception as e:
             logs_console.log(f"Error refreshing token metrics: {e}", level='ERROR')
-            
-            # Show error in treeview
-            if self.token_tree:
-                self.token_tree.insert(
-                    "", tk.END,
-                    values=("Error", "Failed to load", "token metrics", "")
-                )
+            self._show_tree_error(self.token_tree, ["Error", "Failed to load", "token metrics", ""])
     
     def _refresh_productivity_metrics(self):
         """Refresh the productivity metrics display."""
@@ -279,51 +283,129 @@ class MetricsPanel(BasePanel):
             from metrics.session_tracker import SessionTracker
             
             # Clear existing data
-            for item in self.productivity_tree.get_children():
-                self.productivity_tree.delete(item)
+            self._clear_tree(self.productivity_tree)
             
-            # Load productivity data
+            # Load and process productivity data
             tracker = SessionTracker(self.file_path)
             metrics_data = tracker.get_historical_metrics()
             sessions = metrics_data.get("sessions", []) if isinstance(metrics_data, dict) else []
             
-            total_duration = 0
-            total_words = 0
+            productivity_data = self._process_productivity_metrics(sessions)
             
-            # Add rows for each session
-            for session in sessions:
-                duration_str = self._format_duration(session.get('duration', 0))
-                words = session.get('words_written', 0)
-                duration_hours = session.get('duration', 0) / 3600
-                productivity = words / duration_hours if duration_hours > 0 else 0
-                
-                self.productivity_tree.insert(
-                    "", tk.END,
-                    values=(
-                        session.get('date', 'Unknown'),
-                        duration_str,
-                        f"{words:,}",
-                        f"{productivity:.1f}"
-                    )
-                )
-                
-                total_duration += session.get('duration', 0)
-                total_words += words
+            # Populate tree with data
+            self._populate_productivity_tree(sessions)
             
-            # Update productivity summary
-            self._update_productivity_summary(total_duration, total_words, len(sessions))
+            # Update summary
+            self._update_productivity_summary(
+                productivity_data["total_duration"], 
+                productivity_data["total_words"], 
+                productivity_data["num_sessions"]
+            )
             
-            logs_console.log(f"Refreshed productivity metrics: {len(sessions)} sessions", level='INFO')
+            logs_console.log(f"Refreshed productivity metrics: {productivity_data['num_sessions']} sessions", level='INFO')
             
         except Exception as e:
             logs_console.log(f"Error refreshing productivity metrics: {e}", level='ERROR')
+            self._show_tree_error(self.productivity_tree, ["Error", "Failed to load", "productivity", "metrics"])
+    
+    def _clear_tree(self, tree: ttk.Treeview):
+        """Clear all items from a treeview."""
+        if tree:
+            for item in tree.get_children():
+                tree.delete(item)
+    
+    def _show_tree_error(self, tree: ttk.Treeview, error_values: List[str]):
+        """Show an error message in a treeview."""
+        if tree:
+            tree.insert("", tk.END, values=tuple(error_values))
+    
+    def _process_token_metrics(self, metrics: Dict) -> Dict[str, int]:
+        """Process raw token metrics into aggregated data."""
+        total_input = 0
+        total_output = 0
+        sorted_dates = sorted(metrics.keys())
+        
+        for date_str in sorted_dates:
+            data = metrics[date_str]
+            total_input += data.get("input", 0)
+            total_output += data.get("output", 0)
+        
+        return {
+            "total_input": total_input,
+            "total_output": total_output,
+            "total_all": total_input + total_output,
+            "num_days": len(sorted_dates),
+            "sorted_dates": sorted_dates,
+            "raw_metrics": metrics
+        }
+    
+    def _populate_token_tree(self, token_data: Dict):
+        """Populate the token tree with processed data."""
+        if not self.token_tree:
+            return
             
-            # Show error in treeview
-            if self.productivity_tree:
-                self.productivity_tree.insert(
-                    "", tk.END,
-                    values=("Error", "Failed to load", "productivity", "metrics")
+        metrics = token_data["raw_metrics"]
+        
+        # Add rows for each date
+        for date_str in token_data["sorted_dates"]:
+            data = metrics[date_str]
+            input_tokens = data.get("input", 0)
+            output_tokens = data.get("output", 0)
+            total_tokens = input_tokens + output_tokens
+            
+            self.token_tree.insert(
+                "", tk.END,
+                values=(date_str, f"{input_tokens:,}", f"{output_tokens:,}", f"{total_tokens:,}")
+            )
+        
+        # Add total row
+        if token_data["total_all"] > 0:
+            self.token_tree.insert(
+                "", tk.END,
+                values=(
+                    "TOTAL", 
+                    f"{token_data['total_input']:,}", 
+                    f"{token_data['total_output']:,}", 
+                    f"{token_data['total_all']:,}"
+                ),
+                tags=("total_row",)
+            )
+    
+    def _process_productivity_metrics(self, sessions: List[Dict]) -> Dict[str, Any]:
+        """Process raw productivity sessions into aggregated data."""
+        total_duration = 0
+        total_words = 0
+        
+        for session in sessions:
+            total_duration += session.get('duration', 0)
+            total_words += session.get('words_written', 0)
+        
+        return {
+            "total_duration": total_duration,
+            "total_words": total_words,
+            "num_sessions": len(sessions)
+        }
+    
+    def _populate_productivity_tree(self, sessions: List[Dict]):
+        """Populate the productivity tree with session data."""
+        if not self.productivity_tree:
+            return
+            
+        for session in sessions:
+            duration_str = self._format_duration(session.get('duration', 0))
+            words = session.get('words_written', 0)
+            duration_hours = session.get('duration', 0) / 3600
+            productivity = words / duration_hours if duration_hours > 0 else 0
+            
+            self.productivity_tree.insert(
+                "", tk.END,
+                values=(
+                    session.get('date', 'Unknown'),
+                    duration_str,
+                    f"{words:,}",
+                    f"{productivity:.1f}"
                 )
+            )
     
     def _format_duration(self, seconds):
         """Format duration in seconds to readable string."""
@@ -334,6 +416,42 @@ class MetricsPanel(BasePanel):
             return f"{hours}h {minutes}m"
         else:
             return f"{minutes}m"
+    
+    def _create_summary_labels(self, parent: ttk.Frame, summary_data: List[Tuple[str, str]]):
+        """Create standardized summary labels in a grid layout."""
+        for i, (label, value) in enumerate(summary_data):
+            ttk.Label(parent, text=label).grid(
+                row=i, column=0, sticky="w", pady=2
+            )
+            ttk.Label(
+                parent,
+                text=value,
+                font=StandardComponents.BODY_FONT + ("bold",)
+            ).grid(row=i, column=1, sticky="e", pady=2)
+        
+        return len(summary_data)  # Return next available row
+    
+    def _add_cost_estimation(self, parent: ttk.Frame, total_tokens: int, start_row: int):
+        """Add cost estimation section to token summary."""
+        estimated_cost = total_tokens * 0.00002  # Rough estimate
+        
+        ttk.Label(parent, text="Estimated cost (USD):").grid(
+            row=start_row, column=0, sticky="w", pady=(10, 2)
+        )
+        ttk.Label(
+            parent,
+            text=f"${estimated_cost:.4f}",
+            font=StandardComponents.BODY_FONT + ("bold",),
+            foreground=self.get_theme_color("success_text", "#006600")
+        ).grid(row=start_row, column=1, sticky="e", pady=(10, 2))
+        
+        # Disclaimer
+        ttk.Label(
+            parent,
+            text="*Cost estimate is approximate and may vary by provider",
+            font=StandardComponents.SMALL_FONT,
+            foreground=self.get_theme_color("muted_text", "#666666")
+        ).grid(row=start_row + 1, column=0, columnspan=2, pady=(5, 0))
     
     def _update_token_summary(self, total_input: int, total_output: int, num_days: int):
         """Update the token usage summary statistics."""
@@ -347,7 +465,7 @@ class MetricsPanel(BasePanel):
         total_tokens = total_input + total_output
         avg_per_day = total_tokens / max(num_days, 1)
         
-        # Create summary labels
+        # Create basic summary data
         summary_data = [
             ("Days with activity:", f"{num_days}"),
             ("Total input tokens:", f"{total_input:,}"),
@@ -356,36 +474,11 @@ class MetricsPanel(BasePanel):
             ("Average per day:", f"{avg_per_day:,.1f}")
         ]
         
-        for i, (label, value) in enumerate(summary_data):
-            ttk.Label(self.token_summary_inner, text=label).grid(
-                row=i, column=0, sticky="w", pady=2
-            )
-            ttk.Label(
-                self.token_summary_inner,
-                text=value,
-                font=StandardComponents.BODY_FONT + ("bold",)
-            ).grid(row=i, column=1, sticky="e", pady=2)
+        next_row = self._create_summary_labels(self.token_summary_inner, summary_data)
         
-        # Cost estimation (rough)
+        # Add cost estimation if there are tokens
         if total_tokens > 0:
-            estimated_cost = total_tokens * 0.00002  # Rough estimate
-            ttk.Label(self.token_summary_inner, text="Estimated cost (USD):").grid(
-                row=len(summary_data), column=0, sticky="w", pady=(10, 2)
-            )
-            ttk.Label(
-                self.token_summary_inner,
-                text=f"${estimated_cost:.4f}",
-                font=StandardComponents.BODY_FONT + ("bold",),
-                foreground=self.get_theme_color("success_text", "#006600")
-            ).grid(row=len(summary_data), column=1, sticky="e", pady=(10, 2))
-            
-            # Disclaimer
-            ttk.Label(
-                self.token_summary_inner,
-                text="*Cost estimate is approximate and may vary by provider",
-                font=StandardComponents.SMALL_FONT,
-                foreground=self.get_theme_color("muted_text", "#666666")
-            ).grid(row=len(summary_data) + 1, column=0, columnspan=2, pady=(5, 0))
+            self._add_cost_estimation(self.token_summary_inner, total_tokens, next_row)
     
     def _update_productivity_summary(self, total_duration: int, total_words: int, num_sessions: int):
         """Update the productivity summary statistics."""
@@ -400,7 +493,7 @@ class MetricsPanel(BasePanel):
         avg_productivity = total_words / total_hours if total_hours > 0 else 0
         avg_session_duration = total_duration / max(num_sessions, 1)
         
-        # Create summary labels
+        # Create summary data
         summary_data = [
             ("Total sessions:", f"{num_sessions}"),
             ("Total time:", self._format_duration(total_duration)),
@@ -409,15 +502,7 @@ class MetricsPanel(BasePanel):
             ("Average session:", self._format_duration(avg_session_duration))
         ]
         
-        for i, (label, value) in enumerate(summary_data):
-            ttk.Label(self.productivity_summary_inner, text=label).grid(
-                row=i, column=0, sticky="w", pady=2
-            )
-            ttk.Label(
-                self.productivity_summary_inner,
-                text=value,
-                font=StandardComponents.BODY_FONT + ("bold",)
-            ).grid(row=i, column=1, sticky="e", pady=2)
+        self._create_summary_labels(self.productivity_summary_inner, summary_data)
     
     def focus_main_widget(self):
         """Focus the main interactive widget."""

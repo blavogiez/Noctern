@@ -6,9 +6,8 @@ in the left sidebar instead of a separate dialog window.
 """
 
 import tkinter as tk
-import ttkbootstrap as ttk
+from tkinter import ttk, messagebox
 import os
-from tkinter import messagebox
 from .base_panel import BasePanel
 from .panel_factory import PanelStyle, StandardComponents
 from utils import logs_console
@@ -51,6 +50,13 @@ class GlobalPromptsPanel(BasePanel):
     def get_layout_style(self) -> PanelStyle:
         """Use tabbed layout for global prompts editor."""
         return PanelStyle.TABBED
+    
+    def get_critical_action_buttons(self) -> list:
+        """Return critical action buttons for this panel."""
+        return [
+            ("Save and Apply", self._save_prompts, "success"),
+            ("Cancel", self._handle_close, "secondary")
+        ]
     
     def create_content(self):
         """Create the global prompts editor content."""
@@ -98,14 +104,6 @@ class GlobalPromptsPanel(BasePanel):
                 text_widget.insert("1.0", value)
             self.text_widgets[key] = text_widget
         
-        # Action buttons using StandardComponents
-        action_buttons = [
-            ("Cancel", self._handle_close, "secondary"),
-            ("Save and Apply", self._save_prompts, "success")
-        ]
-        button_row = StandardComponents.create_button_row(self.main_container.master, action_buttons)
-        button_row.pack(fill="x", pady=(StandardComponents.SECTION_SPACING, 0))
-        
     def focus_main_widget(self):
         """Focus the first text widget."""
         if self.text_widgets:
@@ -146,7 +144,7 @@ class GlobalPromptsPanel(BasePanel):
             except Exception as e:
                 error_msg = f"Failed to save prompt: {key}\n{e}"
                 logs_console.log(error_msg, level='ERROR')
-                messagebox.showerror("Error", error_msg, parent=self.content_frame)
+                messagebox.showerror("Prompt Save Error", error_msg, parent=self.panel_frame)
                 return  # Stop saving if one file fails
         
         # Reload the global prompts in the application state
@@ -155,10 +153,10 @@ class GlobalPromptsPanel(BasePanel):
             from llm import init as llm_init
             llm_init._load_global_default_prompts()
             success_msg = f"Global prompts have been saved and applied. ({saved_count} prompts saved)"
-            messagebox.showinfo("Success", success_msg, parent=self.content_frame)
+            messagebox.showinfo("Prompts Saved Successfully", success_msg, parent=self.panel_frame)
             logs_console.log("Global prompts saved and reloaded.", level='SUCCESS')
             self.close_panel()
         except Exception as e:
             error_msg = f"Failed to reload prompts: {e}"
             logs_console.log(error_msg, level='ERROR')
-            messagebox.showerror("Error", error_msg, parent=self.content_frame)
+            messagebox.showerror("Prompt Reload Error", error_msg, parent=self.panel_frame)

@@ -5,7 +5,7 @@ This panel replaces the StyleIntensityDialog, providing a clean
 interface for selecting styling intensity in the left sidebar.
 """
 
-import ttkbootstrap as ttk
+from tkinter import ttk
 from .base_panel import BasePanel
 from .panel_factory import PanelStyle, StandardComponents
 
@@ -47,6 +47,13 @@ class StyleIntensityPanel(BasePanel):
         """Use simple layout for style intensity."""
         return PanelStyle.SIMPLE
     
+    def get_critical_action_buttons(self) -> list:
+        """Return critical action buttons for this panel."""
+        return [
+            ("Apply Styling", self._on_apply, "success"),
+            ("Cancel", self._on_cancel, "secondary")
+        ]
+    
     def create_content(self):
         """Create the style intensity selection content using standardized components."""
         # Use standardized main container
@@ -70,15 +77,18 @@ class StyleIntensityPanel(BasePanel):
         )
         desc_label.pack(pady=(0, StandardComponents.SECTION_SPACING))
         
-        # Intensity scale
+        # Intensity scale using standardized components
         self.intensity_var = ttk.IntVar(value=self.last_intensity)
         
-        intensity_frame = ttk.Frame(main_frame)
-        intensity_frame.pack(fill="x", pady=(0, 10))
+        # Scale labels frame using standardized grid
+        labels_frame = StandardComponents.create_grid_frame(main_frame, columns=2, padding=0)
         
-        # Labels for scale
-        ttk.Label(intensity_frame, text="1 (Minimal)").pack(side="left")
-        ttk.Label(intensity_frame, text="10 (Maximum)").pack(side="right")
+        # Labels for scale using standardized components
+        min_label = StandardComponents.create_label_input(labels_frame, "1 (Minimal)", "SMALL_FONT")
+        min_label.grid(row=0, column=0, sticky="w")
+        
+        max_label = StandardComponents.create_label_input(labels_frame, "10 (Maximum)", "SMALL_FONT")
+        max_label.grid(row=0, column=1, sticky="e")
         
         # Scale widget
         self.intensity_scale = ttk.Scale(
@@ -87,7 +97,7 @@ class StyleIntensityPanel(BasePanel):
             to=10,
             orient="horizontal",
             variable=self.intensity_var,
-            length=250
+            length=StandardComponents.STANDARD_WIDTH - 80
         )
         self.intensity_scale.pack(pady=(StandardComponents.ELEMENT_SPACING, StandardComponents.SECTION_SPACING))
         
@@ -102,34 +112,15 @@ class StyleIntensityPanel(BasePanel):
         # Update value display when scale changes
         self.intensity_var.trace('w', self._update_value_label)
         
-        # Buttons frame
-        button_frame = ttk.Frame(main_frame)
-        button_frame.pack(fill="x", pady=(10, 0))
-        
-        # Apply button
-        apply_button = ttk.Button(
-            button_frame, 
-            text="Apply Styling", 
-            command=self._on_apply,
-            bootstyle="success"
-        )
-        apply_button.pack(side="right", padx=(5, 0))
-        
-        # Cancel button
-        cancel_button = ttk.Button(
-            button_frame, 
-            text="Cancel", 
-            command=self._on_cancel,
-            bootstyle="secondary"
-        )
-        cancel_button.pack(side="right")
-        
         # Bind keyboard shortcuts
         self.content_frame.bind("<Return>", lambda e: self._on_apply())
         self.content_frame.bind("<Escape>", lambda e: self._on_cancel())
         
         # Focus handling for keyboard events
         self.content_frame.focus_set()
+        
+        # Store main widget for focus management
+        self.main_widget = self.intensity_scale
         
     def focus_main_widget(self):
         """Focus the intensity scale."""

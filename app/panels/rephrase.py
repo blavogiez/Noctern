@@ -37,6 +37,13 @@ class RephrasePanel(BasePanel):
     def get_layout_style(self) -> PanelStyle:
         """Use simple layout for rephrase panel."""
         return PanelStyle.SIMPLE
+    
+    def get_critical_action_buttons(self) -> list:
+        """Return critical action buttons for this panel."""
+        return [
+            ("Rephrase (Enter)", self._handle_rephrase, "primary"),
+            ("Cancel", self._handle_cancel, "secondary")
+        ]
         
     def create_content(self):
         """Create the rephrase panel content using standardized components."""
@@ -49,8 +56,13 @@ class RephrasePanel(BasePanel):
         # Original text display section  
         self._create_original_text_section(main_frame)
         
-        # Action buttons section
-        self._create_action_section(main_frame)
+        # Help text
+        help_label = StandardComponents.create_info_label(
+            main_frame,
+            "Press Enter to rephrase or use the close button (×) to cancel",
+            "small"
+        )
+        help_label.pack(anchor="w", pady=(0, StandardComponents.PADDING//2))
         
     def _create_instruction_section(self, parent):
         """Create the instruction input section."""
@@ -113,28 +125,6 @@ class RephrasePanel(BasePanel):
         self.original_text_widget.insert("1.0", self.original_text)
         self.original_text_widget.config(state="disabled")
         
-    def _create_action_section(self, parent):
-        """Create the action buttons section."""
-        # Help text
-        help_label = StandardComponents.create_info_label(
-            parent,
-            "Press Enter to rephrase or use the close button (×) to cancel",
-            "small"
-        )
-        help_label.pack(anchor="w", pady=(0, StandardComponents.PADDING//2))
-        
-        # Action buttons
-        action_buttons = [
-            ("Cancel", self._handle_cancel, "secondary"),
-            ("Rephrase (Enter)", self._handle_rephrase, "primary")
-        ]
-        action_row = StandardComponents.create_button_row(parent, action_buttons)
-        action_row.pack(fill="x")
-        
-        # Store button references
-        buttons = action_row.winfo_children()
-        self.cancel_button = buttons[0]
-        self.rephrase_button = buttons[1]
         
     def focus_main_widget(self):
         """Focus the main interactive widget."""
@@ -147,7 +137,7 @@ class RephrasePanel(BasePanel):
         
         if not instruction:
             messagebox.showwarning(
-                "Missing Instruction", 
+                "Rephrase Instruction Required", 
                 "Please enter an instruction for rephrasing.",
                 parent=self.panel_frame
             )

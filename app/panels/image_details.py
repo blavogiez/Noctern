@@ -5,7 +5,7 @@ This panel is used when pasting images from clipboard, providing a clean
 interface for entering image metadata in the left sidebar.
 """
 
-import ttkbootstrap as ttk
+from tkinter import ttk
 from .base_panel import BasePanel
 from .panel_factory import PanelStyle, StandardComponents
 
@@ -48,6 +48,13 @@ class ImageDetailsPanel(BasePanel):
         """Use simple layout for image details."""
         return PanelStyle.SIMPLE
     
+    def get_critical_action_buttons(self) -> list:
+        """Return critical action buttons for this panel."""
+        return [
+            ("OK", self._on_ok, "success"),
+            ("Cancel", self._on_cancel, "secondary")
+        ]
+    
     def create_content(self):
         """Create the image details form content using standardized components."""
         # Use standardized main container
@@ -67,14 +74,6 @@ class ImageDetailsPanel(BasePanel):
         self.label_entry = StandardComponents.create_entry_input(label_section)
         self.label_entry.pack(fill="x", padx=StandardComponents.PADDING, pady=StandardComponents.PADDING)
         self.label_entry.insert(0, self.suggested_label)
-        
-        # Action buttons using standardized component
-        action_buttons = [
-            ("OK", self._on_ok, "success"),
-            ("Cancel", self._on_cancel, "secondary")
-        ]
-        button_row = StandardComponents.create_button_row(main_frame, action_buttons)
-        button_row.pack(pady=(StandardComponents.SECTION_SPACING, 0))
         
         # Set main widget for focus
         self.main_widget = self.caption_entry
@@ -98,12 +97,12 @@ class ImageDetailsPanel(BasePanel):
         self.label = self.label_entry.get().strip()
         
         if not self.label:
-            # Show warning using ttkbootstrap messagebox
-            from ttkbootstrap.dialogs import Messagebox
-            Messagebox.show_warning(
+            # Show warning using standard messagebox
+            from tkinter import messagebox
+            messagebox.showwarning(
+                "Image Label Required",
                 "The image label cannot be empty.",
-                "Missing Label",
-                parent=self.content_frame
+                parent=self.panel_frame
             )
             return
             

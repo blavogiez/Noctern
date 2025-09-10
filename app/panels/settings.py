@@ -241,7 +241,7 @@ class SettingsPanel(BasePanel):
                 
                 logs_console.log(f"Refreshed {len(available_models)} available models", level='INFO')
                 messagebox.showinfo(
-                    "Success", 
+                    "Models Refreshed Successfully", 
                     f"Successfully refreshed {len(available_models)} models.",
                     parent=self.panel_frame
                 )
@@ -250,7 +250,7 @@ class SettingsPanel(BasePanel):
                     combo.configure(state="readonly")
                 logs_console.log("No models found during refresh", level='WARNING')
                 messagebox.showwarning(
-                    "No Models", 
+                    "No Models Found", 
                     "No models found. Please check your Ollama installation.",
                     parent=self.panel_frame
                 )
@@ -260,7 +260,7 @@ class SettingsPanel(BasePanel):
                 combo.configure(state="readonly")
             logs_console.log(f"Error refreshing models: {e}", level='ERROR')
             messagebox.showerror(
-                "Error", 
+                "Model Refresh Error", 
                 f"Failed to refresh models:\n{str(e)}",
                 parent=self.panel_frame
             )
@@ -287,15 +287,15 @@ class SettingsPanel(BasePanel):
             self.current_config = app_config.update_and_save_config(updates)
             
             logs_console.log("Settings saved successfully", level='INFO')
-            messagebox.showinfo("Settings Saved", "Your settings have been saved successfully.", parent=self.panel_frame)
+            messagebox.showinfo("Settings Saved Successfully", "Your settings have been saved successfully.", parent=self.panel_frame)
             
         except Exception as e:
             logs_console.log(f"Error saving settings: {e}", level='ERROR')
-            messagebox.showerror("Save Error", f"Failed to save settings:\n{str(e)}", parent=self.panel_frame)
+            messagebox.showerror("Settings Save Error", f"Failed to save settings:\n{str(e)}", parent=self.panel_frame)
 
     def _reset_settings(self):
         """Reset settings to defaults."""
-        if messagebox.askyesno("Reset Settings", 
+        if messagebox.askyesno("Reset Settings Confirmation", 
                               "Are you sure you want to reset all settings to defaults? This cannot be undone.", 
                               parent=self.panel_frame):
             try:
@@ -307,11 +307,11 @@ class SettingsPanel(BasePanel):
                 self._update_ui_from_config()
                 
                 logs_console.log("Settings reset to defaults", level='INFO')
-                messagebox.showinfo("Settings Reset", "All settings have been reset to defaults.", parent=self.panel_frame)
+                messagebox.showinfo("Settings Reset Successfully", "All settings have been reset to defaults.", parent=self.panel_frame)
                 
             except Exception as e:
                 logs_console.log(f"Error resetting settings: {e}", level='ERROR')
-                messagebox.showerror("Reset Error", f"Failed to reset settings:\n{str(e)}", parent=self.panel_frame)
+                messagebox.showerror("Settings Reset Error", f"Failed to reset settings:\n{str(e)}", parent=self.panel_frame)
 
     def _update_ui_from_config(self):
         """Update UI elements with values from current config."""

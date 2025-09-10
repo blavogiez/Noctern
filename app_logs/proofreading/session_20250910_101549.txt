@@ -1,0 +1,79 @@
+Session: 20250910_101549
+Time: 2025-09-10T10:16:32.239764
+Text length: 872
+Response length: 4109
+----------------------------------------
+{
+  "errors": [
+    {
+      "type": "coherence",
+      "original": "\"J'ai pris un peu d'air. \"",
+      "suggestion": "\"I took a breath.\"",
+      "explanation": "The sentence is in French, but the surrounding narrative is in English, creating a language inconsistency.",
+      "importance": "high"
+    },
+    {
+      "type": "coherence",
+      "original": "\"Elle détestait les hôpitaux, l'environnement stérile contraste avec sa classe vibrante.",
+      "suggestion": "\"She hated hospitals; the sterile environment contrasted with her vibrant classroom.\"",
+      "explanation": "The sentence is in French while the surrounding narrative is in English. Also, in English, two independent clauses should not be joined by a comma (run-on sentence).",
+      "importance": "high"
+    },
+    {
+      "type": "coherence",
+      "original": "\"Il a été beaucoup de stress,\" a-t-elle expliqué à Bob, en train de passer devant l'unité de soins intensifs.",
+      "suggestion": "\"It has been a lot of stress,\" she explained to Bob, as she walked past the intensive care unit.",
+      "explanation": "The sentence is in French while the surrounding narrative is in English. Also, 'en train de passer devant' is better translated as 'as she walked past'.",
+      "importance": "high"
+    },
+    {
+      "type": "coherence",
+      "original": "\"La pression des applications, la peur de ne pas entrer dans la bonne école.\"",
+      "suggestion": "\"The pressure of applications, the fear of not getting into the right school.\"",
+      "explanation": "The phrase is in French, but the surrounding narrative is in English, creating a language inconsistency.",
+      "importance": "high"
+    },
+    {
+      "type": "coherence",
+      "original": "Bob soupirait, poussant une main à travers ses cheveux déjà déshabillés.",
+      "suggestion": "Bob sighed, running a hand through his already dishevelled hair.",
+      "explanation": "The sentence is in French, but the surrounding narrative is in English. Also, 'poussant une main à travers' is better translated as 'running a hand through' and 'déshabillés' as 'dishevelled' in this context.",
+      "importance": "high"
+    },
+    {
+      "type": "coherence",
+      "original": "Vingt-quatre heures de travail, et il a senti chaque minute de cela.",
+      "suggestion": "Twenty-four hours of work, and he felt every minute of it.",
+      "explanation": "The sentence is in French, but the surrounding narrative is in English, creating a language inconsistency.",
+      "importance": "high"
+    },
+    {
+      "type": "coherence",
+      "original": "\"Nous faisons tout ce que nous pouvons, Alice. C'était un appel serré.\"",
+      "suggestion": "\"We're doing everything we can, Alice. It was a close call.\"",
+      "explanation": "The sentence is in French, but the surrounding narrative is in English. 'Un appel serré' translates to 'a close call'.",
+      "importance": "high"
+    },
+    {
+      "type": "syntax",
+      "original": "Il a jeté sur le tableau dans sa main",
+      "suggestion": "He glanced at the board in his hand",
+      "explanation": "This phrase is a literal translation from French, resulting in incorrect English grammar and syntax. 'Il a jeté sur le tableau' should be 'He glanced at the board' when referring to a brief look.",
+      "importance": "high"
+    },
+    {
+      "type": "syntax",
+      "original": "le nombre de ses employés un flou de se concentrer.",
+      "suggestion": "the number of his employees a blur, making it difficult to focus.",
+      "explanation": "This phrase is ungrammatical and unclear in English, appearing to be a direct translation from French. It should convey that the numbers were blurry and difficult to focus on.",
+      "importance": "high"
+    },
+    {
+      "type": "coherence",
+      "original": "pour",
+      "suggestion": "For",
+      "explanation": "The section title is in French, but the primary language of the document (excluding the French table data) appears to be English. It should be translated or replaced with an appropriate English title.",
+      "importance": "medium"
+    }
+  ]
+}

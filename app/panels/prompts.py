@@ -45,6 +45,12 @@ class PromptsPanel(BasePanel):
         """Use tabbed layout for prompts editor."""
         return PanelStyle.TABBED
     
+    def get_critical_action_buttons(self) -> list:
+        """Return critical action buttons for this panel."""
+        return [
+            ("Save Changes", self._handle_save, "primary")
+        ]
+    
     def create_content(self):
         """Create the prompts editor panel content."""
         # Use standardized main container
@@ -55,8 +61,8 @@ class PromptsPanel(BasePanel):
         # Create tabbed interface for different prompt types
         self._create_prompt_tabs(main_container)
         
-        # Create action buttons
-        self._create_action_section(main_container)
+        # Create status display
+        self._create_status_section(main_container)
         
     def _create_prompt_tabs(self, parent):
         """Create tabs for different prompt types."""
@@ -140,33 +146,32 @@ class PromptsPanel(BasePanel):
             text_widget.bind("<KeyRelease>", self._on_text_changed)
             text_widget.bind("<ButtonRelease>", self._on_text_changed)
             
-    def _create_action_section(self, parent):
-        """Create action buttons section."""
-        action_frame = ttk.Frame(parent)
-        action_frame.grid(row=1, column=0, sticky="ew")
-        action_frame.grid_columnconfigure(1, weight=1)
-        
-        # Save button using StandardComponents
-        save_buttons = [("Save Changes", self._handle_save, "primary")]
-        save_row = StandardComponents.create_button_row(action_frame, save_buttons)
-        save_row.grid(row=0, column=0, sticky="w")
-        self.save_button = save_row.winfo_children()[0]  # Get button reference
+    def _create_status_section(self, parent):
+        """Create status and help section."""
+        status_frame = ttk.Frame(parent)
+        status_frame.grid(row=1, column=0, sticky="ew")
+        status_frame.grid_columnconfigure(1, weight=1)
         
         # Status label
         self.status_label = StandardComponents.create_info_label(
-            action_frame,
+            status_frame,
             "Ready",
             "small"
         )
-        self.status_label.grid(row=0, column=2, sticky="e")
+        self.status_label.grid(row=0, column=0, sticky="w")
         
         # Help text
         help_label = StandardComponents.create_info_label(
-            action_frame,
+            status_frame,
             "Changes are applied immediately to the current session",
             "small"
         )
-        help_label.grid(row=1, column=0, columnspan=3, pady=(10, 0))
+        help_label.grid(row=1, column=0, columnspan=2, pady=(10, 0))
+    
+    def _link_critical_button_references(self):
+        """Link button references after creation."""
+        if hasattr(self, 'critical_action_buttons') and self.critical_action_buttons:
+            self.save_button = self.critical_action_buttons[0]
         
     def focus_main_widget(self):
         """Focus the main interactive widget."""
@@ -183,7 +188,7 @@ class PromptsPanel(BasePanel):
             
             # Confirm reset
             result = messagebox.askyesno(
-                "Reset Prompt",
+                "Reset Prompt Confirmation",
                 f"Reset the {prompt_key} prompt to default?\n\nThis will overwrite your current changes.",
                 parent=self.panel_frame
             )
@@ -200,10 +205,12 @@ class PromptsPanel(BasePanel):
         has_changes = self._has_unsaved_changes()
         
         if has_changes:
-            self.save_button.config(state="normal")
+            if hasattr(self, 'save_button') and self.save_button:
+                self.save_button.config(state="normal")
             self.status_label.config(text="Unsaved changes")
         else:
-            self.save_button.config(state="disabled")
+            if hasattr(self, 'save_button') and self.save_button:
+                self.save_button.config(state="disabled")
             self.status_label.config(text="No changes")
     
     def _has_unsaved_changes(self) -> bool:
@@ -238,7 +245,8 @@ class PromptsPanel(BasePanel):
         self.saved_state = new_prompts.copy()
         
         # Update UI
-        self.save_button.config(state="disabled")
+        if hasattr(self, 'save_button') and self.save_button:
+            self.save_button.config(state="disabled")
         self.status_label.config(text="Saved")
         
         # Reset status after delay
@@ -247,21 +255,10 @@ class PromptsPanel(BasePanel):
             if self.status_label and self.status_label.winfo_exists() else None
         ))
     
-    def _handle_close(self):
-        """Handle panel close with unsaved changes check."""
-        if self._has_unsaved_changes():
-            result = messagebox.askyesnocancel(
-                "Unsaved Changes",
-                "You have unsaved changes. Do you want to save them before closing?",
-                parent=self.panel_frame
-            )
-            
-            if result is True:  # Yes, save
-                self._handle_save()
-            elif result is False:  # No, don't save
-                pass
-            else:  # Cancel
-                return
-        
-        # Call parent close
-        super()._handle_close()
+    def has_unsaved_changes(self) -> bool:
+        """Check if panel has unsaved changes. Override from BasePanel."""
+        return self._has_unsaved_changes()
+    
+    def _save_changes(self):
+        """Save changes. Override from BasePanel."""
+        self._handle_save()

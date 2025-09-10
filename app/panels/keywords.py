@@ -35,6 +35,12 @@ class KeywordsPanel(BasePanel):
         """Use simple layout for keywords panel."""
         return PanelStyle.SIMPLE
     
+    def get_critical_action_buttons(self) -> list:
+        """Return critical action buttons for this panel."""
+        return [
+            ("Save Keywords (Ctrl+Enter)", self._save_keywords, "primary")
+        ]
+    
     def create_content(self):
         """Create the keywords panel content using standardized components."""
         # File info section
@@ -75,11 +81,6 @@ class KeywordsPanel(BasePanel):
         
         # Load existing keywords
         self._load_current_keywords()
-        
-        # Save button using standardized component
-        save_buttons = [("Save Keywords (Ctrl+Enter)", self._save_keywords, "primary")]
-        button_row = StandardComponents.create_button_row(keywords_section, save_buttons)
-        button_row.pack(padx=StandardComponents.PADDING, pady=(StandardComponents.ELEMENT_SPACING, StandardComponents.PADDING))
         
         # Bind keyboard shortcuts
         self.keyword_text_widget.bind("<Control-Return>", lambda e: self._save_keywords())
@@ -127,10 +128,9 @@ class KeywordsPanel(BasePanel):
         
         logs_console.log(f"Saved keywords for {os.path.basename(self.file_path)}: {new_keywords}", level='SUCCESS')
         
-        # Get button reference from the button row
-        button_row = self.main_container.winfo_children()[-2]  # Second to last child
-        if button_row.winfo_children():
-            save_button = button_row.winfo_children()[0]
+        # Visual feedback on critical action buttons
+        if hasattr(self, 'critical_action_buttons') and self.critical_action_buttons:
+            save_button = self.critical_action_buttons[0]  # First button is Save
             
             # Visual feedback
             original_text = save_button.cget("text")

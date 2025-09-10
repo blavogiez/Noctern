@@ -388,7 +388,7 @@ class StandardPanelBehavior:
         if has_unsaved_changes:
             from tkinter import messagebox
             result = messagebox.askyesnocancel(
-                "Unsaved Changes",
+                "Unsaved Changes Confirmation",
                 f"The {panel_name} panel has unsaved changes.\n\nDo you want to save before closing?",
             )
             if result is True:  # Save

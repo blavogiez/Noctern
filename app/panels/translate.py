@@ -39,6 +39,12 @@ class TranslatePanel(BasePanel):
     def get_layout_style(self) -> PanelStyle:
         """Use simple layout for translate panel."""
         return PanelStyle.SIMPLE
+    
+    def get_critical_action_buttons(self) -> list:
+        """Return critical action buttons for this panel."""
+        return [
+            (f"Start Translation on {self.device}", self._handle_translate, "primary")
+        ]
         
     def create_content(self):
         """Create the translate panel content using standardized components."""
@@ -54,8 +60,8 @@ class TranslatePanel(BasePanel):
         # Preview section
         self._create_preview_section(main_frame)
         
-        # Action button section
-        self._create_action_section(main_frame)
+        # Device and warning info
+        self._create_info_section(main_frame)
         
     def _create_language_section(self, parent):
         """Create the language selection section."""
@@ -144,8 +150,8 @@ class TranslatePanel(BasePanel):
         preview_text.insert("1.0", preview_content)
         preview_text.config(state="disabled")
         
-    def _create_action_section(self, parent):
-        """Create the action buttons section."""
+    def _create_info_section(self, parent):
+        """Create the device and warning info section."""
         # Device info
         device_info = StandardComponents.create_info_label(
             parent,
@@ -161,16 +167,11 @@ class TranslatePanel(BasePanel):
             "small"
         )
         warning_label.pack(anchor="w", pady=(0, StandardComponents.PADDING))
-        
-        # Translate button
-        translate_buttons = [(
-            f"Start Translation on {self.device}", 
-            self._handle_translate, 
-            "primary"
-        )]
-        translate_row = StandardComponents.create_button_row(parent, translate_buttons)
-        translate_row.pack(fill="x")
-        self.translate_button = translate_row.winfo_children()[0]  # Get button reference
+    
+    def _link_critical_button_references(self):
+        """Link button references after creation."""
+        if hasattr(self, 'critical_action_buttons') and self.critical_action_buttons:
+            self.translate_button = self.critical_action_buttons[0]
         
     def focus_main_widget(self):
         """Focus the main interactive widget."""
@@ -183,7 +184,7 @@ class TranslatePanel(BasePanel):
         
         if not selection:
             messagebox.showwarning(
-                "Selection Error", 
+                "Translation Language Required", 
                 "Please select a translation language pair.",
                 parent=self.panel_frame
             )
@@ -195,7 +196,8 @@ class TranslatePanel(BasePanel):
         logs_console.log(f"Starting translation: {selection}, model: {model_name}", level='ACTION')
         
         # Disable translate button during translation
-        self.translate_button.config(state="disabled", text="Translating...")
+        if hasattr(self, 'translate_button') and self.translate_button:
+            self.translate_button.config(state="disabled", text="Translating...")
         
         # Call the callback
         if self.on_translate_callback:
