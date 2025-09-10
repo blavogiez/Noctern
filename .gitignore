@@ -33,9 +33,6 @@ ENV/
 
 # Development and debug files
 /output/
-*.png
-*.jpg
-*.jpeg
 *.gif
 pip-log.txt
 test_*.py
