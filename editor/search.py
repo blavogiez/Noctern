@@ -544,16 +544,10 @@ class SearchBar:
         current_tab.editor.mark_set("insert", start_pos)
         current_tab.editor.tag_remove("sel", "1.0", "end")
         current_tab.editor.tag_add("sel", start_pos, end_pos)
-        current_tab.editor.mark_set("sel.first", start_pos)
-        current_tab.editor.mark_set("sel.last", end_pos)
         
         # Update counter if frame exists
         if self.frame:
             self._update_counter()
-        
-        # Maintenir le focus sur la barre de recherche
-        if self.frame and hasattr(self, 'search_entry'):
-            self.search_entry.focus()
         
         
     def _next_match(self):
