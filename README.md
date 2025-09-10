@@ -1,10 +1,6 @@
 <div align="center">
   <img src="resources/app_icon.png" alt="Noctern" width="96" height="96">
   
-  # Noctern
-  
-  **LLM-Enhanced LaTeX Editor with Local Processing**
-  
   [![Python](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org/)
   [![License](https://img.shields.io/badge/license-Apache-green)](LICENSE)
   [![Platform](https://img.shields.io/badge/platform-windows%20%7C%20macos%20%7C%20linux-lightgrey)](#)
@@ -16,7 +12,7 @@
 
 ## Overview
 
-Noctern is the companion I always wished for during those long nights of LaTeX editing.  
+*Noctern* is the companion I always wished for during those long nights of LaTeX editing.  
 Like many beginners, I often had to rely on ChatGPT to fix my compilation errors. They’re pretty good at it, *aren’t they*? But it’s even better when the help lives in the same window, with precise prompts and the right context at hand.  
 
 This companion also has eyes: it can rephrase your sentences, refine your text, proofread it, translating...  
