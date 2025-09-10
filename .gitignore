@@ -5,6 +5,9 @@
 AGENTS.md
 CLAUDE.md
 CHANGELOG.md
+pytest.ini
+TODO.txt
+
 # Configuration and secrets
 **/.env
 **/.env.*

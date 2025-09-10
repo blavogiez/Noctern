@@ -1,5 +1,0 @@
-- fix interactive rare bug : "I like tthis document very much"
--textlocator (y - 400 plutot)
---Handling packages automatically
-
--- rendre panels parfait, tout checker
