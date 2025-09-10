@@ -2,7 +2,7 @@
 PDF Preview Package
 ==================
 
-This package provides live PDF preview functionality for the AutomaTeX application.
+This package provides live PDF preview functionality for the Noctern application.
 
 Modules:
 - viewer: PDF preview viewer component
@@ -16,7 +16,7 @@ Modules:
 __version__ = "1.0.0"
 
 # Package author
-__author__ = "AutomaTeX Development Team"
+__author__ = "Noctern Development Team"
 
 # Package description
-__description__ = "Live PDF preview functionality for AutomaTeX"
+__description__ = "Live PDF preview functionality for Noctern"

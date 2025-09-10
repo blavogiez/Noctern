@@ -1,5 +1,5 @@
 # =============================================================================
-# AutomaTeX - Professional .gitignore
+# Noctern - Professional .gitignore
 # =============================================================================
 
 AGENTS.md
@@ -88,4 +88,4 @@ figures/
 sample_usage/
 docs/
 ideas/
-.automatex_versions/
+.noctern_versions/

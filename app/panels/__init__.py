@@ -1,5 +1,5 @@
 """
-Integrated panel system for AutomaTeX left sidebar.
+Integrated panel system for Noctern left sidebar.
 
 This module provides a unified system for managing interactive panels
 in the left sidebar, replacing separate dialog windows with integrated

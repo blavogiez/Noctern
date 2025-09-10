@@ -1,5 +1,5 @@
 """
-Advanced performance optimizer for the AutomaTeX editor.
+Advanced performance optimizer for the Noctern editor.
 Manages intelligent refresh batching, deduplication, and adaptive updates for large files.
 """
 

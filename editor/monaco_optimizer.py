@@ -1,5 +1,5 @@
 """
-Monaco Editor-inspired performance optimizations for AutomaTeX.
+Monaco Editor-inspired performance optimizations for Noctern.
 Ultra-high performance text editor optimization layer.
 """
 

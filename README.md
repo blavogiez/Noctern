@@ -1,7 +1,7 @@
 <div align="center">
-  <img src="resources/icons/app_icon.svg" alt="AutomaTeX" width="96" height="96">
+  <img src="resources/icons/app_icon.svg" alt="Noctern" width="96" height="96">
   
-  # AutomaTeX
+  # Noctern
   
   **LLM-Enhanced LaTeX Editor with Local Processing**
   
@@ -16,24 +16,27 @@
 
 ## Overview
 
-LaTeX is often the hub of many, many knowledge.
-AutomaTeX is a modern LaTeX editor designed for researchers, students, and technical writers who need LLM assistance (rephrasing, debugging trashy errors, generating complex maths...) without compromising privacy. LLM processing happens locally using Ollama, ensuring your documents never leave your machine.
+Noctern is the companion I always wished for during those long nights of LaTeX editing.  
+Like many beginners, I often had to rely on ChatGPT to fix my compilation errors. They’re pretty good at it, *aren’t they*? But it’s even better when the help lives in the same window, with precise prompts and the right context at hand.  
 
-**Core Value Propositions:**
-- **Privacy-First LLM**: Local processing with no data transmission to external services
-- **Performance Optimized**: Differential syntax highlighting and optimized rendering for large documents
-- **Integrated Workflow**: Built-in PDF preview with live compilation and synchronization
-- **Professional Focus**: Clean interface designed for productive academic and technical writing
+This companion also has eyes: it can rephrase your sentences, refine your text, proofread it, translating...  
 
-(As local LLMs are both limited by your GPU capacity and the fact they have to be open source, it may not be enough for complex needs, thus the app features the Gemini API, which is in my opinion one of the best options for free usage with (very) generous quotas, although your data leaves your hands. If it is not important for your usecase, the Gemini API will perform way faster and better as local LLMs. LLMs real costs are sadly extremely expensive and it is hard to get the same output as providers on your machine.)
+**What you get:**
+- **Everything you expect from a LaTeX editor**: snippets, table insertion, search bar, fast image paste  
+- **Time travel**: stores your version every time it is compilable, making debugging purely diff-oriented  
+- **Performance optimized**: differential syntax highlighting and optimized rendering for large documents  
+- **Integrated workflow**: built-in PDF preview with live compilation and synchronization  
+- **Free integrated AI output**: using the Gemini API with generous quotas (and `.env` support)  
+- **Privacy mode**: run your AI models locally, privately, and offline using Ollama  
+
+*(Gemini is fast, free, and strong for text. In my opinion, it’s the best solution for this workflow.)*  
+*(Local LLMs are sadly very resource-hungry, which makes it hard to match provider-level output—but the Gemini API is both faster and more reliable.)*
 
 ---
 
 ## Demonstrations
 
-We will go through the example of a student.
-The app will show more complex features as time goes on.
-I prefer using funny dummy informations instead of dead serious studies, making the demo more entertaining to watch.
+Actions speak louder than words, and so do images ;
 
 ### Preparing its cover page and inserting a table
 
@@ -102,8 +105,8 @@ Luckily enough, the writer had an image pasted in his clipboard. He could order
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/AutomaTeX.git
-cd AutomaTeX
+git clone https://github.com/your-username/Noctern.git
+cd Noctern
 
 # Install Python dependencies
 pip install -r requirements.txt
@@ -143,7 +146,7 @@ python main.py
 
 ## Code quality
 
-AutomaTeX follows a modular architecture with clean separation of concerns!
+Noctern follows a modular architecture with clean separation of concerns!
 
 Some examples:
 
@@ -185,46 +188,29 @@ Obviously, Tkinter limits me a bit but that was the easiest way to start and the
 I really wanted to make the app in Python as it's often the easiest way to deal with AI libraries (especially for the huggingface model translation). I know it is not the best and I probably wouldn't have gone for this if I were to dev this again!
 
 - Syntax highlighting was kind of a struggle but once you apply the methods of big editors like Microsoft Monaco (diff rendering, hashing) it becomes quite fast !
-- The app consumes 450mb of ram (non dependent of file size), which is good for an app containing LLM initialization.
-
-### Design Principles
-
-- **Performance First**: Differential highlighting and optimized rendering
-- **Privacy Focused**: All LLM processing happens locally
-- **Modular Architecture**: Clean interfaces between components
-- **Professional UI**: No popup dialogs - all features in integrated panels
-
+- The app consumes 450mb of ram (non dependent of file size), which is decent for an app containing LLM initialization.
 ---
 
 ## Limitations and Considerations
 
 **Technical Requirements:**
+
+### Local stuff
 - Requires local installation of LaTeX distribution (several GB)
-- LLM features depend on Ollama service running locally
-- Performance varies significantly with avLLMlable system resources
-- Large language models require substantial RAM (8GB+ recommended)
+- Large language models require substantial RAM and VRAM (8GB+ recommended)
+- For example wise, I have a RTX-4060 equivalent GPU, and mistral7B is decent
 
 **Functional Limitations:**
 - Limited to LaTeX document format (no WYSIWYG editing)
-- To be frank, local LLMs are much worse than state of the art models. I have a nice GPU (RTX 4060) and it still struggles. No wonder why LLMs are very costly to the providers...
 - Local LLMs are not powerful enough to proofread documents. They just can't produce good json and after some tests, can't be trusted for a good review, missing out on non-relevant informations. Gemini 2.5 flash scored good scores for my tests with a reasonable speed (The proofreading prompt is enormous as any mistake is not allowed), thus the proofreading can't really be ran locally with trusteable results.
 - No collaborative editing or cloud synchronization features
-- PDF preview requires additional system dependencies (pdf2image, poppler)
-- PDF *plumbering* turns out to be quite hard. TeXstudio way is magnificient and I couldn't reproduce their results.
 
 **Learning Curve:**
 - Assumes familiarity with LaTeX syntax and document structure  
 - LLM feature configuration requires understanding of model capabilities and sometimes prompting
 - Advanced features may require command-line comfort for troubleshooting
 
-**Platform Considerations:**
-- Windows users may experience longer setup time due to LaTeX installation
-- macOS requires Xcode command line tools for some dependencies
-- Linux users need manual installation of poppler-utils for PDF rendering
-
-**Performance Trade-offs:**
-- Large documents (1000+ pages) may experience slower compilation
-- Multiple LLM models consume significant disk space (5-10GB per model)
+**Again, this isn't Overleaf.**
 
 ---
 
@@ -239,33 +225,11 @@ Configure LLM models through Settings → Manage Models:
 - **Rephrase Model**: For style and clarity improvements (recommend: mistral)
 - **Debug Model**: For LaTeX error analysis (recommend: codellama)
 - **Proofreading Model**: For academic correctivity (recommend: gemini 2.5 flash or mixtral)
-
-### Performance Tuning
-
-For large documents, adjust these settings:
-- Enable Monaco optimizations for files over 2000 lines
-- Reduce LLM streaming frequency for slower systems
-- Configure PDF compilation timeout for complex documents
-
 ---
 
-## Development and Contributing
+## Personal notes
 
-### Development Setup
-
-```bash
-# Install development dependencies
-pip install -r requirements.txt
-```
-
-### Architecture Guidelines
-
-- LLM modules provide pure business logic with callback support
-- UI orchestration handled exclusively in `app/interface.py`
-- No direct UI imports in `llm/` modules
-- MLLMntLLMn clean separation between editor and LLM components
-
----
+**This app is mostly a personal project. I do not think this app is as good nor performant as magnificient projects such as TeXstudio or precise neovim configurations. I am satisfied with my work and will use it for my LaTeX needs, but every need is different ! Use it if you're curious and like the demos.**
 
 ## License
 
@@ -274,9 +238,9 @@ This project is licensed under the Apache 2.0 License - see the [LICENSE](LICENS
 ---
 
 <div align="center">
-  <strong>AutomaTeX: Professional LaTeX editing with local LLM assistance</strong>
+  <strong>Noctern: Professional LaTeX editing with local LLM assistance</strong>
   <br><br>
   <a href="#installation">Get Started</a> • 
-  <a href="https://github.com/your-username/AutomaTeX/issues">Report Issues</a> • 
+  <a href="https://github.com/blavogiez/Noctern/issues">Report Issues</a> • 
   <a href="#development-and-contributing">Contribute</a>
 </div>

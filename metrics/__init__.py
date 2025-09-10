@@ -1,5 +1,5 @@
 """
-File-based productivity metrics system for AutomaTeX.
+File-based productivity metrics system for Noctern.
 Tracks session time, word count, and productivity per file.
 """
 

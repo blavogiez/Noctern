@@ -94,7 +94,7 @@ class PDFPreviewManager:
         try:
             temp_base = self._get_temp_base()
             
-            with tempfile.TemporaryDirectory(dir=temp_base, prefix='automatex_') as temp_dir:
+            with tempfile.TemporaryDirectory(dir=temp_base, prefix='noctern_') as temp_dir:
                 self._setup_compilation_files(temp_dir, latex_content, source_dir)
                 result = self._execute_latex_compilation(temp_dir, source_dir)
                 self._process_compilation_result(temp_dir, result, latex_content)
@@ -163,7 +163,7 @@ class PDFPreviewManager:
 
     def _save_preview_pdf(self, pdf_path):
         """Save preview PDF to persistent location and return path"""
-        persistent_dir = os.path.join(tempfile.gettempdir(), "automatex_preview")
+        persistent_dir = os.path.join(tempfile.gettempdir(), "noctern_preview")
         os.makedirs(persistent_dir, exist_ok=True)
         persistent_pdf = os.path.join(persistent_dir, "preview.pdf")
         shutil.copy2(pdf_path, persistent_pdf)
@@ -171,7 +171,7 @@ class PDFPreviewManager:
 
     def _save_synctex_file(self, synctex_path):
         """Save SyncTeX file to persistent location and return path"""
-        persistent_dir = os.path.join(tempfile.gettempdir(), "automatex_preview")
+        persistent_dir = os.path.join(tempfile.gettempdir(), "noctern_preview")
         os.makedirs(persistent_dir, exist_ok=True)
         persistent_synctex = os.path.join(persistent_dir, "preview.synctex.gz")
         shutil.copy2(synctex_path, persistent_synctex)
@@ -381,7 +381,7 @@ class PDFPreviewManager:
             
         # Try persistent SyncTeX first
         import tempfile
-        persistent_dir = os.path.join(tempfile.gettempdir(), "automatex_preview")
+        persistent_dir = os.path.join(tempfile.gettempdir(), "noctern_preview")
         synctex_path = os.path.join(persistent_dir, "preview.synctex.gz")
         
         if os.path.exists(synctex_path):

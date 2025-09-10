@@ -1,4 +1,4 @@
-"""Initialize AutomaTeX application with GUI and subsystems."""
+"""Initialize Noctern application with GUI and subsystems."""
 
 import platform
 import ctypes
@@ -13,7 +13,7 @@ from snippets import manager as snippet_manager
 
 def main():
     """Start application with GUI setup and subsystem initialization."""
-    logs_console.log("AutomaTeX application starting...", level='INFO')
+    logs_console.log("Noctern application starting...", level='INFO')
     
     # Configure Windows DPI awareness for HiDPI displays
     if platform.system() == "Windows":

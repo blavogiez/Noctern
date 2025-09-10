@@ -1,5 +1,5 @@
 """
-Modern vertical sidebar for AutomaTeX with icon-based action buttons.
+Modern vertical sidebar for Noctern with icon-based action buttons.
 
 Provides a clean, space-efficient alternative to the traditional horizontal topbar
 with collapsible groups and modern visual styling.

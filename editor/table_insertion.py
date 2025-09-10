@@ -1,5 +1,5 @@
 """
-Professional LaTeX table generation for AutomaTeX.
+Professional LaTeX table generation for Noctern.
 This module provides multiple table generators for different LaTeX packages.
 """
 

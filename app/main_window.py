@@ -1,4 +1,4 @@
-"""Setup main graphical user interface for AutomaTeX application."""
+"""Setup main graphical user interface for Noctern application."""
 import os
 import time
 import ttkbootstrap as ttk
@@ -65,7 +65,7 @@ def setup_gui():
         saved_theme = "litera"
     state.root.style.theme_use(saved_theme if saved_theme != "original" else "litera")
 
-    state.root.title("AutomaTeX v1.0")
+    state.root.title("Noctern v1.0")
     _apply_startup_window_settings(state.root, state._app_config) # RESTORED THIS CALL
     logs_console.log("GUI initialization process started.", level='INFO')
 

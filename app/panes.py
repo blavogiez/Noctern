@@ -1,5 +1,5 @@
 """
-This module is responsible for creating the main layout panes of the AutomaTeX
+This module is responsible for creating the main layout panes of the Noctern
 application, including the main paned window that separates the editor and the
 outline, the outline tree view, the editor notebook, and the console pane.
 """

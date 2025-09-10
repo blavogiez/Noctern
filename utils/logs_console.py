@@ -1,5 +1,5 @@
 """
-Logs console for AutomaTeX - provides logging functionality.
+Logs console for Noctern - provides logging functionality.
 This is the logging system used throughout the application.
 """
 

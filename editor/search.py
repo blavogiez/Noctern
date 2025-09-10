@@ -1,5 +1,5 @@
 """
-Search functionality for AutomaTeX editor.
+Search functionality for Noctern editor.
 Clean, VSCode-style search bar with replace and undo.
 """
 

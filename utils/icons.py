@@ -1,5 +1,5 @@
 """
-This module handles SVG icons for the AutomaTeX application.
+This module handles SVG icons for the Noctern application.
 It provides utilities to load and display SVG icons in the UI.
 """
 

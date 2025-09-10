@@ -21,7 +21,7 @@ def open_settings_window(root):
         root (tk.Tk): The root Tkinter window of the application.
     """
     settings_win = tk.Toplevel(root)
-    settings_win.title("AutomaTeX Settings")
+    settings_win.title("Noctern Settings")
     settings_win.transient(root)
     settings_win.grab_set()
     settings_win.resizable(False, False)
