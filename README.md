@@ -1,12 +1,12 @@
 <div align="center">
-  <img src="resources/icons/app_icon.svg" alt="Noctern" width="96" height="96">
+  <img src="resources/app_icon.png" alt="Noctern" width="96" height="96">
   
   # Noctern
   
   **LLM-Enhanced LaTeX Editor with Local Processing**
   
   [![Python](https://img.shields.io/badge/python-3.8%2B-blue)](https://www.python.org/)
-  [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+  [![License](https://img.shields.io/badge/license-Apache-green)](LICENSE)
   [![Platform](https://img.shields.io/badge/platform-windows%20%7C%20macos%20%7C%20linux-lightgrey)](#)
   
   [Installation](#installation) • [Quick Start](#quick-start) • [Features](#features) • [Documentation](#documentation)
