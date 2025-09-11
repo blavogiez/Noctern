@@ -2,6 +2,7 @@
 import os
 import time
 import ttkbootstrap as ttk
+from PIL import Image, ImageTk
 
 from app import state, interface, config as app_config, theme as interface_theme
 from app.zoom import ZoomManager
@@ -65,7 +66,19 @@ def setup_gui():
         saved_theme = "litera"
     state.root.style.theme_use(saved_theme if saved_theme != "original" else "litera")
 
-    state.root.title("Noctern v1.0")
+    state.root.title("Noctern")
+    
+    # Set application icon
+    try:
+        icon_path = os.path.join("resources", "app_icon.ico")
+        if os.path.exists(icon_path):
+            state.root.iconbitmap(icon_path)
+            logs_console.log("Application icon loaded successfully.", level='DEBUG')
+        else:
+            logs_console.log(f"Icon file not found at {icon_path}", level='WARNING')
+    except Exception as e:
+        logs_console.log(f"Failed to load application icon: {e}", level='WARNING')
+    
     _apply_startup_window_settings(state.root, state._app_config) # RESTORED THIS CALL
     logs_console.log("GUI initialization process started.", level='INFO')
 

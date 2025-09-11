@@ -203,7 +203,16 @@ Configure LLM models through Settings → Manage Models:
 
 ## Personal notes
 
-**This app is mostly a personal project. I do not think this app is as good nor performant as magnificient projects such as TeXstudio or precise neovim configurations. I am satisfied with my work and will use it for my LaTeX needs, but every need is different ! Use it if you're curious and like the demos.**
+**This app is mostly a personal project. I do not think this app is as good nor performant as magnificient projects such as TeXstudio or precise neovim configurations. I am satisfied with my work and will use it for my LaTeX needs, but every need is different ! Use it if you're curious and like the demos. I prefer being humble and won't call this editor the best out there.**
+
+It was a very interesting experience working with LaTeX and LLMs from the inside ! My goal was to enjoy myself by working on a larger project and learning through the mistakes I make along the way. In both life and computer science, I embrace mistakes as opportunities for growth and self-reflection.
+
+Some lessons I learnt:
+
+- Choose your language wisely because you can't really change it afterwards
+- Being very careful to technical debt (even more than what you're told)
+- Go ahead - dive in and learn by doing. 
+
 
 ## License
 
