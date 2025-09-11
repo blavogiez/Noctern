@@ -64,7 +64,6 @@ class SnippetsPanel(BasePanel):
     def _create_snippet_list(self, parent):
         """Create the snippet list section."""
         left_frame = ttk.Frame(parent)
-        left_frame.pack_propagate(False)  # Maintain size
         
         # Header with standardized components
         header_section = StandardComponents.create_section(left_frame, "")
@@ -111,7 +110,12 @@ class SnippetsPanel(BasePanel):
         # Bind selection event
         self.snippets_listbox.bind("<<ListboxSelect>>", self._on_snippet_selected)
         
-        parent.add(left_frame, weight=1)
+        # Bind keyboard navigation
+        self.snippets_listbox.bind("<Up>", self._on_listbox_key)
+        self.snippets_listbox.bind("<Down>", self._on_listbox_key)
+        self.snippets_listbox.bind("<Return>", self._on_listbox_enter)
+        
+        parent.add(left_frame, weight=2)
         
     def _create_snippet_editor(self, parent):
         """Create the snippet editor section."""
@@ -160,16 +164,38 @@ class SnippetsPanel(BasePanel):
         self.content_text.pack(fill="both", expand=True)
         self.content_text.bind("<KeyRelease>", self._on_field_changed)
         
-        # Help text
+        # Help text and navigation tools
         help_section = ttk.Frame(right_frame)
         help_section.pack(fill="x", pady=(0, StandardComponents.ELEMENT_SPACING))
         
+        # Help text with navigation info
+        help_frame = ttk.Frame(help_section)
+        help_frame.pack(fill="x")
+        help_frame.grid_columnconfigure(0, weight=1)
+        
         help_label = StandardComponents.create_info_label(
-            help_section,
-            "Use ${cursor} to mark cursor position after snippet insertion",
+            help_frame,
+            "Use ⟨placeholder⟩ for cursor navigation points",
             "small"
         )
-        help_label.pack(anchor="w")
+        help_label.grid(row=0, column=0, sticky="w")
+        
+        # Quick insertion button
+        insert_placeholder_btn = StandardComponents.create_button_input(
+            help_frame,
+            "Insert ⟨⟩",
+            self._insert_placeholder,
+            width=10
+        )
+        insert_placeholder_btn.grid(row=0, column=1, padx=(StandardComponents.ELEMENT_SPACING, 0))
+        
+        # Additional help
+        help_label2 = StandardComponents.create_info_label(
+            help_section,
+            "Tip: Place cursor where you want the placeholder, then click 'Insert ⟨⟩'",
+            "small"
+        )
+        help_label2.pack(anchor="w")
         
         # Action buttons
         button_section = ttk.Frame(right_frame)
@@ -191,7 +217,7 @@ class SnippetsPanel(BasePanel):
             button_frame, "Save All Changes", self._save_all_snippets, width=15)
         save_all_button.grid(row=0, column=3)
         
-        parent.add(right_frame, weight=2)
+        parent.add(right_frame, weight=3)
         
     def focus_main_widget(self):
         """Focus the main interactive widget."""
@@ -202,13 +228,12 @@ class SnippetsPanel(BasePanel):
         """Populate the snippets listbox."""
         self.snippets_listbox.delete(0, tk.END)
         
-        # Handle both old format (dict key->content) and new format (list of objects)
         if isinstance(self.snippets, dict):
-            for trigger, content in self.snippets.items():
-                display_text = f"{trigger}"
-                self.snippets_listbox.insert(tk.END, display_text)
+            # Dict format: trigger -> content
+            for trigger in sorted(self.snippets.keys()):
+                self.snippets_listbox.insert(tk.END, trigger)
         else:
-            # New format - list of snippet objects
+            # List format: snippet objects
             for snippet in self.snippets:
                 name = snippet.get("name", "Unnamed")
                 trigger = snippet.get("trigger", "")
@@ -223,7 +248,7 @@ class SnippetsPanel(BasePanel):
             
         index = selection[0]
         if isinstance(self.snippets, dict):
-            triggers = list(self.snippets.keys())
+            triggers = sorted(self.snippets.keys())
             if 0 <= index < len(triggers):
                 self._load_snippet_from_dict(triggers[index])
         else:
@@ -234,7 +259,8 @@ class SnippetsPanel(BasePanel):
         """Load a snippet from dict format into the editor."""
         content = self.snippets[trigger]
         
-        self.current_snippet_index = list(self.snippets.keys()).index(trigger)
+        sorted_triggers = sorted(self.snippets.keys())
+        self.current_snippet_index = sorted_triggers.index(trigger)
         self.is_editing = True
         
         # Load snippet data (convert from dict format)
@@ -449,6 +475,35 @@ class SnippetsPanel(BasePanel):
         else:
             self.save_button.config(state="normal")  # Can save new snippet
             self.delete_button.config(state="disabled")
+    
+    def _insert_placeholder(self):
+        """Insert placeholder characters at cursor position in content text."""
+        if self.content_text:
+            # Get current cursor position
+            cursor_pos = self.content_text.index(tk.INSERT)
+            
+            # Insert placeholder with cursor positioned between brackets
+            self.content_text.insert(cursor_pos, "⟨⟩")
+            
+            # Position cursor between the brackets
+            new_pos = self.content_text.index(f"{cursor_pos}+1c")
+            self.content_text.mark_set(tk.INSERT, new_pos)
+            
+            # Focus back to text area
+            self.content_text.focus_set()
+            
+            # Trigger change event
+            self._on_field_changed()
+    
+    def _on_listbox_key(self, event):
+        """Handle keyboard navigation in snippet listbox."""
+        # Just ensure selection is updated after key press
+        self.snippets_listbox.after_idle(lambda: self._on_snippet_selected(event))
+        
+    def _on_listbox_enter(self, event):
+        """Handle Enter key in snippet listbox to focus editor."""
+        self.name_entry.focus_set()
+        return "break"
     
     def _on_field_changed(self, event=None):
         """Handle field change events."""

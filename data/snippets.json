@@ -2,15 +2,15 @@
     "align": "\\begin{align}\n    \u27e8equation1\u27e9 &= \u27e8expression1\u27e9 \\\\\n    \u27e8equation2\u27e9 &= \u27e8expression2\u27e9\n\\end{align}",
     "alpha": "$\\alpha$",
     "beta": "$\\beta$",
+    "doc": "\\begin{document}\n\u27e8start\u27e9\n\\end{document}",
     "enum": "\\begin{enumerate}\n    \\item \u27e8item1\u27e9\n    \\item \u27e8item2\u27e9\n\\end{enumerate}",
     "equation": "\\begin{equation}\n    \u27e8equation\u27e9\n    \\label{eq:\u27e8label\u27e9}\n\\end{equation}",
     "fig": "\\begin{figure}[h!]\n    \\centering\n    \\includegraphics[width=0.8\\textwidth]{figures/\u27e8filename\u27e9}\n    \\caption{\u27e8Caption here\u27e9}\n    \\label{fig:\u27e8my_label\u27e9}\n\\end{figure}",
     "gamma": "$\\gamma$",
     "item": "\\begin{itemize}\n    \\item \u27e8item1\u27e9\n    \\item \u27e8item2\u27e9\n\\end{itemize}",
     "sec": "\\section{\u27e8Section title\u27e9}",
-    "section": "\\section{\u27e8Section Title\u27e9}",
-    "subsection": "\\subsection{\u27e8Subsection Title\u27e9}",
+    "ssec": "\\subsection{\u27e8Subsection Title\u27e9}",
     "table2x2": "\\begin{table}[h!]\n    \\centering\n    \\begin{tabular}{|c|c|}\n        \\hline\n        \u27e8col1\u27e9 & \u27e8col2\u27e9 \\\\\n        \\hline\n        \u27e8cell1\u27e9 & \u27e8cell2\u27e9 \\\\\n        \\hline\n    \\end{tabular}\n    \\caption{\u27e8Caption\u27e9}\n    \\label{tab:\u27e8my_label\u27e9}\n\\end{table}",
     "table3x3": "\\begin{table}[h!]\n    \\centering\n    \\begin{tabular}{|c|c|c|}\n        \\hline\n        \u27e8col1\u27e9 & \u27e8col2\u27e9 & \u27e8col3\u27e9 \\\\\n        \\hline\n        \u27e8r1c1\u27e9 & \u27e8r1c2\u27e9 & \u27e8r1c3\u27e9 \\\\\n        \u27e8r2c1\u27e9 & \u27e8r2c2\u27e9 & \u27e8r2c3\u27e9 \\\\\n        \\hline\n    \\end{tabular}\n    \\caption{\u27e8Caption\u27e9}\n    \\label{tab:\u27e8my_label\u27e9}\n\\end{table}",
-    "tt": "\\toto{}"
+    "template": "\\documentclass[12pt,a4paper]{article}\n\n\\begin{document}\n\n\u27e8start\u27e9\n\n\\end{document}"
 }
