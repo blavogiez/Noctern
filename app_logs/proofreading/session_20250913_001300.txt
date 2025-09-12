@@ -1,0 +1,86 @@
+Session: 20250913_001300
+Time: 2025-09-13T00:13:30.253732
+Text length: 14958
+Response length: 3198
+----------------------------------------
+{
+  "errors": [
+    {
+      "type": "style",
+      "original": "Homeostasis!",
+      "suggestion": "Homeostasis",
+      "explanation": "An exclamation mark is generally not suitable for a formal scientific title.",
+      "importance": "low"
+    },
+    {
+      "type": "style",
+      "original": "AMP-activated protein kinase (AMPK) and the mechanistic target of rapamycin (mTOR) pathways.",
+      "suggestion": "AMP-activated protein kinase (AMPK) and mechanistic target of rapamycin (mTOR) pathways.",
+      "explanation": "The article 'the' is redundant before 'mechanistic target of rapamycin' if it's meant to apply to both pathways or should be used consistently before both.",
+      "importance": "low"
+    },
+    {
+      "type": "coherence",
+      "original": "Un peu de texte francais",
+      "suggestion": "",
+      "explanation": "This sentence is in French and is completely out of context in an English scientific paper.",
+      "importance": "high"
+    },
+    {
+      "type": "coherence",
+      "original": "I'd like a pizza please",
+      "suggestion": "",
+      "explanation": "This sentence is completely irrelevant and out of context for a scientific document.",
+      "importance": "high"
+    },
+    {
+      "type": "coherence",
+      "original": "Tomato sauce is delicious",
+      "suggestion": "",
+      "explanation": "This sentence is completely irrelevant and out of context for a scientific document.",
+      "importance": "high"
+    },
+    {
+      "type": "coherence",
+      "original": "The humans can live up to 10000 years !!!",
+      "suggestion": "",
+      "explanation": "This statement is factually incorrect, highly informal due to the exclamation marks, and completely out of context for a scientific paper.",
+      "importance": "high"
+    },
+    {
+      "type": "coherence",
+      "original": "\\begin{tabular}{|c|c|c|}\\hline\\textbf{⟨Header 1⟩} & \\textbf{⟨Header 2⟩} & \\textbf{⟨Header 3⟩} \\\\\\hline⟨Data 2.1⟩ & ⟨Data 2.2⟩ & ⟨Data 2.3⟩ \\\\\\hline\\end{tabular}",
+      "suggestion": "",
+      "explanation": "This is a placeholder table and should be replaced with actual content or removed from a final document.",
+      "importance": "high"
+    },
+    {
+      "type": "spelling",
+      "original": "100 mug/mL",
+      "suggestion": "100 µg/mL",
+      "explanation": "'mug' is an incorrect abbreviation for micrograms; 'µg' should be used.",
+      "importance": "high"
+    },
+    {
+      "type": "spelling",
+      "original": "37degreesC",
+      "suggestion": "37°C",
+      "explanation": "The notation 'degreesC' is informal; the degree symbol '°' should be used for temperature units.",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "5% CO2",
+      "suggestion": "5% CO$_2$",
+      "explanation": "In scientific writing, chemical formulas are typically subscripted, i.e., CO₂.",
+      "importance": "low"
+    },
+    {
+      "type": "coherence",
+      "original": "no it ends there !",
+      "suggestion": "",
+      "explanation": "This informal phrase is completely unrelated to the scientific content and appears to be an instruction or comment not meant for the final text.",
+      "importance": "high"
+    }
+  ]
+}

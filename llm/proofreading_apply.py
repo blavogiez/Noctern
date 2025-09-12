@@ -92,10 +92,18 @@ def apply_corrections_to_text(original_text: str, errors: List) -> str:
         end = correction['end']
         
         # Build replacement text with comment annotation
+        # Use app navigation markers (MATHEMATICAL ANGLE BRACKETS U+27E8/27E9)
+        anchor = correction['anchor']
+        # Keep comment content on one line inside markers
+        original_oneline = correction['original'].replace("\n", " ").replace("\r", " ")
         if correction['suggestion']:
-            replacement = f"% <{correction['anchor']}> Original: \"{correction['original']}\"\n{correction['suggestion']}"
+            # Entire comment enclosed within ⟨ ⟩ for navigation
+            comment = f"{anchor}: Original: \"{original_oneline}\""
+            replacement = f"% ⟨{comment}⟩\n{correction['suggestion']}"
         else:
-            replacement = ""  # Deletion
+            # Deletion: explicit comment enclosed within ⟨ ⟩
+            comment = f"{anchor}: deleted: previous \"{original_oneline}\""
+            replacement = f"% ⟨{comment}⟩\n"
         
         corrected_text = corrected_text[:start] + replacement + corrected_text[end:]
         correction['error'].is_applied = True

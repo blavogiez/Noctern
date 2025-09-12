@@ -1,0 +1,5 @@
+Hello % ⟨1: Original: "wrld"⟩
+world!
+This is a sample.
+% ⟨2: deleted: previous "Remove this line."⟩
+
