@@ -50,7 +50,7 @@ COLORS = {
     
     # Text formatting content - Visual styling
     'textit_content': '#E65100',    # Orange for italic content
-    'textbf_content': '#D32F2F',    # Red for bold content
+    'textbf_content': '#000000',    # Black for bold content
     
     # Navigation placeholders - Ultra-visible highlighting
     'placeholder': '#FF1744'        # Bright red for navigation placeholders ⟨content⟩
