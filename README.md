@@ -23,7 +23,8 @@ This companion also has eyes: it can rephrase your sentences, refine your text, 
 - **Performance optimized**: differential syntax highlighting and optimized rendering for large documents  
 - **Integrated workflow**: live PDF preview with real-time compilation and source-syncing built in  
 - **Free integrated AI output**: using the Gemini API with generous quotas
-- **Privacy mode**: you can also run your AI models locally, privately, and offline, using *Ollama*  
+- **Privacy mode**: you can also run your AI models locally, privately, and offline, using *Ollama*
+- **LaTeX translation**: parsing the commands to only extract text and translate it (not perfect but great for quick-shared translation). Runs on cuda
 
 *(Gemini is fast, free, and strong for text. In my opinion, it’s the best solution for a LaTeX companion.)*  
 *(Local LLMs are sadly very resource-hungry, which makes it hard to match provider-level output—but the Gemini API is both faster and more reliable.)*
@@ -34,17 +35,22 @@ This companion also has eyes: it can rephrase your sentences, refine your text, 
 
 Actions speak louder than words, and so do images ;
 
+(Fake study that only stands for the demo)
+
 ### Front page
 
 ![Front page](./resources/demo/interface.png)
 
 ### Editor functions
 
-The student used the anchors available for a quick navigation
+https://github.com/user-attachments/assets/4416997a-44d3-4f8f-b259-c2b75c4df9d8
 
-### Ordering sauce via image pasting
+Using the main editor features (syntax, snippets, figure manager, pdf-preview | sync)
 
-Luckily enough, the writer had an image pasted in his clipboard. He could order
+### AI functions
+
+Using the main AI features (generate, rephrase, translate
+Model used : gemini-2.5-flash-lite (ultra fast and cheap (both meanings are correct))
 
 ### Changing his mind
 
@@ -215,7 +221,9 @@ Some lessons I learnt:
 
 - Choose your language wisely because you can't really change it afterwards
 - Being very careful to technical debt (even more than what you're told)
-- Go ahead - dive in and learn by doing. 
+- Go ahead - dive in and learn by doing
+
+(I don't like using the word AI, I prefer the term LLMs but some people may not get it)
 
 
 ## License
