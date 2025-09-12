@@ -164,6 +164,14 @@ def _highlight_large_file_optimized(editor, line_count):
 
 def _setup_tags(editor, normal_font, bold_font):
     """Configure highlighting tags."""
+    # Create italic font variant
+    try:
+        font_family = normal_font[0]
+        font_size = normal_font[1]
+        italic_font = (font_family, font_size, "italic")
+    except (IndexError, TypeError):
+        italic_font = ("Consolas", 12, "italic")
+    
     tags_config = {
         "documentclass": (COLORS['documentclass'], bold_font),
         "package": (COLORS['package'], normal_font),
@@ -190,7 +198,9 @@ def _setup_tags(editor, normal_font, bold_font):
         "bracket": (COLORS['bracket'], normal_font),
         "string": (COLORS['string'], normal_font),
         "special_chars": (COLORS['special_chars'], normal_font),
-        "units": (COLORS['units'], normal_font)
+        "units": (COLORS['units'], normal_font),
+        "textit_content": (COLORS['textit_content'], italic_font),
+        "textbf_content": (COLORS['textbf_content'], bold_font)
     }
     
     for tag_name, (color, font) in tags_config.items():

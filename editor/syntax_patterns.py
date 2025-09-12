@@ -48,6 +48,10 @@ COLORS = {
     'special_chars': '#FF5722',     # Red-orange for special characters
     'units': '#3F51B5',             # Indigo for units and measurements
     
+    # Text formatting content - Visual styling
+    'textit_content': '#E65100',    # Orange for italic content
+    'textbf_content': '#D32F2F',    # Red for bold content
+    
     # Navigation placeholders - Ultra-visible highlighting
     'placeholder': '#FF1744'        # Bright red for navigation placeholders ⟨content⟩
 }
@@ -84,6 +88,10 @@ PATTERNS = {
     'ref_cite': re.compile(r'\\(?:ref|cite|citet|citep|autoref|nameref|pageref|eqref)(?![a-zA-Z])', re.MULTILINE),
     'label': re.compile(r'\\label\{[^}]*\}', re.MULTILINE),
     'hyperref': re.compile(r'\\(?:href|url|hyperref)(?![a-zA-Z])', re.MULTILINE),
+    
+    # Text formatting with content
+    'textit_content': re.compile(r'\\textit\{([^{}]*)\}', re.MULTILINE),
+    'textbf_content': re.compile(r'\\textbf\{([^{}]*)\}', re.MULTILINE),
     
     # Text content patterns
     'proper_names': re.compile(r'(?<!\w)[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+(?!\w)', re.MULTILINE),
@@ -144,6 +152,8 @@ def get_relevant_patterns(line_content):
         # Text formatting
         if any(fmt in line_content for fmt in ['textbf', 'textit', 'emph']):
             patterns['text_format'] = PATTERNS['text_format']
+            patterns['textit_content'] = PATTERNS['textit_content']
+            patterns['textbf_content'] = PATTERNS['textbf_content']
         if any(size in line_content for size in ['tiny', 'large', 'huge']):
             patterns['font_size'] = PATTERNS['font_size']
         

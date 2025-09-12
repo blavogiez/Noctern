@@ -4,6 +4,7 @@ This module contains all the logic and bindings for editor-specific shortcuts.
 import tkinter as tk
 import re
 from editor.placeholder_navigation import handle_placeholder_navigation
+from editor.latex_formatting import apply_textit, apply_textbf
 
 # --- Helper Function ---
 def _get_line_range(editor):
@@ -201,6 +202,8 @@ def setup_editor_shortcuts(editor):
         "<F3>": handle_placeholder_next,
         "<Shift-F3>": handle_placeholder_prev,
         "<Double-Button-1>": on_double_click,
+        "<Control-i>": apply_textit,
+        "<Control-b>": apply_textbf,
     }
     for key, func in shortcuts.items():
         editor.bind(key, func)
