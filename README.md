@@ -34,7 +34,11 @@ This companion also has eyes: it can rephrase your sentences, refine your text, 
 
 Actions speak louder than words, and so do images ;
 
-### Preparing its cover page and inserting a table
+### Front page
+
+![Front page](./resources/demo/interface.png)
+
+### Editor functions
 
 The student used the anchors available for a quick navigation
 
