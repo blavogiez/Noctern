@@ -1,0 +1,14 @@
+Session: 20250912_234701
+Time: 2025-09-12T23:47:53.192493
+Text length: 14958
+Response length: 1795
+----------------------------------------
+{"errors": [
+{"type": "punctuation", "original": "Novel Enzymatic Pathways in Metabolic Regulation: Discovery and Characterization of the AMPK-mTOR Crosstalk Mechanism in Cellular Energy Homeostasis!", "suggestion": "Novel Enzymatic Pathways in Metabolic Regulation: Discovery and Characterization of the AMPK-mTOR Crosstalk Mechanism in Cellular Energy Homeostasis", "explanation": "Exclamation marks are generally inappropriate for scientific titles.", "importance": "medium"},
+{"type": "coherence", "original": "Un peu de texte francais", "suggestion": "", "explanation": "This sentence is in French and irrelevant to the context of an English scientific document.", "importance": "high"},
+{"type": "coherence", "original": "I'd like a pizza please", "suggestion": "", "explanation": "This sentence is completely unrelated to the scientific content of the document.", "importance": "high"},
+{"type": "coherence", "original": "The humans can live up to 10000 years !!!", "suggestion": "", "explanation": "This sentence makes an unsubstantiated, informal, and factually incorrect claim that is inappropriate for a scientific document and breaks coherence.", "importance": "high"},
+{"type": "spelling", "original": "100 mug/mL", "suggestion": "100 µg/mL", "explanation": "\"mug\" is a misspelling of \"µg\" or \"ug\" for micrograms, which is standard scientific notation.", "importance": "high"},
+{"type": "spelling", "original": "37degreesC", "suggestion": "37°C", "explanation": "\"degreesC\" is an informal spelling and should be replaced with the scientific symbol \"°C\".", "importance": "high"},
+{"type": "coherence", "original": "no it ends there !", "suggestion": "", "explanation": "This is an informal comment completely out of place in an academic document.", "importance": "high"}
+]}

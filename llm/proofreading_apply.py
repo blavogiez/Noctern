@@ -136,25 +136,51 @@ def remove_overlapping_corrections(corrections: List[dict]) -> List[dict]:
 
 
 def generate_output_filepath() -> str:
-    """Generate filepath for corrected file."""
+    """Generate a non-conflicting filepath for corrected file.
+
+    - Saves next to the active file if available, else in CWD.
+    - Appends `_corrected` suffix; if already present or exists, adds numeric suffix.
+    """
     try:
         current_filepath = state.get_active_filepath()
-    except:
+    except Exception:
         current_filepath = None
-    
+
     if current_filepath and os.path.exists(os.path.dirname(current_filepath)):
-        # Use same directory as original file
         dir_path = os.path.dirname(current_filepath)
         filename = os.path.basename(current_filepath)
         name, ext = os.path.splitext(filename)
-        
-        corrected_filename = f"{name}_corrected{ext}"
-        corrected_filepath = os.path.join(dir_path, corrected_filename)
+        base = name
+        # Avoid double `_corrected` suffix
+        if base.lower().endswith("_corrected"):
+            base = base
+        else:
+            base = f"{base}_corrected"
+
+        candidate = os.path.join(dir_path, f"{base}{ext}")
+        if not os.path.exists(candidate):
+            return candidate
+        # If exists, add numeric suffix
+        idx = 1
+        while True:
+            candidate = os.path.join(dir_path, f"{base}_{idx}{ext}")
+            if not os.path.exists(candidate):
+                return candidate
+            idx += 1
     else:
-        # Fall back to current directory
-        corrected_filepath = os.path.join(os.getcwd(), "corrected_document.tex")
-    
-    return corrected_filepath
+        # Fall back to current directory (LaTeX default extension)
+        dir_path = os.getcwd()
+        base = "corrected_document"
+        ext = ".tex"
+        candidate = os.path.join(dir_path, f"{base}{ext}")
+        if not os.path.exists(candidate):
+            return candidate
+        idx = 1
+        while True:
+            candidate = os.path.join(dir_path, f"{base}_{idx}{ext}")
+            if not os.path.exists(candidate):
+                return candidate
+            idx += 1
 
 
 def save_corrected_file(corrected_text: str, filepath: str):

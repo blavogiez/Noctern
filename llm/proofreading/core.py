@@ -94,3 +94,26 @@ class ProofreadingSession:
             self.current_error_index += 1
             return True
         return False
+    
+    def approve_current_correction(self) -> bool:
+        """Approve the current error correction."""
+        current_error = self.get_current_error()
+        if current_error and not current_error.is_applied:
+            current_error.is_approved = True
+            return True
+        return False
+    
+    def reject_current_correction(self) -> bool:
+        """Reject the current error correction."""
+        current_error = self.get_current_error()
+        if current_error and not current_error.is_applied:
+            current_error.is_approved = False
+            return True
+        return False
+    
+    def apply_current_correction(self, editor) -> bool:
+        """Apply the current error correction to editor."""
+        current_error = self.get_current_error()
+        if current_error and current_error.is_approved:
+            return self.apply_correction(editor, current_error)
+        return False

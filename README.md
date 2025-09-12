@@ -35,7 +35,7 @@ This companion also has eyes: it can rephrase your sentences, refine your text, 
 
 Actions speak louder than words, and so do images ;
 
-(Fake study that only stands for the demo)
+(Fake sample study that only stands for the demo)
 
 ### Front page
 
@@ -49,8 +49,29 @@ Using the main editor features (syntax, snippets, figure manager, pdf-preview | 
 
 ### AI functions
 
-Using the main AI features (generate, rephrase, translate
+Using the main AI features (generate, rephrase, styling,)
 Model used : gemini-2.5-flash-lite (ultra fast and cheap (both meanings are correct))
+
+### Debugging
+
+Comparing non-compilable version with last compilable version stored in cache for a diff fix. May be assisted by AI
+
+### After-text: proofreading
+
+Once your doc is ready, last steps: scan it for errors
+
+Example is:
+**A short sample document: it is a real-world study containing trash content (e.g ; pizza, tomato sauce, false claim). It serves as a test for the proofreading service and its consistency at finding the non relevant infos.**
+
+*I ran some tests on proofreading by inserting out-of-context trash text and it detects them 80% of the time. This is mostly experimental; I would never trust an AI to scan it perfectly by today models.*
+
+*As it is experimental, the sessions are stored in app_logs. This feature is interesting but not really useable because of the models reliability.*
+
+### After-text: translating
+
+Parsing the LaTeX content to translate only the text.
+Using *huggingface* model Helsinki-NTP
+May contain errors due to the difficulty of parsing correctly. Reading it afterwards is recommended
 
 ### Changing his mind
 
@@ -223,7 +244,7 @@ Some lessons I learnt:
 - Being very careful to technical debt (even more than what you're told)
 - Go ahead - dive in and learn by doing
 
-(I don't like using the word AI, I prefer the term LLMs but some people may not get it)
+(I don't like using the term AI for LLMs but some people may not get it)
 
 
 ## License

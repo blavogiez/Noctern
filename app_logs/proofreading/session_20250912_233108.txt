@@ -1,0 +1,569 @@
+Session: 20250912_233108
+Time: 2025-09-12T23:33:20.716889
+Text length: 80139
+Response length: 17463
+----------------------------------------
+{
+  "errors": [
+    {
+      "type": "punctuation",
+      "original": "!",
+      "suggestion": "",
+      "explanation": "An exclamation mark is inappropriate for a scientific title.",
+      "importance": "high"
+    },
+    {
+      "type": "coherence",
+      "original": "I want a peperroni pizza for 8pm please with a margharita.",
+      "suggestion": "",
+      "explanation": "This sentence is completely unrelated to the scientific content of the document and should be removed.",
+      "importance": "high"
+    },
+    {
+      "type": "style",
+      "original": "PGC-1alpha",
+      "suggestion": "PGC-1α",
+      "explanation": "Use the standard Greek letter for 'alpha' in protein names for consistency and scientific convention.",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "PKCalpha",
+      "suggestion": "PKCα",
+      "explanation": "Use the standard Greek letter for 'alpha' in protein names for consistency and scientific convention.",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "mug/mL",
+      "suggestion": "µg/mL",
+      "explanation": "Use the standard symbol for 'microgram' (µg).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "37degreesC",
+      "suggestion": "37°C",
+      "explanation": "Use the standard symbol for 'degrees Celsius' (°C).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "muM",
+      "suggestion": "µM",
+      "explanation": "Use the standard symbol for 'micromolar' (µM).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "beta-glycerophosphate",
+      "suggestion": "β-glycerophosphate",
+      "explanation": "Use the standard Greek letter for 'beta' in scientific names for consistency.",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "alpha1",
+      "suggestion": "α1",
+      "explanation": "Use the standard Greek letter for 'alpha' in protein subunit isoforms for consistency and scientific convention.",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "beta1",
+      "suggestion": "β1",
+      "explanation": "Use the standard Greek letter for 'beta' in protein subunit isoforms for consistency and scientific convention.",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "gamma1",
+      "suggestion": "γ1",
+      "explanation": "Use the standard Greek letter for 'gamma' in protein subunit isoforms for consistency and scientific convention.",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "mug/mL",
+      "suggestion": "µg/mL",
+      "explanation": "Use the standard symbol for 'microgram' (µg).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "37degreesC",
+      "suggestion": "37°C",
+      "explanation": "Use the standard symbol for 'degrees Celsius' (°C).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "18degreesC",
+      "suggestion": "18°C",
+      "explanation": "Use the standard symbol for 'degrees Celsius' (°C).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "-80degreesC",
+      "suggestion": "-80°C",
+      "explanation": "Use the standard symbol for 'degrees Celsius' (°C).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "200 muM SAMS peptide",
+      "suggestion": "200 µM SAMS peptide",
+      "explanation": "Use the standard symbol for 'micromolar' (µM).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "200 muM ATP",
+      "suggestion": "200 µM ATP",
+      "explanation": "Use the standard symbol for 'micromolar' (µM).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "gamma-32P",
+      "suggestion": "γ-32P",
+      "explanation": "Use the standard Greek letter for 'gamma' in scientific notation.",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "30degreesC",
+      "suggestion": "30°C",
+      "explanation": "Use the standard symbol for 'degrees Celsius' (°C).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "10 muL",
+      "suggestion": "10 µL",
+      "explanation": "Use the standard symbol for 'microliter' (µL).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "2 mug",
+      "suggestion": "2 µg",
+      "explanation": "Use the standard symbol for 'microgram' (µg).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "30degreesC",
+      "suggestion": "30°C",
+      "explanation": "Use the standard symbol for 'degrees Celsius' (°C).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "4degreesC",
+      "suggestion": "4°C",
+      "explanation": "Use the standard symbol for 'degrees Celsius' (°C).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "500-1000 mug",
+      "suggestion": "500-1000 µg",
+      "explanation": "Use the standard symbol for 'microgram' (µg).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "4degreesC",
+      "suggestion": "4°C",
+      "explanation": "Use the standard symbol for 'degrees Celsius' (°C).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "4degreesC",
+      "suggestion": "4°C",
+      "explanation": "Use the standard symbol for 'degrees Celsius' (°C).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "56degreesC",
+      "suggestion": "56°C",
+      "explanation": "Use the standard symbol for 'degrees Celsius' (°C).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "37degreesC",
+      "suggestion": "37°C",
+      "explanation": "Use the standard symbol for 'degrees Celsius' (°C).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "12.5 ng/muL",
+      "suggestion": "12.5 ng/µL",
+      "explanation": "Use the standard symbol for 'microliter' (µL).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "5 mum",
+      "suggestion": "5 µm",
+      "explanation": "Use the standard symbol for 'micrometer' (µm).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "180 mum",
+      "suggestion": "180 µm",
+      "explanation": "Use the standard symbol for 'micrometer' (µm).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "1.7 mum",
+      "suggestion": "1.7 µm",
+      "explanation": "Use the standard symbol for 'micrometer' (µm).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "75 mum",
+      "suggestion": "75 µm",
+      "explanation": "Use the standard symbol for 'micrometer' (µm).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "1e5",
+      "suggestion": "1 × 10^5",
+      "explanation": "Use standard scientific notation for numbers in formal writing.",
+      "importance": "low"
+    },
+    {
+      "type": "style",
+      "original": "4degreesC",
+      "suggestion": "4°C",
+      "explanation": "Use the standard symbol for 'degrees Celsius' (°C).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "anti-AMPK alpha",
+      "suggestion": "anti-AMPK α",
+      "explanation": "Use the standard Greek letter for 'alpha' in protein names.",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "1 mug/mL",
+      "suggestion": "1 µg/mL",
+      "explanation": "Use the standard symbol for 'microgram' (µg).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "0.2 mum",
+      "suggestion": "0.2 µm",
+      "explanation": "Use the standard symbol for 'micrometer' (µm).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "37degreesC",
+      "suggestion": "37°C",
+      "explanation": "Use the standard symbol for 'degrees Celsius' (°C).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "2 mug/mL",
+      "suggestion": "2 µg/mL",
+      "explanation": "Use the standard symbol for 'microgram' (µg).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "100 muM",
+      "suggestion": "100 µM",
+      "explanation": "Use the standard symbol for 'micromolar' (µM).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "37degreesC",
+      "suggestion": "37°C",
+      "explanation": "Use the standard symbol for 'degrees Celsius' (°C).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "37degreesC",
+      "suggestion": "37°C",
+      "explanation": "Use the standard symbol for 'degrees Celsius' (°C).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "1 muM), carbonyl cyanide-4-(trifluoromethoxy)phenylhydrazone (FCCP, 1 muM)",
+      "suggestion": "1 µM), carbonyl cyanide-4-(trifluoromethoxy)phenylhydrazone (FCCP, 1 µM)",
+      "explanation": "Use the standard symbol for 'micromolar' (µM).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "0.5 muM each",
+      "suggestion": "0.5 µM each",
+      "explanation": "Use the standard symbol for 'micromolar' (µM).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "n >= 3",
+      "suggestion": "n ≥ 3",
+      "explanation": "Use the standard mathematical symbol for 'greater than or equal to'.",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "+/-",
+      "suggestion": "±",
+      "explanation": "Use the standard mathematical symbol for 'plus-minus'.",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "AMPK alpha subunit",
+      "suggestion": "AMPK α subunit",
+      "explanation": "Use the standard Greek letter for 'alpha' in protein subunit names.",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "alpha1",
+      "suggestion": "α1",
+      "explanation": "Use the standard Greek letter for 'alpha' in protein subunit isoforms for consistency and scientific convention.",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "beta1",
+      "suggestion": "β1",
+      "explanation": "Use the standard Greek letter for 'beta' in protein subunit isoforms for consistency and scientific convention.",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "gamma1",
+      "suggestion": "γ1",
+      "explanation": "Use the standard Greek letter for 'gamma' in protein subunit isoforms for consistency and scientific convention.",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "AMPK alpha subunit",
+      "suggestion": "AMPK α subunit",
+      "explanation": "Use the standard Greek letter for 'alpha' in protein subunit names.",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "approximately equal to",
+      "suggestion": "≈",
+      "explanation": "Use the standard mathematical symbol for 'approximately equal to'.",
+      "importance": "medium"
+    },
+    {
+      "type": "clarity",
+      "original": "half-times",
+      "suggestion": "half-lives",
+      "explanation": "'Half-lives' is a more common and precise term than 'half-times' when referring to the duration of a dynamic process.",
+      "importance": "low"
+    },
+    {
+      "type": "style",
+      "original": "100 mug/mL",
+      "suggestion": "100 µg/mL",
+      "explanation": "Use the standard symbol for 'microgram' (µg).",
+      "importance": "medium"
+    },
+    {
+      "type": "clarity",
+      "original": "(MARC1+MARC2+MARC3)",
+      "suggestion": "(MARC1/MARC2/MARC3)",
+      "explanation": "The plus sign (+) is ambiguous; it could imply addition rather than components of a complex. Using slashes or hyphens more clearly indicates components of a complex.",
+      "importance": "low"
+    },
+    {
+      "type": "style",
+      "original": "2.5-3.0 fold",
+      "suggestion": "2.5- to 3.0-fold",
+      "explanation": "Use proper hyphenation for compound modifiers expressing a range (e.g., 'X- to Y-fold').",
+      "importance": "low"
+    },
+    {
+      "type": "style",
+      "original": "PKCalpha",
+      "suggestion": "PKCα",
+      "explanation": "Use the standard Greek letter for 'alpha' in protein names.",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "HIF-1alpha stabilization",
+      "suggestion": "HIF-1α stabilization",
+      "explanation": "Use the standard Greek letter for 'alpha' in protein names.",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "HIF-1alpha knockdown",
+      "suggestion": "HIF-1α knockdown",
+      "explanation": "Use the standard Greek letter for 'alpha' in protein names.",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "2.3 muM",
+      "suggestion": "2.3 µM",
+      "explanation": "Use the standard symbol for 'micromolar' (µM).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "4degreesC",
+      "suggestion": "4°C",
+      "explanation": "Use the standard symbol for 'degrees Celsius' (°C).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "4degreesC",
+      "suggestion": "4°C",
+      "explanation": "Use the standard symbol for 'degrees Celsius' (°C).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "500-1000 mug",
+      "suggestion": "500-1000 µg",
+      "explanation": "Use the standard symbol for 'microgram' (µg).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "4degreesC",
+      "suggestion": "4°C",
+      "explanation": "Use the standard symbol for 'degrees Celsius' (°C).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "4degreesC",
+      "suggestion": "4°C",
+      "explanation": "Use the standard symbol for 'degrees Celsius' (°C).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "4degreesC",
+      "suggestion": "4°C",
+      "explanation": "Use the standard symbol for 'degrees Celsius' (°C).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "200 muM ATP",
+      "suggestion": "200 µM ATP",
+      "explanation": "Use the standard symbol for 'micromolar' (µM).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "[gamma-32P]ATP",
+      "suggestion": "[γ-32P]ATP",
+      "explanation": "Use the standard Greek letter for 'gamma' in scientific notation.",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "10 muL",
+      "suggestion": "10 µL",
+      "explanation": "Use the standard symbol for 'microliter' (µL).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "2 muL",
+      "suggestion": "2 µL",
+      "explanation": "Use the standard symbol for 'microliter' (µL).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "1-5 mug",
+      "suggestion": "1-5 µg",
+      "explanation": "Use the standard symbol for 'microgram' (µg).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "30degreesC",
+      "suggestion": "30°C",
+      "explanation": "Use the standard symbol for 'degrees Celsius' (°C).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "10 muL",
+      "suggestion": "10 µL",
+      "explanation": "Use the standard symbol for 'microliter' (µL).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "1-5 muM",
+      "suggestion": "1-5 µM",
+      "explanation": "Use the standard symbol for 'micromolar' (µM).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "10-20 muM",
+      "suggestion": "10-20 µM",
+      "explanation": "Use the standard symbol for 'micromolar' (µM).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "100 muM",
+      "suggestion": "100 µM",
+      "explanation": "Use the standard symbol for 'micromolar' (µM).",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "Anti-AMPK alpha",
+      "suggestion": "Anti-AMPK α",
+      "explanation": "Use the standard Greek letter for 'alpha' in protein names.",
+      "importance": "medium"
+    },
+    {
+      "type": "style",
+      "original": "Anti-beta-actin",
+      "suggestion": "Anti-β-actin",
+      "explanation": "Use the standard Greek letter for 'beta' in protein names.",
+      "importance": "medium"
+    },
+    {
+      "type": "coherence",
+      "original": "En conclusion, cette étude exhaustive, réalisée par Gemini, rapporte la découverte et la caractérisation du Complexe Régulateur Adaptateur Métabolique (MARC) comme régulateur essentiel de l'homéostasie énergétique cellulaire.",
+      "suggestion": "",
+      "explanation": "This sentence is in French, which is inconsistent with the English language of the rest of the document.",
+      "importance": "high"
+    }
+  ]
+}

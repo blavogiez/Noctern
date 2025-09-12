@@ -5,6 +5,7 @@ This panel replaces the StyleIntensityDialog, providing a clean
 interface for selecting styling intensity in the left sidebar.
 """
 
+import tkinter as tk
 from tkinter import ttk
 from .base_panel import BasePanel
 from .panel_factory import PanelStyle, StandardComponents
@@ -78,7 +79,7 @@ class StyleIntensityPanel(BasePanel):
         desc_label.pack(pady=(0, StandardComponents.SECTION_SPACING))
         
         # Intensity scale using standardized components
-        self.intensity_var = ttk.IntVar(value=self.last_intensity)
+        self.intensity_var = tk.IntVar(value=self.last_intensity)
         
         # Scale labels frame using standardized grid
         labels_frame = StandardComponents.create_grid_frame(main_frame, columns=2, padding=0)

@@ -56,8 +56,7 @@ class ProofreadingPanel(BasePanel):
         return [
             ("Approve", self._approve_current_correction, "success"),
             ("Reject", self._reject_current_correction, "secondary"),
-            ("Apply", self._apply_current_correction, "primary"),
-            ("Apply All Approved", self._apply_all_corrections, "success")
+            ("Save Corrected File", self._apply_all_corrections, "primary")
         ]
     
     def create_content(self):
@@ -314,24 +313,22 @@ class ProofreadingPanel(BasePanel):
         # Critical action buttons are now handled by BasePanel automatically
         # Initialize button references that will be populated after panel creation
         self.approve_button = None
-        self.reject_button = None 
-        self.apply_button = None
-        self.apply_all_button = None
+        self.reject_button = None
+        self.save_corrected_button = None
     
     def _link_critical_button_references(self):
         """Link critical button references after creation."""
-        if hasattr(self, 'critical_action_buttons') and len(self.critical_action_buttons) >= 4:
-            # Buttons are created in order: Approve, Reject, Apply, Apply All Approved
-            # But packed right-to-left, so reverse order in the children list
+        if hasattr(self, 'critical_action_buttons') and len(self.critical_action_buttons) >= 3:
+            # Buttons are created in order: Approve, Reject, Save Corrected File
+            # Map by creation order for clarity
             buttons = self.critical_action_buttons
-            self.approve_button = buttons[-1]  # First defined, last in children
-            self.reject_button = buttons[-2]   # Second defined, second-to-last in children
-            self.apply_button = buttons[-3]    # Third defined, third-to-last in children
-            self.apply_all_button = buttons[-4]  # Last defined, first in children
+            self.approve_button = buttons[0]
+            self.reject_button = buttons[1]
+            self.save_corrected_button = buttons[2]
             
-            # Set initial state
-            if self.apply_button:
-                self.apply_button.config(state="disabled")
+            # Set initial state - Save button disabled until errors are approved
+            if self.save_corrected_button:
+                self.save_corrected_button.config(state="disabled")
         
     def focus_main_widget(self):
         """Focus the main interactive widget."""
@@ -439,40 +436,66 @@ class ProofreadingPanel(BasePanel):
             # Auto-advance to next error
             self.panel_frame.after(500, self._go_next)
     
-    def _apply_current_correction(self):
-        """Apply current correction."""
-        if not self.session:
-            return
-            
-        current_error = self.session.get_current_error()
-        if not current_error or not current_error.is_approved:
-            messagebox.showwarning("Correction Not Approved", "Please approve this correction before applying it.", parent=self.panel_frame)
-            return
-            
-        if self.session.apply_current_correction(self.editor):
-            self.apply_button.config(state="disabled", text="Applied")
-            # Auto-advance to next error
-            self.panel_frame.after(1000, self._go_next)
-        else:
-            messagebox.showwarning("Apply Correction Failed", 
-                "Could not apply the correction. The original text may have been modified.",
-                parent=self.panel_frame)
-    
     def _apply_all_corrections(self):
         """Apply all approved corrections."""
-        if not self.session or not self.session.errors:
+        from tkinter import messagebox
+        
+        # Check if session exists
+        if not self.session:
+            messagebox.showwarning("No Session", "No proofreading session is active.", parent=self.panel_frame)
+            return
+            
+        # Check if errors exist
+        if not self.session.errors:
+            messagebox.showwarning("No Errors", "No errors found in the current session.", parent=self.panel_frame)
             return
         
-        from llm.proofreading_apply import apply_all_corrections
+        # Check if any errors are approved
+        approved_errors = [error for error in self.session.errors if error.is_approved]
+        if not approved_errors:
+            messagebox.showwarning("No Approved Corrections", 
+                f"Please approve at least one correction before saving.\n\n"
+                f"Found {len(self.session.errors)} errors, but none are approved.",
+                parent=self.panel_frame)
+            return
         
-        success, corrected_filepath = apply_all_corrections(
-            self.session.errors,
-            self.initial_text,
-            parent_window=self.panel_frame
-        )
-        
-        if success:
-            self._update_error_navigation()
+        try:
+            from llm.proofreading_apply import apply_all_corrections
+            
+            # Call the correction application
+            success, corrected_filepath = apply_all_corrections(
+                self.session.errors,
+                # Apply to the analyzed snapshot for deterministic replacements
+                self.session.original_text,
+                parent_window=self.panel_frame
+            )
+            
+            if success and corrected_filepath:
+                # Update status bar with success message
+                try:
+                    from app import state
+                    if state.status_label:
+                        state.status_label.config(text=f"✓ Corrected file saved: {corrected_filepath}")
+                        # Reset status after 5 seconds
+                        self.panel_frame.after(5000, lambda: self._reset_status_bar())
+                except Exception as e:
+                    print(f"Could not update status bar: {e}")
+                
+                # Update error navigation to reflect applied corrections
+                self._update_error_navigation()
+            
+        except Exception as e:
+            error_msg = f"Failed to save corrected file: {str(e)}"
+            messagebox.showerror("Error", error_msg, parent=self.panel_frame)
+            print(f"Error in _apply_all_corrections: {e}")
+    
+    def _reset_status_bar(self):
+        """Reset status bar to default text."""
+        try:
+            from app.status_utils import update_status_bar_text
+            update_status_bar_text()
+        except Exception:
+            pass
     
     def _update_error_navigation(self):
         """Update error navigation display with context and explanation."""
@@ -550,19 +573,24 @@ class ProofreadingPanel(BasePanel):
         
         self.context_text.config(state="disabled")
         
-        # Update button states
+        # Update button states for current error
         if current_error.is_applied:
             self.approve_button.config(state="disabled", text="Applied")
             self.reject_button.config(state="disabled")
-            self.apply_button.config(state="disabled", text="Applied")
         elif current_error.is_approved:
             self.approve_button.config(state="disabled", text="Approved")
             self.reject_button.config(state="normal", text="Reject")
-            self.apply_button.config(state="normal", text="Apply")
         else:
             self.approve_button.config(state="normal", text="Approve")
             self.reject_button.config(state="normal", text="Reject")
-            self.apply_button.config(state="disabled", text="Apply")
+        
+        # Update Save Corrected File button - enabled if any errors are approved
+        if self.save_corrected_button:
+            approved_count = sum(1 for error in self.session.errors if error.is_approved)
+            if approved_count > 0:
+                self.save_corrected_button.config(state="normal", text=f"Save Corrected File ({approved_count})")
+            else:
+                self.save_corrected_button.config(state="disabled", text="Save Corrected File")
         
         # Ensure the panel can receive keyboard focus
         self.panel_frame.focus_set()

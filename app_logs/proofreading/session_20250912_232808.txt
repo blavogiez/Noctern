@@ -1,0 +1,93 @@
+Session: 20250912_232808
+Time: 2025-09-12T23:29:03.732881
+Text length: 14958
+Response length: 2966
+----------------------------------------
+{
+  "errors": [
+    {
+      "type": "style",
+      "original": "!",
+      "suggestion": "",
+      "explanation": "Exclamation marks are generally inappropriate for academic titles.",
+      "importance": "low"
+    },
+    {
+      "type": "grammar",
+      "original": "coordinate regulation",
+      "suggestion": "coordinated regulation",
+      "explanation": "The adjective form 'coordinated' is required here to describe the regulation that has been put into coordination, not 'coordinate' (meaning of the same order/rank).",
+      "importance": "medium"
+    },
+    {
+      "type": "coherence",
+      "original": "Un peu de texte francais",
+      "suggestion": "",
+      "explanation": "This sentence is in French and completely irrelevant to the scientific content of the document.",
+      "importance": "high"
+    },
+    {
+      "type": "coherence",
+      "original": "I'd like a pizza please",
+      "suggestion": "",
+      "explanation": "This sentence is a conversational phrase and irrelevant to the scientific content of the document.",
+      "importance": "high"
+    },
+    {
+      "type": "style",
+      "original": "CaMKKbeta",
+      "suggestion": "CaMKKβ",
+      "explanation": "Use standard scientific notation for Greek letters where appropriate.",
+      "importance": "low"
+    },
+    {
+      "type": "style",
+      "original": "PGC-1alpha",
+      "suggestion": "PGC-1α",
+      "explanation": "Use standard scientific notation for Greek letters where appropriate.",
+      "importance": "low"
+    },
+    {
+      "type": "coherence",
+      "original": "Tomato sauce is delicious",
+      "suggestion": "",
+      "explanation": "This sentence is completely unrelated to the scientific content of the document.",
+      "importance": "high"
+    },
+    {
+      "type": "style",
+      "original": "PKCalpha",
+      "suggestion": "PKCα",
+      "explanation": "Use standard scientific notation for Greek letters where appropriate.",
+      "importance": "low"
+    },
+    {
+      "type": "coherence",
+      "original": "The humans can live up to 10000 years !!!",
+      "suggestion": "",
+      "explanation": "This statement is factually incorrect, uses inappropriate exclamation marks, and is completely irrelevant to the scientific content of the document.",
+      "importance": "high"
+    },
+    {
+      "type": "spelling",
+      "original": "mug/mL",
+      "suggestion": "µg/mL",
+      "explanation": "'mug' is a common typo for microgram. Use 'µg' or 'mcg' as standard notation.",
+      "importance": "high"
+    },
+    {
+      "type": "spelling",
+      "original": "37degreesC",
+      "suggestion": "37°C",
+      "explanation": "Use the standard symbol '°C' for degrees Celsius.",
+      "importance": "medium"
+    },
+    {
+      "type": "coherence",
+      "original": "no it ends there !",
+      "suggestion": "",
+      "explanation": "This conversational phrase is irrelevant to the scientific content of the document.",
+      "importance": "high"
+    }
+  ]
+}
