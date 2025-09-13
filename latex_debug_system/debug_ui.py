@@ -7,7 +7,7 @@ import tkinter as tk
 import ttkbootstrap as ttk
 from typing import List, Optional, Callable
 from utils import logs_console
-from latex_debug_system.core import DebugUI, LaTeXError, AnalysisResult, QuickFix, DebugContext
+from latex_debug_system.core import DebugUI, LaTeXError, AnalysisResult, DebugContext
 
 
 class UltraFineTreeview(ttk.Treeview):
@@ -378,150 +378,6 @@ class AnalysisTab(ttk.Frame):
             logs_console.log("No correction to apply", level='WARNING')
 
 
-class QuickFixTab(ttk.Frame):
-    """Tab widget for quick fixes and automatic corrections."""
-    
-    def __init__(self, parent, on_apply_fix: Optional[Callable[[QuickFix], None]] = None):
-        """Initialize the quick fix tab."""
-        super().__init__(parent)
-        self.on_apply_fix = on_apply_fix
-        self.current_fixes: List[QuickFix] = []
-        self._setup_ui()
-        logs_console.log("QuickFix tab initialized", level='DEBUG')
-    
-    def _setup_ui(self):
-        """Setup ultra-fine quick fix tab UI."""
-        # Ultra-compact header
-        header_frame = ttk.Frame(self)
-        header_frame.pack(fill='x', padx=2, pady=1)
-        
-        title_label = ttk.Label(header_frame, text="Quick Fixes", font=('Segoe UI', 9))
-        title_label.pack(side='left', padx=2)
-        
-        self.auto_fix_btn = ttk.Button(
-            header_frame,
-            text="Auto-Fix",
-            command=self._auto_fix_safe,
-            width=8
-        )
-        self.auto_fix_btn.pack(side='right', padx=2)
-        
-        # Ultra-fine quick fixes list
-        list_frame = ttk.Frame(self)
-        list_frame.pack(fill='both', expand=True, padx=1, pady=1)
-        
-        self.fixes_tree = UltraFineTreeview(
-            list_frame,
-            columns=('confidence', 'type', 'description'),
-            show='tree headings',
-            height=4
-        )
-        
-        # Configure columns with compact sizing
-        self.fixes_tree.heading('#0', text='Fix', anchor='w')
-        self.fixes_tree.heading('confidence', text='Conf', anchor='w')  # Shorter header
-        self.fixes_tree.heading('type', text='Type', anchor='w')
-        self.fixes_tree.heading('description', text='Description', anchor='w')
-        
-        self.fixes_tree.column('#0', width=120, minwidth=80)
-        self.fixes_tree.column('confidence', width=50, minwidth=40)  # Narrower
-        self.fixes_tree.column('type', width=60, minwidth=50)
-        self.fixes_tree.column('description', width=250, minwidth=180)
-        
-        # Ultra-fine scrollbar
-        fixes_scrollbar = ttk.Scrollbar(list_frame, orient='vertical', command=self.fixes_tree.yview)
-        self.fixes_tree.configure(yscrollcommand=fixes_scrollbar.set)
-        
-        fixes_scrollbar.pack(side='right', fill='y')
-        self.fixes_tree.pack(side='left', fill='both', expand=True)
-        
-        # Ultra-compact apply button
-        apply_frame = ttk.Frame(self)
-        apply_frame.pack(fill='x', padx=2, pady=1)
-        
-        self.apply_fix_btn = ttk.Button(
-            apply_frame,
-            text="Apply",
-            command=self._apply_selected_fix,
-            state='disabled',
-            width=8
-        )
-        self.apply_fix_btn.pack(side='left', padx=2)
-        
-        # Bind selection
-        self.fixes_tree.bind('<<TreeviewSelect>>', self._on_fix_selected)
-        self.fixes_tree.bind('<Double-1>', self._apply_selected_fix)
-    
-    def display_quick_fixes(self, fixes: List[QuickFix]):
-        """Display available quick fixes."""
-        self.current_fixes = fixes
-        
-        # Clear existing items
-        for item in self.fixes_tree.get_children():
-            self.fixes_tree.delete(item)
-        
-        # Add fixes with clean text indicators
-        for i, fix in enumerate(fixes):
-            confidence_pct = int(fix.confidence * 100)
-            
-            # Clean prefix based on confidence and auto-applicability
-            if fix.auto_applicable and fix.confidence > 0.8:
-                prefix = "[AUTO]"
-            elif fix.auto_applicable:
-                prefix = "[Auto]"
-            elif fix.confidence > 0.8:
-                prefix = "[High]"
-            else:
-                prefix = "[Fix]"
-            
-            self.fixes_tree.insert('', 'end',
-                                 text=f"{prefix} {fix.title}",
-                                 values=(f"{confidence_pct}%", fix.fix_type, fix.description),
-                                 tags=('auto' if fix.auto_applicable else 'manual',))
-        
-        # Configure tags
-        self.fixes_tree.tag_configure('auto', foreground='#2e7d32')
-        self.fixes_tree.tag_configure('manual', foreground='#1976d2')
-        
-        logs_console.log(f"Displayed {len(fixes)} quick fixes", level='INFO')
-    
-    def _on_fix_selected(self, event):
-        """Handle fix selection."""
-        selection = self.fixes_tree.selection()
-        if selection:
-            self.apply_fix_btn.configure(state='normal')
-        else:
-            self.apply_fix_btn.configure(state='disabled')
-    
-    def _apply_selected_fix(self, event=None):
-        """Apply the selected fix."""
-        selection = self.fixes_tree.selection()
-        if not selection or not self.on_apply_fix:
-            return
-        
-        try:
-            item = selection[0]
-            fix_index = self.fixes_tree.index(item)
-            if 0 <= fix_index < len(self.current_fixes):
-                fix = self.current_fixes[fix_index]
-                self.on_apply_fix(fix)
-                logs_console.log(f"Applied fix: {fix.title}", level='INFO')
-        except Exception as e:
-            logs_console.log(f"Error applying fix: {e}", level='ERROR')
-    
-    def _auto_fix_safe(self):
-        """Apply all safe auto-fixes."""
-        safe_fixes = [fix for fix in self.current_fixes if fix.auto_applicable and fix.confidence > 0.8]
-        
-        if not safe_fixes:
-            logs_console.log("No safe auto-fixes available", level='INFO')
-            return
-        
-        for fix in safe_fixes:
-            if self.on_apply_fix:
-                self.on_apply_fix(fix)
-        
-        logs_console.log(f"Applied {len(safe_fixes)} safe auto-fixes", level='SUCCESS')
 
 
 class TabbedDebugUI(ttk.Frame, DebugUI):
@@ -536,7 +392,6 @@ class TabbedDebugUI(ttk.Frame, DebugUI):
         # Callbacks that will be set by coordinator
         self.on_request_analysis: Optional[Callable[[], None]] = None
         self.on_apply_correction: Optional[Callable[[str], None]] = None
-        self.on_apply_quick_fix: Optional[Callable[[QuickFix], None]] = None
         self.on_compare_versions: Optional[Callable[[], None]] = None
         
         self._setup_ui()
@@ -585,12 +440,6 @@ class TabbedDebugUI(ttk.Frame, DebugUI):
         )
         self.notebook.add(self.analysis_tab, text='Analyze diff')
         
-        # Quick Fixes tab
-        self.quickfix_tab = QuickFixTab(
-            self.notebook,
-            on_apply_fix=self._on_apply_quick_fix
-        )
-        self.notebook.add(self.quickfix_tab, text='Quick Fixes')
         
         # Ultra-fine status bar
         self.status_frame = ttk.Frame(self)
@@ -657,9 +506,6 @@ class TabbedDebugUI(ttk.Frame, DebugUI):
         if self.current_context:
             self.analysis_tab.present_analysis(result)
             
-            # Generate and display quick fixes
-            if result.quick_fixes:
-                self.quickfix_tab.display_quick_fixes(result.quick_fixes)
             
             # Switch to analysis tab
             self.notebook.select(self.analysis_tab)
@@ -714,7 +560,3 @@ class TabbedDebugUI(ttk.Frame, DebugUI):
         if self.on_apply_correction:
             self.on_apply_correction(corrected_code)
     
-    def _on_apply_quick_fix(self, fix: QuickFix):
-        """Handle quick fix application."""
-        if self.on_apply_quick_fix:
-            self.on_apply_quick_fix(fix)

@@ -7,7 +7,7 @@ import json
 import re
 from typing import Optional, Dict, Any, List
 from utils import logs_console
-from latex_debug_system.core import AnalysisEngine, AnalysisResult, DebugContext, QuickFix
+from latex_debug_system.core import AnalysisEngine, AnalysisResult, DebugContext
 from llm import state as llm_state, api_client, utils as llm_utils
 
 
@@ -187,7 +187,6 @@ class LLMAnalyzer(AnalysisEngine):
                     explanation=explanation,
                     suggested_fix=corrected_code if corrected_code else None,
                     confidence=confidence,
-                    quick_fixes=quick_fixes,
                     corrected_code=corrected_code if corrected_code else None,
                     raw_analysis=analysis_text
                 )
@@ -202,7 +201,6 @@ class LLMAnalyzer(AnalysisEngine):
                     explanation=f"{explanation}\n\n--- Raw AI Response ---\n{analysis_text}" if explanation else f"AI Analysis:\n{analysis_text}",
                     suggested_fix=corrected_code if corrected_code else None,
                     confidence=0.5 if explanation else 0.3,
-                    quick_fixes=self._generate_text_based_fixes(analysis_text),
                     corrected_code=corrected_code if corrected_code else None,
                     raw_analysis=analysis_text
                 )
@@ -235,49 +233,6 @@ class LLMAnalyzer(AnalysisEngine):
         
         return min(confidence, 1.0)
     
-    def _generate_quick_fixes(self, json_data: Dict[str, Any], diff_content: str) -> List[QuickFix]:
-        """Generate quick fixes from LLM analysis."""
-        quick_fixes = []
-        
-        corrected_code = json_data.get("corrected_code", "")
-        explanation = json_data.get("explanation", "")
-        
-        if corrected_code:
-            quick_fixes.append(QuickFix(
-                title="Apply LLM Correction",
-                description="Apply the complete correction suggested by the AI",
-                fix_type="replace",
-                new_text=corrected_code,
-                confidence=0.8,
-                auto_applicable=False
-            ))
-        
-        # Generate fixes for common patterns
-        if "missing" in explanation.lower() and "}" in explanation:
-            quick_fixes.append(QuickFix(
-                title="Add Missing Closing Brace",
-                description="Add missing '}' character",
-                fix_type="insert",
-                new_text="}",
-                confidence=0.9,
-                auto_applicable=True
-            ))
-        
-        if "package" in explanation.lower() and "usepackage" in explanation:
-            package_match = re.search(r'\\\\usepackage\\{([^}]+)\\}', explanation)
-            if package_match:
-                package_name = package_match.group(1)
-                quick_fixes.append(QuickFix(
-                    title=f"Add Package {package_name}",
-                    description=f"Add \\\\usepackage{{{package_name}}} to preamble",
-                    fix_type="insert",
-                    target_line=1,
-                    new_text=f"\\\\usepackage{{{package_name}}}",
-                    confidence=0.8,
-                    auto_applicable=False
-                ))
-        
-        return quick_fixes
     
     def _extract_explanation_from_text(self, text: str) -> str:
         """Extract explanation from plain text response."""
@@ -312,31 +267,6 @@ class LLMAnalyzer(AnalysisEngine):
         
         return None
     
-    def _generate_text_based_fixes(self, text: str) -> List[QuickFix]:
-        """Generate quick fixes from plain text analysis."""
-        fixes = []
-        text_lower = text.lower()
-        
-        if "missing" in text_lower and ("brace" in text_lower or "}" in text):
-            fixes.append(QuickFix(
-                title="Add Missing Brace",
-                description="Add missing closing brace",
-                fix_type="insert",
-                new_text="}",
-                confidence=0.7,
-                auto_applicable=True
-            ))
-        
-        if "package" in text_lower and "usepackage" in text_lower:
-            fixes.append(QuickFix(
-                title="Check Package Requirements",
-                description="Review package dependencies mentioned in analysis",
-                fix_type="manual",
-                confidence=0.6,
-                auto_applicable=False
-            ))
-        
-        return fixes
     
     def _create_cache_key(self, diff_content: str, log_content: str) -> str:
         """Create cache key for analysis results."""

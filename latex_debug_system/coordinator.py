@@ -2,10 +2,9 @@
 
 from typing import Optional, Callable
 from utils import logs_console
-from latex_debug_system.core import DebugContext, AnalysisResult, QuickFix
+from latex_debug_system.core import DebugContext, AnalysisResult
 from latex_debug_system.error_parser import LaTeXErrorParser
 from latex_debug_system.llm_analyzer import LLMAnalyzer
-from latex_debug_system.quick_fixes import LaTeXQuickFixProvider, EditorFixApplicator
 from latex_debug_system.diff_service import CachedDiffGenerator
 from latex_debug_system.debug_ui import TabbedDebugUI
 
@@ -21,8 +20,8 @@ class DebugCoordinator:
         # Setup core debug system components
         self.error_parser = LaTeXErrorParser()
         self.llm_analyzer = LLMAnalyzer()
-        self.quick_fix_provider = LaTeXQuickFixProvider()
-        self.fix_applicator = EditorFixApplicator()
+        from latex_debug_system.legacy_fix_applicator import LegacyFixApplicator
+        self.fix_applicator = LegacyFixApplicator()
         self.diff_generator = CachedDiffGenerator()
         
         # Current state
@@ -41,7 +40,6 @@ class DebugCoordinator:
         """Connect UI callbacks to coordinator methods."""
         self.debug_ui.on_request_analysis = self._handle_analysis_request
         self.debug_ui.on_apply_correction = self._handle_correction_application
-        self.debug_ui.on_apply_quick_fix = self._handle_quick_fix_application
         self.debug_ui.on_compare_versions = self._handle_version_comparison
     
     def handle_compilation_result(self, success: bool, log_content: str, file_path: str, current_content: str):
@@ -65,8 +63,6 @@ class DebugCoordinator:
             # Update UI with errors
             self.debug_ui.update_compilation_errors(log_content, file_path, current_content)
             
-            # Generate quick fixes for immediate errors
-            self._generate_quick_fixes_for_errors(context)
             
             logs_console.log("LLM analysis available via 'Analyze with AI' button", level='INFO')
     
@@ -88,45 +84,10 @@ class DebugCoordinator:
         return self.debug_ui
     
     def auto_fix_if_possible(self, context: DebugContext) -> bool:
-        """Attempt automatic fixing if confidence is high enough."""
-        if not context.errors:
-            return False
-        
-        logs_console.log("Attempting automatic fixes", level='INFO')
-        
-        fixes_applied = 0
-        
-        for error in context.errors:
-            if self.quick_fix_provider.can_handle_error(error):
-                quick_fixes = self.quick_fix_provider.get_quick_fixes(error, context)
-                
-                for fix in quick_fixes:
-                    if fix.auto_applicable and fix.confidence >= self.auto_fix_threshold:
-                        if self.fix_applicator.apply_quick_fix(fix, context):
-                            fixes_applied += 1
-                            logs_console.log(f"Auto-applied fix: {fix.title}", level='SUCCESS')
-        
-        if fixes_applied > 0:
-            logs_console.log(f"Successfully applied {fixes_applied} automatic fixes", level='SUCCESS')
-            return True
-        
+        """Attempt automatic fixing - disabled after quickfix removal."""
+        logs_console.log("Auto-fix disabled - quickfix system removed", level='INFO')
         return False
     
-    def _generate_quick_fixes_for_errors(self, context: DebugContext):
-        """Generate quick fixes for all errors."""
-        if not context.errors:
-            return
-        
-        all_quick_fixes = []
-        
-        for error in context.errors:
-            if self.quick_fix_provider.can_handle_error(error):
-                fixes = self.quick_fix_provider.get_quick_fixes(error, context)
-                all_quick_fixes.extend(fixes)
-        
-        if all_quick_fixes:
-            self.debug_ui.quickfix_tab.display_quick_fixes(all_quick_fixes)
-            logs_console.log(f"Generated {len(all_quick_fixes)} quick fixes", level='INFO')
     
     def _handle_analysis_request(self):
         """Handle user request for AI analysis."""
@@ -186,23 +147,6 @@ class DebugCoordinator:
             else:
                 logs_console.log("Failed to apply LLM correction", level='ERROR')
     
-    def _handle_quick_fix_application(self, fix: QuickFix):
-        """Handle application of quick fix."""
-        if self.current_context:
-            success = self.fix_applicator.apply_quick_fix(fix, self.current_context)
-            if success:
-                logs_console.log(f"Quick fix '{fix.title}' applied successfully", level='SUCCESS')
-                
-                # Update context with new content
-                try:
-                    from app import state
-                    current_tab = state.get_current_tab()
-                    if current_tab and hasattr(current_tab, 'editor'):
-                        self.current_context.current_content = current_tab.editor.get("1.0", "end-1c")
-                except:
-                    pass
-            else:
-                logs_console.log(f"Failed to apply quick fix '{fix.title}'", level='ERROR')
     
     def _handle_version_comparison(self):
         """Handle version comparison request."""

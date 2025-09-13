@@ -23,17 +23,6 @@ class LaTeXError:
             self.raw_log_lines = []
 
 
-@dataclass
-class QuickFix:
-    """Represent automatic fix that can be applied to resolve error."""
-    title: str
-    description: str
-    fix_type: str  # Store 'replace', 'insert', 'remove'
-    target_line: Optional[int] = None
-    old_text: Optional[str] = None
-    new_text: Optional[str] = None
-    confidence: float = 0.0
-    auto_applicable: bool = False
 
 
 @dataclass
@@ -42,13 +31,9 @@ class AnalysisResult:
     explanation: str
     suggested_fix: Optional[str] = None
     confidence: float = 0.0
-    quick_fixes: List[QuickFix] = None
     corrected_code: Optional[str] = None
     raw_analysis: str = ""
     
-    def __post_init__(self):
-        if self.quick_fixes is None:
-            self.quick_fixes = []
 
 
 @dataclass
@@ -109,28 +94,9 @@ class AnalysisEngine(ABC):
         pass
 
 
-class QuickFixProvider(ABC):
-    """Provides automatic fixes for common LaTeX errors."""
-    
-    @abstractmethod
-    def get_quick_fixes(self, error: LaTeXError, context: DebugContext) -> List[QuickFix]:
-        """Generate quick fixes for a specific error."""
-        pass
-    
-    @abstractmethod
-    def can_handle_error(self, error: LaTeXError) -> bool:
-        """Check if this provider can handle the given error."""
-        pass
-
-
 class FixApplicator(ABC):
     """Applies fixes to LaTeX code."""
-    
-    @abstractmethod
-    def apply_quick_fix(self, fix: QuickFix, context: DebugContext) -> bool:
-        """Apply a quick fix to the code."""
-        pass
-    
+
     @abstractmethod
     def apply_corrected_code(self, corrected_code: str, context: DebugContext) -> bool:
         """Apply fully corrected code."""
