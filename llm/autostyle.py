@@ -87,13 +87,27 @@ def _perform_styling(editor, selected_text, selection_indices, intensity):
         selection_indices=selection_indices
     )
 
+    # Ensure consistent cleaning like generation flow
+    from llm import utils as llm_utils
+    accumulated_text = ""
+
+    def on_chunk(chunk: str):
+        nonlocal accumulated_text
+        cleaned = llm_utils.normalize_text_content(chunk)
+        accumulated_text += cleaned
+        session_callbacks['on_chunk'](cleaned)
+
+    def on_success(final_text: str):
+        final_cleaned = llm_utils.prepare_final_response(accumulated_text, final_text)
+        session_callbacks['on_success'](final_cleaned)
+
     # Call streaming service with rephrase settings for styling
     start_streaming_request(
         editor=editor,
         prompt=full_prompt,
         model_name=llm_state.model_style,
-        on_chunk=session_callbacks['on_chunk'],
-        on_success=session_callbacks['on_success'],
+        on_chunk=on_chunk,
+        on_success=on_success,
         on_error=session_callbacks['on_error'],
         task_type="rephrase"  # Use rephrase profile for styling (similar focused rewriting)
     )

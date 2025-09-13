@@ -154,13 +154,10 @@ class InteractiveSession:
             progress_bar.pack_forget()
 
         if self.is_styling:
-            # For styling: replace hidden text with final normalized result
-            insert_pos = self.editor.index(f"{self.hidden_tag}.first")
+            # Styling preview is already inserted in-place. Just remove the hidden original
+            # selection and cleanup session UI without inserting again (prevents duplication).
             self.editor.delete(f"{self.hidden_tag}.first", f"{self.hidden_tag}.last")
             self.editor.tag_delete(self.hidden_tag)
-            # Use final normalized text, ensuring consistency with what was displayed
-            final_text = getattr(self, 'final_normalized_text', self.full_response_text)
-            self.editor.insert(insert_pos, final_text)
             self.destroy(delete_text=False)
         else:
             # Default behavior: remove session styling and clean up
