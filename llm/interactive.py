@@ -3,6 +3,7 @@ from tkinter import messagebox
 from llm import state as llm_state
 from llm import utils as llm_utils
 from utils import logs_console
+from editor import syntax as editor_syntax
 from app import state as main_window
 import uuid
 
@@ -120,6 +121,11 @@ class InteractiveSession:
             self.editor.insert(self.text_end_index, chunk)
         self.text_end_index = self.editor.index(f"{self.text_end_index} + {len(chunk)} chars")
         self.full_response_text += chunk
+        # Notify syntax tracker of changed range (no immediate update to avoid thrash)
+        try:
+            editor_syntax.mark_range_changed(self.editor, self.text_start_index, self.text_end_index)
+        except Exception:
+            pass
 
     def handle_success(self, final_cleaned_text):
         if self.is_discarded: return
@@ -137,6 +143,12 @@ class InteractiveSession:
         if self.is_completion: self._post_process_completion()
         if self.is_rephrase: self.editor.tag_add(tk.SEL, self.text_start_index, self.text_end_index)
         self.editor.focus_set()
+        # Force immediate differential highlight on the final inserted range
+        try:
+            editor_syntax.mark_range_changed(self.editor, self.text_start_index, self.text_end_index)
+            editor_syntax.schedule_syntax_update(self.editor, debounce=False)
+        except Exception:
+            pass
 
     def handle_error(self, error_msg):
         if self.is_discarded: return

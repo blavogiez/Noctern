@@ -9,6 +9,7 @@ from utils import logs_console
 from snippets import manager as snippet_manager
 from app.panels import show_snippets_panel
 from editor.placeholder_navigation import PlaceholderManager, handle_placeholder_navigation
+from editor import syntax as editor_syntax
 
 
 def open_snippet_editor(root_window, theme_settings):
@@ -111,6 +112,13 @@ def handle_snippet_expansion(event):
                 
                 # Navigate to the first placeholder in the inserted snippet
                 editor.placeholder_manager.navigate_to_next_placeholder()
+
+        # Mark changed range for syntax highlighting and apply immediately
+        try:
+            editor_syntax.mark_range_changed(editor, insertion_point, end_position)
+            editor_syntax.schedule_syntax_update(editor, debounce=False)
+        except Exception:
+            pass
 
         logs_console.log(f"Snippet '{keyword}' successfully expanded.", level='INFO')
         # Return "break" to prevent Tkinter from processing the event further (e.g., inserting a space).

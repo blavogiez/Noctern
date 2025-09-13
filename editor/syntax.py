@@ -3,7 +3,7 @@ import tkinter as tk
 import weakref
 from editor.tab import EditorTab
 from .syntax_highlighter import apply_differential_highlighting
-from .syntax_tracker import get_line_tracker, clear_line_tracker
+from .syntax_tracker import get_line_tracker, clear_line_tracker, mark_range_changed as _tracker_mark_range_changed
 from .syntax_patterns import PATTERNS, COLORS
 
 # Performance threshold constants
@@ -95,6 +95,21 @@ def schedule_highlight_update(editor, debounce=True, smart=True):
     # Schedule update
     timer_id = editor.after(delay, lambda: highlight_changes(editor))
     _pending_updates[editor] = timer_id
+
+def mark_range_changed(editor, start_index, end_index):
+    """
+    Notify syntax system that a text range changed (bulk insert/update).
+    Accepts any Tk index forms; converts to inclusive line numbers and
+    forwards to the line tracker.
+    """
+    if not editor:
+        return
+    try:
+        start_line = int(editor.index(start_index).split('.')[0])
+        end_line = int(editor.index(end_index).split('.')[0])
+    except tk.TclError:
+        return
+    _tracker_mark_range_changed(editor, start_line, end_line)
 
 def clear_highlighting(editor):
     """Remove all syntax highlighting from editor."""

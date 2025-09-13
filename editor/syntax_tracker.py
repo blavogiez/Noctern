@@ -12,6 +12,7 @@ class LineTracker:
         self.editor_ref = weakref.ref(editor)
         self.line_cache = {}  # line_num -> content_hash
         self.last_cursor_line = 1
+        self.forced_changed_lines = set()
         
     def get_changed_lines(self):
         """Get only the lines that actually changed - ultra efficient."""
@@ -20,6 +21,10 @@ class LineTracker:
             return set()
             
         try:
+            # Consume any forced-changed lines signaled by bulk operations
+            forced = set(self.forced_changed_lines)
+            self.forced_changed_lines.clear()
+
             cursor_pos = editor.index(tk.INSERT)
             current_cursor_line = int(cursor_pos.split('.')[0])
             
@@ -33,7 +38,11 @@ class LineTracker:
                 changed_lines = self._check_range_lines(editor, start, end)
             
             self.last_cursor_line = current_cursor_line
-            return changed_lines
+            # Update cache for forced lines without rescanning
+            if forced:
+                self._snapshot_lines(editor, forced)
+            # Union and return
+            return changed_lines.union(forced)
             
         except tk.TclError:
             return set()
@@ -85,6 +94,31 @@ class LineTracker:
         """Clear the line cache for full refresh."""
         self.line_cache.clear()
 
+    def mark_range_changed(self, start_line: int, end_line: int):
+        """Mark an inclusive line range as changed (bulk insert/update)."""
+        editor = self.editor_ref()
+        if not editor:
+            return
+        try:
+            total_lines = int(editor.index("end-1c").split('.')[0])
+            start_line = max(1, int(start_line))
+            end_line = min(total_lines, int(end_line))
+            if end_line < start_line:
+                start_line, end_line = end_line, start_line
+            for ln in range(start_line, end_line + 1):
+                self.forced_changed_lines.add(ln)
+        except tk.TclError:
+            pass
+
+    def _snapshot_lines(self, editor, lines):
+        """Update cache for specified lines to current content hash."""
+        for ln in lines:
+            try:
+                content = editor.get(f"{ln}.0", f"{ln}.end")
+                self.line_cache[ln] = hash(content)
+            except tk.TclError:
+                continue
+
 # Global line trackers
 _line_trackers = weakref.WeakKeyDictionary()
 
@@ -98,3 +132,8 @@ def clear_line_tracker(editor):
     """Clear line tracker for an editor."""
     if editor in _line_trackers:
         del _line_trackers[editor]
+
+def mark_range_changed(editor, start_line: int, end_line: int):
+    """Convenience helper to mark a line range as changed for an editor."""
+    tracker = get_line_tracker(editor)
+    tracker.mark_range_changed(start_line, end_line)
