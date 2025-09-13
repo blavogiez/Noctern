@@ -180,7 +180,8 @@ class LLMAnalyzer(AnalysisEngine):
                 corrected_code = json_data.get("corrected_code", json_data.get("fixed_code", ""))
                 confidence = self._calculate_confidence(json_data, analysis_text)
                 
-                # Generate quick fixes
+                # Quick fixes have been removed from the app.
+                # Keep a no-op call for compatibility to avoid crashes.
                 quick_fixes = self._generate_quick_fixes(json_data, diff_content)
                 
                 return AnalysisResult(
@@ -273,3 +274,16 @@ class LLMAnalyzer(AnalysisEngine):
         import hashlib
         content = diff_content + log_content
         return hashlib.md5(content.encode()).hexdigest()[:16]
+
+    # --- Compatibility shim after quick-fixes removal ---
+    def _generate_quick_fixes(self, json_data: Dict[str, Any], diff_content: str) -> list:
+        """No-op quick fixes generator.
+        Quick fixes were removed from Debug Center. This stub maintains
+        compatibility with older code paths without reintroducing the feature.
+        """
+        try:
+            from utils import logs_console
+            logs_console.log("Quick fixes feature removed; skipping generation", level='DEBUG')
+        except Exception:
+            pass
+        return []

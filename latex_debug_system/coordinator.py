@@ -1,5 +1,6 @@
 """Orchestrate debug functionality with SOLID design principles."""
 
+import threading
 from typing import Optional, Callable
 from utils import logs_console
 from latex_debug_system.core import DebugContext, AnalysisResult
@@ -27,6 +28,7 @@ class DebugCoordinator:
         # Current state
         self.current_context: Optional[DebugContext] = None
         self.current_analysis: Optional[AnalysisResult] = None
+        self._is_analyzing: bool = False
         
         # Configuration
         self.auto_fix_threshold = 0.9
@@ -90,44 +92,75 @@ class DebugCoordinator:
     
     
     def _handle_analysis_request(self):
-        """Handle user request for AI analysis."""
+        """Handle user request for AI analysis asynchronously (non-blocking)."""
+        if self._is_analyzing:
+            logs_console.log("Analysis already in progress; ignoring duplicate request", level='INFO')
+            return
+
         if not self.current_context:
             logs_console.log("No context available for analysis", level='WARNING')
+            # Inform UI so it can re-enable controls gracefully
+            try:
+                self.debug_ui.display_analysis_message("No document context available for analysis.")
+            except Exception:
+                pass
             return
-        
-        # Get diff for analysis if possible
-        has_previous, diff_content, last_content = self.diff_generator.analyze_current_vs_last_successful(
-            self.current_context.current_file_path,
-            self.current_context.current_content
-        )
-        
-        if has_previous and diff_content:
-            self.current_context.diff_content = diff_content
-            self.current_context.last_successful_content = last_content
-        
-        # Validate if analysis is needed/possible
-        if not self.current_context.has_analyzable_content():
-            reason = self.current_context.get_analysis_reason()
-            logs_console.log(f"Analysis skipped: {reason}", level='INFO')
-            self.debug_ui.display_analysis_message(reason, is_success=True)
-            return
-        
-        # Log what we're analyzing
-        analysis_reason = self.current_context.get_analysis_reason()
-        logs_console.log(f"Starting AI analysis - {analysis_reason}", level='INFO')
-        
+
+        # Prepare context with diff before starting the worker
         try:
-            # Perform analysis
+            has_previous, diff_content, last_content = self.diff_generator.analyze_current_vs_last_successful(
+                self.current_context.current_file_path,
+                self.current_context.current_content
+            )
+            if has_previous and diff_content:
+                self.current_context.diff_content = diff_content
+                self.current_context.last_successful_content = last_content
+        except Exception as e:
+            logs_console.log(f"Diff preparation failed: {e}", level='WARNING')
+
+        # Start worker thread
+        self._is_analyzing = True
+        threading.Thread(target=self._run_analysis_worker, daemon=True).start()
+
+    def _run_analysis_worker(self):
+        """Background worker to run AI analysis and update UI safely."""
+        try:
+            # Validate if analysis is needed/possible
+            if not self.current_context or not self.current_context.has_analyzable_content():
+                reason = self.current_context.get_analysis_reason() if self.current_context else "No document context"
+                logs_console.log(f"Analysis skipped: {reason}", level='INFO')
+                try:
+                    # Schedule UI update on main thread
+                    self.debug_ui.after(0, lambda: self.debug_ui.display_analysis_message(reason, is_success=True))
+                except Exception:
+                    pass
+                return
+
+            # Log what we're analyzing
+            analysis_reason = self.current_context.get_analysis_reason()
+            logs_console.log(f"Starting AI analysis - {analysis_reason}", level='INFO')
+
+            # Perform analysis (blocking in worker thread)
             analysis_result = self.llm_analyzer.analyze_errors(self.current_context)
             self.current_analysis = analysis_result
-            
-            # Display results
-            self.debug_ui.display_analysis_result(analysis_result)
-            
+
+            # Display results on UI thread
+            try:
+                self.debug_ui.after(0, lambda r=analysis_result: self.debug_ui.display_analysis_result(r))
+            except Exception:
+                pass
+
             logs_console.log(f"Analysis completed with {analysis_result.confidence:.1%} confidence", level='SUCCESS')
-            
+
         except Exception as e:
             logs_console.log(f"Error during AI analysis: {e}", level='ERROR')
+            # Surface error to UI and restore button state on main thread
+            try:
+                self.debug_ui.after(0, lambda: self.debug_ui.display_analysis_message(f"Analysis error: {e}", is_success=False))
+            except Exception:
+                pass
+        finally:
+            self._is_analyzing = False
     
     def _handle_correction_application(self, corrected_code: str):
         """Handle application of LLM correction."""
