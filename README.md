@@ -10,6 +10,7 @@
 
 ---
 
+(README still in work (09/16/25))
 ## Overview
 
 *Noctern* is the companion I always wished for during those long nights of LaTeX editing.  
