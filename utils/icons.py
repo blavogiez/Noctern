@@ -92,6 +92,7 @@ class IconButton(ttk.Button):
     def _load_icon(self):
         """Load the icon and set it as the button image."""
         icon_path = get_icon_path(self.icon_name)
+
         if icon_path and icon_path.endswith('.png'):
             try:
                 from PIL import Image, ImageTk
@@ -100,38 +101,40 @@ class IconButton(ttk.Button):
                 img = img.resize((16, 16), Image.Resampling.LANCZOS)
                 self.icon_photo = ImageTk.PhotoImage(img)
                 self.config(image=self.icon_photo)
+                return
             except Exception as e:
                 logs_console.log(f"Error loading icon {self.icon_name}: {e}", level='ERROR')
-                # Fallback to text
-                self.config(text=self.icon_name[:1].upper())
+
         elif icon_path and icon_path.endswith('.svg'):
-            # For SVG files, try to load as PNG using cairosvg if available
             try:
                 import cairosvg
                 from PIL import Image, ImageTk
                 import io
-                
+
                 # Convert SVG to PNG in memory
                 png_data = cairosvg.svg2png(url=icon_path, output_width=16, output_height=16)
                 img = Image.open(io.BytesIO(png_data))
                 self.icon_photo = ImageTk.PhotoImage(img)
                 self.config(image=self.icon_photo)
-            except (ImportError, Exception):
-                # Fallback to text icons if cairosvg not available
-                icon_map = {
-                    'search': '🔍',
-                    'chevron-up': '⌄', 
-                    'chevron-down': '⌄',
-                    'up': '↑',
-                    'down': '↓',
-                    'next': '▶', 
-                    'previous': '◀',
-                    'close': '×',
-                    'replace': '⇄',
-                    'expand': '⌄'
-                }
-                text = icon_map.get(self.icon_name, self.icon_name[:1].upper())
-                self.config(text=text)
-        elif icon_path:
-            # For other formats, just show the first letter as fallback
-            self.config(text=self.icon_name[:1].upper())
+                return
+            except (ImportError, Exception) as exc:
+                logs_console.log(f"Error loading SVG icon {self.icon_name}: {exc}", level='WARNING')
+
+        self._set_fallback_text()
+
+    def _set_fallback_text(self):
+        """Fallback glyphs when icon assets are unavailable."""
+        icon_map = {
+            'search': '🔍',
+            'chevron-up': '▲',
+            'chevron-down': '▼',
+            'up': '▲',
+            'down': '▼',
+            'next': '▶',
+            'previous': '◀',
+            'close': '✕',
+            'replace': '⟲',
+            'expand': '▾'
+        }
+        text = icon_map.get(self.icon_name, self.icon_name[:1].upper())
+        self.config(text=text)
