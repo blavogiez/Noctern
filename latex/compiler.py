@@ -10,18 +10,18 @@ import os
 import platform
 import tkinter as tk
 from tkinter import messagebox
-import shutil # Import shutil for file operations
-import difflib # Import difflib for diffing
+import shutil # import shutil for file operations
+import difflib # import difflib for diffing
 from utils import logs_console
 from latex import error_parser
 
 
-# Global reference to the root Tkinter window, initialized during application setup.
+# global reference to the root tkinter window, initialized during application setup
 root = None
 get_current_tab = None
 show_console = None
 hide_console = None
-_pdf_monitor_setting = "Default" # Default value
+_pdf_monitor_setting = "Default" # default value
 
 def initialize_compiler(root_widget, get_current_tab_func, show_console_func, hide_console_func, pdf_monitor_setting="Default"):
     """
@@ -60,16 +60,16 @@ def clean_project_directory(event=None):
     try:
         project_directory = os.path.dirname(current_tab.file_path)
         
-        # List of common LaTeX auxiliary file extensions to be deleted.
+        # list of common latex auxiliary file extensions to be deleted
         extensions_to_delete = [
             '.aux', '.log', '.toc', '.bbl', '.bcf', '.blg', '.lof', '.lot', 
             '.out', '.run.xml', '.synctex.gz', '.fls', '.fdb_latexmk', '.nav', '.snm', '.vrb', '.dvi', '.ps'
         ]
         
         files_deleted_count = 0
-        # Iterate through all files in the project directory.
+        # iterate through all files in the project directory
         for filename in os.listdir(project_directory):
-            # Check if the file ends with any of the specified auxiliary extensions.
+            # check if the file ends with any of the specified auxiliary extensions
             if any(filename.endswith(ext) for ext in extensions_to_delete):
                 file_path_to_delete = os.path.join(project_directory, filename)
                 try:
@@ -116,13 +116,13 @@ def compile_latex(event=None):
     editor_content = current_tab.editor.get("1.0", tk.END)
     temp_file_created = False
 
-    # Determine the source directory and file name for compilation.
+    # determine the source directory and file name for compilation
     if current_tab.file_path:
         source_directory = os.path.dirname(current_tab.file_path)
         file_name = os.path.basename(current_tab.file_path)
         tex_file_path = current_tab.file_path
         try:
-            # Save current editor content to the file.
+            # save current editor content to the file
             with open(tex_file_path, "w", encoding="utf-8") as f:
                 f.write(editor_content)
             logs_console.log(f"Saved current content to '{tex_file_path}' for compilation.", level='DEBUG')
@@ -131,7 +131,7 @@ def compile_latex(event=None):
             logs_console.log(f"Error saving file for compilation: {e}", level='ERROR')
             return
     else:
-        # For unsaved files, save to a temporary 'main.tex' in the 'output' directory.
+        # for unsaved files, save to a temporary 'main.tex' in the 'output' directory
         source_directory = "output"
         file_name = "main.tex"
         os.makedirs(source_directory, exist_ok=True)
@@ -152,18 +152,18 @@ def compile_latex(event=None):
     os.makedirs(cache_directory, exist_ok=True)
     cached_tex_path = os.path.join(cache_directory, f"{tex_base_name}_last_successful.tex")
 
-    # Compile directly in source directory
+    # compile directly in source directory
     try:
-        # Execute pdflatex command in the source directory
+        # execute pdflatex command in the source directory
         command = ["pdflatex", "-interaction=nonstopmode", file_name]
         logs_console.log(f"Executing pdflatex command: {' '.join(command)} in directory: {source_directory}", level='DEBUG')
         result = subprocess.run(command, cwd=source_directory, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=120, check=False)
         
-        # Path to log file and PDF in source directory
+        # path to log file and pdf in source directory
         log_file_path = os.path.join(source_directory, file_name.replace(".tex", ".log"))
         pdf_output_path = os.path.join(source_directory, file_name.replace(".tex", ".pdf"))
 
-        # Get log content for both success and failure cases
+        # get log content for both success and failure cases
         log_content = ""
         try:
             with open(log_file_path, 'r', encoding='utf-8', errors='ignore') as f_log:
@@ -175,7 +175,7 @@ def compile_latex(event=None):
             messagebox.showinfo("✅ Compilation Successful", "LaTeX document compiled successfully to PDF.")
             logs_console.log("LaTeX compilation successful.", level='SUCCESS')
             
-            # Store successful version in the new debug system
+            # store successful version in the new debug system
             try:
                 from app import state
                 if hasattr(state, 'debug_coordinator') and state.debug_coordinator:
@@ -189,7 +189,7 @@ def compile_latex(event=None):
             except Exception as e:
                 logs_console.log(f"Error handling compilation result in debug system: {e}", level='WARNING')
             
-            # Cache successful compilation (legacy - for existing diff mechanism)
+            # cache successful compilation (legacy - for existing diff mechanism)
             try:
                 shutil.copy2(tex_file_path, cached_tex_path)
                 logs_console.log(f"Cached successful version to {cached_tex_path}", level='INFO')
@@ -201,7 +201,7 @@ def compile_latex(event=None):
             messagebox.showerror("❌ LaTeX Compilation Failed", "Compilation failed. Check debug panel for details.")
             logs_console.log("LaTeX compilation failed. Updating debug panel.", level='ERROR')
             
-            # Handle compilation failure with new debug system
+            # handle compilation failure with new debug system
             try:
                 from app import state
                 if hasattr(state, 'debug_coordinator') and state.debug_coordinator:
@@ -213,13 +213,13 @@ def compile_latex(event=None):
                     )
                     logs_console.log("Compilation errors handled by TeXstudio debug system", level='INFO')
                 else:
-                    # Fallback to old console display if debug system not available
+                    # fallback to old console display if debug system not available
                     error_summary = error_parser.parse_log_file(log_content)
                     show_console(error_summary)
                     logs_console.log("Used fallback error display", level='WARNING')
             except Exception as e:
                 logs_console.log(f"Error handling compilation failure in debug system: {e}", level='ERROR')
-                # Final fallback
+                # final fallback
                 try:
                     error_summary = error_parser.parse_log_file(log_content)
                     show_console(error_summary)
@@ -236,7 +236,7 @@ def compile_latex(event=None):
         messagebox.showerror("Compilation Error", f"An unexpected error occurred during compilation: {e}")
         logs_console.log(f"Unexpected error during LaTeX compilation: {e}", level='ERROR')
     finally:
-        # Clean up the temporary .tex file if one was created.
+        # clean up the temporary .tex file if one was created
         if temp_file_created and os.path.exists(tex_file_path):
              try:
                  os.remove(tex_file_path)
@@ -265,29 +265,29 @@ def display_pdf(pdf_path):
         return
 
     try:
-        # Path to the bundled SumatraPDF viewer (Windows specific).
+        # path to the bundled sumatrapdf viewer (windows specific)
         sumatra_pdf_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "pdf_reader", "SumatraPDF.exe")
         
         if platform.system() == "Windows" and os.path.exists(sumatra_pdf_path):
             try:
-                # Use subprocess.Popen to open SumatraPDF without waiting for it to close.
+                # use subprocess.popen to open sumatrapdf without waiting for it to close
                 subprocess.Popen([sumatra_pdf_path, pdf_path])
                 logs_console.log(f"Opened PDF with SumatraPDF: {pdf_path}", level='INFO')
             except Exception as e:
                 messagebox.showerror("Error Opening PDF", f"Could not open PDF with SumatraPDF: {e}")
                 logs_console.log(f"Error opening PDF with SumatraPDF: {e}", level='ERROR')
         else:
-            # Fallback to system default viewer for other OS or if SumatraPDF is not found.
+            # fallback to system default viewer for other os or if sumatrapdf is not found
             logs_console.log("SumatraPDF not found, using system default viewer.", level='INFO')
             try:
                 if platform.system() == "Windows":
-                    os.startfile(pdf_path) # Windows default application.
+                    os.startfile(pdf_path) # windows default application
                 elif platform.system() == "Darwin":
                     subprocess.run(["open", pdf_path], check=True) # macOS default application.
                 elif platform.system() == "Linux":
-                    subprocess.run(["xdg-open", pdf_path], check=True) # Linux default application.
+                    subprocess.run(["xdg-open", pdf_path], check=True) # linux default application
                 else:
-                    # Fallback for other systems
+                    # fallback for other systems
                     import webbrowser
                     webbrowser.open(f"file://{os.path.abspath(pdf_path)}")
                 logs_console.log(f"Opened PDF with system default viewer: {pdf_path}", level='INFO')
@@ -320,7 +320,7 @@ def view_pdf_external(event=None, pdf_path=None):
             file_name = os.path.basename(current_tab.file_path)
             pdf_path = os.path.join(source_directory, file_name.replace(".tex", ".pdf"))
 
-        # Validate PDF path
+        # validate pdf path
         if not pdf_path or not isinstance(pdf_path, str):
             messagebox.showerror("Error", "Invalid PDF path.")
             logs_console.log("Invalid PDF path for viewing.", level='ERROR')
@@ -331,13 +331,13 @@ def view_pdf_external(event=None, pdf_path=None):
             logs_console.log(f"PDF file not found for viewing: {pdf_path}", level='ERROR')
             return
 
-        # Try to open with SumatraPDF if available
+        # try to open with sumatrapdf if available
         sumatra_pdf_path = os.path.normpath(os.path.join(os.path.dirname(__file__), '..', 'tools', 'pdf_reader', 'SumatraPDF.exe'))
         
         command = []
         if platform.system() == "Windows" and os.path.exists(sumatra_pdf_path):
             command.append(sumatra_pdf_path)
-            command.append(pdf_path) # File path should come before options
+            command.append(pdf_path) # file path should come before options
             
             monitor_index = None
             if _pdf_monitor_setting != "Default":
@@ -358,7 +358,7 @@ def view_pdf_external(event=None, pdf_path=None):
                 messagebox.showerror("Error Opening PDF", f"Could not open PDF with SumatraPDF: {e}")
                 logs_console.log(f"Error opening PDF with SumatraPDF: {e}", level='ERROR')
         else:
-            # Fallback for non-Windows or if Sumatra is not found
+            # fallback for non-windows or if sumatra is not found
             display_pdf(pdf_path)
     except Exception as e:
         messagebox.showerror("Error", f"Unexpected error while viewing PDF: {e}")

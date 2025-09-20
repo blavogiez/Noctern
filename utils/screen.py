@@ -25,11 +25,11 @@ def get_secondary_monitor_index() -> int | None:
     
     for i, monitor in enumerate(monitors):
         if not monitor.is_primary:
-            # SumatraPDF monitor indices are 1-based
+            # sumatrapdf monitor indices are 1-based
             logs_console.log(f"Found secondary monitor at index {i+1}", level='INFO')
             return i + 1
             
-    # Fallback: if no monitor is explicitly primary, return second one
+    # fallback: if no monitor is explicitly primary, return second one
     logs_console.log("No primary monitor designated. Falling back to monitor 2.", level='INFO')
     return 2
 
@@ -45,23 +45,23 @@ def show_screen_numbers(root):
     for i, monitor in enumerate(monitors):
         screen_num = i + 1
         
-        # Create transparent, borderless window
+        # create transparent, borderless window
         win = tk.Toplevel(root)
         win.overrideredirect(True)
         win.attributes('-topmost', True)
         
-        # Center identification window on monitor
+        # center id window on monitor
         win_width = 200
         win_height = 150
         pos_x = monitor.x + (monitor.width // 2) - (win_width // 2)
         pos_y = monitor.y + (monitor.height // 2) - (win_height // 2)
         win.geometry(f"{win_width}x{win_height}+{pos_x}+{pos_y}")
 
-        # Make window background transparent
+        # make window bg transparent
         win.config(bg='black')
         win.attributes('-transparentcolor', 'black')
 
-        # Add screen number label
+        # add screen number label
         label = tk.Label(
             win, 
             text=str(screen_num), 
@@ -71,6 +71,6 @@ def show_screen_numbers(root):
         )
         label.pack(pady=20, expand=True, fill='both')
 
-        # Schedule window to close after 2 seconds
+        # schedule window to close after 2 secs
         win.after(2000, win.destroy)
 

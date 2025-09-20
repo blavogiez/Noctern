@@ -28,7 +28,7 @@ from utils import logs_console
 from utils.unsaved_changes_dialog import show_unsaved_changes_dialog_multiple_files
 
 # =============================================================================
-# LLM + UI ORCHESTRATION - Central hub for all AI interactions
+# llm + ui orchestration - central hub for all ai interactions
 # =============================================================================
 
 from app.llm_actions import (
@@ -54,7 +54,7 @@ def perform_heavy_updates():
         logs_console.log("Heavy update skipped: No active editor tab.", level='DEBUG')
         return
 
-    # Update debug system with current document
+    # update debug sys with current doc
     if hasattr(state, 'debug_coordinator') and state.debug_coordinator and current_tab.file_path:
         try:
             content = current_tab.editor.get("1.0", tk.END)
@@ -62,7 +62,7 @@ def perform_heavy_updates():
         except Exception as e:
             logs_console.log(f"Error updating debug system: {e}", level='WARNING')
     
-    # Use optimized performance system
+    # use optimized perf system
     from app.performance_optimizer import schedule_optimized_update, UpdateType
     schedule_optimized_update(current_tab.editor, {UpdateType.ALL}, force=True)
 
@@ -72,7 +72,7 @@ def schedule_heavy_updates(_=None):
     if not current_tab:
         return
         
-    # Use optimized scheduling system
+    # use optimized scheduling sys
     from app.performance_optimizer import schedule_optimized_update, UpdateType
     schedule_optimized_update(current_tab.editor, {UpdateType.ALL})
 
@@ -93,33 +93,33 @@ def insert_table(event=None):
     def insert_callback(latex_code):
         """Insert LaTeX code and setup snippet navigation."""
         try:
-            # Get cursor position
+            # get cursor pos
             cursor_pos = current_tab.editor.index(tk.INSERT)
             
-            # Insert LaTeX code
+            # insert latex code
             current_tab.editor.insert(cursor_pos, latex_code)
             
-            # Setup placeholder navigation
+            # setup placeholder nav
             from editor.placeholder_navigation import PlaceholderManager
             if not hasattr(current_tab.editor, 'placeholder_manager'):
                 current_tab.editor.placeholder_manager = PlaceholderManager(current_tab.editor)
             
-            # Set context for snippet navigation
+            # set context for snippet nav
             manager = current_tab.editor.placeholder_manager
             manager.set_snippet_context(cursor_pos, latex_code)
             
-            # Focus the editor to ensure proper navigation
+            # focus the editor to ensure proper nav
             current_tab.editor.focus_set()
             
-            # Position cursor at insertion point and reset search position
+            # position cursor at insertion point and reset search pos
             current_tab.editor.mark_set(tk.INSERT, cursor_pos)
             manager.current_search_pos = cursor_pos
             
-            # Navigate to first placeholder of the inserted table
+            # navigate to first placeholder of the inserted table
             if manager.navigate_next():
                 logs_console.log("Navigating to first table placeholder", level='INFO')
             
-            # Update syntax highlighting
+            # update syntax highlighting
             schedule_heavy_updates()
             
             show_temporary_status_message("✅ Table inserted - use F3 to navigate placeholders")
@@ -236,12 +236,12 @@ def go_to_line_in_pdf(event=None):
         logs_console.log("No active editor tab found.", level='WARNING')
         return
         
-    # Get current cursor position for precise line navigation
+    # get current cursor pos for precise line nav
     try:
         cursor_pos = current_tab.editor.index(tk.INSERT)
         current_line = int(cursor_pos.split('.')[0])
         
-        # Get selected text if available
+        # get selected text if available
         selected_text = ""
         try:
             selected_text = current_tab.editor.get("sel.first", "sel.last")

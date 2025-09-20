@@ -38,12 +38,12 @@ def make_tab(size=12):
 def patched_zoom(monkeypatch):
     monkeypatch.setattr(zoom, "Font", FakeFont)
 
-    # Mock the interface module import inside zoom methods
+    # mock the interface module import inside zoom methods
     mock_interface = SimpleNamespace(perform_heavy_updates=lambda: None)
     monkeypatch.setitem(sys.modules, "app.interface", mock_interface)
 
     updates = []
-    # Mock the line number update function import
+    # mock the line number update function import
     mock_line_manager = SimpleNamespace(force_line_number_update=lambda widget: updates.append(widget))
     monkeypatch.setitem(sys.modules, "editor.line_number_manager", mock_line_manager)
     return updates

@@ -6,8 +6,8 @@ It aims to provide a more accurate word count by filtering out LaTeX commands an
 import tkinter as tk
 import re
 
-# Global variable to store the last calculated word count.
-# Initialized to -1 to ensure the word count is updated on the first call.
+# global variable to store the last calculated word count
+# initialized to -1 to ensure the word count is updated on the first call
 _last_word_count = -1
 
 def update_word_count(editor, status_label):
@@ -26,32 +26,32 @@ def update_word_count(editor, status_label):
         int: The current word count of the editor's content.
     """
     global _last_word_count
-    # Ensure both the editor and status label widgets are valid and exist.
+    # ensure both the editor and status label widgets are valid and exist
     if not editor or not status_label or not status_label.winfo_exists():
-        return 0 # Return 0 if widgets are not available.
+        return 0 # return 0 if widgets are not available
 
-    # Retrieve the entire content from the editor.
+    # retrieve the entire content from the editor
     content = editor.get("1.0", tk.END)
     
-    # --- Pre-processing content for accurate word count ---
-    # 1. Remove LaTeX comments (lines starting with % or % followed by anything until newline).
+    # --- pre-processing content for accurate word count ---
+    # 1. remove latex comments (lines starting with % or % followed by anything until newline)
     content = re.sub(r"%.*?\n", "", content) 
-    # 2. Remove LaTeX commands (e.g., \section{}, \includegraphics[]{}).
-    # This regex matches \ followed by one or more letters/symbols, optionally followed by
-    # Match square brackets for optional arguments and curly braces for mandatory arguments
+    # 2. remove latex commands (e.g., \section{}, \includegraphics[]{})
+    # this regex matches \ followed by one or more letters/symbols, optionally followed by
+    # match square brackets for optional arguments and curly braces for mandatory arguments
     content = re.sub(r"\\[a-zA-Z@]+(?:\\[^\\]*\\)?(?:\{[^}]*\})?", "", content)
-    # 3. Replace remaining LaTeX structural characters (brackets, braces, asterisks) with spaces.
-    # This helps in correctly splitting words that might be adjacent to these characters.
+    # 3. replace remaining latex structural characters (brackets, braces, asterisks) with spaces
+    # this helps in correctly splitting words that might be adjacent to these characters
     content = re.sub(r"\\[\\[\\]{}*]", " ", content)
     
-    # Split the cleaned content by whitespace to get a list of words.
+    # split the cleaned content by whitespace to get a list of words
     words = content.split()
-    word_count = len(words) # Calculate the number of words.
+    word_count = len(words) # calculate the number of words
 
-    # Update the status label only if the word count has changed.
+    # update the status label only if the word count has changed
     if word_count != _last_word_count:
         status_label.config(text=f"{word_count} words")
-        _last_word_count = word_count # Store the new word count.
+        _last_word_count = word_count # store the new word count
     
     return word_count
 
@@ -67,5 +67,5 @@ def get_last_word_count_text():
              Returns "..." if no word count has been calculated yet.
     """
     if _last_word_count == -1:
-        return "..." # Indicate that the word count has not been initialized yet.
-    return f"{_last_word_count} words" # Return the formatted word count. 
+        return "..." # indicate that the word count has not been initialized yet
+    return f"{_last_word_count} words" # return the formatted word count 

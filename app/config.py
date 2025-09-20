@@ -4,14 +4,14 @@ import configparser
 import os
 from utils import logs_console
 
-# Use a stable absolute path for settings.conf at the project root
-# This avoids saving to different locations depending on the process CWD.
+# use a stable absolute path for settings.conf at the project root
+# this avoids saving to different locations depending on the process cwd
 _APP_DIR = os.path.dirname(os.path.abspath(__file__))
 _PROJECT_ROOT = os.path.normpath(os.path.join(_APP_DIR, os.pardir))
 CONFIG_FILE = os.path.join(_PROJECT_ROOT, "settings.conf")
 DEFAULT_SECTION = "Settings"
 
-# Default configuration values for file creation and missing keys
+# Default config values for file creation and missing keys
 DEFAULT_VALUES = {
     "app_monitor": "Default",
     "pdf_monitor": "Default",
@@ -37,7 +37,7 @@ def load_config():
     """Load configuration from settings.conf with default fallbacks."""
     config = configparser.ConfigParser()
     
-    # Create configuration file with defaults when missing
+    # create config file with defaults when missing
     if not os.path.exists(CONFIG_FILE):
         logs_console.log(f"Config file not found. Creating default '{CONFIG_FILE}'.", level='INFO')
         config[DEFAULT_SECTION] = DEFAULT_VALUES
@@ -46,11 +46,11 @@ def load_config():
 
     try:
         config.read(CONFIG_FILE)
-        # Verify main configuration section exists
+        # verify main config section exists
         if DEFAULT_SECTION not in config:
             config[DEFAULT_SECTION] = {}
 
-        # Apply defaults for missing configuration keys
+        # apply defaults for missing config keys
         settings = config[DEFAULT_SECTION]
         updated = False
         for key, value in DEFAULT_VALUES.items():
@@ -62,7 +62,7 @@ def load_config():
             logs_console.log("Added missing keys to config file.", level='INFO')
             save_config(settings)
 
-        # Convert settings to dictionary format
+        # convert settings to dictionary format
         return dict(settings)
 
     except configparser.Error as e:
@@ -74,7 +74,7 @@ def save_config(settings_dict):
 
     Preserves non-Settings sections (e.g., Session) instead of overwriting the whole file.
     """
-    # Merge incoming settings with existing ones to avoid resetting other values
+    # merge incoming settings with existing ones to avoid reseting other values
     existing_settings = {}
     if os.path.exists(CONFIG_FILE):
         try:
@@ -85,30 +85,30 @@ def save_config(settings_dict):
         except configparser.Error:
             existing_settings = {}
     else:
-        # No config yet: start from defaults
+        # no config yet: start from defaults
         existing_settings = dict(DEFAULT_VALUES)
 
     merged_settings = dict(existing_settings)
     merged_settings.update(settings_dict)
 
-    # Validate and normalize settings
+    # validate and normalize settings
     normalized_settings = _normalize_settings(merged_settings)
 
-    # Prepare for logging without exposing secrets
+    # prepare for logging without exposing secrets
     log_dict = dict(normalized_settings)
     if "gemini_api_key" in log_dict and log_dict["gemini_api_key"]:
         log_dict["gemini_api_key"] = "****"
 
-    # Read existing config to preserve other sections
+    # read existing config to preserve other sections
     config = configparser.ConfigParser()
     if os.path.exists(CONFIG_FILE):
         try:
             config.read(CONFIG_FILE)
         except configparser.Error:
-            # Fallback to a fresh config if reading fails
+            # fallback to a fresh config if reading fails
             config = configparser.ConfigParser()
 
-    # Ensure Settings section exists and update it
+    # ensure settings section exists and update it
     if DEFAULT_SECTION not in config:
         config[DEFAULT_SECTION] = {}
     for key, value in normalized_settings.items():
@@ -126,13 +126,13 @@ def _normalize_settings(settings_dict):
     """Normalize and validate settings before saving."""
     normalized = dict(settings_dict)
     
-    # Convert booleans to strings for config file
+    # convert booleans to strings for config file
     bool_keys = ["show_status_bar", "show_pdf_preview"]
     for key in bool_keys:
         if key in normalized:
             normalized[key] = str(bool(get_bool(normalized[key])))
     
-    # Validate numeric values
+    # validate numeric values
     numeric_keys = {"font_size": (8, 72), "treeview_font_size": (8, 18), "treeview_row_height": (20, 50)}
     for key, (min_val, max_val) in numeric_keys.items():
         if key in normalized:
@@ -142,11 +142,11 @@ def _normalize_settings(settings_dict):
             except (ValueError, TypeError):
                 normalized[key] = str(DEFAULT_VALUES.get(key, min_val))
     
-    # Ensure required keys exist (but preserve empty API keys)
+    # ensure required keys exist (but preserve empty api keys)
     for key, default in DEFAULT_VALUES.items():
         if key not in normalized:
             normalized[key] = default
-        # Special case: don't overwrite empty API keys with defaults
+        # special case: don't overwrite empty api keys with defaults
         elif key == "gemini_api_key" and normalized[key] is None:
             normalized[key] = ""
     
@@ -164,16 +164,16 @@ def reset_config():
 def update_and_save_config(updates_dict):
     """Update existing config with new values and save atomically."""
     try:
-        # Load current config
+        # load current config
         current_config = load_config()
         
-        # Apply updates
+        # apply updates
         current_config.update(updates_dict)
         
-        # Save updated config
+        # save updated config
         save_config(current_config)
         
-        # Notify modules that might need to reload
+        # notify modules that might need to reload
         _notify_config_changed(updates_dict)
         
         return current_config
@@ -184,13 +184,13 @@ def update_and_save_config(updates_dict):
 def _notify_config_changed(updates_dict):
     """Notify relevant modules when config changes."""
     try:
-        # Update font if changed
+        # update font if changed
         if "editor_font_family" in updates_dict:
             from app import state
             if hasattr(state, 'zoom_manager') and state.zoom_manager:
                 state.zoom_manager.update_font_family(updates_dict["editor_font_family"])
         
-        # Update LLM model settings
+        # update llm model settings
         model_keys = [k for k in updates_dict if k.startswith("model_")]
         if model_keys:
             try:
@@ -199,7 +199,7 @@ def _notify_config_changed(updates_dict):
                     if hasattr(llm_state, key):
                         setattr(llm_state, key, updates_dict[key])
             except ImportError:
-                pass  # LLM state not available yet
+                pass  # llm state not available yet
                 
     except Exception as e:
         logs_console.log(f"Warning: config notification failed: {e}", level='WARNING')
@@ -216,28 +216,28 @@ def get_treeview_font_settings(config_dict):
     """Extract and validate treeview font configuration settings."""
     import tkinter.font as tkFont
     
-    # Extract font values with fallback defaults
+    # extract font values with fallback defaults
     font_family = config_dict.get("treeview_font_family", "Segoe UI")
     font_size = config_dict.get("treeview_font_size", "10")
     row_height = config_dict.get("treeview_row_height", "30")
     
-    # Validate font size within acceptable range
+    # validate font size within acceptable range
     try:
-        font_size = max(8, min(18, int(font_size)))  # Clamp to 8-18 range
+        font_size = max(8, min(18, int(font_size)))  # clamp to 8-18 range
     except (ValueError, TypeError):
         font_size = 10
     
-    # Validate row height within acceptable range
+    # validate row height within acceptable range
     try:
-        row_height = max(20, min(50, int(row_height)))  # Clamp to 20-50 range
+        row_height = max(20, min(50, int(row_height)))  # clamp to 20-50 range
     except (ValueError, TypeError):
         row_height = 30
     
-    # Verify font family availability on system
+    # verify font family availability on system
     try:
         available_fonts = tkFont.families()
         if font_family not in available_fonts:
-            # Use common system fonts as fallbacks
+            # use common system fonts as fallbacks
             for fallback in ["Segoe UI", "Arial", "Helvetica", "DejaVu Sans"]:
                 if fallback in available_fonts:
                     font_family = fallback
@@ -255,7 +255,7 @@ def get_treeview_font_settings(config_dict):
 
 def get_available_editor_fonts():
     """Get list of available programming fonts for editor."""
-    # Simple list of preferred coding fonts
+    # simple list of preferred coding fonts
     return ["Consolas", "Fira Code", "JetBrains Mono", "Cascadia Code", "Iosevka"]
 
 def get_editor_font_settings(config_dict):
@@ -263,7 +263,7 @@ def get_editor_font_settings(config_dict):
     font_family = config_dict.get("editor_font_family", "Consolas")
     font_size_str = config_dict.get("font_size", "12")
     
-    # Validate font size
+    # validate font size
     try:
         font_size = int(font_size_str)
         if font_size < 8:
@@ -273,7 +273,7 @@ def get_editor_font_settings(config_dict):
     except (ValueError, TypeError):
         font_size = 12
     
-    # Use the selected font - Tkinter will handle fallback if not installed
+    # use the selected font - tkinter will handle fallback if not installed
     
     return {
         "family": font_family,

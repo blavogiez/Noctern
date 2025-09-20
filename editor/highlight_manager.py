@@ -37,11 +37,11 @@ class NavigationHighlightManager:
         try:
             self.clear_highlight()
             
-            # Configure and apply highlight tag
+            # configure and apply highlight tag
             self._configure_highlight_tag(editor)
             self._apply_line_highlight(editor, line_number)
             
-            # Store state and schedule cleanup
+            # store state and schedule cleanup
             self._active_highlight = (editor, line_number)
             self._cleanup_after_id = editor.after(duration_ms, self.clear_highlight)
             
@@ -92,11 +92,11 @@ class NavigationHighlightManager:
         line_start = f"{line_number}.0"
         line_end = f"{line_number}.0 lineend+1c"
         
-        # Primary: Tag-based highlighting with high priority
+        # primary: tag-based highlighting with high priority
         editor.tag_add(self.TAG_NAME, line_start, line_end)
         editor.tag_raise(self.TAG_NAME)
         
-        # Fallback: Use selection if no existing selection
+        # fallback: use selection if no existing selection
         if not editor.tag_ranges("sel"):
             editor.tag_add("sel", line_start, line_end)
             self._preserve_selection = True
@@ -107,7 +107,7 @@ class NavigationHighlightManager:
             from app import state
             current_theme = getattr(state, 'current_theme', 'litera')
             
-            # Determine if theme is dark or light
+            # determine if theme is dark or light
             dark_themes = {'darkly', 'superhero', 'solar', 'cyborg', 'vapor'}
             theme_type = 'dark' if current_theme in dark_themes else 'light'
             
@@ -123,7 +123,7 @@ class NavigationHighlightManager:
         self._preserve_selection = False
 
 
-# Global instance for consistent highlighting across the application
+# global instance for consistent highlighting across the application
 _highlight_manager = NavigationHighlightManager()
 
 

@@ -20,11 +20,11 @@ def get_icon_path(icon_name: str) -> Optional[str]:
     Returns:
         Full path to the icon file or None if not found
     """
-    # Check if the icon name already has an extension
+    # check if the icon name already has an extension
     if not icon_name.endswith(('.svg', '.png')):
-        # Try SVG first, then PNG
+        # try svg first, then png
         for ext in ['.svg', '.png']:
-            # Check in search subdirectory first
+            # check in search subdir first
             full_path = os.path.join(
                 os.path.dirname(os.path.dirname(__file__)), 
                 'resources', 
@@ -35,7 +35,7 @@ def get_icon_path(icon_name: str) -> Optional[str]:
             if os.path.exists(full_path):
                 return full_path
                 
-            # Check in main icons directory
+            # check in main icons dir
             full_path = os.path.join(
                 os.path.dirname(os.path.dirname(__file__)), 
                 'resources', 
@@ -97,7 +97,7 @@ class IconButton(ttk.Button):
             try:
                 from PIL import Image, ImageTk
                 img = Image.open(icon_path)
-                # Resize to a standard size
+                # resize to a standard size
                 img = img.resize((16, 16), Image.Resampling.LANCZOS)
                 self.icon_photo = ImageTk.PhotoImage(img)
                 self.config(image=self.icon_photo)
@@ -111,7 +111,7 @@ class IconButton(ttk.Button):
                 from PIL import Image, ImageTk
                 import io
 
-                # Convert SVG to PNG in memory
+                # convert svg to png in memory
                 png_data = cairosvg.svg2png(url=icon_path, output_width=16, output_height=16)
                 img = Image.open(io.BytesIO(png_data))
                 self.icon_photo = ImageTk.PhotoImage(img)

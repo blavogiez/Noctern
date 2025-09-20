@@ -28,18 +28,18 @@ def get_theme_colors(style, theme_name):
             "placeholder_color": "#FF1744", "accent_color": "#FF8242", "border_color": "#E0E0E0"
         }
 
-    # Detect theme characteristics
+    # detect theme characteristics
     is_dark = _is_dark_theme(style, colors)
     
-    # Get semantic color variations
+    # get semantic color variations
     base_bg = colors.dark if is_dark else colors.light
     base_fg = colors.light if is_dark else colors.dark
     secondary_bg = _adjust_brightness(base_bg, 0.1 if is_dark else -0.05)
     
-    # Theme-specific syntax highlighting
+    # theme-specific syntax highlighting
     syntax_colors = _get_syntax_colors(theme_name, is_dark, colors)
     
-    # Debug center colors
+    # debug center colors
     debug_colors = _get_debug_colors(theme_name, is_dark, colors)
     
     return {
@@ -66,7 +66,7 @@ def _is_dark_theme(style, colors):
     bg = style.lookup('TLabel', 'background') or colors.bg
     if bg == colors.dark:
         return True
-    # Additional luminance check for edge cases
+    # additional luminance check for edge cases
     return _get_luminance(bg) < 0.5
 
 def _get_luminance(color):
@@ -84,11 +84,11 @@ def _adjust_brightness(color, factor):
     try:
         if color.startswith('#'):
             r, g, b = int(color[1:3], 16), int(color[3:5], 16), int(color[5:7], 16)
-            if factor > 0:  # Lighten
+            if factor > 0:  # lighten
                 r = min(255, int(r + (255 - r) * factor))
                 g = min(255, int(g + (255 - g) * factor))
                 b = min(255, int(b + (255 - b) * factor))
-            else:  # Darken
+            else:  # darken
                 factor = abs(factor)
                 r = max(0, int(r * (1 - factor)))
                 g = max(0, int(g * (1 - factor)))
@@ -102,13 +102,13 @@ def _get_contrasted_secondary(colors, is_dark):
     """Get a well-contrasted secondary color for text visibility with minimum 4:1 contrast."""
     base_bg = colors.dark if is_dark else colors.light
     
-    # Use high-contrast colors optimized for each theme type
+    # use high-contrast colors optimized for each theme type
     if is_dark:
-        # For dark themes: use bright white-ish gray for maximum visibility
-        return "#E8E8E8"  # Very light gray for dark backgrounds
+        # for dark themes: use bright white-ish gray for maximum visibility
+        return "#E8E8E8"  # very light gray for dark backgrounds
     else:
-        # For light themes: use dark charcoal for maximum readability  
-        return "#2A2A2A"  # Very dark gray for light backgrounds
+        # for light themes: use dark charcoal for maximum readability  
+        return "#2A2A2A"  # very dark gray for light backgrounds
 
 def _calculate_contrast_ratio(color1, color2):
     """Calculate WCAG contrast ratio between two colors."""
@@ -158,7 +158,7 @@ def _get_debug_colors(theme_name, is_dark, colors):
         }
     }
     
-    # Light themes default
+    # light themes default
     light_default = {
         'bg': '#ffffff', 'fg': '#333333',
         'heading_bg': '#f5f5f5', 'heading_fg': '#666666'
@@ -174,18 +174,18 @@ def apply_theme(theme_name, root_window, main_paned_window, open_tabs_dict, perf
     
     theme_settings = get_theme_colors(style, theme_name)
     
-    # Update state immediately before widget updates
+    # update state immediately before widget updates
     try:
         from app import state
         state._theme_settings = theme_settings
     except:
         pass
     
-    # Get colors and theme type for enhanced styling
+    # get colors and theme type for enhanced styling
     colors = style.colors
     is_dark = _is_dark_theme(style, colors)
     
-    # Get validated font settings from config
+    # get validated font settings from config
     if config_settings:
         font_settings = get_treeview_font_settings(config_settings)
         treeview_font_family = font_settings["family"]
@@ -203,7 +203,7 @@ def apply_theme(theme_name, root_window, main_paned_window, open_tabs_dict, perf
                     foreground=theme_settings["fg_color"],
                     font=("Segoe UI", 9))
     
-    # Enhanced label variants for better contrast
+    # enhanced label variants for better contrast
     style.configure("Contrast.TLabel",
                     background=theme_settings["root_bg"],
                     foreground=_get_contrasted_secondary(colors, is_dark),
@@ -218,7 +218,7 @@ def apply_theme(theme_name, root_window, main_paned_window, open_tabs_dict, perf
                     borderwidth=1,
                     relief="flat")
     
-    # Add enhanced entry and text widget styling
+    # add enhanced entry and text widget styling
     style.configure("TEntry",
                     fieldbackground=theme_settings["editor_bg"],
                     foreground=theme_settings["editor_fg"],
@@ -239,7 +239,7 @@ def apply_theme(theme_name, root_window, main_paned_window, open_tabs_dict, perf
         font=("Segoe UI", 9, "bold")
     )
     
-    # Subtitle/description labels with better contrast
+    # subtitle/description labels with better contrast
     style.configure(
         "Subtitle.TLabel",
         background=theme_settings["root_bg"],
@@ -315,13 +315,13 @@ def apply_theme(theme_name, root_window, main_paned_window, open_tabs_dict, perf
               foreground=[("selected", theme_settings["notebook_active_tab_fg"])],
               bordercolor=[("selected", theme_settings["accent_color"])])
     
-    # Update notebook fonts and close button color after theme change
+    # update notebook fonts and close button color after theme change
     from app import state
     if hasattr(state, 'notebook') and state.notebook:
         if hasattr(state.notebook, 'update_fonts'):
             state.notebook.update_fonts()
         if hasattr(state.notebook, 'update_close_button_color'):
-            # Use foreground color for close button to match theme
+            # use foreground color for close button to match theme
             state.notebook.update_close_button_color(theme_settings["fg_color"])
 
     # --- Status Bar ---
@@ -372,7 +372,7 @@ def apply_theme(theme_name, root_window, main_paned_window, open_tabs_dict, perf
         update_all_widgets(root_window)
         root_window.event_generate('<<ThemeChanged>>')
         
-        # Refresh PDF preview with new theme if available
+        # refresh pdf preview with new theme if available
         from app import state
         from utils import logs_console
         
@@ -381,7 +381,7 @@ def apply_theme(theme_name, root_window, main_paned_window, open_tabs_dict, perf
             state.pdf_preview_interface.preview_manager and
             state.pdf_preview_interface.preview_manager.viewer):
             logs_console.log(f"Theme: Scheduling PDF refresh for theme {theme_name}", level='INFO')
-            # Schedule PDF refresh after theme application
+            # schedule pdf refresh after theme application
             root_window.after(50, state.pdf_preview_interface.preview_manager.viewer.refresh_theme)
         else:
             logs_console.log("Theme: No PDF viewer available for refresh", level='DEBUG')

@@ -15,19 +15,19 @@ except ImportError:
     _TRANSFORMERS_AVAILABLE = False
     logs_console.log("The 'transformers' or 'torch' module was not found. Translation functionality will be disabled.", level='WARNING')
 
-# Global variables for service configuration
+# global vars for service config
 _root = None
 _theme_setting_getter_func = None
 _show_temporary_status_message_func = None
 _active_editor_getter_func = None
 _active_filepath_getter_func = None
 
-# Model caching and device configuration
+# model caching and device config
 _model_cache = {}
 _device = None
 _is_initialized = False
 
-# Supported translation language pairs
+# supported translation language pairs
 SUPPORTED_TRANSLATIONS = {
     "Français -> Anglais": "Helsinki-NLP/opus-mt-fr-en",
     "Anglais -> Français": "Helsinki-NLP/opus-mt-en-fr",
@@ -41,10 +41,10 @@ SUPPORTED_TRANSLATIONS = {
     "Allemand -> Anglais": "Helsinki-NLP/opus-mt-de-en",
 }
 
-# Tokenize text into fundamental LaTeX components
+# tokenize text into fundamental latex components
 LATEX_SPLIT_PATTERN = re.compile(r'(\\verb(.).*?\2|\\[a-zA-Z@]+(?:\*)?|\\[^a-zA-Z]|%.*?$|\$[^$]*\$|\$\$[^$]*\$\$|[{}[\]&])', re.MULTILINE)
 
-# Commands whose arguments should be treated as keywords and not translated
+# commands whose arguments should be treated as keywords and not translated
 KEYWORD_ARG_COMMANDS = {
     '\\documentclass', '\\usepackage', '\\include', '\\input',
     '\\begin', '\\end',
@@ -53,8 +53,8 @@ KEYWORD_ARG_COMMANDS = {
     '\\bibliographystyle', '\\bibliography',
     '\\newcounter', '\\setcounter', '\\newenvironment', '\\newcommand', '\\renewcommand',
     '\\rowcolor', '\\columncolor',
-    '\\codeboxlang',  # The language name is a keyword
-    '\\policeprincipale', '\\policesecondaire', # Custom commands with keyword-like args
+    '\\codeboxlang',  # the language name is a keyword
+    '\\policeprincipale', '\\policesecondaire', # custom commands with keyword-like args
     '\\rotatebox', '\\multirow', '\\multicolumn',
     '\\documentclass', '\\addbibresource', '\\printbibliography'
 }
@@ -64,7 +64,7 @@ def _ensure_translator_initialized():
     global _root, _theme_setting_getter_func, _show_temporary_status_message_func
     global _active_editor_getter_func, _active_filepath_getter_func, _device, _is_initialized
     
-    # Skip if already initialized
+    # skip if already initialized
     if _is_initialized:
         return True
         
@@ -96,9 +96,9 @@ def initialize_translator(root_ref, theme_getter, status_message_func, active_ed
     _active_editor_getter_func = active_editor_getter
     _active_filepath_getter_func = active_filepath_getter
 
-    # Defer device initialization to speed up startup
+    # defer device init to speed up startup
     logs_console.log("Translator service configured for on-demand initialization.", level='INFO')
-    _is_initialized = False  # Mark as not fully initialized
+    _is_initialized = False  # mark as not fully initialized
 
 def _get_model_and_tokenizer(model_name):
     """Load and cache translation model and tokenizer."""
@@ -151,7 +151,7 @@ def _translate_latex_safely(text, model, tokenizer, skip_preamble=False):
 
     parts = [p for p in LATEX_SPLIT_PATTERN.split(text) if p]
     
-    # Stateful parser implementation
+    # stateful parser implementation
     final_parts = []
     text_buffer = []
     i = 0
@@ -160,13 +160,13 @@ def _translate_latex_safely(text, model, tokenizer, skip_preamble=False):
         nonlocal text_buffer
         if text_buffer:
             buffered_text = "".join(text_buffer)
-            # Translate only meaningful non-command text
+            # translate only meaningful non-command text
             stripped = buffered_text.strip()
             if len(stripped) > 3 and any(c.isalpha() for c in stripped):
                 translated_chunk = _translate_text_chunk(buffered_text, model, tokenizer)
                 final_parts.append(translated_chunk)
             else:
-                final_parts.append(buffered_text)  # Keep short/non-alpha text as-is
+                final_parts.append(buffered_text)  # keep short/non-alpha text as-is
             text_buffer = []
 
     while i < len(parts):
@@ -174,13 +174,13 @@ def _translate_latex_safely(text, model, tokenizer, skip_preamble=False):
         command_name = part.rstrip('*') if part.startswith('\\') else ''
 
         if LATEX_SPLIT_PATTERN.match(part):
-            flush_buffer()  # Translate accumulated text before command/symbol
+            flush_buffer()  # translate accumulated text before command/symbol
 
             if command_name in KEYWORD_ARG_COMMANDS:
                 block_to_keep = [part]
                 i += 1
-                # Capture optional arguments
-                while i < len(parts) and parts[i].strip() == '':  # Skip whitespace
+                # capture optional arguments
+                while i < len(parts) and parts[i].strip() == '':  # skip whitespace
                     block_to_keep.append(parts[i])
                     i += 1
                 if i < len(parts) and parts[i] == '[':
@@ -193,8 +193,8 @@ def _translate_latex_safely(text, model, tokenizer, skip_preamble=False):
                         block_to_keep.append(parts[i])
                         i += 1
                 
-                # Capture required arguments
-                while i < len(parts) and parts[i].strip() == '':  # Skip whitespace
+                # capture required arguments
+                while i < len(parts) and parts[i].strip() == '':  # skip whitespace
                     block_to_keep.append(parts[i])
                     i += 1
                 if i < len(parts) and parts[i] == '{':
@@ -207,14 +207,14 @@ def _translate_latex_safely(text, model, tokenizer, skip_preamble=False):
                         block_to_keep.append(parts[i])
                         i += 1
                 final_parts.append("".join(block_to_keep))
-                continue  # Restart main loop from new position
+                continue  # restart main loop from new position
             else:
-                final_parts.append(part)  # Keep command/symbol but not keyword command
+                final_parts.append(part)  # keep command/symbol but not keyword command
         else:
-            text_buffer.append(part)  # Add plain text to buffer for translation
+            text_buffer.append(part)  # add plain text to buffer for translation
         i += 1
     
-    flush_buffer()  # Translate any remaining text at document end
+    flush_buffer()  # translate any remaining text at document end
             
     return preamble + "".join(final_parts)
 
@@ -257,7 +257,7 @@ def open_translate_panel():
     """Open integrated translate panel in left sidebar."""
     from app.panels import show_translate_panel
     
-    # Initialize translator before use
+    # init translator before use
     if not _ensure_translator_initialized():
         messagebox.showerror("Translation Error", "Failed to initialize translation service.")
         return
@@ -272,14 +272,14 @@ def open_translate_panel():
         messagebox.showwarning("Translation", "The editor is empty.")
         return
     
-    # Note: Translation uses the last saved editor content (not including unsaved changes)
+    # note: translation uses the last saved editor content (not including unsaved changes)
 
     def on_translate_callback(selected_pair, skip_preamble):
         """Handle translation request from panel."""
         model_name = SUPPORTED_TRANSLATIONS[selected_pair]
         filepath = _active_filepath_getter_func()
         
-        # Create a minimal dialog window for the threaded operation status
+        # create a minimal dialog window for the threaded operation status
         status_dialog = tk.Toplevel(_root)
         status_dialog.title("Translating...")
         status_dialog.transient(_root)
@@ -293,5 +293,5 @@ def open_translate_panel():
         
         _perform_translation_threaded(source_text, model_name, filepath, status_dialog, skip_preamble)
 
-    # Show the integrated translate panel  
+    # show the integrated translate panel  
     show_translate_panel(source_text, SUPPORTED_TRANSLATIONS, on_translate_callback, _device)

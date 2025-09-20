@@ -15,7 +15,7 @@ def main():
     """Start application with GUI setup and subsystem initialization."""
     logs_console.log("Noctern application starting...", level='INFO')
     
-    # Configure Windows DPI awareness for HiDPI displays
+    # configure windows dpi stuff for high res displays
     if platform.system() == "Windows":
         try:
             ctypes.windll.shcore.SetProcessDpiAwareness(1)
@@ -23,13 +23,13 @@ def main():
         except Exception as e:
             logs_console.log(f"Warning: Could not set DPI awareness for Windows - {e}", level='WARNING')
 
-    # Initialize main GUI window and components
+    # Setup main window and all the gui parts
     root_window = main_window.setup_gui()
     if not root_window:
         logs_console.log("GUI setup failed. Exiting application.", level='ERROR')
         return
 
-    # Initialize application subsystems with getter functions for modularity
+    # init app subsystems with getter functions for modularity
     
     latex_compiler.initialize_compiler(
         root_window, 
@@ -39,34 +39,34 @@ def main():
         pdf_monitor_setting=state.get_app_config().get("pdf_monitor", "Default")
     )
     
-    # Schedule initial heavy updates for syntax highlighting
+    # schedule the heavy syntax highlighting updates at startup
     root_window.after(100, interface.perform_heavy_updates)
     
-    # Defer snippet loading to improve startup performance
+    # defer snippet loading to improve startup performance
     root_window.after(500, snippet_manager.initialize_snippets) 
 
     llm_service.initialize_llm_service(
         root_window=root_window,
         progress_bar_widget=state.llm_progress_bar,
         theme_setting_getter=state.get_theme_setting,
-        active_editor_getter=lambda: state.get_current_tab().editor if state.get_current_tab() else None,
-        active_filepath_getter=lambda: state.get_current_tab().file_path if state.get_current_tab() else None,
+        active_editor_getter=state.get_active_editor,
+        active_filepath_getter=state.get_active_file_path,
         app_config=state.get_app_config()
     )
 
-    # Defer translator initialization for faster startup
+    # defer translator init for faster startup
     latex_translator.initialize_translator(
         root_ref=root_window,
         theme_getter=state.get_theme_setting,
         status_message_func=interface.show_temporary_status_message,
-        active_editor_getter=lambda: state.get_current_tab().editor if state.get_current_tab() else None,
-        active_filepath_getter=lambda: state.get_current_tab().file_path if state.get_current_tab() else None
+        active_editor_getter=state.get_active_editor,
+        active_filepath_getter=state.get_active_file_path
     )
 
-    # Schedule syntax highlighting updates
+    # schedule syntax highlighting updates
     root_window.after(100, interface.perform_heavy_updates)
     
-    # Register clean exit handler
+    # register clean exit handler
     from app.exit_handler import exit_application
     root_window.protocol("WM_DELETE_WINDOW", exit_application)
     
