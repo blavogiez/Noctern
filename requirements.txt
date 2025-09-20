@@ -11,6 +11,9 @@ pdfplumber>=0.10.0
 ollama>=0.4.5
 google-generativeai>=0.8.0
 
+# Testing dependencies
+pytest>=8.0.0
+
 # LaTeX compilation tools should already be installed:
 # - pdflatex (part of TeX distribution)
 # - chktex (optional, for linting)

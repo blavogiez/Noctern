@@ -35,8 +35,6 @@ ENV/
 /output/
 *.gif
 pip-log.txt
-test_*.py
-*_test.py
 
 # Document cache and temporary files
 *.cache/

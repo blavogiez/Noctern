@@ -116,7 +116,7 @@ def _calculate_contrast_ratio(color1, color2):
     lum2 = _get_luminance(color2)
     lighter = max(lum1, lum2)
     darker = min(lum1, lum2)
-    return (lighter + 0.05) / (darker + 0.05) if darker > 0 else 1
+    return (lighter + 0.05) / (darker + 0.05)
 
 def _get_syntax_colors(theme_name, is_dark, colors):
     """Get theme-appropriate syntax highlighting colors."""
